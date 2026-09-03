@@ -1,0 +1,51 @@
+/** Human-readable Italian rendering of diff.json for the CLI. */
+
+import type { DiffChange, DiffChangeKind, ModelDiff } from "@backed/core";
+
+function changeMarker(kind: DiffChangeKind): string {
+  switch (kind) {
+    case "table_added":
+    case "column_added":
+    case "entity_added":
+    case "relation_added":
+    case "rule_added": {
+      return "+";
+    }
+    case "table_removed":
+    case "column_removed":
+    case "entity_removed":
+    case "relation_removed":
+    case "rule_removed": {
+      return "-";
+    }
+    case "column_type_changed": {
+      return "~";
+    }
+    case "relation_broken": {
+      return "!";
+    }
+    default: {
+      const _exhaustive: never = kind;
+      throw new Error(`Tipo di cambiamento non gestito: ${String(_exhaustive)}`);
+    }
+  }
+}
+
+function formatChange(change: DiffChange): string {
+  return `  ${changeMarker(change.kind)} ${change.detail}`;
+}
+
+export function formatDiff(diff: ModelDiff): string {
+  const header = `Diff tra run ${diff.fromRunId} → ${diff.toRunId}`;
+  if (diff.changes.length === 0) {
+    return `${header}\nNessun cambiamento rilevato.`;
+  }
+
+  const breaking = diff.changes.filter((change) => change.kind === "relation_broken").length;
+  const summary =
+    breaking > 0
+      ? `${String(diff.changes.length)} cambiamenti, di cui ${String(breaking)} relazioni rotte (!)`
+      : `${String(diff.changes.length)} cambiamenti`;
+
+  return [header, summary, ...diff.changes.map(formatChange)].join("\n");
+}
