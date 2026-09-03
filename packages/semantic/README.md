@@ -1,13 +1,17 @@
 # @backed/semantic
 
-Burst agentici LLM. **Agents where they think, pipelines where they repeat.**
+Burst agentici LLM: `profile.json` → `proposal.json`. "Agents where they think, pipelines where they repeat."
 
-**Input:** profili compressi (mai dati grezzi — GDPR by design).
+**Responsabilità:**
 
-**Output:** schema fisso — entità, relazioni, definizioni proposte, confidenza, dubbi espliciti. `"non lo so"` è risposta valida.
+- `compressProfile` — comprime il profilo per l'LLM: solo statistiche, nomi colonne, pattern, top values aggregati. Mai righe grezze (GDPR per costruzione).
+- Due burst con Vercel AI SDK (`generateText` + `Output.object`, schema Zod fisso):
+  1. classificazione colonne → **modello economico** (`SEMANTIC_MODEL_CHEAP`);
+  2. entità/relazioni/definizioni ambigue → **modello frontier** (`SEMANTIC_MODEL_FRONTIER`).
+- `proposeModel` — orchestrazione: assembla la proposta, scarta (e segnala come dubbio) ogni riferimento non verificabile, valida con `ProposalSchema`. "Non lo so" (`doubts`) è output valido.
+- `selectReviewQuestions` — max 10 domande per **rischio decrescente** (impatto × incertezza), ognuna con mini-tabella di evidenza.
+- `resolveSemanticModels` — routing modelli da env via AI Gateway (`AI_GATEWAY_API_KEY`); chiave mancante → errore chiaro in italiano.
 
-**Model routing:** economico per classificazione, frontier solo per entità ambigue.
+**Test:** unit con `MockLanguageModelV3` (`pnpm test:unit`, zero rete); LLM reale in `pnpm test:integration` (richiede `AI_GATEWAY_API_KEY`).
 
-**Riuso:** adattare `@backed/semantic` del repo precedente.
-
-**Settimana:** 5–6
+**Non contiene:** ingest, SQL, UI.

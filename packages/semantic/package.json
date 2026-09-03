@@ -14,10 +14,13 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test:unit": "vitest run --passWithNoTests"
+    "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run src/propose.integration.test.ts"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "^4.0.69",
     "@backed/core": "workspace:*",
-    "@backed/profile": "workspace:*"
+    "ai": "^7.0.85",
+    "zod": "^3.24.1"
   }
 }
