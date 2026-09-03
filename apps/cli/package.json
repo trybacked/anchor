@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@backed/core": "workspace:*",
+    "@inquirer/prompts": "^7.3.2",
     "@backed/diff": "workspace:*",
     "@backed/ingest": "workspace:*",
     "@backed/mcp": "workspace:*",

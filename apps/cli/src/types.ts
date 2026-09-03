@@ -5,5 +5,3 @@ export interface Command {
   readonly description: string;
   readonly handler: CommandHandler;
 }
-
-export const COMMANDS: readonly Command[] = [];
