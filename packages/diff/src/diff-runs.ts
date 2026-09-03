@@ -39,12 +39,12 @@ function diffTables(previous: ProfileReport, next: ProfileReport): DiffChange[] 
 
   for (const [name] of nextTables) {
     if (!previousTables.has(name)) {
-      changes.push({ kind: "table_added", subject: name, detail: `Nuova tabella "${name}"` });
+      changes.push({ kind: "table_added", subject: name, detail: `New table "${name}"` });
     }
   }
   for (const [name] of previousTables) {
     if (!nextTables.has(name)) {
-      changes.push({ kind: "table_removed", subject: name, detail: `Tabella "${name}" sparita` });
+      changes.push({ kind: "table_removed", subject: name, detail: `Table "${name}" removed` });
     }
   }
   for (const [name, nextTable] of nextTables) {
@@ -67,7 +67,7 @@ function diffColumns(previous: TableProfile, next: TableProfile): DiffChange[] {
       changes.push({
         kind: "column_added",
         subject: `${table}.${name}`,
-        detail: `Nuova colonna "${name}" nella tabella "${table}"`,
+        detail: `New column "${name}" in table "${table}"`,
       });
     }
   }
@@ -76,7 +76,7 @@ function diffColumns(previous: TableProfile, next: TableProfile): DiffChange[] {
       changes.push({
         kind: "column_removed",
         subject: `${table}.${name}`,
-        detail: `Colonna "${name}" sparita dalla tabella "${table}"`,
+        detail: `Column "${name}" removed from table "${table}"`,
       });
     }
   }
@@ -86,7 +86,7 @@ function diffColumns(previous: TableProfile, next: TableProfile): DiffChange[] {
       changes.push({
         kind: "column_type_changed",
         subject: `${table}.${name}`,
-        detail: `Tipo di "${table}.${name}" cambiato da ${previousColumn.sqlType} a ${nextColumn.sqlType}`,
+        detail: `Type of "${table}.${name}" changed from ${previousColumn.sqlType} to ${nextColumn.sqlType}`,
         before: previousColumn.sqlType,
         after: nextColumn.sqlType,
       });
@@ -135,7 +135,7 @@ function diffModelElements(
       changes.push({
         kind: "entity_added",
         subject: id,
-        detail: `Nuova entità "${entity.name}"`,
+        detail: `New entity "${entity.name}"`,
       });
     }
   }
@@ -144,7 +144,7 @@ function diffModelElements(
       changes.push({
         kind: "entity_removed",
         subject: id,
-        detail: `Entità "${entity.name}" sparita`,
+        detail: `Entity "${entity.name}" removed`,
       });
     }
   }
@@ -154,7 +154,7 @@ function diffModelElements(
       changes.push({
         kind: "relation_added",
         subject: id,
-        detail: `Nuova relazione "${relation.name}"`,
+        detail: `New relation "${relation.name}"`,
       });
     }
   }
@@ -166,25 +166,25 @@ function diffModelElements(
       changes.push({
         kind: "relation_broken",
         subject: id,
-        detail: `Relazione "${relation.name}" rotta: le colonne di aggancio (${relation.fromColumn} → ${relation.toColumn}) non esistono più`,
+        detail: `Relation "${relation.name}" broken: anchor columns (${relation.fromColumn} → ${relation.toColumn}) no longer exist`,
       });
     } else {
       changes.push({
         kind: "relation_removed",
         subject: id,
-        detail: `Relazione "${relation.name}" sparita`,
+        detail: `Relation "${relation.name}" removed`,
       });
     }
   }
 
   for (const [id, rule] of nextRules) {
     if (!previousRules.has(id)) {
-      changes.push({ kind: "rule_added", subject: id, detail: `Nuova regola "${rule.name}"` });
+      changes.push({ kind: "rule_added", subject: id, detail: `New rule "${rule.name}"` });
     }
   }
   for (const [id, rule] of previousRules) {
     if (!nextRules.has(id)) {
-      changes.push({ kind: "rule_removed", subject: id, detail: `Regola "${rule.name}" sparita` });
+      changes.push({ kind: "rule_removed", subject: id, detail: `Rule "${rule.name}" removed` });
     }
   }
 

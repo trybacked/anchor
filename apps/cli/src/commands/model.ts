@@ -9,8 +9,6 @@ import { MissingApiKeyError, proposeModel, resolveSemanticModels } from "@backed
 
 import type { CommandHandler } from "../types.js";
 
-const NO_LLM_FLAG = "--no-llm";
-
 function resolveSourcesDir(root: string, positional: string | undefined): string {
   if (positional) {
     // A folder passed explicitly also (re)initializes the workspace config.
@@ -22,61 +20,55 @@ function resolveSourcesDir(root: string, positional: string | undefined): string
 
 function printProposalSummary(proposal: Proposal): void {
   console.log(
-    `Proposta di modello: ${String(proposal.entities.length)} entità, ${String(proposal.relations.length)} relazioni, ${String(proposal.rules.length)} regole.`,
+    `Model proposal: ${String(proposal.entities.length)} entities, ${String(proposal.relations.length)} relations, ${String(proposal.rules.length)} rules.`,
   );
   if (proposal.doubts.length > 0) {
-    console.log(`Dubbi dichiarati dal modello: ${String(proposal.doubts.length)}`);
+    console.log(`Doubts declared by the model: ${String(proposal.doubts.length)}`);
   }
   if (proposal.usage) {
     const cost = proposal.usage.costUsd !== null ? ` (~$${proposal.usage.costUsd.toFixed(4)})` : "";
     console.log(
-      `Token: ${String(proposal.usage.inputTokens)} in / ${String(proposal.usage.outputTokens)} out${cost}`,
+      `Tokens: ${String(proposal.usage.inputTokens)} in / ${String(proposal.usage.outputTokens)} out${cost}`,
     );
   }
   console.log(
-    `Domande di review selezionate: ${String(proposal.questions.length)}. Prossimo passo: "backed review".`,
+    `Review questions selected: ${String(proposal.questions.length)}. Next step: "backed review".`,
   );
 }
 
 export const modelCommand: CommandHandler = async (args) => {
   const root = process.cwd();
-  const noLlm = args.includes(NO_LLM_FLAG);
   const positional = args.find((arg) => !arg.startsWith("--"));
 
   const sourcesDir = resolveSourcesDir(root, positional);
   const absoluteSources = path.resolve(root, sourcesDir);
   if (!existsSync(absoluteSources)) {
-    console.error(`Cartella sorgenti non trovata: ${absoluteSources}`);
+    console.error(`Sources folder not found: ${absoluteSources}`);
     process.exitCode = 1;
     return;
   }
 
   const runId = createRunId();
-  console.log(`Run ${runId} — profilo delle sorgenti in "${sourcesDir}"...`);
+  console.log(`Run ${runId} — profiling sources in "${sourcesDir}"...`);
 
   const session = await ingestFolder(absoluteSources);
   try {
     if (session.datasets.length === 0) {
-      console.error(`Nessuna tabella leggibile trovata in "${sourcesDir}".`);
+      console.error(`No readable tables found in "${sourcesDir}".`);
       process.exitCode = 1;
       return;
     }
 
     console.log(
-      `Tabelle trovate: ${session.datasets.map((dataset) => dataset.tableName).join(", ")}`,
+      `Tables found: ${session.datasets.map((dataset) => dataset.tableName).join(", ")}`,
     );
     for (const warning of session.warnings) {
-      console.log(`  Avviso [${warning.file}]: ${warning.message}`);
+      console.log(`  Warning [${warning.file}]: ${warning.message}`);
     }
 
     const profile = await profileTables(session);
     const profilePath = writeRunArtifact(root, runId, "profile", profile);
-    console.log(`Profilo salvato: ${profilePath}`);
-
-    if (noLlm) {
-      console.log("Modalità --no-llm: mi fermo al profilo, nessuna chiamata AI.");
-      return;
-    }
+    console.log(`Profile saved: ${profilePath}`);
 
     let models;
     try {
@@ -90,10 +82,10 @@ export const modelCommand: CommandHandler = async (args) => {
       throw error;
     }
 
-    console.log("Inferenza semantica in corso (burst agentici)...");
+    console.log("Running semantic inference (agentic bursts)...");
     const proposal = await proposeModel({ profile, runId, models });
     const proposalPath = writeRunArtifact(root, runId, "proposal", proposal);
-    console.log(`Proposta salvata: ${proposalPath}`);
+    console.log(`Proposal saved: ${proposalPath}`);
     printProposalSummary(proposal);
   } finally {
     session.close();

@@ -15,3 +15,5 @@ tmp/
 temp/
 .backed/
 **/src/generated/
+design/
+.cursor/

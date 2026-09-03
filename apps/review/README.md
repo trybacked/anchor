@@ -1,11 +1,11 @@
 # @backed/review
 
-UI per la review umana. Max 10 domande selezionate **per rischio decrescente**.
+Web UI for human review. One question per uncertain entity, relation, or rule — sorted by descending risk.
 
-**UX:** Sì / No / Rinomina + contatore "4 di 10". Ogni domanda mostra l'evidenza sotto (mini-tabella).
+**UX:** Yes / No / Rename + counter "4 of 12". Each question shows profile evidence (mini-table).
 
-**Copy:** italiano.
+**Copy:** English.
 
-**Riuso:** adattare `apps/web` del repo precedente.
+**Reuse:** adapt `apps/web` from the previous repo.
 
-**Settimana:** 5–6
+**Week:** 5–6

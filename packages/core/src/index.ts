@@ -2,11 +2,7 @@
 
 export const PACKAGE_NAME = "@backed/core" as const;
 
-export {
-  MODEL_FORMAT_VERSION,
-  MAX_REVIEW_QUESTIONS,
-  LOW_CONFIDENCE_THRESHOLD,
-} from "./constants.js";
+export { MODEL_FORMAT_VERSION, LOW_CONFIDENCE_THRESHOLD, DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "./constants.js";
 
 export {
   PROFILE_TOP_VALUES_LIMIT,

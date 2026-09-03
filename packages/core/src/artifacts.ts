@@ -28,7 +28,7 @@ export function readWorkspaceConfig(root: string): WorkspaceConfig {
     raw = readFileSync(paths.configPath, "utf-8");
   } catch {
     throw new Error(
-      `Workspace non inizializzato: manca ${paths.configPath}. Esegui prima "backed init".`,
+      `Workspace not initialized: missing ${paths.configPath}. Run "backed init" first.`,
     );
   }
   return WorkspaceConfigSchema.parse(parseYaml(raw));
@@ -58,7 +58,7 @@ export function readRunArtifact<TSchema extends z.ZodTypeAny>(
   try {
     raw = readFileSync(filePath, "utf-8");
   } catch {
-    throw new Error(`Artefatto mancante: ${filePath}. Esegui prima "backed model".`);
+    throw new Error(`Missing artifact: ${filePath}. Run "backed model" first.`);
   }
   return schema.parse(JSON.parse(raw)) as z.infer<TSchema>;
 }
@@ -106,7 +106,7 @@ export function readModelYaml(root: string): SemanticModel {
     raw = readFileSync(modelPath, "utf-8");
   } catch {
     throw new Error(
-      `Modello mancante: ${path.basename(modelPath)} non trovato in ${root}. Esegui prima "backed model" e "backed review".`,
+      `Missing model: ${path.basename(modelPath)} not found in ${root}. Run "backed model" and "backed review" first.`,
     );
   }
   return parseModelYaml(raw);

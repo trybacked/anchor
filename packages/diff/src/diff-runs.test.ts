@@ -88,7 +88,7 @@ describe("diffRuns", () => {
       NOW,
     );
     expect(diff.changes).toHaveLength(0);
-    expect(formatDiff(diff)).toContain("Nessun cambiamento");
+    expect(formatDiff(diff)).toContain("No changes detected");
   });
 
   it("detects added/removed tables and columns and type changes", () => {
@@ -156,7 +156,7 @@ describe("diffRuns", () => {
     expect(diff.changes.some((change) => change.kind === "rule_removed")).toBe(true);
   });
 
-  it("renders a readable Italian report", () => {
+  it("renders a readable report", () => {
     const nextProfile = buildProfile({
       clienti: [buildColumn("id", "BIGINT"), buildColumn("email"), buildColumn("telefono")],
       fatture: [buildColumn("numero"), buildColumn("cliente_id", "BIGINT"), buildColumn("importo", "DOUBLE")],
@@ -169,6 +169,6 @@ describe("diffRuns", () => {
 
     const report = formatDiff(diff);
     expect(report).toContain("run-1 → run-2");
-    expect(report).toContain('+ Nuova colonna "telefono"');
+    expect(report).toContain('+ New column "telefono"');
   });
 });

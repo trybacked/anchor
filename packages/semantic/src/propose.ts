@@ -23,6 +23,7 @@ import { runBurst } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
 import { compressProfile } from "./compress.js";
 import type { SemanticModels } from "./env.js";
+import { resolveReviewConfidenceThreshold } from "./env.js";
 import { ColumnClassificationOutputSchema, OntologyOutputSchema } from "./llm-output.js";
 import type { ColumnClassificationOutput, OntologyOutput } from "./llm-output.js";
 import {
@@ -38,6 +39,7 @@ export interface ProposeModelOptions {
   runId: string;
   models: SemanticModels;
   now?: Date;
+  reviewConfidenceThreshold?: number;
 }
 
 type ColumnClassification =
@@ -97,7 +99,7 @@ function buildProperty(
     provenance: {
       table: table.table,
       column: column.name,
-      evidence: `tipo SQL ${column.sqlType}, ${String(column.distinctCount)} valori distinti su ${String(table.rowCount)} righe`,
+      evidence: `SQL type ${column.sqlType}, ${String(column.distinctCount)} distinct values in ${String(table.rowCount)} rows`,
     },
   };
 }
@@ -128,9 +130,9 @@ function assembleEntities(
     if (!table) {
       doubts.push(
         droppedDoubt(
-          `entità ${candidate.id}`,
-          `L'entità proposta "${candidate.name}" fa riferimento alla tabella "${candidate.sourceTable}", che non esiste nel profilo.`,
-          "Proposta scartata: tabella sorgente sconosciuta.",
+          `entity ${candidate.id}`,
+          `Proposed entity "${candidate.name}" references table "${candidate.sourceTable}", which does not exist in the profile.`,
+          "Proposal dropped: unknown source table.",
         ),
       );
       continue;
@@ -174,9 +176,9 @@ function assembleRelations(
     if (!fromEntity || !toEntity || !fromColumnExists || !toColumnExists) {
       doubts.push(
         droppedDoubt(
-          `relazione ${candidate.id}`,
-          `La relazione proposta "${candidate.name}" fa riferimento a entità o colonne non presenti nel profilo.`,
-          "Proposta scartata: riferimenti non verificabili.",
+          `relation ${candidate.id}`,
+          `Proposed relation "${candidate.name}" references entities or columns not present in the profile.`,
+          "Proposal dropped: unverifiable references.",
         ),
       );
       continue;
@@ -212,9 +214,9 @@ function assembleRules(ontology: OntologyOutput, entities: Entity[], doubts: Dou
     if (!entity) {
       doubts.push(
         droppedDoubt(
-          `regola ${candidate.id}`,
-          `La regola proposta "${candidate.name}" si applica all'entità "${candidate.appliesTo}", che non esiste.`,
-          "Proposta scartata: entità di riferimento sconosciuta.",
+          `rule ${candidate.id}`,
+          `Proposed rule "${candidate.name}" applies to entity "${candidate.appliesTo}", which does not exist.`,
+          "Proposal dropped: unknown reference entity.",
         ),
       );
       continue;
@@ -246,8 +248,8 @@ function lowConfidenceDoubts(assembly: AssemblyResult, questionTargets: Set<stri
     if (confidence < LOW_CONFIDENCE_THRESHOLD && !questionTargets.has(`${kind}:${id}`)) {
       doubts.push({
         topic: `${kind} ${id}`,
-        question: `"${name}" ha confidenza ${confidence.toFixed(2)}, sotto la soglia ${LOW_CONFIDENCE_THRESHOLD.toFixed(2)}.`,
-        reason: "Fuori dalle domande di review per rischio: verificare manualmente.",
+        question: `"${name}" has confidence ${confidence.toFixed(2)}, below threshold ${LOW_CONFIDENCE_THRESHOLD.toFixed(2)}.`,
+        reason: "Outside review questions by risk ranking: verify manually.",
       });
     }
   };
@@ -303,7 +305,16 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
   const rules = assembleRules(ontology.output, entities, doubts);
   const assembly: AssemblyResult = { entities, relations, rules, doubts };
 
-  const questions = selectReviewQuestions(entities, relations, rules, tables);
+  const reviewConfidenceThreshold =
+    options.reviewConfidenceThreshold ?? resolveReviewConfidenceThreshold();
+
+  const questions = selectReviewQuestions(
+    entities,
+    relations,
+    rules,
+    tables,
+    reviewConfidenceThreshold,
+  );
   const questionTargets = new Set(
     questions.map((question) => `${question.kind}:${question.targetId}`),
   );

@@ -7,7 +7,7 @@
 import { CardinalitySchema, ConfidenceSchema, PropertyRoleSchema, SemanticTypeSchema } from "@backed/core";
 import { z } from "zod";
 
-/** Burst 1 (cheap model): per-column classification and Italian labels. */
+/** Burst 1 (cheap model): per-column classification and labels. */
 export const ColumnClassificationOutputSchema = z.object({
   tables: z.array(
     z.object({
@@ -15,7 +15,6 @@ export const ColumnClassificationOutputSchema = z.object({
       columns: z.array(
         z.object({
           column: z.string().min(1),
-          // Italian human-readable label, e.g. "Partita IVA".
           label: z.string().min(1),
           semanticType: SemanticTypeSchema,
           role: PropertyRoleSchema,
@@ -29,15 +28,15 @@ export const ColumnClassificationOutputSchema = z.object({
 const EvidenceFieldSchema = z
   .string()
   .min(1)
-  .describe("Evidenza statistica che sostiene l'inferenza, in italiano");
+  .describe("Statistical evidence supporting the inference, in English");
 
 /** Burst 2 (frontier model): entities, relations, business rules, explicit doubts. */
 export const OntologyOutputSchema = z.object({
   entities: z.array(
     z.object({
-      id: z.string().min(1).describe("Slug stabile, es. 'cliente'"),
-      name: z.string().min(1).describe("Nome italiano singolare, es. 'Cliente'"),
-      description: z.string().min(1).describe("Descrizione in italiano"),
+      id: z.string().min(1).describe("Stable slug, e.g. 'customer'"),
+      name: z.string().min(1).describe("Singular name, e.g. 'Customer'"),
+      description: z.string().min(1).describe("Description in English"),
       sourceTable: z.string().min(1),
       confidence: ConfidenceSchema,
       evidence: EvidenceFieldSchema,
@@ -46,7 +45,7 @@ export const OntologyOutputSchema = z.object({
   relations: z.array(
     z.object({
       id: z.string().min(1),
-      name: z.string().min(1).describe("Nome italiano, es. 'Fattura emessa a Cliente'"),
+      name: z.string().min(1).describe("Name in English, e.g. 'Invoice issued to Customer'"),
       fromEntity: z.string().min(1),
       toEntity: z.string().min(1),
       fromColumn: z.string().min(1),
@@ -60,8 +59,8 @@ export const OntologyOutputSchema = z.object({
     z.object({
       id: z.string().min(1),
       name: z.string().min(1),
-      definition: z.string().min(1).describe("Definizione di business in italiano"),
-      appliesTo: z.string().min(1).describe("Id dell'entità a cui si applica"),
+      definition: z.string().min(1).describe("Business definition in English"),
+      appliesTo: z.string().min(1).describe("Entity id this rule applies to"),
       column: z.string().min(1).optional(),
       confidence: ConfidenceSchema,
       evidence: EvidenceFieldSchema,
@@ -70,8 +69,8 @@ export const OntologyOutputSchema = z.object({
   doubts: z.array(
     z.object({
       topic: z.string().min(1),
-      question: z.string().min(1).describe("La domanda aperta, in italiano"),
-      reason: z.string().min(1).describe("Perché il modello non sa rispondere"),
+      question: z.string().min(1).describe("The open question, in English"),
+      reason: z.string().min(1).describe("Why the model cannot answer"),
     }),
   ),
 });

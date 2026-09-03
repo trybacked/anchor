@@ -74,7 +74,7 @@ export function searchModel(model: SemanticModel, rawQuery: string): SearchMatch
         kind: "entity",
         id: entity.id,
         name: entity.name,
-        snippet: entity.description ?? `Entità dalla tabella "${entity.sourceTable}"`,
+        snippet: entity.description ?? `Entity from table "${entity.sourceTable}"`,
       });
     }
     for (const property of entity.properties) {
@@ -83,7 +83,7 @@ export function searchModel(model: SemanticModel, rawQuery: string): SearchMatch
           kind: "property",
           id: `${entity.id}.${property.columnName}`,
           name: property.name,
-          snippet: `Attributo di "${entity.name}" (colonna ${property.columnName}, tipo ${property.semanticType})`,
+          snippet: `Attribute of "${entity.name}" (column ${property.columnName}, type ${property.semanticType})`,
         });
       }
     }

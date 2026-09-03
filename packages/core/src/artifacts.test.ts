@@ -26,11 +26,11 @@ afterEach(() => {
 
 describe("workspace config", () => {
   it("writes and reads .backed/config.yaml", () => {
-    initWorkspace(root, { sourcesDir: "./sorgenti" });
-    expect(readWorkspaceConfig(root)).toEqual({ sourcesDir: "./sorgenti" });
+    initWorkspace(root, { sourcesDir: "./sources" });
+    expect(readWorkspaceConfig(root)).toEqual({ sourcesDir: "./sources" });
   });
 
-  it("fails with an actionable Italian message when not initialized", () => {
+  it("fails with an actionable message when not initialized", () => {
     expect(() => readWorkspaceConfig(root)).toThrow(/backed init/);
   });
 });

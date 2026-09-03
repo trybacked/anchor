@@ -68,7 +68,7 @@ function ontologyEntities(includeProdotto: boolean): Record<string, unknown>[] {
       name: "Cliente",
       description: "Anagrafica clienti.",
       sourceTable: "clienti",
-      confidence: 0.95,
+      confidence: 0.94,
       evidence: "Colonne anagrafiche e partita IVA.",
     },
     {
@@ -117,7 +117,7 @@ function buildOntology(includeProdotto: boolean): Record<string, unknown> {
         appliesTo: "fattura",
         column: "stato",
         confidence: 0.6,
-        evidence: "3 valori distinti in stato.",
+        evidence: "3 distinct values in status.",
       },
     ],
     doubts: [],
@@ -161,9 +161,9 @@ let sourcesDir: string;
 
 beforeAll(() => {
   root = mkdtempSync(path.join(tmpdir(), "backed-e2e-"));
-  sourcesDir = path.join(root, "sorgenti");
+  sourcesDir = path.join(root, "sources");
   cpSync(FIXTURE_DIR, sourcesDir, { recursive: true });
-  initWorkspace(root, { sourcesDir: "./sorgenti" });
+  initWorkspace(root, { sourcesDir: "./sources" });
 });
 
 afterAll(() => {
@@ -180,7 +180,6 @@ describe("pipeline end-to-end (mock LLM)", () => {
       "prodotto",
     ]);
     expect(first.proposal.questions.length).toBeGreaterThan(0);
-    expect(first.proposal.questions.length).toBeLessThanOrEqual(10);
 
     // Simulated review: yes to everything, rename cliente, reject the rule.
     const answers: ReviewAnswer[] = first.proposal.questions.map((question) => {

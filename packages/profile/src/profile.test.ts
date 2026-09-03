@@ -28,7 +28,7 @@ afterAll(() => {
 function tableByName(name: string): TableProfile {
   const table = report.find((profile) => profile.table === name);
   if (table === undefined) {
-    throw new Error(`Tabella non profilata: ${name}`);
+    throw new Error(`Table not profiled: ${name}`);
   }
   return table;
 }

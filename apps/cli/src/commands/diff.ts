@@ -34,7 +34,7 @@ export const diffCommand: CommandHandler = async () => {
   const runIds = listRunIds(root).filter((runId) => hasRunArtifact(root, runId, "profile"));
   if (runIds.length < 2) {
     console.error(
-      `Servono almeno due run per un confronto (trovate: ${String(runIds.length)}). Esegui "backed model" di nuovo quando i dati cambiano.`,
+      `At least two runs are required for a comparison (found: ${String(runIds.length)}). Run "backed model" again when the data changes.`,
     );
     process.exitCode = 1;
     return;
@@ -43,13 +43,13 @@ export const diffCommand: CommandHandler = async () => {
   const previousRunId = runIds[runIds.length - 2];
   const latestRunId = runIds[runIds.length - 1];
   if (!previousRunId || !latestRunId) {
-    throw new Error("Run ids inattesi dopo il filtro.");
+    throw new Error("Unexpected run ids after filtering.");
   }
 
   const diff = diffRuns(loadSnapshot(root, previousRunId), loadSnapshot(root, latestRunId));
   const diffPath = writeRunArtifact(root, latestRunId, "diff", diff);
 
   console.log(formatDiff(diff));
-  console.log(`\nDiff salvato: ${diffPath}`);
+  console.log(`\nDiff saved: ${diffPath}`);
   return Promise.resolve();
 };

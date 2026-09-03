@@ -1,5 +1,5 @@
 /**
- * Zod schema of modello.yaml — the product. Spec: design/04-model-format.md.
+ * Zod schema of modello.yaml — the Anchor model artifact. See README.md.
  * Every inferred element carries confidence (0..1) and provenance.
  */
 

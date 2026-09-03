@@ -9,10 +9,13 @@ export {
   AI_GATEWAY_API_KEY_ENV,
   CHEAP_MODEL_ENV,
   FRONTIER_MODEL_ENV,
+  REVIEW_CONFIDENCE_THRESHOLD_ENV,
   DEFAULT_CHEAP_MODEL,
   DEFAULT_FRONTIER_MODEL,
   MissingApiKeyError,
+  InvalidReviewThresholdError,
   resolveSemanticModels,
+  resolveReviewConfidenceThreshold,
 } from "./env.js";
 export type { SemanticModels } from "./env.js";
 

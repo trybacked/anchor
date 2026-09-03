@@ -24,9 +24,9 @@ export function createModelMcpServer(model: SemanticModel): McpServer {
   server.registerTool(
     "list_entities",
     {
-      title: "Elenco entità",
+      title: "List entities",
       description:
-        "Elenca le entità del modello semantico (id, nome, tabella sorgente, stato, confidenza).",
+        "List semantic model entities (id, name, source table, status, confidence).",
     },
     () => jsonContent(listEntities(model)),
   );
@@ -34,10 +34,10 @@ export function createModelMcpServer(model: SemanticModel): McpServer {
   server.registerTool(
     "get_entity",
     {
-      title: "Dettaglio entità",
+      title: "Entity detail",
       description:
-        "Restituisce un'entità con le sue property (colonne, tipi semantici), le relazioni e le regole che la riguardano.",
-      inputSchema: { id: z.string().min(1).describe("Id dell'entità, es. 'cliente'") },
+        "Return an entity with its properties (columns, semantic types), relations, and rules that apply to it.",
+      inputSchema: { id: z.string().min(1).describe("Entity id, e.g. 'customer'") },
     },
     ({ id }) => {
       const detail = getEntity(model, id);
@@ -47,7 +47,7 @@ export function createModelMcpServer(model: SemanticModel): McpServer {
           content: [
             {
               type: "text" as const,
-              text: `Entità "${id}" non trovata. Usa list_entities per gli id disponibili.`,
+              text: `Entity "${id}" not found. Use list_entities for available ids.`,
             },
           ],
         };
@@ -59,9 +59,9 @@ export function createModelMcpServer(model: SemanticModel): McpServer {
   server.registerTool(
     "list_relations",
     {
-      title: "Elenco relazioni",
+      title: "List relations",
       description:
-        "Elenca le relazioni tra entità con colonne di aggancio, cardinalità e confidenza.",
+        "List relations between entities with anchor columns, cardinality, and confidence.",
     },
     () => jsonContent(listRelations(model)),
   );
@@ -69,10 +69,10 @@ export function createModelMcpServer(model: SemanticModel): McpServer {
   server.registerTool(
     "search_model",
     {
-      title: "Ricerca nel modello",
+      title: "Search model",
       description:
-        "Cerca per testo tra entità, property, relazioni e definizioni di business del modello.",
-      inputSchema: { query: z.string().min(1).describe("Testo da cercare, es. 'partita iva'") },
+        "Search by text across entities, properties, relations, and business definitions in the model.",
+      inputSchema: { query: z.string().min(1).describe("Text to search, e.g. 'vat number'") },
     },
     ({ query }) => jsonContent(searchModel(model, query)),
   );

@@ -103,7 +103,7 @@ const ONTOLOGY: OntologyOutput = {
       appliesTo: "fattura",
       column: "stato",
       confidence: 0.6,
-      evidence: "3 valori distinti in stato.",
+      evidence: "3 distinct values in status.",
     },
   ],
   doubts: [
@@ -139,7 +139,7 @@ describe("proposeModel (mock models)", () => {
     expect(cliente?.properties[0]?.provenance).toEqual({
       table: "clienti",
       column: "id",
-      evidence: expect.stringContaining("valori distinti") as unknown,
+      evidence: expect.stringContaining("distinct values") as unknown,
     });
     expect(proposal.usage).toEqual({ inputTokens: 200, outputTokens: 100, costUsd: null });
   });
@@ -149,8 +149,8 @@ describe("proposeModel (mock models)", () => {
 
     expect(proposal.entities.map((entity) => entity.id)).toEqual(["cliente", "fattura"]);
     expect(proposal.relations.map((relation) => relation.id)).toEqual(["fattura-cliente"]);
-    expect(proposal.doubts.some((doubt) => doubt.topic === "entità magazzino")).toBe(true);
-    expect(proposal.doubts.some((doubt) => doubt.topic === "relazione fattura-magazzino")).toBe(
+    expect(proposal.doubts.some((doubt) => doubt.topic === "entity magazzino")).toBe(true);
+    expect(proposal.doubts.some((doubt) => doubt.topic === "relation fattura-magazzino")).toBe(
       true,
     );
   });
@@ -164,7 +164,6 @@ describe("proposeModel (mock models)", () => {
     const proposal = await runPropose();
 
     expect(proposal.questions.length).toBeGreaterThan(0);
-    expect(proposal.questions.length).toBeLessThanOrEqual(10);
     // Relation has confidence 0.5 and impact 2 → highest risk.
     expect(proposal.questions[0]?.targetId).toBe("fattura-cliente");
     for (const question of proposal.questions) {

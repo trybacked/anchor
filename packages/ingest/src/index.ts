@@ -1,4 +1,4 @@
-/** DuckDB wrapper: lettura sorgenti → tabelle queryabili */
+/** DuckDB wrapper: read sources → queryable tables */
 
 import { registerSource } from "./register.js";
 import { scanFolder } from "./scan.js";
@@ -28,7 +28,7 @@ export async function ingestFolder(folderPath: string): Promise<IngestSession> {
   const warnings: IngestWarning[] = scan.unsupportedFiles.map((file) => ({
     kind: "unsupported_format" as const,
     file,
-    message: "Formato non supportato: file ignorato",
+    message: "Unsupported format: file ignored",
   }));
 
   const usedNames = new Set<string>();
@@ -42,7 +42,7 @@ export async function ingestFolder(folderPath: string): Promise<IngestSession> {
       warnings.push({
         kind: "unreadable_file",
         file: source.relativePath,
-        message: `File non leggibile: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Unreadable file: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }

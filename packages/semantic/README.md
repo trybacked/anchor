@@ -9,8 +9,8 @@ Burst agentici LLM: `profile.json` → `proposal.json`. "Agents where they think
   1. classificazione colonne → **modello economico** (`SEMANTIC_MODEL_CHEAP`);
   2. entità/relazioni/definizioni ambigue → **modello frontier** (`SEMANTIC_MODEL_FRONTIER`).
 - `proposeModel` — orchestrazione: assembla la proposta, scarta (e segnala come dubbio) ogni riferimento non verificabile, valida con `ProposalSchema`. "Non lo so" (`doubts`) è output valido.
-- `selectReviewQuestions` — max 10 domande per **rischio decrescente** (impatto × incertezza), ognuna con mini-tabella di evidenza.
-- `resolveSemanticModels` — routing modelli da env via AI Gateway (`AI_GATEWAY_API_KEY`); chiave mancante → errore chiaro in italiano.
+- `selectReviewQuestions` — one question per uncertain entity/relation/rule, sorted by **descending risk** (impact × uncertainty), each with a mini-table of evidence
+- `resolveSemanticModels` — model routing from env via AI Gateway (`AI_GATEWAY_API_KEY`); missing key → clear English error.
 
 **Test:** unit con `MockLanguageModelV3` (`pnpm test:unit`, zero rete); LLM reale in `pnpm test:integration` (richiede `AI_GATEWAY_API_KEY`).
 

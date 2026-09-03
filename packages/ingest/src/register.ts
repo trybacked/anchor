@@ -24,7 +24,7 @@ export async function registerSource(
       return registerWithReader(query, source, tableName, "read_json_auto");
     default: {
       const _exhaustive: never = source.format;
-      throw new Error(`Formato non gestito: ${String(_exhaustive)}`);
+      throw new Error(`Unsupported format: ${String(_exhaustive)}`);
     }
   }
 }
@@ -42,7 +42,7 @@ async function registerCsv(
       kind: "non_utf8_encoding",
       file: source.relativePath,
       message:
-        "Encoding non UTF-8 rilevato (probabile Windows-1252): letto come Latin-1",
+        "Non-UTF-8 encoding detected (likely Windows-1252): read as Latin-1",
     });
   }
 
@@ -51,14 +51,14 @@ async function registerCsv(
     warnings.push({
       kind: "semicolon_delimiter",
       file: source.relativePath,
-      message: 'Separatore ";" rilevato (CSV in formato italiano)',
+      message: 'Semicolon ";" delimiter detected (European CSV format)',
     });
   }
   if (sniffed.dialect.decimalSeparator === ",") {
     warnings.push({
       kind: "decimal_comma",
       file: source.relativePath,
-      message: "Virgola decimale rilevata: valori numerici letti con locale italiano",
+      message: "Decimal comma detected: numeric values read with European locale",
     });
   }
 

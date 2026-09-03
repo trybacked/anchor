@@ -1,11 +1,10 @@
 /**
- * Review question selection: descending risk, capped at MAX_REVIEW_QUESTIONS.
- * risk = impact (how many tables/relations depend on the element) ×
- * uncertainty (1 - confidence). Every question carries a mini-table of
- * statistical evidence from the profile.
+ * Review question selection: every element below the confidence threshold gets
+ * a question, sorted by descending risk. risk = impact × uncertainty (1 - confidence).
+ * Every question carries a mini-table of statistical evidence from the profile.
  */
 
-import { MAX_REVIEW_QUESTIONS } from "@backed/core";
+import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "@backed/core";
 import type { Entity, EvidenceTable, Relation, ReviewQuestion, Rule } from "@backed/core";
 
 import type { CompressedTable } from "./compress.js";
@@ -21,8 +20,8 @@ function findTable(tables: CompressedTable[], name: string): CompressedTable | u
 function entityEvidence(entity: Entity, tables: CompressedTable[]): EvidenceTable {
   const table = findTable(tables, entity.sourceTable);
   return {
-    title: `Tabella "${entity.sourceTable}" (${String(table?.rowCount ?? 0)} righe)`,
-    columns: ["Colonna", "Tipo", "Valori distinti", "Esempi"],
+    title: `Table "${entity.sourceTable}" (${String(table?.rowCount ?? 0)} rows)`,
+    columns: ["Column", "Type", "Distinct values", "Samples"],
     rows: (table?.columns ?? []).map((column) => [
       column.name,
       column.sqlType,
@@ -43,8 +42,8 @@ function columnEvidence(tables: CompressedTable[], tableName: string, columnName
 
 function relationEvidence(relation: Relation, tables: CompressedTable[]): EvidenceTable {
   return {
-    title: `Colonne collegate: ${relation.fromColumn} → ${relation.toColumn}`,
-    columns: ["Colonna", "Valori distinti", "Esempi"],
+    title: `Linked columns: ${relation.fromColumn} → ${relation.toColumn}`,
+    columns: ["Column", "Distinct values", "Samples"],
     rows: [
       columnEvidence(tables, relation.provenance.table, relation.fromColumn),
       columnEvidence(tables, relation.toEntity, relation.toColumn),
@@ -57,9 +56,9 @@ function ruleEvidence(rule: Rule, tables: CompressedTable[]): EvidenceTable {
   const column = rule.column ? table?.columns.find((c) => c.name === rule.column) : undefined;
   return {
     title: rule.column
-      ? `Valori di "${rule.provenance.table}.${rule.column}"`
-      : `Evidenza da "${rule.provenance.table}"`,
-    columns: ["Valore"],
+      ? `Values of "${rule.provenance.table}.${rule.column}"`
+      : `Evidence from "${rule.provenance.table}"`,
+    columns: ["Value"],
     rows: column ? column.topValues.map((value) => [value]) : [[rule.provenance.evidence]],
   };
 }
@@ -100,33 +99,42 @@ export function selectReviewQuestions(
   relations: Relation[],
   rules: Rule[],
   tables: CompressedTable[],
+  reviewConfidenceThreshold: number = DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
 ): ReviewQuestion[] {
+  const needsReview = (confidence: number): boolean => confidence < reviewConfidenceThreshold;
+
   const candidates: QuestionCandidate[] = [
-    ...entities.map((entity) =>
+    ...entities
+      .filter((entity) => needsReview(entity.confidence))
+      .map((entity) =>
       buildQuestion(
         "entity",
         entity.id,
-        `La tabella "${entity.sourceTable}" rappresenta l'entità "${entity.name}"?`,
+        `Does table "${entity.sourceTable}" represent the entity "${entity.name}"?`,
         entityImpact(entity, relations, rules),
         entity.confidence,
         entityEvidence(entity, tables),
       ),
     ),
-    ...relations.map((relation) =>
+    ...relations
+      .filter((relation) => needsReview(relation.confidence))
+      .map((relation) =>
       buildQuestion(
         "relation",
         relation.id,
-        `Confermi la relazione "${relation.name}" (${relation.fromEntity}.${relation.fromColumn} → ${relation.toEntity}.${relation.toColumn})?`,
+        `Confirm relation "${relation.name}" (${relation.fromEntity}.${relation.fromColumn} → ${relation.toEntity}.${relation.toColumn})?`,
         2,
         relation.confidence,
         relationEvidence(relation, tables),
       ),
     ),
-    ...rules.map((rule) =>
+    ...rules
+      .filter((rule) => needsReview(rule.confidence))
+      .map((rule) =>
       buildQuestion(
         "rule",
         rule.id,
-        `Confermi la definizione "${rule.name}": ${rule.definition}`,
+        `Confirm definition "${rule.name}": ${rule.definition}`,
         1,
         rule.confidence,
         ruleEvidence(rule, tables),
@@ -137,6 +145,5 @@ export function selectReviewQuestions(
   return candidates
     .map((candidate) => candidate.question)
     .filter((question) => question.risk > 0)
-    .sort((a, b) => b.risk - a.risk || a.id.localeCompare(b.id))
-    .slice(0, MAX_REVIEW_QUESTIONS);
+    .sort((a, b) => b.risk - a.risk || a.id.localeCompare(b.id));
 }

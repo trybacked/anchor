@@ -1,4 +1,3 @@
-import { MAX_REVIEW_QUESTIONS } from "@backed/core";
 import type { Entity, Relation, Rule } from "@backed/core";
 import { describe, expect, it } from "vitest";
 
@@ -71,12 +70,23 @@ describe("selectReviewQuestions", () => {
     expect(questions[1]?.risk).toBeCloseTo(0.8);
   });
 
-  it("never exceeds MAX_REVIEW_QUESTIONS", () => {
+  it("includes every uncertain element, not a fixed cap", () => {
     const entities = Array.from({ length: 20 }, (_, index) =>
       buildEntity(`entity-${String(index)}`, "clienti", 0.5),
     );
     const questions = selectReviewQuestions(entities, [], [], TABLES);
-    expect(questions).toHaveLength(MAX_REVIEW_QUESTIONS);
+    expect(questions).toHaveLength(20);
+  });
+
+  it("skips elements at or above the review confidence threshold", () => {
+    const questions = selectReviewQuestions(
+      [buildEntity("cliente", "clienti", 0.96), buildEntity("fattura", "fatture", 0.8)],
+      [],
+      [],
+      TABLES,
+      0.95,
+    );
+    expect(questions.map((q) => q.targetId)).toEqual(["fattura"]);
   });
 
   it("skips zero-risk elements (confidence 1)", () => {

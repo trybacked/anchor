@@ -5,7 +5,7 @@ import { initWorkspace, workspacePaths } from "@backed/core";
 
 import type { CommandHandler } from "../types.js";
 
-const DEFAULT_SOURCES_DIR = "./sorgenti";
+const DEFAULT_SOURCES_DIR = "./sources";
 
 export const initCommand: CommandHandler = async (args) => {
   const root = process.cwd();
@@ -13,7 +13,7 @@ export const initCommand: CommandHandler = async (args) => {
 
   if (!existsSync(path.resolve(root, sourcesDir))) {
     console.log(
-      `Attenzione: la cartella sorgenti "${sourcesDir}" non esiste ancora. Creala e mettici i file (CSV, Excel, Parquet, JSON) prima di eseguire "backed model".`,
+      `Note: sources folder "${sourcesDir}" does not exist yet. Create it and add your files (CSV, Excel, Parquet, JSON) before running "backed model".`,
     );
   }
 
@@ -22,9 +22,9 @@ export const initCommand: CommandHandler = async (args) => {
 
   console.log(
     alreadyInitialized
-      ? `Workspace aggiornato: ${configPath} (sorgenti: ${sourcesDir})`
-      : `Workspace inizializzato: ${configPath} (sorgenti: ${sourcesDir})`,
+      ? `Workspace updated: ${configPath} (sources: ${sourcesDir})`
+      : `Workspace initialized: ${configPath} (sources: ${sourcesDir})`,
   );
-  console.log('Prossimo passo: "backed model" per profilare le sorgenti e proporre il modello.');
+  console.log('Next step: "backed model" to profile sources and propose the semantic model.');
   return Promise.resolve();
 };

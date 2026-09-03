@@ -22,7 +22,7 @@ describe.runIf(hasApiKey)("proposeModel (real gateway)", () => {
 
     expect(() => ProposalSchema.parse(proposal)).not.toThrow();
     expect(proposal.entities.length).toBeGreaterThanOrEqual(2);
-    expect(proposal.questions.length).toBeLessThanOrEqual(10);
+    expect(proposal.questions.length).toBeGreaterThan(0);
   }, 120_000);
 });
 

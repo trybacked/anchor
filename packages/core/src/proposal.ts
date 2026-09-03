@@ -6,7 +6,6 @@
 
 import { z } from "zod";
 
-import { MAX_REVIEW_QUESTIONS } from "./constants.js";
 import { EntitySchema, RelationSchema, RuleSchema } from "./model.js";
 
 /** Explicit "I don't know" from the model — valid output, never an error. */
@@ -52,7 +51,7 @@ export const ProposalSchema = z.object({
   relations: z.array(RelationSchema),
   rules: z.array(RuleSchema),
   doubts: z.array(DoubtSchema),
-  questions: z.array(ReviewQuestionSchema).max(MAX_REVIEW_QUESTIONS),
+  questions: z.array(ReviewQuestionSchema),
   usage: ProposalUsageSchema.optional(),
 });
 

@@ -21,7 +21,7 @@ Il prodotto è `modello.yaml`, non la CLI. La CLI è il mezzo.
 ## 2. Perimetro Fase 1 (hard boundary)
 
 ### Sì
-- Spec `modello.yaml` (da `design/04-model-format.md`)
+- Spec `modello.yaml` (root [README.md](../README.md))
 - CLI: `init` → `model` → `review` → `diff` → `serve`
 - Ingest DuckDB + profilazione SQL pura
 - Burst agentici LLM (profili compressi, mai dati grezzi)
@@ -82,13 +82,13 @@ Prima di scrivere codice nuovo, verificare se esiste già in:
 
 ### Naming
 - Nomi che rivelano intento: `detectDecimalComma`, non `checkSep`
-- Termini dal glossary (`design/05-glossary.md`): Sorgente, Dataset, Entità, Attributo, Relazione, Regola, Run, Diff, Review, Confidenza, Provenienza
+- Glossary terms (internal): Source, Dataset, Entity, Property, Relation, Rule, Run, Diff, Review, Confidence, Provenance
 - Event handlers: prefisso `handle` (`handleReviewSubmit`)
 
 ### Struttura
 - **Single responsibility:** una funzione, una cosa
 - **Early returns:** evitare nesting profondo
-- **Constants over magic numbers:** soglie, limiti (max 10 domande) in `@backed/core`
+- **Constants over magic numbers:** thresholds (e.g. `LOW_CONFIDENCE_THRESHOLD`) in `@backed/core`
 - **DRY:** logica condivisa in `@backed/core`, non duplicata tra package
 - **Imports in cima al file** — no inline imports
 
@@ -121,7 +121,7 @@ Prima di scrivere codice nuovo, verificare se esiste già in:
 - Non inventare feature o file non richiesti
 
 ### Ordine di implementazione
-1. `design/04-model-format.md` (spec) — **blocca tutto finché non esiste**
+1. Root [README.md](../README.md) — Anchor protocol and format
 2. `@backed/core` (schema + tipi)
 3. `@backed/ingest` + `@backed/profile`
 4. `backed model` (pipeline deterministica, zero LLM)
@@ -139,10 +139,10 @@ Prima di scrivere codice nuovo, verificare se esiste già in:
 - Profili LLM: dati compressi/statistici, mai righe grezze
 - `.backed/` in `.gitignore` del workspace cliente, non del repo
 
-### Lingua
-- Copy utente (CLI output, review UI): **italiano**
-- Codice (nomi, commenti tecnici): **inglese**
-- Doc di prodotto: **italiano**
+### Language
+- User-facing copy (CLI output, review UI): **English**
+- Code (names, technical comments): **English**
+- Product design docs are internal to Backed (not in this repo)
 
 ---
 
@@ -204,7 +204,6 @@ Prima di considerare un task completato:
 
 ## 9. Riferimenti
 
-- [design/03-plan-fase-uno.md](../design/03-plan-fase-uno.md) — piano operativo 8 settimane
-- [STRUCTURE.md](../STRUCTURE.md) — mappa package e pipeline
-- [design/](../design/) — spec di prodotto
+- [README.md](../README.md) — Anchor protocol and format
+- [STRUCTURE.md](../STRUCTURE.md) — monorepo layout
 - Repo precedente: `Desktop/Projects/backed`

@@ -1,4 +1,4 @@
-/** Human-readable Italian rendering of diff.json for the CLI. */
+/** Human-readable English rendering of diff.json for the CLI. */
 
 import type { DiffChange, DiffChangeKind, ModelDiff } from "@backed/core";
 
@@ -26,7 +26,7 @@ function changeMarker(kind: DiffChangeKind): string {
     }
     default: {
       const _exhaustive: never = kind;
-      throw new Error(`Tipo di cambiamento non gestito: ${String(_exhaustive)}`);
+      throw new Error(`Unhandled change kind: ${String(_exhaustive)}`);
     }
   }
 }
@@ -36,16 +36,16 @@ function formatChange(change: DiffChange): string {
 }
 
 export function formatDiff(diff: ModelDiff): string {
-  const header = `Diff tra run ${diff.fromRunId} → ${diff.toRunId}`;
+  const header = `Diff between run ${diff.fromRunId} → ${diff.toRunId}`;
   if (diff.changes.length === 0) {
-    return `${header}\nNessun cambiamento rilevato.`;
+    return `${header}\nNo changes detected.`;
   }
 
   const breaking = diff.changes.filter((change) => change.kind === "relation_broken").length;
   const summary =
     breaking > 0
-      ? `${String(diff.changes.length)} cambiamenti, di cui ${String(breaking)} relazioni rotte (!)`
-      : `${String(diff.changes.length)} cambiamenti`;
+      ? `${String(diff.changes.length)} changes, including ${String(breaking)} broken relation(s) (!)`
+      : `${String(diff.changes.length)} changes`;
 
   return [header, summary, ...diff.changes.map(formatChange)].join("\n");
 }
