@@ -17,7 +17,7 @@ backed/
 │   ├── semantic/            # Burst agentici LLM → proposta ontologia
 │   ├── diff/                # Confronto tra run, re-run incrementale
 │   └── mcp/                 # MCP server locale (consumo ontologia)
-├── design/                  # Doc di prodotto (04-model-format.md = priorità)
+├── design/                  # Doc di prodotto (04-model-format.md = spec di modello.yaml)
 ├── docs/
 │   └── AI_GUIDELINES.md     # Regole per agenti AI che scrivono codice
 └── fixtures/                # Cartelle di test (anonimizzate, mai committare dati reali)
@@ -87,14 +87,14 @@ Il repo `Desktop/Projects/backed` contiene codice riusabile. **Non riscrivere, a
 ## Dipendenze tra package (target)
 
 ```
-@backed/core          ← nessuna dipendenza interna
+@backed/core          ← nessuna dipendenza interna (solo yaml, zod)
 @backed/ingest        → core
 @backed/profile       → core, ingest
-@backed/semantic      → core, profile
+@backed/semantic      → core (input: ProfileReport, definito in core)
 @backed/diff          → core
 @backed/mcp           → core
 apps/cli              → tutti i package sopra
-apps/review           → core, semantic
+apps/review           → shell vuota: nell'MVP la review è da terminale (apps/cli)
 ```
 
 ## Prossimo step (da decidere insieme)

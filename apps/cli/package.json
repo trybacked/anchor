@@ -27,5 +27,8 @@
     "@backed/mcp": "workspace:*",
     "@backed/profile": "workspace:*",
     "@backed/semantic": "workspace:*"
+  },
+  "devDependencies": {
+    "ai": "^7.0.85"
   }
 }
