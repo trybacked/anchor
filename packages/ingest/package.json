@@ -17,6 +17,7 @@
     "test:unit": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@backed/core": "workspace:*"
+    "@backed/core": "workspace:*",
+    "@duckdb/node-api": "1.5.5-r.4"
   }
 }

@@ -22,4 +22,9 @@ export default tseslint.config(
       "@typescript-eslint/switch-exhaustiveness-check": "error",
     },
   },
+  // I file di test sono esclusi dai tsconfig dei package: niente typed linting.
+  {
+    files: ["**/*.test.ts"],
+    ...tseslint.configs.disableTypeChecked,
+  },
 );
