@@ -1,0 +1,30 @@
+{
+  "name": "@backed/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI local-first: init, model, review, diff, serve",
+  "bin": {
+    "backed": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test:unit": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@backed/core": "workspace:*",
+    "@backed/diff": "workspace:*",
+    "@backed/ingest": "workspace:*",
+    "@backed/mcp": "workspace:*",
+    "@backed/profile": "workspace:*",
+    "@backed/semantic": "workspace:*"
+  }
+}

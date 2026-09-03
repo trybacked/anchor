@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.turbo/
+.next/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.log
+pnpm-debug.log*
+.vitest/
+tmp/
+temp/
+.backed/
+**/src/generated/

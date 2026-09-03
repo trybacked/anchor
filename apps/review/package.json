@@ -1,0 +1,17 @@
+{
+  "name": "@backed/review",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Review UI: 10 domande per rischio, Sì/No/Rinomina",
+  "scripts": {
+    "build": "echo 'review app: da configurare'",
+    "typecheck": "echo 'review app: da configurare'",
+    "lint": "eslint src --no-error-on-unmatched-pattern",
+    "dev": "echo 'review app: da configurare'"
+  },
+  "dependencies": {
+    "@backed/core": "workspace:*",
+    "@backed/semantic": "workspace:*"
+  }
+}

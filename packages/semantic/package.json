@@ -1,0 +1,23 @@
+{
+  "name": "@backed/semantic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Burst agentici LLM: profile.json → proposta ontologia",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test:unit": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@backed/core": "workspace:*",
+    "@backed/profile": "workspace:*"
+  }
+}

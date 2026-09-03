@@ -1,0 +1,22 @@
+{
+  "name": "@backed/ingest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DuckDB ingest: CSV, Excel, Parquet, JSON, Postgres readonly, S3/HTTP",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test:unit": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@backed/core": "workspace:*"
+  }
+}
