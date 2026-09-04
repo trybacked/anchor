@@ -237,7 +237,7 @@ pnpm install && pnpm build
 pnpm cli --help
 ```
 
-Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `apps/cli`. Details in [STRUCTURE.md](./STRUCTURE.md). Contributor guidelines in [docs/AI_GUIDELINES.md](./docs/AI_GUIDELINES.md).
+Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `apps/cli`.
 
 ---
 
