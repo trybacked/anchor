@@ -12,8 +12,6 @@
     "lint": "turbo run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "turbo run test",
-    "test:unit": "turbo run test:unit",
     "cli": "node apps/cli/dist/cli.js"
   },
   "devDependencies": {
@@ -23,7 +21,6 @@
     "prettier": "^3.4.2",
     "turbo": "^2.3.4",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.22.0",
-    "vitest": "^3.0.5"
+    "typescript-eslint": "^8.22.0"
   }
 }

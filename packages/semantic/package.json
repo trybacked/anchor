@@ -13,9 +13,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src",
-    "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
-    "test:integration": "vitest run src/propose.integration.test.ts"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.69",

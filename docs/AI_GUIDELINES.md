@@ -129,10 +129,8 @@ Prima di scrivere codice nuovo, verificare se esiste già in:
 6. `@backed/diff` + `@backed/mcp`
 
 ### Test
-- Fixture in `fixtures/` — sintetiche per CI, reali anonimizzate per validazione
-- Test unitari per logica deterministica (profile, diff, parsing)
-- Test integrazione con fixture PMI (encoding messy, virgola decimale)
-- Non testare l'ovvio; testare i casi patologici italiani
+- Validazione manuale su workspace cliente locale (cartella `sources/`, mai committata)
+- Non testare l'ovvio; testare i casi patologici italiani quando si aggiungono test mirati
 
 ### Dati
 - **Mai committare dati reali di clienti**

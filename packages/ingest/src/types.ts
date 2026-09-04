@@ -1,4 +1,11 @@
-export type DatasetFormat = "csv" | "xlsx" | "parquet" | "json";
+export type DatasetFormat =
+  | "csv"
+  | "xlsx"
+  | "parquet"
+  | "json"
+  | "pdf"
+  | "text"
+  | "docx";
 
 export type CsvEncoding = "utf-8" | "latin-1";
 export type DecimalSeparator = "." | ",";
@@ -14,7 +21,11 @@ export type IngestWarningKind =
   | "unsupported_format"
   | "non_utf8_encoding"
   | "semicolon_delimiter"
-  | "decimal_comma";
+  | "decimal_comma"
+  | "pdf_no_extractable_text"
+  | "pdf_ocr_applied"
+  | "pdf_ocr_skipped"
+  | "archive_extracted";
 
 /** Segnalazione strutturata con provenienza — mai fallire in silenzio. */
 export interface IngestWarning {

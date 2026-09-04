@@ -1,10 +1,11 @@
 import { readModelYaml } from "@backed/core";
 import { startStdioMcpServer } from "@backed/mcp";
 
+import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 
 export const serveCommand: CommandHandler = async () => {
-  const root = process.cwd();
+  const root = findWorkspaceRoot(process.cwd());
   const model = readModelYaml(root);
 
   // stdout is the MCP transport: every human message must go to stderr.

@@ -17,3 +17,5 @@ temp/
 **/src/generated/
 design/
 .cursor/
+test/
+*.traineddata

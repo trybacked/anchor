@@ -1,12 +1,31 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-import { createRunId, initWorkspace, readWorkspaceConfig, writeRunArtifact } from "@backed/core";
+import {
+  ProfileReportSchema,
+  createRunId,
+  initWorkspace,
+  listRunIds,
+  readModelYaml,
+  readRunArtifact,
+  readWorkspaceConfig,
+  writeRunArtifact,
+} from "@backed/core";
 import type { Proposal } from "@backed/core";
+import {
+  affectedTablesFromProfileDiff,
+  filterProfileToTables,
+} from "@backed/diff";
 import { ingestFolder } from "@backed/ingest";
 import { profileTables } from "@backed/profile";
-import { MissingApiKeyError, proposeModel, resolveSemanticModels } from "@backed/semantic";
+import {
+  MissingApiKeyError,
+  mergeIncrementalProposal,
+  proposeModel,
+  resolveSemanticModels,
+} from "@backed/semantic";
 
+import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 
 function resolveSourcesDir(root: string, positional: string | undefined): string {
@@ -37,7 +56,8 @@ function printProposalSummary(proposal: Proposal): void {
 }
 
 export const modelCommand: CommandHandler = async (args) => {
-  const root = process.cwd();
+  const root = findWorkspaceRoot(process.cwd());
+  const forceFull = args.includes("--full");
   const positional = args.find((arg) => !arg.startsWith("--"));
 
   const sourcesDir = resolveSourcesDir(root, positional);
@@ -49,6 +69,9 @@ export const modelCommand: CommandHandler = async (args) => {
   }
 
   const runId = createRunId();
+  const previousRunIds = listRunIds(root);
+  const previousRunId = previousRunIds.at(-1);
+
   console.log(`Run ${runId} — profiling sources in "${sourcesDir}"...`);
 
   const session = await ingestFolder(absoluteSources);
@@ -82,8 +105,50 @@ export const modelCommand: CommandHandler = async (args) => {
       throw error;
     }
 
-    console.log("Running semantic inference (agentic bursts)...");
-    const proposal = await proposeModel({ profile, runId, models });
+    let incrementalTables: Set<string> | null = null;
+    let existingModel = null;
+
+    if (!forceFull && previousRunId !== undefined) {
+      try {
+        existingModel = readModelYaml(root);
+        const previousProfile = readRunArtifact(
+          root,
+          previousRunId,
+          "profile",
+          ProfileReportSchema,
+        );
+        incrementalTables = affectedTablesFromProfileDiff(previousProfile, profile);
+        if (incrementalTables.size === 0) {
+          incrementalTables = null;
+        }
+      } catch {
+        incrementalTables = null;
+        existingModel = null;
+      }
+    }
+
+    if (incrementalTables !== null && existingModel !== null) {
+      console.log(
+        `Incremental inference on ${String(incrementalTables.size)} changed table(s): ${[...incrementalTables].join(", ")}`,
+      );
+      console.log(
+        `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from modello.yaml.`,
+      );
+    } else {
+      console.log("Running semantic inference (full profile)...");
+    }
+
+    const profileForInference =
+      incrementalTables !== null
+        ? filterProfileToTables(profile, incrementalTables)
+        : profile;
+
+    const freshProposal = await proposeModel({ profile: profileForInference, runId, models });
+    const proposal: Proposal =
+      incrementalTables !== null && existingModel !== null
+        ? mergeIncrementalProposal(freshProposal, existingModel, incrementalTables, profile)
+        : freshProposal;
+
     const proposalPath = writeRunArtifact(root, runId, "proposal", proposal);
     console.log(`Proposal saved: ${proposalPath}`);
     printProposalSummary(proposal);

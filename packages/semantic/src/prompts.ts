@@ -23,7 +23,7 @@ ${SHARED_RULES}`;
 export const ONTOLOGY_SYSTEM_PROMPT = `You extract the semantic model (ontology) of a small business from statistical profiles of its tables.
 Propose:
 - "entities": one business entity per table that represents a real business object (id = stable slug like "customer", name = singular like "Customer"). Expect 4-15 entities at most; fewer is fine.
-- "relations": links between entities, anchored to concrete column pairs (fromColumn on the source table, toColumn on the target table). Only propose a relation when the evidence (column names, candidate keys, overlapping value ranges) supports it.
+- "relations": links between entities, anchored to concrete column pairs (fromColumn on the source table, toColumn on the target table). Prefer foreignKeyCandidates from the profile when present. Only propose a relation when the evidence (column names, candidate keys, overlapping value ranges) supports it.
 - "rules": business definitions for low-cardinality "category" columns or evident business concepts (e.g. what "overdue invoice" means). Only when the evidence suggests them.
 - "doubts": everything you cannot decide from the evidence. Declare doubts explicitly instead of inventing.
 Every entity, relation and rule needs an honest "confidence" (0..1) and an English "evidence" sentence citing the statistics that support it.

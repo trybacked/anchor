@@ -10,6 +10,7 @@ import {
 import type { EvidenceTable, Proposal, ReviewAnswer } from "@backed/core";
 import { input, select } from "@inquirer/prompts";
 
+import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 
 function renderEvidenceTable(evidence: EvidenceTable): string {
@@ -68,7 +69,7 @@ function findLatestRunWithProposal(root: string): string | null {
 }
 
 export const reviewCommand: CommandHandler = async () => {
-  const root = process.cwd();
+  const root = findWorkspaceRoot(process.cwd());
 
   const runId = findLatestRunWithProposal(root);
   if (!runId) {

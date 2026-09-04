@@ -13,14 +13,13 @@ anchor/                      # GitHub repo name (company: Backed)
 │   └── review/              # Web review UI (placeholder — terminal review in cli today)
 ├── packages/
 │   ├── core/                # modello.yaml schemas, run artifacts (.backed/)
-│   ├── ingest/              # DuckDB: CSV, Excel, Parquet, JSON
+│   ├── ingest/              # DuckDB: CSV, Excel, Parquet, JSON, PDF
 │   ├── profile/             # SQL profiling → profile.json
 │   ├── semantic/            # Agentic bursts → proposal.json
 │   ├── diff/                # Run comparison
 │   └── mcp/                 # MCP server (ontology consumption)
 ├── docs/
 │   └── AI_GUIDELINES.md     # Engineering guidelines for contributors
-└── fixtures/                # Synthetic test data (never commit real client data)
 ```
 
 Internal product design docs live outside this repository and are not published.

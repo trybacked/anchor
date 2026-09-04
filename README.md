@@ -1,8 +1,29 @@
-# Anchor
+<div align="center">
+
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-white.png">
+    <img alt="Anchor" src="docs/assets/logo-black.png" width="400">
+  </picture>
+
+  <p>
+    <strong>The institutional memory of every organization</strong><br>
+    Open protocol for organizational semantic models · Reference implementation by <a href="https://github.com/trybacked">Backed</a>
+  </p>
+
+  <p>
+    <a href="./LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/github/license/trybacked/anchor?style=for-the-badge"></a>
+    <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"></a>
+    <img alt="modello.yaml v1" src="https://img.shields.io/badge/modello.yaml-v1-CB3837?style=for-the-badge">
+    <img alt="MCP" src="https://img.shields.io/badge/MCP-stdio-000000?style=for-the-badge">
+  </p>
+
+</div>
 
 **Anchor** is an open protocol for organizational semantic models — and this repository is its reference implementation.
 
-Point Anchor at a folder of exports (CSV, Excel, Parquet, JSON). It produces **`modello.yaml`**: a versioned map of what your data *means* — entities, relations, business definitions — with provenance and confidence on every element. Agents consume it via MCP. Humans confirm every uncertain inference through a risk-ranked review.
+Every organization runs on data spread across systems that were never built to share a vocabulary. ERP, exports, spreadsheets, and documents each tell a partial story; without a shared layer of meaning, humans argue over definitions and agents invent new ones every session.
+
+Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms treat as foundational: map sources to **entities**, wire **relations**, capture **business definitions**, and govern what is true with provenance and confidence. That layer *is* institutional memory when it is written down, versioned, and shared. The output is **`modello.yaml`**: a committable semantic model. Humans confirm what the machine is unsure about through risk-ranked review; agents query what has been confirmed through MCP.
 
 | | |
 |---|---|
@@ -15,9 +36,9 @@ Point Anchor at a folder of exports (CSV, Excel, Parquet, JSON). It produces **`
 
 ## Why
 
-Organizations have data everywhere and meaning nowhere. The ERP, three CSV exports, and a spreadsheet disagree on customer count because *customer* was never defined. AI assistants invent definitions each session because nothing anchors them to your semantics.
+Organizations have data everywhere and meaning nowhere. Three systems disagree on customer count because *customer* was never defined — not in the database, but in the ontology that should sit above it.
 
-Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms proved necessary, at a scale ordinary organizations can actually adopt.
+Anchor brings that layer within reach for ordinary organizations: local-first, evidence-backed, and small enough to stay true.
 
 ---
 
@@ -34,9 +55,9 @@ modello.yaml  Anchor model
   ↓ diff      Compare runs when sources change
 ```
 
-**Ingest** reads sources in place via DuckDB. Non-UTF-8 encodings, semicolon delimiters, and European decimal commas are handled automatically; anomalies are always reported with file provenance.
+**Ingest** reads sources in place via DuckDB. Non-UTF-8 encodings, semicolon delimiters, and European decimal commas are handled automatically; anomalies are always reported with file provenance. **ZIP/RAR** archives are extracted and scanned recursively. **PDFs** use embedded text when available, then **OCR** for scanned documents (requires [Poppler](https://poppler.freedesktop.org/) — `pdftoppm` on PATH; `brew install poppler` on macOS). Plain **TXT/MD** and **DOCX** are ingested as line-level tables.
 
-**Profile** produces reproducible statistical evidence per column: null rates, distinct counts, patterns, candidate keys. No LLM participates. This evidence is the sole input to semantic inference.
+**Profile** produces reproducible statistical evidence per column: null rates, distinct counts, patterns, candidate keys. Cross-column value overlap surfaces deterministic foreign-key candidates. No LLM participates. This evidence is the sole input to semantic inference.
 
 **Semantic inference** runs two schema-constrained bursts: column classification (cheap model), then ontology proposal (frontier model). The LLM sees compressed profiles, never raw rows. *"I don't know"* is valid output. Proposals referencing tables or columns absent from the profile are dropped and surfaced as doubts.
 
@@ -165,7 +186,7 @@ All files are schema-validated on read and write.
 | Command | Purpose |
 |---|---|
 | `backed init [folder]` | Initialize workspace (default sources: `./sources`) |
-| `backed model [folder]` | Full pipeline: ingest → profile → proposal |
+| `backed model [folder]` | Full pipeline: ingest → profile → proposal. Re-runs use **incremental inference** when `modello.yaml` exists (only changed tables hit the LLM). Pass `--full` to re-infer everything. |
 | `backed review` | Interactive review → writes `modello.yaml` |
 | `backed diff` | Compare last two runs |
 | `backed serve` | MCP stdio server on the current model |
@@ -178,7 +199,7 @@ backed review
 backed serve
 ```
 
-When sources change: `backed model && backed diff`
+When sources change: `backed model && backed diff` (incremental by default)
 
 ---
 
@@ -189,10 +210,12 @@ When sources change: `backed model && backed diff`
 ```bash
 git clone https://github.com/<org>/anchor.git
 cd anchor && pnpm install && pnpm build
-pnpm link --global
+cd apps/cli && pnpm link --global
 ```
 
-Create `.env` in your **working directory** (where you run `backed`):
+If another `backed` binary exists on your machine (e.g. a Rust tool in `~/.cargo/bin`), ensure `~/Library/pnpm` is **before** `~/.cargo/bin` in your `PATH`, then run `hash -r` and check with `which backed`.
+
+Create `.env` in your **workspace root** (the folder containing `.backed/`, or any parent of your cwd — Anchor walks up to find it):
 
 ```bash
 AI_GATEWAY_API_KEY=...                          # required
@@ -203,12 +226,14 @@ REVIEW_CONFIDENCE_THRESHOLD=0.95                # optional — review when confi
 
 See [.env.example](./.env.example).
 
+Licensed under [Apache-2.0](./LICENSE).
+
 ---
 
 ## Development
 
 ```bash
-pnpm install && pnpm build && pnpm test:unit   # 62+ tests, mock LLMs
+pnpm install && pnpm build
 pnpm cli --help
 ```
 
@@ -224,7 +249,7 @@ Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / 
 
 **Not Anchor:** ETL · warehouse · ERP · chatbot · connector marketplace.
 
-**Status:** Full pipeline operational on synthetic fixtures. Validating on real organization export folders.
+**Status:** Full pipeline operational. Validating on real organization export folders.
 
 ---
 

@@ -6,6 +6,7 @@ import {
   reviewCommand,
   serveCommand,
 } from "./commands/index.js";
+import { loadWorkspaceDotEnv } from "./env.js";
 import type { Command } from "./types.js";
 
 export const COMMANDS: readonly Command[] = [
@@ -25,13 +26,9 @@ export function printHelp(): void {
   }
 }
 
-/** .env support: local-first, never committed. Missing file is fine. */
+/** Load `.env` from the Anchor workspace root when present. */
 function loadDotEnv(): void {
-  try {
-    process.loadEnvFile();
-  } catch {
-    // No .env in cwd — environment variables may still be set by the shell.
-  }
+  loadWorkspaceDotEnv(process.cwd());
 }
 
 async function main(): Promise<void> {

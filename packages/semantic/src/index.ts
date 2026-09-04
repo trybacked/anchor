@@ -26,3 +26,4 @@ export { selectReviewQuestions } from "./questions.js";
 
 export { proposeModel } from "./propose.js";
 export type { ProposeModelOptions } from "./propose.js";
+export { mergeIncrementalProposal } from "./merge-proposal.js";

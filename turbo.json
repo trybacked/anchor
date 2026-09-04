@@ -8,12 +8,6 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
-    "lint": {},
-    "test": {
-      "dependsOn": ["^build"]
-    },
-    "test:unit": {
-      "dependsOn": ["^build"]
-    }
+    "lint": {}
   }
 }

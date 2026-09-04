@@ -73,6 +73,7 @@ async function profileColumn(
     max: toNullableString(stats?.["max_value"]),
     topValues,
     patterns,
+    foreignKeyCandidates: [],
   };
 }
 

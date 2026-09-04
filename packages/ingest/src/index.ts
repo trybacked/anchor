@@ -1,6 +1,10 @@
 /** DuckDB wrapper: read sources → queryable tables */
 
+import { rm } from "node:fs/promises";
+
 import { registerSource } from "./register.js";
+import { PdfNoExtractableTextError } from "./errors.js";
+import { terminateOcrWorker } from "./pdf-ocr.js";
 import { scanFolder } from "./scan.js";
 import { createDuckDbSession } from "./session.js";
 import { toTableName, uniqueTableName } from "./table-names.js";
@@ -25,11 +29,14 @@ export async function ingestFolder(folderPath: string): Promise<IngestSession> {
   const session = await createDuckDbSession();
 
   const datasets: Dataset[] = [];
-  const warnings: IngestWarning[] = scan.unsupportedFiles.map((file) => ({
-    kind: "unsupported_format" as const,
-    file,
-    message: "Unsupported format: file ignored",
-  }));
+  const warnings: IngestWarning[] = [
+    ...scan.scanWarnings,
+    ...scan.unsupportedFiles.map((file) => ({
+      kind: "unsupported_format" as const,
+      file,
+      message: "Unsupported format: file ignored",
+    })),
+  ];
 
   const usedNames = new Set<string>();
   for (const source of scan.sources) {
@@ -39,6 +46,15 @@ export async function ingestFolder(folderPath: string): Promise<IngestSession> {
       datasets.push(registration.dataset);
       warnings.push(...registration.warnings);
     } catch (error) {
+      if (error instanceof PdfNoExtractableTextError) {
+        warnings.push({
+          kind: "pdf_no_extractable_text",
+          file: source.relativePath,
+          message:
+            "PDF has no extractable text after native parse and OCR (empty or OCR disabled)",
+        });
+        continue;
+      }
       warnings.push({
         kind: "unreadable_file",
         file: source.relativePath,
@@ -47,5 +63,17 @@ export async function ingestFolder(folderPath: string): Promise<IngestSession> {
     }
   }
 
-  return { datasets, warnings, query: session.query, close: session.close };
+  const tempDirs = scan.tempDirs;
+  return {
+    datasets,
+    warnings,
+    query: session.query,
+    close: () => {
+      session.close();
+      void terminateOcrWorker();
+      for (const tempDir of tempDirs) {
+        void rm(tempDir, { recursive: true, force: true });
+      }
+    },
+  };
 }

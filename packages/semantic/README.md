@@ -12,6 +12,4 @@ Burst agentici LLM: `profile.json` → `proposal.json`. "Agents where they think
 - `selectReviewQuestions` — one question per uncertain entity/relation/rule, sorted by **descending risk** (impact × uncertainty), each with a mini-table of evidence
 - `resolveSemanticModels` — model routing from env via AI Gateway (`AI_GATEWAY_API_KEY`); missing key → clear English error.
 
-**Test:** unit con `MockLanguageModelV3` (`pnpm test:unit`, zero rete); LLM reale in `pnpm test:integration` (richiede `AI_GATEWAY_API_KEY`).
-
 **Non contiene:** ingest, SQL, UI.

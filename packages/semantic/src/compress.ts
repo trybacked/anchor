@@ -17,6 +17,7 @@ export interface CompressedColumn {
   isCandidateKey: boolean;
   patterns: string[];
   topValues: string[];
+  foreignKeyCandidates: { targetTable: string; targetColumn: string; overlapRatio: number; confidence: number }[];
 }
 
 export interface CompressedTable {
@@ -45,6 +46,12 @@ function compressColumn(column: ColumnProfile, rowCount: number): CompressedColu
     topValues: column.topValues
       .slice(0, COMPRESSED_TOP_VALUES_LIMIT)
       .map((top) => truncateValue(top.value)),
+    foreignKeyCandidates: column.foreignKeyCandidates.map((candidate) => ({
+      targetTable: candidate.targetTable,
+      targetColumn: candidate.targetColumn,
+      overlapRatio: candidate.overlapRatio,
+      confidence: candidate.confidence,
+    })),
   };
 }
 

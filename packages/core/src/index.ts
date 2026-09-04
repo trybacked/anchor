@@ -8,6 +8,10 @@ export {
   PROFILE_TOP_VALUES_LIMIT,
   PROFILE_PATTERN_SAMPLE_SIZE,
   PROFILE_PATTERN_MATCH_THRESHOLD,
+  PROFILE_FK_OVERLAP_THRESHOLD,
+  PROFILE_FK_SAMPLE_SIZE,
+  PROFILE_FK_CANDIDATES_PER_COLUMN,
+  ForeignKeyCandidateSchema,
   DetectedPatternKindSchema,
   DetectedPatternSchema,
   TopValueSchema,
@@ -18,6 +22,7 @@ export {
 export type {
   DetectedPatternKind,
   DetectedPattern,
+  ForeignKeyCandidate,
   TopValue,
   ColumnProfile,
   TableProfile,

@@ -25,4 +25,6 @@ backed model && backed diff   # re-run when data changes
 
 Environment variables (via `.env`, never committed — see `.env.example`): `AI_GATEWAY_API_KEY` (required for AI), `SEMANTIC_MODEL_CHEAP`, `SEMANTIC_MODEL_FRONTIER` (optional).
 
+Global install: from repo root, `cd apps/cli && pnpm link --global` (the monorepo root has no bin).
+
 Errors are always explained in English; exit code 1 on failure.

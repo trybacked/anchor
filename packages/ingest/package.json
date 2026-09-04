@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "DuckDB ingest: CSV, Excel, Parquet, JSON, Postgres readonly, S3/HTTP",
+  "description": "DuckDB ingest: CSV, Excel, Parquet, JSON, PDF, text, DOCX, ZIP, RAR",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,11 +13,19 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src",
-    "test:unit": "vitest run --passWithNoTests"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@backed/core": "workspace:*",
-    "@duckdb/node-api": "1.5.5-r.4"
+    "@duckdb/node-api": "1.5.5-r.4",
+    "mammoth": "^1.12.2",
+    "node-unrar-js": "^2.0.2",
+    "pdfjs-dist": "4.10.38",
+    "tesseract.js": "^7.0.0",
+    "unzipper": "^0.12.5"
+  },
+  "devDependencies": {
+    "@types/unzipper": "^0.10.11",
+    "pdf-lib": "^1.17.1"
   }
 }

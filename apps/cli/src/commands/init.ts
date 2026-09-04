@@ -13,7 +13,7 @@ export const initCommand: CommandHandler = async (args) => {
 
   if (!existsSync(path.resolve(root, sourcesDir))) {
     console.log(
-      `Note: sources folder "${sourcesDir}" does not exist yet. Create it and add your files (CSV, Excel, Parquet, JSON) before running "backed model".`,
+      `Note: sources folder "${sourcesDir}" does not exist yet. Create it and add your files (CSV, Excel, Parquet, JSON, PDF, TXT, DOCX, ZIP, RAR) before running "backed model".`,
     );
   }
 

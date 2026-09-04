@@ -4,6 +4,7 @@ import { ProfileReportSchema } from "@backed/core";
 import type { ProfileReport } from "@backed/core";
 import type { IngestSession } from "@backed/ingest";
 
+import { enrichRelationCandidates } from "./relation-candidates.js";
 import { profileDataset } from "./table-profile.js";
 
 export {
@@ -22,5 +23,6 @@ export async function profileTables(session: IngestSession): Promise<ProfileRepo
   for (const dataset of session.datasets) {
     profiles.push(await profileDataset(session.query, dataset));
   }
-  return ProfileReportSchema.parse(profiles);
+  const withCandidates = await enrichRelationCandidates(session.query, profiles);
+  return ProfileReportSchema.parse(withCandidates);
 }
