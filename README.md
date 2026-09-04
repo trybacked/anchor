@@ -11,7 +11,7 @@
   </p>
 
   <p>
-    <a href="./LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/github/license/trybacked/anchor?style=for-the-badge"></a>
+    <a href="./LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge"></a>
     <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"></a>
     <img alt="modello.yaml v1" src="https://img.shields.io/badge/modello.yaml-v1-CB3837?style=for-the-badge">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-stdio-000000?style=for-the-badge">
