@@ -12,6 +12,7 @@ import { z } from "zod";
 
 import { queryEntityErrorMessage, queryEntityRows } from "./data.js";
 import { getEntity, listEntities, listRelations, searchModel } from "./mapping.js";
+import { traverseRelationErrorMessage, traverseRelationRows } from "./traverse.js";
 
 const SERVER_NAME = "backed-model";
 const SERVER_VERSION = "0.1.0";
@@ -143,6 +144,45 @@ export function createModelMcpServer(
           return {
             isError: true,
             content: [{ type: "text" as const, text: queryEntityErrorMessage(result.error) }],
+          };
+        }
+        return jsonContent(result.rows);
+      },
+    );
+
+    server.registerTool(
+      "traverse_relation",
+      {
+        title: "Traverse relation",
+        description:
+          "Follow a relation from a known join key value to linked entity rows. Pattern: get_entity → query_entity to read a key → traverse_relation with that value and a relation id from get_entity. Forward (default) returns rows of the to entity; reverse returns rows of the from entity. Read-only.",
+        inputSchema: {
+          relationId: z
+            .string()
+            .min(1)
+            .describe("Relation id from get_entity or list_relations, e.g. 'determination-has-text'"),
+          value: z
+            .union([z.string(), z.number()])
+            .describe("Join key value from a prior query_entity result"),
+          direction: z
+            .enum(["forward", "reverse"])
+            .optional()
+            .describe("Traversal direction. Default: forward (from → to entity)"),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(MAX_ROW_LIMIT)
+            .optional()
+            .describe(`Max rows to return (default 25, max ${String(MAX_ROW_LIMIT)})`),
+        },
+      },
+      async (input) => {
+        const result = await traverseRelationRows(model, rowReader, input);
+        if (!result.ok) {
+          return {
+            isError: true,
+            content: [{ type: "text" as const, text: traverseRelationErrorMessage(result.error) }],
           };
         }
         return jsonContent(result.rows);

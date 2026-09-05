@@ -1,34 +1,56 @@
 /**
- * LLM extraction burst for line-document corpora: classify document type and
- * extract standard header fields from page-1 text samples.
+ * Document catalog extraction: deterministic pipeline first, LLM only when needed.
+ *
+ * - Strong type hints from table slugs → skip LLM, extract header fields via regex
+ * - Ambiguous documents → one LLM call each, run in parallel
  */
 
-import type { DocumentCatalog, DocumentCatalogEntry } from "@backed/core";
+import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeHintConfig } from "@backed/core";
 import { DocumentCatalogSchema } from "@backed/core";
 import { z } from "zod";
 
 import { runBurst } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
+import { mapWithConcurrency } from "./concurrency.js";
+import type { DocumentTypeHint } from "./document-type-hints.js";
+import { inferDocumentTypeHint } from "./document-type-hints.js";
 import type { SemanticModels } from "./env.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
-import { documentExtractionPrompt, DOCUMENT_EXTRACTION_SYSTEM_PROMPT } from "./prompts.js";
+import { extractHeaderFields } from "./extract-header-fields.js";
+import {
+  documentExtractionPrompt,
+  DOCUMENT_EXTRACTION_SYSTEM_PROMPT,
+} from "./prompts.js";
 
-export const DOCUMENT_EXTRACTION_BATCH_SIZE = 10;
+/** Skip LLM when slug type hint reaches this confidence (pipeline path). */
+export const DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE = 0.85;
 
+/** Parallel LLM calls for documents that cannot be classified deterministically. */
+export const DOCUMENT_EXTRACTION_CONCURRENCY = 8;
+
+/** @deprecated Always 1 LLM call per ambiguous document; kept for exports. */
+export const DOCUMENT_EXTRACTION_BATCH_SIZE = 1;
+
+export const SingleDocumentExtractionSchema = z.object({
+  documentType: z
+    .string()
+    .min(1)
+    .describe("Stable slug in English, e.g. determination, notice, resolution, publication, unknown"),
+  documentTypeLabel: z.string().min(1).describe("Singular business name in English, e.g. Determination"),
+  protocolNumber: z.string().nullable(),
+  publishedDate: z.string().nullable().describe("ISO date YYYY-MM-DD when found, else null"),
+  subject: z.string().nullable(),
+  issuingOffice: z.string().nullable(),
+  confidence: z.number().min(0).max(1),
+});
+
+export type SingleDocumentExtraction = z.infer<typeof SingleDocumentExtractionSchema>;
+
+/** @deprecated Use SingleDocumentExtractionSchema — kept for test imports only. */
 export const DocumentExtractionOutputSchema = z.object({
   documents: z.array(
-    z.object({
+    SingleDocumentExtractionSchema.extend({
       sourceTable: z.string().min(1),
-      documentType: z
-        .string()
-        .min(1)
-        .describe("Stable slug in English, e.g. determination, notice, resolution, publication, unknown"),
-      documentTypeLabel: z.string().min(1).describe("Singular business name in English, e.g. Determination"),
-      protocolNumber: z.string().nullable(),
-      publishedDate: z.string().nullable().describe("ISO date YYYY-MM-DD when found, else null"),
-      subject: z.string().nullable(),
-      issuingOffice: z.string().nullable(),
-      confidence: z.number().min(0).max(1),
     }),
   ),
 });
@@ -47,6 +69,8 @@ export interface ExtractDocumentCatalogOptions {
   samples: DocumentExtractionSample[];
   now?: Date;
   onProgress?: (message: string) => void;
+  /** Workspace slug rules from .backed/config.yaml (required for deterministic classification). */
+  documentTypeHints?: DocumentTypeHintConfig[];
 }
 
 function fieldFromValue(
@@ -68,14 +92,55 @@ function mergeBurstUsage(current: BurstUsage, next: BurstUsage): BurstUsage {
   };
 }
 
+function normalizeDocumentTypeSlug(raw: string): string {
+  const normalized = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return normalized.length > 0 ? normalized : "unknown";
+}
+
+function shouldSkipLlm(typeHint: DocumentTypeHint | null): typeHint is DocumentTypeHint {
+  return typeHint !== null && typeHint.confidence >= DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE;
+}
+
+function buildDeterministicCatalogEntry(
+  sample: DocumentExtractionSample,
+  typeHint: DocumentTypeHint,
+): DocumentCatalogEntry {
+  const fields = extractHeaderFields(sample.sourceTable, sample.headerLines);
+  const fieldConfidence = typeHint.confidence;
+
+  return {
+    sourceTable: sample.sourceTable,
+    documentType: typeHint.documentType,
+    documentTypeLabel: typeHint.documentTypeLabel,
+    confidence: typeHint.confidence,
+    pageCount: sample.pageCount,
+    ...(fields.protocolNumber !== null
+      ? { protocolNumber: fieldFromValue(fields.protocolNumber, fieldConfidence) }
+      : {}),
+    ...(fields.publishedDate !== null
+      ? { publishedDate: fieldFromValue(fields.publishedDate, fieldConfidence) }
+      : {}),
+    ...(fields.subject !== null ? { subject: fieldFromValue(fields.subject, fieldConfidence) } : {}),
+    ...(fields.issuingOffice !== null
+      ? { issuingOffice: fieldFromValue(fields.issuingOffice, fieldConfidence) }
+      : {}),
+  };
+}
+
 function toCatalogEntry(
-  extracted: DocumentExtractionOutput["documents"][number],
+  sourceTable: string,
+  extracted: SingleDocumentExtraction,
   sample: DocumentExtractionSample,
 ): DocumentCatalogEntry {
   const fieldConfidence = extracted.confidence;
+  const documentType = normalizeDocumentTypeSlug(extracted.documentType);
   return {
-    sourceTable: extracted.sourceTable,
-    documentType: extracted.documentType,
+    sourceTable,
+    documentType,
     documentTypeLabel: extracted.documentTypeLabel,
     confidence: extracted.confidence,
     pageCount: sample.pageCount,
@@ -92,43 +157,90 @@ function toCatalogEntry(
   };
 }
 
+async function extractOneDocumentWithLlm(
+  sample: DocumentExtractionSample,
+  index: number,
+  total: number,
+  options: {
+    models: SemanticModels;
+    timeoutMs: number;
+    documentTypeHints?: DocumentTypeHintConfig[];
+    onProgress?: (message: string) => void;
+  },
+): Promise<{ entry: DocumentCatalogEntry; usage: BurstUsage }> {
+  const typeHint = inferDocumentTypeHint(sample.sourceTable, options.documentTypeHints);
+  options.onProgress?.(
+    `LLM document ${String(index + 1)}/${String(total)}: ${sample.sourceTable}...`,
+  );
+
+  const result = await runBurst({
+    model: options.models.language,
+    system: DOCUMENT_EXTRACTION_SYSTEM_PROMPT,
+    prompt: documentExtractionPrompt(sample, typeHint),
+    schema: SingleDocumentExtractionSchema,
+    schemaName: `document_extraction_${String(index + 1)}_of_${String(total)}`,
+    timeoutMs: options.timeoutMs,
+    ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
+  });
+
+  return {
+    entry: toCatalogEntry(sample.sourceTable, result.output, sample),
+    usage: result.usage,
+  };
+}
+
 export async function extractDocumentCatalog(
   options: ExtractDocumentCatalogOptions,
 ): Promise<{ catalog: Omit<DocumentCatalog, "documentTypes">; usage: BurstUsage }> {
   const timeoutMs = resolveSemanticRequestTimeoutMs();
-  const sampleByTable = new Map(options.samples.map((sample) => [sample.sourceTable, sample]));
-  const merged: DocumentExtractionOutput["documents"] = [];
+  const deterministicEntries: DocumentCatalogEntry[] = [];
+  const llmSamples: DocumentExtractionSample[] = [];
+
+  for (const sample of options.samples) {
+  const typeHint = inferDocumentTypeHint(sample.sourceTable, options.documentTypeHints);
+    if (shouldSkipLlm(typeHint)) {
+      deterministicEntries.push(buildDeterministicCatalogEntry(sample, typeHint));
+    } else {
+      llmSamples.push(sample);
+    }
+  }
+
+  options.onProgress?.(
+    `Documents: ${String(deterministicEntries.length)} classified from filename, ${String(llmSamples.length)} need LLM...`,
+  );
+
   let usage: BurstUsage = { inputTokens: 0, outputTokens: 0, costUsd: null };
-  const batchCount = Math.ceil(options.samples.length / DOCUMENT_EXTRACTION_BATCH_SIZE);
 
-  for (let offset = 0; offset < options.samples.length; offset += DOCUMENT_EXTRACTION_BATCH_SIZE) {
-    const batch = options.samples.slice(offset, offset + DOCUMENT_EXTRACTION_BATCH_SIZE);
-    const batchIndex = Math.floor(offset / DOCUMENT_EXTRACTION_BATCH_SIZE) + 1;
-    options.onProgress?.(
-      `Document extraction batch ${String(batchIndex)}/${String(batchCount)} (${String(batch.length)} files)...`,
-    );
+  const llmResults =
+    llmSamples.length > 0
+      ? await mapWithConcurrency(
+          llmSamples,
+          DOCUMENT_EXTRACTION_CONCURRENCY,
+          async (sample, index) => {
+            try {
+              return await extractOneDocumentWithLlm(sample, index, llmSamples.length, {
+                models: options.models,
+                timeoutMs,
+                ...(options.documentTypeHints !== undefined
+                  ? { documentTypeHints: options.documentTypeHints }
+                  : {}),
+                ...(options.onProgress !== undefined ? { onProgress: options.onProgress } : {}),
+              });
+            } catch (error) {
+              const detail = error instanceof Error ? error.message : String(error);
+              throw new Error(
+                `Document extraction failed for "${sample.sourceTable}" (${String(index + 1)}/${String(llmSamples.length)}). ${detail}`,
+              );
+            }
+          },
+        )
+      : [];
 
-    const result = await runBurst({
-      model: options.models.cheap,
-      system: DOCUMENT_EXTRACTION_SYSTEM_PROMPT,
-      prompt: documentExtractionPrompt(batch),
-      schema: DocumentExtractionOutputSchema,
-      schemaName: `document_extraction_${String(batchIndex)}_of_${String(batchCount)}`,
-      timeoutMs,
-      ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
-    });
-
-    merged.push(...result.output.documents);
+  for (const result of llmResults) {
     usage = mergeBurstUsage(usage, result.usage);
   }
 
-  const documents = merged.map((extracted) => {
-    const sample = sampleByTable.get(extracted.sourceTable);
-    if (!sample) {
-      throw new Error(`Missing header sample for table "${extracted.sourceTable}"`);
-    }
-    return toCatalogEntry(extracted, sample);
-  });
+  const documents = [...deterministicEntries, ...llmResults.map((result) => result.entry)];
 
   const catalog = DocumentCatalogSchema.omit({ documentTypes: true }).parse({
     runId: options.runId,

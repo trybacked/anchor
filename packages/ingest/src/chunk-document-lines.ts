@@ -5,6 +5,10 @@ import {
   DOCUMENT_LINES_TABLE,
 } from "@backed/core";
 
+import {
+  capturePreservedChunkEmbeddings,
+  restorePreservedChunkEmbeddings,
+} from "./chunk-embeddings.js";
 import { quoteIdentifier, quoteString } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";
 
@@ -126,9 +130,11 @@ async function insertChunk(
 export async function chunkDocumentLines(
   query: SqlQuery,
   options: ChunkDocumentLinesOptions = {},
-): Promise<{ dataset: Dataset; chunkCount: number }> {
+): Promise<{ dataset: Dataset; chunkCount: number; embeddingsRestored: number }> {
   const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
   const chunkOverlap = options.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP;
+
+  const preservedEmbeddings = await capturePreservedChunkEmbeddings(query);
 
   await dropTableIfExists(query, DOCUMENT_CHUNKS_TABLE);
   await query(
@@ -154,6 +160,8 @@ export async function chunkDocumentLines(
     }
   }
 
+  const embeddingsRestored = await restorePreservedChunkEmbeddings(query, preservedEmbeddings);
+
   return {
     dataset: {
       tableName: DOCUMENT_CHUNKS_TABLE,
@@ -161,5 +169,6 @@ export async function chunkDocumentLines(
       format: "json",
     },
     chunkCount,
+    embeddingsRestored,
   };
 }

@@ -20,6 +20,8 @@ export {
   fetchChunkTextsForEmbedding,
   storeChunkEmbeddings,
   documentChunksHaveEmbeddings,
+  capturePreservedChunkEmbeddings,
+  restorePreservedChunkEmbeddings,
 } from "./chunk-embeddings.js";
 export type { StoredChunkEmbedding, ChunkTextRow } from "./chunk-embeddings.js";
 export {

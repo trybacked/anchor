@@ -1,7 +1,7 @@
 import type { Entity, Proposal, Relation, Rule, SemanticModel } from "@backed/core";
 import { ProposalSchema } from "@backed/core";
 import { resolveReviewConfidenceThreshold } from "./env.js";
-import { selectReviewQuestions } from "./questions.js";
+import { capReviewQuestions, reviewBudgetDoubts, selectReviewQuestions } from "./questions.js";
 import { compressProfile } from "./compress.js";
 import type { ProfileReport } from "@backed/core";
 
@@ -74,13 +74,15 @@ export function mergeIncrementalProposal(
   const rules = mergeRules(existing, fresh, entities, affectedTables);
   const tables = compressProfile(profile);
   const reviewConfidenceThreshold = resolveReviewConfidenceThreshold();
-  const questions = selectReviewQuestions(
+  const allQuestions = selectReviewQuestions(
     entities,
     relations,
     rules,
     tables,
     reviewConfidenceThreshold,
   );
+  const { questions, dropped } = capReviewQuestions(allQuestions);
+  const doubts = [...fresh.doubts, ...reviewBudgetDoubts(dropped)];
 
   return ProposalSchema.parse({
     runId: fresh.runId,
@@ -88,7 +90,7 @@ export function mergeIncrementalProposal(
     entities,
     relations,
     rules,
-    doubts: fresh.doubts,
+    doubts,
     questions,
     usage: fresh.usage,
   });

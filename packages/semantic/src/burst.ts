@@ -9,6 +9,8 @@ import { Output, generateText } from "ai";
 import type { LanguageModel } from "ai";
 import type { z } from "zod";
 
+import { SEMANTIC_MODEL_ENV } from "./env.js";
+
 const MAX_BURST_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [0, 750, 2000] as const;
 
@@ -126,7 +128,7 @@ export async function runBurst<TSchema extends z.ZodTypeAny>(
     const detail =
       lastError.message.length > 0 ? ` Last error: ${lastError.message}` : "";
     throw new Error(
-      `LLM returned invalid JSON for "${request.schemaName}" after ${String(MAX_BURST_ATTEMPTS)} attempts.${detail} Retry; if it persists, change model (SEMANTIC_MODEL_CHEAP / SEMANTIC_MODEL_FRONTIER).`,
+      `LLM returned invalid JSON for "${request.schemaName}" after ${String(MAX_BURST_ATTEMPTS)} attempts.${detail} Retry; if it persists, change ${SEMANTIC_MODEL_ENV} in .env.`,
     );
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));

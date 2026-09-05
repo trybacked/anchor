@@ -45,42 +45,105 @@ Anchor brings that layer within reach for ordinary organizations: local-first, e
 ## How it works
 
 ```
-sources/     Your files (read-only, never modified)
-  ↓ ingest    DuckDB — encoding, delimiters, decimal locales detected and reported
-  ↓ profile   SQL statistics → profile.json (no LLM)
-  ↓ semantic  Two agentic bursts → proposal.json
-  ↓ review    Risk-ranked questions for every uncertain element → review.json
-model.yaml  Anchor model
-  ↓ serve     MCP stdio — agents query the ontology
-  ↓ diff      Compare runs when sources change
+sources/          Your files (read-only, never modified)
+  ↓ init          Interactive setup → .backed/config.yaml (sources + document rules)
+  ↓ ingest        DuckDB snapshot — encoding, delimiters, OCR for scanned PDFs
+  ↓ documents?    If PDFs/TXT/DOCX: classify → materialize → chunk → embed
+  ↓ profile       SQL statistics → profile.json (no LLM)
+  ↓ semantic      Column classification + ontology → proposal.json
+  ↓ review        Risk-ranked questions → review.json
+model.yaml        Anchor model (committable)
+  ↓ serve         MCP stdio — agents query the ontology
+  ↓ diff          Compare runs when sources change
 ```
 
 **Ingest** reads sources in place via DuckDB. Non-UTF-8 encodings, semicolon delimiters, and European decimal commas are handled automatically; anomalies are always reported with file provenance. **ZIP/RAR** archives are extracted and scanned recursively. **PDFs** use embedded text when available, then **OCR** for scanned documents (requires [Poppler](https://poppler.freedesktop.org/) — `pdftoppm` on PATH; `brew install poppler` on macOS). Plain **TXT/MD** and **DOCX** are ingested as line-level tables.
 
-**Profile** produces reproducible statistical evidence per column: null rates, distinct counts, patterns, candidate keys. Cross-column value overlap surfaces deterministic foreign-key candidates. No LLM participates. This evidence is the sole input to semantic inference.
+**Profile** produces reproducible statistical evidence per column: null rates, distinct counts, patterns, candidate keys. Cross-column value overlap surfaces deterministic foreign-key candidates. No LLM participates.
 
-**Semantic inference** runs two schema-constrained bursts: column classification (cheap model), then ontology proposal (frontier model). The LLM sees compressed profiles, never raw rows. *"I don't know"* is valid output. Proposals referencing tables or columns absent from the profile are dropped and surfaced as doubts. **Document corpora** (15+ PDF/text line tables) take a dedicated path: a cheap extraction burst classifies document types and header fields, materializes typed DuckDB tables, then builds deterministic object-type entities and relations.
+**Semantic inference** runs schema-constrained LLM bursts on compressed profiles (never raw rows). Column classification and ontology use `SEMANTIC_MODEL`; ambiguous document headers use the same model. **Mixed folders** merge structured-table inference with deterministic document entities in one proposal.
 
-**Review** asks human confirmation for every element with **confidence below `REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`), ordered by **risk = impact × uncertainty**. High-confidence inferences pass through as `proposed` without a prompt. Each question includes profile evidence. Answers: Yes · No · Rename.
+**Review** presents risk-ranked questions for elements below **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`). Answers: Yes · No · Rename.
 
-**Consumption** exposes the model over MCP for Cursor, Claude Desktop, and custom agents. After `backed model`, a DuckDB snapshot (`.backed/data.duckdb`) holds your sources; `backed serve` opens it read-only. Agents use **`query_entity`** for everything: structured filters on columns, or **`text`** for free-text search (spreadsheet columns, document metadata, or full PDF body via semantic/keyword hybrid). No raw SQL.
+**Consumption** via MCP: **`query_entity`** (filters or semantic **`text`** on document chunks) and **`traverse_relation`**.
 
 ---
 
-## Quick start
+## Operational workflow
 
-1. **Drop files** in `sources/` — CSV, Excel, JSON, PDF, ZIP, etc. Anchor detects format automatically.
-2. **`backed model`** — ingest, profile, infer ontology, index documents when present.
-3. **`backed review`** then **`backed serve`** — confirm uncertain items; agents query via MCP.
+Anchor is local-first: one folder per organization or project. Configuration lives in that folder; LLM/embedding calls go only to APIs you set in `.env`.
+
+### 1. Initialize (`backed init`)
+
+Run once per folder (or again to change document rules):
 
 ```bash
-backed init ./sources   # once
-backed model            # any mix of files
-backed review           # confirm what matters
-backed serve            # MCP for agents
+mkdir -p sources
+backed init                 
 ```
 
-Agent pattern: `list_entities` → `get_entity` → `query_entity` with `filters` or `text`.
+**Prompts:** document types (checkbox) → optional custom filename rules → sources folder.
+
+**Output:** `.backed/config.yaml`. Edit before `backed model` to fine-tune rules.
+
+```yaml
+sourcesDir: ./sources
+documentTypeHints:
+  - match: determina
+    documentType: determination
+    documentTypeLabel: Determination
+    confidence: 0.95
+  - match: avviso
+    documentType: notice
+    documentTypeLabel: Notice
+    confidence: 0.9
+```
+
+Rules match the **table slug** from each filename (`documento - avviso.pdf` → `documento_avviso`). Confidence ≥ 0.85 → deterministic (no LLM). No match → one LLM call per file. **No built-in rules at runtime** — only `config.yaml`. Empty list = LLM for every document.
+
+### 2. Build (`backed model`)
+
+```bash
+backed model              # sources from config
+backed model ./exports    # override sources (updates config)
+backed model --full       # re-infer everything
+```
+
+| Stage | When | LLM? | Output |
+|---|---|---|---|
+| Ingest | Always | No | `.backed/data.duckdb` |
+| Documents | PDF/TXT/DOCX | Ambiguous files only | `documents.json` |
+| Chunk + embed | Documents | Embeddings only | vectors in DuckDB |
+| Profile | Always | No | `profile.json` |
+| Proposal | Always | Structured tables | `proposal.json` |
+
+**PDF-only folders:** `doc_*` tables get deterministic ontology (no column-classification LLM). **Mixed folders:** CSV gets LLM ontology; documents stay deterministic.
+
+Requires `AI_GATEWAY_API_KEY` — see [Install](#install).
+
+### 3. Review (`backed review`)
+
+Confirms or rejects proposals → writes **`model.yaml`**.
+
+### 4. Serve (`backed serve`)
+
+MCP stdio for agents (`list_entities`, `query_entity`, `traverse_relation`).
+
+### 5. Data changes
+
+```bash
+backed model && backed diff
+```
+
+### Cheat sheet
+
+```bash
+backed init && backed model && backed review && backed serve
+```
+
+Agent pattern: `list_entities` → `get_entity` → `query_entity` → `traverse_relation`.
+
+---
 
 ## The model
 
@@ -171,7 +234,8 @@ Each pipeline run stores intermediate artifacts under `.backed/runs/<run-id>/`:
 
 | File | Contents |
 |---|---|
-| `profile.json` | Statistical evidence |
+| `profile.json` | Statistical evidence per table/column |
+| `documents.json` | Document catalog (types, protocol, dates) when line-documents were ingested |
 | `proposal.json` | LLM proposal + doubts + review questions |
 | `review.json` | Human answers |
 | `model.yaml` | Final model (workspace root) |
@@ -184,11 +248,13 @@ All files are schema-validated on read and write.
 ```
 <workspace>/
 ├── sources/                 # Your data — read-only for Anchor
-├── model.yaml             # Anchor model
+├── model.yaml               # Anchor model (after review)
+├── .env                     # API keys (not committed)
 └── .backed/
-    ├── config.yaml
+    ├── config.yaml          # sourcesDir + documentTypeHints (from backed init)
     ├── data.duckdb          # DuckDB snapshot (written by backed model)
     └── runs/<run-id>/
+        ├── documents.json   # document catalog (when PDFs/TXT present)
         ├── profile.json
         ├── proposal.json
         ├── review.json
@@ -201,21 +267,13 @@ All files are schema-validated on read and write.
 
 | Command | Purpose |
 |---|---|
-| `backed init [folder]` | Initialize workspace (default sources: `./sources`) |
-| `backed model [folder]` | Full pipeline: ingest → profile → proposal. Re-runs use **incremental inference** when `model.yaml` exists (only changed tables hit the LLM). Pass `--full` to re-infer everything. |
+| `backed init [folder]` | Interactive workspace setup: `sourcesDir` + `documentTypeHints` in `.backed/config.yaml` |
+| `backed model [folder]` | Full pipeline: ingest → documents (if any) → profile → proposal. Incremental when `model.yaml` exists; `--full` re-infers everything. |
 | `backed review` | Interactive review → writes `model.yaml` |
 | `backed diff` | Compare last two runs |
-| `backed serve` | MCP stdio server on the current model (includes `query_entity` when a data snapshot exists) |
+| `backed serve` | MCP stdio server (`query_entity`, `traverse_relation` when snapshot exists) |
 
-```bash
-mkdir -p sources
-backed init ./sources
-backed model
-backed review
-backed serve
-```
-
-When sources change: `backed model && backed diff` (incremental by default)
+See [Operational workflow](#operational-workflow) for the step-by-step guide.
 
 ---
 
@@ -236,8 +294,8 @@ Create `.env` in your **workspace root** (the folder containing `.backed/`, or a
 ```bash
 AI_GATEWAY_API_KEY=...                          # required
 REVIEW_CONFIDENCE_THRESHOLD=0.95                # optional — review when confidence is below this
-# SEMANTIC_MODEL_CHEAP=openai/gpt-5-mini
-# SEMANTIC_MODEL_FRONTIER=anthropic/claude-sonnet-4.5
+# SEMANTIC_MODEL=anthropic/claude-sonnet-4.5
+# SEMANTIC_EMBEDDING_MODEL=openai/text-embedding-3-small
 ```
 
 See [.env.example](./.env.example).

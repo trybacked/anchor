@@ -4,19 +4,26 @@ import path from "node:path";
 import {
   ProfileReportSchema,
   createRunId,
-  initWorkspace,
   listRunIds,
+  patchWorkspaceConfig,
   readModelYaml,
   readRunArtifact,
   readWorkspaceConfig,
   workspacePaths,
   writeRunArtifact,
 } from "@backed/core";
-import type { DocumentCatalog, Proposal } from "@backed/core";
+import type {
+  DocumentCatalog,
+  DocumentTypeHintConfig,
+  ProfileReport,
+  Proposal,
+  SemanticModel,
+} from "@backed/core";
 import {
   affectedTablesFromProfileDiff,
   filterProfileToTables,
 } from "@backed/diff";
+import type { IngestSession } from "@backed/ingest";
 import {
   chunkDocumentLines,
   fetchChunkTextsForEmbedding,
@@ -31,23 +38,60 @@ import {
   compressProfile,
   embedTexts,
   extractDocumentCatalog,
-  isDocumentCorpus,
   mergeIncrementalProposal,
   proposeModel,
   resolveSemanticModels,
   splitTablesByKind,
 } from "@backed/semantic";
-import type { BurstUsage } from "@backed/semantic";
+import type { BurstUsage, SemanticModels } from "@backed/semantic";
 
 import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 
+interface DocumentStageResult {
+  documentCatalog: DocumentCatalog;
+  extractionUsage: BurstUsage;
+  extractionMs: number;
+  embedMs: number;
+}
+
+interface IncrementalScope {
+  profileForInference: ProfileReport;
+  incrementalTables: Set<string> | null;
+  existingModel: SemanticModel | null;
+}
+
+interface StageTimings {
+  ingestMs: number;
+  documentsMs: number;
+  extractionMs: number;
+  embedMs: number;
+  profileMs: number;
+  proposalMs: number;
+}
+
 function resolveSourcesDir(root: string, positional: string | undefined): string {
   if (positional) {
-    initWorkspace(root, { sourcesDir: positional });
+    patchWorkspaceConfig(root, { sourcesDir: positional });
     return positional;
   }
   return readWorkspaceConfig(root).sourcesDir;
+}
+
+function formatDurationMs(ms: number): string {
+  return `${String(Math.round(ms / 1000))}s`;
+}
+
+function printStageTimings(timings: StageTimings, skippedEmbed: boolean): void {
+  const parts: string[] = [
+    `Ingest ${formatDurationMs(timings.ingestMs)}`,
+    skippedEmbed
+      ? `Documents ${formatDurationMs(timings.documentsMs)} (extraction ${formatDurationMs(timings.extractionMs)}, embed skipped)`
+      : `Documents ${formatDurationMs(timings.documentsMs)} (extraction ${formatDurationMs(timings.extractionMs)}, embed ${formatDurationMs(timings.embedMs)})`,
+    `Profile ${formatDurationMs(timings.profileMs)}`,
+    `Proposal ${formatDurationMs(timings.proposalMs)}`,
+  ];
+  console.log(parts.join(" · "));
 }
 
 function printProposalSummary(proposal: Proposal): void {
@@ -68,9 +112,179 @@ function printProposalSummary(proposal: Proposal): void {
   );
 }
 
+async function runDocumentStage(
+  session: IngestSession,
+  models: SemanticModels,
+  runId: string,
+  root: string,
+  lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"],
+  documentTypeHints: DocumentTypeHintConfig[],
+  skipEmbed: boolean,
+): Promise<DocumentStageResult> {
+  console.log(
+    `Documents detected (${String(lineDocuments.length)} file(s)) — classifying and indexing...`,
+  );
+
+  const extractionStarted = Date.now();
+  const headerSamples = await fetchDocumentHeaderSamples(
+    session.query,
+    lineDocuments.map((table) => ({
+      sourceTable: table.table,
+      pageCount: table.rowCount,
+    })),
+  );
+
+  const extracted = await extractDocumentCatalog({
+    runId,
+    models,
+    samples: headerSamples,
+    documentTypeHints,
+    onProgress: (message) => {
+      console.log(`  ${message}`);
+    },
+  });
+  const extractionMs = Date.now() - extractionStarted;
+
+  const sourceFileByTable = new Map(
+    session.datasets.map((dataset) => [dataset.tableName, dataset.sourceFile]),
+  );
+  const materialized = await materializeDocumentTables(
+    session.query,
+    extracted.catalog,
+    sourceFileByTable,
+  );
+  const documentCatalog = materialized.catalog;
+
+  session.datasets = session.datasets.filter(
+    (dataset) => !materialized.datasetsRemoved.includes(dataset.tableName),
+  );
+  session.datasets.push(...materialized.datasetsAdded);
+
+  const documentsPath = writeRunArtifact(root, runId, "documents", documentCatalog);
+  console.log(`Document types saved: ${documentsPath}`);
+  console.log(`Indexed: ${documentCatalog.documentTypes.map((type) => type.name).join(", ")}`);
+
+  const chunked = await chunkDocumentLines(session.query);
+  session.datasets = session.datasets.filter(
+    (dataset) => dataset.tableName !== chunked.dataset.tableName,
+  );
+  session.datasets.push(chunked.dataset);
+  if (chunked.embeddingsRestored > 0) {
+    console.log(`Search index: ${String(chunked.chunkCount)} text segments (${String(chunked.embeddingsRestored)} embeddings preserved)`);
+  } else {
+    console.log(`Search index: ${String(chunked.chunkCount)} text segments`);
+  }
+
+  let embedMs = 0;
+  if (!skipEmbed) {
+    const chunkTexts = await fetchChunkTextsForEmbedding(session.query);
+    if (chunkTexts.length > 0) {
+      const embedStarted = Date.now();
+      const embedded = await embedTexts(
+        models.embedding,
+        chunkTexts.map((row) => row.text),
+        (message) => {
+          console.log(`  ${message}`);
+        },
+      );
+      await storeChunkEmbeddings(
+        session.query,
+        chunkTexts.map((row, index) => ({
+          document_id: row.document_id,
+          chunk_index: row.chunk_index,
+          embedding: embedded.embeddings[index] ?? [],
+        })),
+      );
+      embedMs = Date.now() - embedStarted;
+      console.log(`Semantic search ready (${String(chunkTexts.length)} vectors indexed)`);
+    } else if (chunked.embeddingsRestored > 0) {
+      console.log(`Semantic search ready (${String(chunked.embeddingsRestored)} vectors preserved)`);
+    }
+  } else {
+    console.log("Semantic search: embeddings skipped (--no-embed, keyword mode only)");
+  }
+
+  return {
+    documentCatalog,
+    extractionUsage: extracted.usage,
+    extractionMs,
+    embedMs,
+  };
+}
+
+function resolveIncrementalScope(
+  root: string,
+  profile: ProfileReport,
+  previousRunId: string | undefined,
+  forceFull: boolean,
+  hasDocuments: boolean,
+): IncrementalScope {
+  if (forceFull || hasDocuments || previousRunId === undefined) {
+    return {
+      profileForInference: profile,
+      incrementalTables: null,
+      existingModel: null,
+    };
+  }
+
+  try {
+    const existingModel = readModelYaml(root);
+    const previousProfile = readRunArtifact(
+      root,
+      previousRunId,
+      "profile",
+      ProfileReportSchema,
+    );
+    const incrementalTables = affectedTablesFromProfileDiff(previousProfile, profile);
+    if (incrementalTables.size === 0) {
+      return {
+        profileForInference: profile,
+        incrementalTables: null,
+        existingModel: null,
+      };
+    }
+    return {
+      profileForInference: filterProfileToTables(profile, incrementalTables),
+      incrementalTables,
+      existingModel,
+    };
+  } catch {
+    return {
+      profileForInference: profile,
+      incrementalTables: null,
+      existingModel: null,
+    };
+  }
+}
+
+function logInferenceScope(
+  incrementalScope: IncrementalScope,
+  hasDocumentCatalog: boolean,
+): void {
+  const { incrementalTables, existingModel } = incrementalScope;
+
+  if (incrementalTables !== null && existingModel !== null) {
+    console.log(
+      `Incremental inference on ${String(incrementalTables.size)} changed table(s): ${[...incrementalTables].join(", ")}`,
+    );
+    console.log(
+      `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from model.yaml.`,
+    );
+    return;
+  }
+
+  if (hasDocumentCatalog) {
+    console.log("Building semantic model from documents...");
+    return;
+  }
+
+  console.log("Building semantic model...");
+}
+
 export const modelCommand: CommandHandler = async (args) => {
   const root = findWorkspaceRoot(process.cwd());
   const forceFull = args.includes("--full");
+  const skipEmbed = args.includes("--no-embed");
   const positional = args.find((arg) => !arg.startsWith("--"));
 
   const sourcesDir = resolveSourcesDir(root, positional);
@@ -88,7 +302,20 @@ export const modelCommand: CommandHandler = async (args) => {
   console.log(`Run ${runId} — reading sources in "${sourcesDir}"...`);
 
   const paths = workspacePaths(root);
+  const workspaceConfig = readWorkspaceConfig(root);
+  const timings: StageTimings = {
+    ingestMs: 0,
+    documentsMs: 0,
+    extractionMs: 0,
+    embedMs: 0,
+    profileMs: 0,
+    proposalMs: 0,
+  };
+
+  const ingestStarted = Date.now();
   const session = await ingestFolder(absoluteSources, { databasePath: paths.dataPath });
+  timings.ingestMs = Date.now() - ingestStarted;
+
   try {
     if (session.datasets.length === 0) {
       console.error(`No readable tables found in "${sourcesDir}".`);
@@ -104,14 +331,6 @@ export const modelCommand: CommandHandler = async (args) => {
       console.log(`  Warning [${warning.file}]: ${warning.message}`);
     }
 
-    let profile = await profileTables(session);
-    const compressedTables = compressProfile(profile);
-    const { lineDocuments } = splitTablesByKind(compressedTables);
-    const documentCorpus = isDocumentCorpus(lineDocuments.length, compressedTables.length);
-
-    let documentCatalog: DocumentCatalog | undefined;
-    let extractionUsage: BurstUsage | undefined;
-
     let models;
     try {
       models = resolveSemanticModels();
@@ -124,125 +343,58 @@ export const modelCommand: CommandHandler = async (args) => {
       throw error;
     }
 
-    if (documentCorpus) {
+    const profileStarted = Date.now();
+    let profile = await profileTables(session);
+    timings.profileMs += Date.now() - profileStarted;
+
+    const { lineDocuments } = splitTablesByKind(compressProfile(profile));
+    const hasLineDocuments = lineDocuments.length > 0;
+
+    let documentCatalog: DocumentCatalog | undefined;
+    let extractionUsage: BurstUsage | undefined;
+
+    if (hasLineDocuments && workspaceConfig.documentTypeHints.length === 0) {
       console.log(
-        `Documents detected (${String(lineDocuments.length)} files) — classifying and indexing...`,
+        "  No documentTypeHints in config — all documents will use LLM classification. Run \"backed init\" or edit .backed/config.yaml.",
       );
-
-      const headerSamples = await fetchDocumentHeaderSamples(
-        session.query,
-        lineDocuments.map((table) => ({
-          sourceTable: table.table,
-          pageCount: table.rowCount,
-        })),
-      );
-
-      const extracted = await extractDocumentCatalog({
-        runId,
-        models,
-        samples: headerSamples,
-        onProgress: (message) => {
-          console.log(`  ${message}`);
-        },
-      });
-      extractionUsage = extracted.usage;
-
-      const sourceFileByTable = new Map(
-        session.datasets.map((dataset) => [dataset.tableName, dataset.sourceFile]),
-      );
-      const materialized = await materializeDocumentTables(
-        session.query,
-        extracted.catalog,
-        sourceFileByTable,
-      );
-      documentCatalog = materialized.catalog;
-
-      session.datasets = session.datasets.filter(
-        (dataset) => !materialized.datasetsRemoved.includes(dataset.tableName),
-      );
-      session.datasets.push(...materialized.datasetsAdded);
-
-      const documentsPath = writeRunArtifact(root, runId, "documents", documentCatalog);
-      console.log(`Document types saved: ${documentsPath}`);
-      console.log(
-        `Indexed: ${documentCatalog.documentTypes.map((type) => type.name).join(", ")}`,
-      );
-
-      const chunked = await chunkDocumentLines(session.query);
-      session.datasets = session.datasets.filter(
-        (dataset) => dataset.tableName !== chunked.dataset.tableName,
-      );
-      session.datasets.push(chunked.dataset);
-      console.log(`Search index: ${String(chunked.chunkCount)} text segments`);
-
-      const chunkTexts = await fetchChunkTextsForEmbedding(session.query);
-      if (chunkTexts.length > 0) {
-        const embedded = await embedTexts(
-          models.embedding,
-          chunkTexts.map((row) => row.text),
-          (message) => {
-            console.log(`  ${message}`);
-          },
-        );
-        await storeChunkEmbeddings(
-          session.query,
-          chunkTexts.map((row, index) => ({
-            document_id: row.document_id,
-            chunk_index: row.chunk_index,
-            embedding: embedded.embeddings[index] ?? [],
-          })),
-        );
-        console.log(`Semantic search ready (${String(chunkTexts.length)} vectors indexed)`);
-      }
-
-      profile = await profileTables(session);
     }
 
+    if (hasLineDocuments) {
+      const documentsStarted = Date.now();
+      const documentStage = await runDocumentStage(
+        session,
+        models,
+        runId,
+        root,
+        lineDocuments,
+        workspaceConfig.documentTypeHints,
+        skipEmbed,
+      );
+      timings.documentsMs = Date.now() - documentsStarted;
+      timings.extractionMs = documentStage.extractionMs;
+      timings.embedMs = documentStage.embedMs;
+      documentCatalog = documentStage.documentCatalog;
+      extractionUsage = documentStage.extractionUsage;
+
+      const reprofileStarted = Date.now();
+      profile = await profileTables(session);
+      timings.profileMs += Date.now() - reprofileStarted;
+    }
     const profilePath = writeRunArtifact(root, runId, "profile", profile);
     console.log(`Profile saved: ${profilePath}`);
 
-    let incrementalTables: Set<string> | null = null;
-    let existingModel = null;
+    const incrementalScope = resolveIncrementalScope(
+      root,
+      profile,
+      previousRunId,
+      forceFull,
+      hasLineDocuments,
+    );
+    logInferenceScope(incrementalScope, documentCatalog !== undefined);
 
-    if (!forceFull && !documentCorpus && previousRunId !== undefined) {
-      try {
-        existingModel = readModelYaml(root);
-        const previousProfile = readRunArtifact(
-          root,
-          previousRunId,
-          "profile",
-          ProfileReportSchema,
-        );
-        incrementalTables = affectedTablesFromProfileDiff(previousProfile, profile);
-        if (incrementalTables.size === 0) {
-          incrementalTables = null;
-        }
-      } catch {
-        incrementalTables = null;
-        existingModel = null;
-      }
-    }
-
-    const profileForInference =
-      incrementalTables !== null
-        ? filterProfileToTables(profile, incrementalTables)
-        : profile;
-
-    if (incrementalTables !== null && existingModel !== null) {
-      console.log(
-        `Incremental inference on ${String(incrementalTables.size)} changed table(s): ${[...incrementalTables].join(", ")}`,
-      );
-      console.log(
-        `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from model.yaml.`,
-      );
-    } else if (documentCatalog !== undefined) {
-      console.log("Building semantic model from documents...");
-    } else {
-      console.log("Building semantic model...");
-    }
-
+    const proposalStarted = Date.now();
     const freshProposal = await proposeModel({
-      profile: profileForInference,
+      profile: incrementalScope.profileForInference,
       runId,
       models,
       ...(documentCatalog !== undefined ? { documentCatalog } : {}),
@@ -251,14 +403,22 @@ export const modelCommand: CommandHandler = async (args) => {
         console.log(`  ${message}`);
       },
     });
+    timings.proposalMs = Date.now() - proposalStarted;
+
     const proposal: Proposal =
-      incrementalTables !== null && existingModel !== null
-        ? mergeIncrementalProposal(freshProposal, existingModel, incrementalTables, profile)
+      incrementalScope.incrementalTables !== null && incrementalScope.existingModel !== null
+        ? mergeIncrementalProposal(
+            freshProposal,
+            incrementalScope.existingModel,
+            incrementalScope.incrementalTables,
+            profile,
+          )
         : freshProposal;
 
     const proposalPath = writeRunArtifact(root, runId, "proposal", proposal);
     console.log(`Proposal saved: ${proposalPath}`);
     printProposalSummary(proposal);
+    printStageTimings(timings, skipEmbed);
   } finally {
     session.close();
   }

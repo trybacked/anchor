@@ -15,5 +15,12 @@ export type {
   SearchDocumentChunksResult,
 } from "./search-chunks.js";
 
+export { traverseRelationRows, traverseRelationErrorMessage } from "./traverse.js";
+export type {
+  TraverseRelationError,
+  TraverseRelationInput,
+  TraverseRelationResult,
+} from "./traverse.js";
+
 export { createModelMcpServer, startStdioMcpServer } from "./server.js";
 export type { ModelMcpServerOptions } from "./server.js";

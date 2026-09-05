@@ -1,7 +1,7 @@
 /**
  * Model routing configuration from environment (.env supported by the CLI):
- * a cheap model for column classification, a frontier model for ambiguous
- * entities and business definitions. Missing key → clear error message.
+ * one language model for all semantic bursts, plus a separate embedding model.
+ * Missing key → clear error message.
  */
 
 import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "@backed/core";
@@ -9,24 +9,48 @@ import { createGateway } from "@ai-sdk/gateway";
 import type { EmbeddingModel, LanguageModel } from "ai";
 
 export const AI_GATEWAY_API_KEY_ENV = "AI_GATEWAY_API_KEY";
+export const SEMANTIC_MODEL_ENV = "SEMANTIC_MODEL";
+/** @deprecated Use SEMANTIC_MODEL */
 export const CHEAP_MODEL_ENV = "SEMANTIC_MODEL_CHEAP";
+/** @deprecated Use SEMANTIC_MODEL */
 export const FRONTIER_MODEL_ENV = "SEMANTIC_MODEL_FRONTIER";
+export const EMBEDDING_MODEL_ENV = "SEMANTIC_EMBEDDING_MODEL";
 export const REVIEW_CONFIDENCE_THRESHOLD_ENV = "REVIEW_CONFIDENCE_THRESHOLD";
 export const REQUEST_TIMEOUT_MS_ENV = "SEMANTIC_REQUEST_TIMEOUT_MS";
 export const CLASSIFICATION_BATCH_SIZE_ENV = "SEMANTIC_CLASSIFICATION_BATCH_SIZE";
-export const EMBEDDING_MODEL_ENV = "SEMANTIC_EMBEDDING_MODEL";
 
-export const DEFAULT_CHEAP_MODEL = "openai/gpt-5-mini";
-export const DEFAULT_FRONTIER_MODEL = "anthropic/claude-sonnet-4.5";
+export const DEFAULT_SEMANTIC_MODEL = "anthropic/claude-sonnet-4.5";
+/** @deprecated Use DEFAULT_SEMANTIC_MODEL */
+export const DEFAULT_CHEAP_MODEL = DEFAULT_SEMANTIC_MODEL;
+/** @deprecated Use DEFAULT_SEMANTIC_MODEL */
+export const DEFAULT_FRONTIER_MODEL = DEFAULT_SEMANTIC_MODEL;
 /** AI SDK default is 300s; large folders (many PDF tables) need more headroom. */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 600_000;
 export const DEFAULT_CLASSIFICATION_BATCH_SIZE = 12;
 export const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
 
 export interface SemanticModels {
-  cheap: LanguageModel;
-  frontier: LanguageModel;
+  language: LanguageModel;
   embedding: EmbeddingModel;
+}
+
+function resolveLanguageModelId(env: Record<string, string | undefined>): string {
+  const explicit = env[SEMANTIC_MODEL_ENV]?.trim();
+  if (explicit !== undefined && explicit.length > 0) {
+    return explicit;
+  }
+
+  const legacyFrontier = env[FRONTIER_MODEL_ENV]?.trim();
+  if (legacyFrontier !== undefined && legacyFrontier.length > 0) {
+    return legacyFrontier;
+  }
+
+  const legacyCheap = env[CHEAP_MODEL_ENV]?.trim();
+  if (legacyCheap !== undefined && legacyCheap.length > 0) {
+    return legacyCheap;
+  }
+
+  return DEFAULT_SEMANTIC_MODEL;
 }
 
 export class MissingApiKeyError extends Error {
@@ -37,7 +61,7 @@ export class MissingApiKeyError extends Error {
         "How to fix:",
         "  1. Create a key at https://vercel.com/ai-gateway (or use your team's key).",
         `  2. Add to a .env file in your working directory: ${AI_GATEWAY_API_KEY_ENV}=<your-key>`,
-        `Optional models: ${CHEAP_MODEL_ENV} (default ${DEFAULT_CHEAP_MODEL}), ${FRONTIER_MODEL_ENV} (default ${DEFAULT_FRONTIER_MODEL}).`,
+        `Optional: ${SEMANTIC_MODEL_ENV} (default ${DEFAULT_SEMANTIC_MODEL}), ${EMBEDDING_MODEL_ENV} (default ${DEFAULT_EMBEDDING_MODEL}).`,
       ].join("\n"),
     );
     this.name = "MissingApiKeyError";
@@ -53,9 +77,9 @@ export function resolveSemanticModels(
   }
 
   const gateway = createGateway({ apiKey });
+  const languageModelId = resolveLanguageModelId(env);
   return {
-    cheap: gateway(env[CHEAP_MODEL_ENV] ?? DEFAULT_CHEAP_MODEL),
-    frontier: gateway(env[FRONTIER_MODEL_ENV] ?? DEFAULT_FRONTIER_MODEL),
+    language: gateway(languageModelId),
     embedding: gateway.textEmbeddingModel(env[EMBEDDING_MODEL_ENV] ?? DEFAULT_EMBEDDING_MODEL),
   };
 }

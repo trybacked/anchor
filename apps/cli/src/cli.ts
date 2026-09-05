@@ -10,7 +10,7 @@ import { loadWorkspaceDotEnv } from "./env.js";
 import type { Command } from "./types.js";
 
 export const COMMANDS: readonly Command[] = [
-  { name: "init", description: "Initialize .backed/ workspace", handler: initCommand },
+  { name: "init", description: "Initialize workspace (interactive document type setup)", handler: initCommand },
   { name: "model", description: "Ingest + profile + semantic → ontology proposal", handler: modelCommand },
   { name: "review", description: "Human review (risk-ranked questions) → model.yaml", handler: reviewCommand },
   { name: "diff", description: "Compare the last two runs", handler: diffCommand },

@@ -14,11 +14,26 @@ import type { SemanticModel } from "./model.js";
 import { WorkspaceConfigSchema, workspacePaths } from "./workspace.js";
 import type { RunArtifactName, WorkspaceConfig } from "./workspace.js";
 
-export function initWorkspace(root: string, config: WorkspaceConfig): string {
+export function writeWorkspaceConfig(root: string, config: WorkspaceConfig): string {
   const paths = workspacePaths(root);
   mkdirSync(paths.runsDir, { recursive: true });
-  writeFileSync(paths.configPath, stringifyYaml(WorkspaceConfigSchema.parse(config)), "utf-8");
+  const parsed = WorkspaceConfigSchema.parse(config);
+  writeFileSync(paths.configPath, stringifyYaml(parsed), "utf-8");
   return paths.configPath;
+}
+
+export function initWorkspace(root: string, config: WorkspaceConfig): string {
+  return writeWorkspaceConfig(root, config);
+}
+
+export function patchWorkspaceConfig(root: string, patch: Partial<WorkspaceConfig>): string {
+  let existing: WorkspaceConfig;
+  try {
+    existing = readWorkspaceConfig(root);
+  } catch {
+    existing = { sourcesDir: "./sources", documentTypeHints: [] };
+  }
+  return writeWorkspaceConfig(root, { ...existing, ...patch });
 }
 
 export function readWorkspaceConfig(root: string): WorkspaceConfig {

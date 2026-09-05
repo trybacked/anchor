@@ -1,17 +1,27 @@
 import {
+  DocumentCatalogSchema,
   ProposalSchema,
   applyReview,
   hasRunArtifact,
   listRunIds,
+  patchWorkspaceConfig,
   readRunArtifact,
+  readWorkspaceConfig,
   writeModelYaml,
   writeRunArtifact,
 } from "@backed/core";
-import type { EvidenceTable, Proposal, ReviewAnswer } from "@backed/core";
+import type { DocumentCatalog, EvidenceTable, Proposal, Review, ReviewAnswer } from "@backed/core";
 import { input, select } from "@inquirer/prompts";
 
 import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
+
+function slugifyDocumentTypeId(id: string): string {
+  return id
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
 
 function renderEvidenceTable(evidence: EvidenceTable): string {
   const rows = [evidence.columns, ...evidence.rows];
@@ -68,6 +78,55 @@ function findLatestRunWithProposal(root: string): string | null {
   return runIds.find((runId) => hasRunArtifact(root, runId, "proposal")) ?? null;
 }
 
+function applyDocumentTypeRenamesFromReview(
+  root: string,
+  proposal: Proposal,
+  review: Review,
+  documentCatalog: DocumentCatalog | undefined,
+): void {
+  if (documentCatalog === undefined) {
+    return;
+  }
+
+  const typeIdByEntityId = new Map(
+    documentCatalog.documentTypes.map((type) => [slugifyDocumentTypeId(type.id), type.id]),
+  );
+  const questionsById = new Map(proposal.questions.map((question) => [question.id, question]));
+  const config = readWorkspaceConfig(root);
+  let hints = config.documentTypeHints;
+  let updated = false;
+
+  for (const answer of review.answers) {
+    if (answer.decision !== "rename" || answer.newName === undefined) {
+      continue;
+    }
+
+    const question = questionsById.get(answer.questionId);
+    if (question === undefined || question.kind !== "entity") {
+      continue;
+    }
+
+    const documentTypeId = typeIdByEntityId.get(question.targetId);
+    if (documentTypeId === undefined) {
+      continue;
+    }
+
+    hints = hints.map((hint) =>
+      hint.documentType === documentTypeId
+        ? { ...hint, documentTypeLabel: answer.newName! }
+        : hint,
+    );
+    updated = true;
+    console.log(
+      `Config updated: document type "${documentTypeId}" renamed to "${answer.newName}"`,
+    );
+  }
+
+  if (updated) {
+    patchWorkspaceConfig(root, { documentTypeHints: hints });
+  }
+}
+
 export const reviewCommand: CommandHandler = async () => {
   const root = findWorkspaceRoot(process.cwd());
 
@@ -105,5 +164,11 @@ export const reviewCommand: CommandHandler = async () => {
   console.log(
     `Model written: ${modelPath} — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations, ${String(model.rules.length)} rules.`,
   );
+
+  const documentCatalog = hasRunArtifact(root, runId, "documents")
+    ? readRunArtifact(root, runId, "documents", DocumentCatalogSchema)
+    : undefined;
+  applyDocumentTypeRenamesFromReview(root, proposal, review, documentCatalog);
+
   console.log('Next steps: "backed serve" to expose it to agents, "backed diff" after the next run.');
 };

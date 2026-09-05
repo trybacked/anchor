@@ -2,7 +2,12 @@
 
 export const PACKAGE_NAME = "@backed/core" as const;
 
-export { MODEL_FORMAT_VERSION, LOW_CONFIDENCE_THRESHOLD, DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "./constants.js";
+export {
+  MODEL_FORMAT_VERSION,
+  LOW_CONFIDENCE_THRESHOLD,
+  DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
+  MAX_REVIEW_QUESTIONS,
+} from "./constants.js";
 
 export {
   PROFILE_TOP_VALUES_LIMIT,
@@ -94,6 +99,9 @@ export {
 } from "./workspace.js";
 export type { RunArtifactName, WorkspaceConfig, WorkspacePaths } from "./workspace.js";
 
+export { DocumentTypeHintConfigSchema } from "./document-type-hints.js";
+export type { DocumentTypeHintConfig } from "./document-type-hints.js";
+
 export {
   DEFAULT_ROW_LIMIT,
   MAX_ROW_LIMIT,
@@ -127,6 +135,8 @@ export type { ChunkSearchRequest, ChunkSearcher, ChunkSearchMode, QueryEmbedder 
 
 export {
   initWorkspace,
+  writeWorkspaceConfig,
+  patchWorkspaceConfig,
   readWorkspaceConfig,
   writeRunArtifact,
   readRunArtifact,

@@ -46,7 +46,7 @@ export const serveCommand: CommandHandler = async () => {
     "get_entity",
     "list_relations",
     "search_model",
-    ...(rowReader ? ["query_entity"] : []),
+    ...(rowReader ? ["query_entity", "traverse_relation"] : []),
   ];
 
   console.error(

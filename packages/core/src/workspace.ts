@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { z } from "zod";
 
+import { DocumentTypeHintConfigSchema } from "./document-type-hints.js";
+
 export const BACKED_DIR_NAME = ".backed";
 export const CONFIG_FILE_NAME = "config.yaml";
 export const RUNS_DIR_NAME = "runs";
@@ -22,6 +24,8 @@ export type RunArtifactName = keyof typeof RUN_ARTIFACTS;
 
 export const WorkspaceConfigSchema = z.object({
   sourcesDir: z.string().min(1),
+  /** Filename slug rules for document classification. Set by `backed init`; edit before model runs. */
+  documentTypeHints: z.array(DocumentTypeHintConfigSchema).default([]),
 });
 
 export type WorkspaceConfig = z.infer<typeof WorkspaceConfigSchema>;
