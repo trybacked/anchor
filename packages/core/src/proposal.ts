@@ -1,7 +1,7 @@
 /**
  * Zod schema of proposal.json — the LLM output before human review.
  * Same element shapes as the model (status "proposed"), plus explicit
- * doubts ("non lo so" is valid output) and the risk-ranked review questions.
+ * doubts ("I don't know" is valid output) and the risk-ranked review questions.
  */
 
 import { z } from "zod";
@@ -11,7 +11,7 @@ import { EntitySchema, RelationSchema, RuleSchema } from "./model.js";
 /** Explicit "I don't know" from the model — valid output, never an error. */
 export const DoubtSchema = z.object({
   topic: z.string().min(1),
-  // Italian copy: what the model could not decide and why.
+  // Human-readable copy: what the model could not decide and why.
   question: z.string().min(1),
   reason: z.string().min(1),
 });
@@ -29,7 +29,7 @@ export const ReviewQuestionSchema = z.object({
   id: z.string().min(1),
   kind: ReviewQuestionKindSchema,
   targetId: z.string().min(1),
-  // Italian copy shown to the human reviewer.
+  // Human-readable copy shown to the human reviewer.
   question: z.string().min(1),
   // risk = impact × uncertainty; questions are sorted by descending risk.
   impact: z.number().min(0),

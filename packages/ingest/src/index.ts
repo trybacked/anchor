@@ -1,6 +1,7 @@
 /** DuckDB wrapper: read sources → queryable tables */
 
-import { rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
+import path from "node:path";
 
 import { registerSource } from "./register.js";
 import { PdfNoExtractableTextError } from "./errors.js";
@@ -11,6 +12,7 @@ import { toTableName, uniqueTableName } from "./table-names.js";
 import type { Dataset, IngestSession, IngestWarning } from "./types.js";
 
 export { quoteIdentifier, quoteString } from "./sql.js";
+export { createRowReader } from "./row-reader.js";
 export type {
   CsvDialect,
   CsvEncoding,
@@ -23,10 +25,30 @@ export type {
   IngestWarningKind,
   SqlQuery,
 } from "./types.js";
+export type { DuckDbSession, DuckDbSessionOptions } from "./session.js";
 
-export async function ingestFolder(folderPath: string): Promise<IngestSession> {
+export interface IngestFolderOptions {
+  databasePath?: string;
+}
+
+export async function openDataSession(databasePath: string) {
+  return createDuckDbSession({ databasePath, readOnly: true });
+}
+
+export async function ingestFolder(
+  folderPath: string,
+  options: IngestFolderOptions = {},
+): Promise<IngestSession> {
+  const { databasePath } = options;
+  if (databasePath !== undefined) {
+    await rm(databasePath, { force: true });
+    await mkdir(path.dirname(databasePath), { recursive: true });
+  }
+
   const scan = await scanFolder(folderPath);
-  const session = await createDuckDbSession();
+  const session = await createDuckDbSession(
+    databasePath !== undefined ? { databasePath } : {},
+  );
 
   const datasets: Dataset[] = [];
   const warnings: IngestWarning[] = [

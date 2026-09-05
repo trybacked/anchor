@@ -7,7 +7,8 @@ import { z } from "zod";
 export const BACKED_DIR_NAME = ".backed";
 export const CONFIG_FILE_NAME = "config.yaml";
 export const RUNS_DIR_NAME = "runs";
-export const MODEL_FILE_NAME = "modello.yaml";
+export const MODEL_FILE_NAME = "model.yaml";
+export const DATA_FILE_NAME = "data.duckdb";
 
 export const RUN_ARTIFACTS = {
   profile: "profile.json",
@@ -30,6 +31,7 @@ export interface WorkspacePaths {
   configPath: string;
   runsDir: string;
   modelPath: string;
+  dataPath: string;
   runDir: (runId: string) => string;
   artifactPath: (runId: string, artifact: RunArtifactName) => string;
 }
@@ -43,6 +45,7 @@ export function workspacePaths(root: string): WorkspacePaths {
     configPath: path.join(backedDir, CONFIG_FILE_NAME),
     runsDir,
     modelPath: path.join(root, MODEL_FILE_NAME),
+    dataPath: path.join(backedDir, DATA_FILE_NAME),
     runDir: (runId) => path.join(runsDir, runId),
     artifactPath: (runId, artifact) => path.join(runsDir, runId, RUN_ARTIFACTS[artifact]),
   };

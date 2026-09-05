@@ -13,7 +13,7 @@
   <p>
     <a href="./LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge"></a>
     <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"></a>
-    <img alt="modello.yaml v1" src="https://img.shields.io/badge/modello.yaml-v1-CB3837?style=for-the-badge">
+    <img alt="model.yaml v1" src="https://img.shields.io/badge/model.yaml-v1-CB3837?style=for-the-badge">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-stdio-000000?style=for-the-badge">
   </p>
 
@@ -23,13 +23,13 @@
 
 Every organization runs on data spread across systems that were never built to share a vocabulary. ERP, exports, spreadsheets, and documents each tell a partial story; without a shared layer of meaning, humans argue over definitions and agents invent new ones every session.
 
-Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms treat as foundational: map sources to **entities**, wire **relations**, capture **business definitions**, and govern what is true with provenance and confidence. That layer *is* institutional memory when it is written down, versioned, and shared. The output is **`modello.yaml`**: a committable semantic model. Humans confirm what the machine is unsure about through risk-ranked review; agents query what has been confirmed through MCP.
+Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms treat as foundational: map sources to **entities**, wire **relations**, capture **business definitions**, and govern what is true with provenance and confidence. That layer *is* institutional memory when it is written down, versioned, and shared. The output is **`model.yaml`**: a committable semantic model. Humans confirm what the machine is unsure about through risk-ranked review; agents query what has been confirmed through MCP.
 
 | | |
 |---|---|
 | **Anchor** | Protocol + this repo |
 | **Backed** | Company — maintenance, commercial service |
-| **`modello.yaml`** | Protocol artifact (the output) |
+| **`model.yaml`** | Protocol artifact (the output) |
 | **`backed`** | CLI command (reference implementation) |
 
 ---
@@ -50,7 +50,7 @@ sources/     Your files (read-only, never modified)
   ↓ profile   SQL statistics → profile.json (no LLM)
   ↓ semantic  Two agentic bursts → proposal.json
   ↓ review    Risk-ranked questions for every uncertain element → review.json
-modello.yaml  Anchor model
+model.yaml  Anchor model
   ↓ serve     MCP stdio — agents query the ontology
   ↓ diff      Compare runs when sources change
 ```
@@ -63,13 +63,13 @@ modello.yaml  Anchor model
 
 **Review** asks human confirmation for every element with **confidence below `REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`), ordered by **risk = impact × uncertainty**. High-confidence inferences pass through as `proposed` without a prompt. Each question includes profile evidence. Answers: Yes · No · Rename.
 
-**Consumption** exposes the model over MCP (`list_entities`, `get_entity`, `list_relations`, `search_model`) for Cursor, Claude Desktop, and custom agent runtimes.
+**Consumption** exposes the model over MCP (`list_entities`, `get_entity`, `list_relations`, `search_model`, `query_entity`) for Cursor, Claude Desktop, and custom agent runtimes. After `backed model`, a DuckDB snapshot (`.backed/data.duckdb`) holds ingested source tables; `backed serve` opens it read-only so agents can fetch actual rows through `query_entity` — filters validated against entity properties, no raw SQL.
 
 ---
 
 ## The model
 
-`modello.yaml` contains no data. It contains the **model of the data** — portable, committable, schema-validated (`SemanticModelSchema` in `@backed/core`).
+`model.yaml` contains no data. It contains the **model of the data** — portable, committable, schema-validated (`SemanticModelSchema` in `@backed/core`).
 
 A typical organization: **4–15 entities**, **5–20 relations**, a handful of rules. Larger models usually signal inference error, not richness.
 
@@ -159,7 +159,7 @@ Each pipeline run stores intermediate artifacts under `.backed/runs/<run-id>/`:
 | `profile.json` | Statistical evidence |
 | `proposal.json` | LLM proposal + doubts + review questions |
 | `review.json` | Human answers |
-| `modello.yaml` | Final model (workspace root) |
+| `model.yaml` | Final model (workspace root) |
 | `diff.json` | Changes vs previous run |
 
 All files are schema-validated on read and write.
@@ -169,9 +169,10 @@ All files are schema-validated on read and write.
 ```
 <workspace>/
 ├── sources/                 # Your data — read-only for Anchor
-├── modello.yaml             # Anchor model
+├── model.yaml             # Anchor model
 └── .backed/
     ├── config.yaml
+    ├── data.duckdb          # DuckDB snapshot (written by backed model)
     └── runs/<run-id>/
         ├── profile.json
         ├── proposal.json
@@ -186,10 +187,10 @@ All files are schema-validated on read and write.
 | Command | Purpose |
 |---|---|
 | `backed init [folder]` | Initialize workspace (default sources: `./sources`) |
-| `backed model [folder]` | Full pipeline: ingest → profile → proposal. Re-runs use **incremental inference** when `modello.yaml` exists (only changed tables hit the LLM). Pass `--full` to re-infer everything. |
-| `backed review` | Interactive review → writes `modello.yaml` |
+| `backed model [folder]` | Full pipeline: ingest → profile → proposal. Re-runs use **incremental inference** when `model.yaml` exists (only changed tables hit the LLM). Pass `--full` to re-infer everything. |
+| `backed review` | Interactive review → writes `model.yaml` |
 | `backed diff` | Compare last two runs |
-| `backed serve` | MCP stdio server on the current model |
+| `backed serve` | MCP stdio server on the current model (includes `query_entity` when a data snapshot exists) |
 
 ```bash
 mkdir -p sources
@@ -243,9 +244,9 @@ Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / 
 
 ## Scope
 
-**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · MCP export.
+**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · MCP export · incremental re-inference · ontology-guided data query (`query_entity`).
 
-**Out (v1):** Hosted cloud · SDK · registry · billing · dashboard · writeback · incremental re-inference on diff.
+**Out (v1):** Hosted cloud · SDK · registry · billing · dashboard · writeback.
 
 **Not Anchor:** ETL · warehouse · ERP · chatbot · connector marketplace.
 

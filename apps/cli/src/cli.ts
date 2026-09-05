@@ -12,9 +12,9 @@ import type { Command } from "./types.js";
 export const COMMANDS: readonly Command[] = [
   { name: "init", description: "Initialize .backed/ workspace", handler: initCommand },
   { name: "model", description: "Ingest + profile + semantic → ontology proposal", handler: modelCommand },
-  { name: "review", description: "Human review (risk-ranked questions) → modello.yaml", handler: reviewCommand },
+  { name: "review", description: "Human review (risk-ranked questions) → model.yaml", handler: reviewCommand },
   { name: "diff", description: "Compare the last two runs", handler: diffCommand },
-  { name: "serve", description: "Local MCP server on modello.yaml", handler: serveCommand },
+  { name: "serve", description: "Local MCP server on model.yaml", handler: serveCommand },
 ];
 
 export function printHelp(): void {

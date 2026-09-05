@@ -1,4 +1,4 @@
-/** Profilazione deterministica: SQL puro → profile.json */
+/** Deterministic profiling: pure SQL → profile.json */
 
 import { ProfileReportSchema } from "@backed/core";
 import type { ProfileReport } from "@backed/core";
@@ -17,7 +17,7 @@ export {
 } from "./patterns.js";
 export { profileDataset } from "./table-profile.js";
 
-/** Profila tutti i dataset registrati; l'output è validato contro lo schema di profile.json. */
+/** Profile all registered datasets; output is validated against the profile.json schema. */
 export async function profileTables(session: IngestSession): Promise<ProfileReport> {
   const profiles = [];
   for (const dataset of session.datasets) {

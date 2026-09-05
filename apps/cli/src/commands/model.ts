@@ -9,6 +9,7 @@ import {
   readModelYaml,
   readRunArtifact,
   readWorkspaceConfig,
+  workspacePaths,
   writeRunArtifact,
 } from "@backed/core";
 import type { Proposal } from "@backed/core";
@@ -74,7 +75,8 @@ export const modelCommand: CommandHandler = async (args) => {
 
   console.log(`Run ${runId} — profiling sources in "${sourcesDir}"...`);
 
-  const session = await ingestFolder(absoluteSources);
+  const paths = workspacePaths(root);
+  const session = await ingestFolder(absoluteSources, { databasePath: paths.dataPath });
   try {
     if (session.datasets.length === 0) {
       console.error(`No readable tables found in "${sourcesDir}".`);
@@ -85,6 +87,7 @@ export const modelCommand: CommandHandler = async (args) => {
     console.log(
       `Tables found: ${session.datasets.map((dataset) => dataset.tableName).join(", ")}`,
     );
+    console.log(`Data snapshot saved: ${paths.dataPath}`);
     for (const warning of session.warnings) {
       console.log(`  Warning [${warning.file}]: ${warning.message}`);
     }
@@ -127,23 +130,30 @@ export const modelCommand: CommandHandler = async (args) => {
       }
     }
 
-    if (incrementalTables !== null && existingModel !== null) {
-      console.log(
-        `Incremental inference on ${String(incrementalTables.size)} changed table(s): ${[...incrementalTables].join(", ")}`,
-      );
-      console.log(
-        `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from modello.yaml.`,
-      );
-    } else {
-      console.log("Running semantic inference (full profile)...");
-    }
-
     const profileForInference =
       incrementalTables !== null
         ? filterProfileToTables(profile, incrementalTables)
         : profile;
 
-    const freshProposal = await proposeModel({ profile: profileForInference, runId, models });
+    if (incrementalTables !== null && existingModel !== null) {
+      console.log(
+        `Incremental inference on ${String(incrementalTables.size)} changed table(s): ${[...incrementalTables].join(", ")}`,
+      );
+      console.log(
+        `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from model.yaml.`,
+      );
+    } else {
+      console.log("Running semantic inference (line-document tables skip LLM; see progress below)...");
+    }
+
+    const freshProposal = await proposeModel({
+      profile: profileForInference,
+      runId,
+      models,
+      onProgress: (message) => {
+        console.log(`  ${message}`);
+      },
+    });
     const proposal: Proposal =
       incrementalTables !== null && existingModel !== null
         ? mergeIncrementalProposal(freshProposal, existingModel, incrementalTables, profile)

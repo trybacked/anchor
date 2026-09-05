@@ -5,6 +5,7 @@
 
 import type { CompressedTable } from "./compress.js";
 import type { ColumnClassificationOutput } from "./llm-output.js";
+import type { LineDocumentCorpusSummary } from "./line-document.js";
 
 const SHARED_RULES = `Rules you must follow:
 - The input is a statistical profile of tables from a small business. No raw rows are available.
@@ -29,6 +30,14 @@ Propose:
 Every entity, relation and rule needs an honest "confidence" (0..1) and an English "evidence" sentence citing the statistics that support it.
 ${SHARED_RULES}`;
 
+export const DOCUMENT_CORPUS_ONTOLOGY_SYSTEM_PROMPT = `You extract a semantic model from a mix of structured business tables and a corpus of line-document tables.
+Line-document tables have columns page, line, text — each table is one extracted document (PDF, scan, or text file), not a normalized business entity row set.
+For line-document corpora:
+- Do NOT propose one entity per document table when documentCount is large (15+). Instead declare doubts about document typing and propose entities only for structured (non line-document) tables.
+- Propose at most 4-15 entities total. Prefer document-type entities over file-level entities.
+For structured tables, propose entities, relations, and rules as usual.
+${SHARED_RULES}`;
+
 export function columnClassificationPrompt(tables: CompressedTable[]): string {
   return `Statistical profile of the tables (JSON):
 
@@ -50,4 +59,30 @@ Column classification produced by a previous step (JSON):
 ${JSON.stringify(classification, null, 2)}
 
 Propose the semantic model (entities, relations, rules) and declare your doubts.`;
+}
+
+export function documentCorpusOntologyPrompt(
+  structuredTables: CompressedTable[],
+  structuredClassification: ColumnClassificationOutput,
+  corpus: LineDocumentCorpusSummary,
+): string {
+  const structuredClassificationFiltered = {
+    tables: structuredClassification.tables.filter((table) =>
+      structuredTables.some((candidate) => candidate.table === table.table),
+    ),
+  };
+
+  return `Structured business tables (JSON):
+
+${JSON.stringify(structuredTables, null, 2)}
+
+Column classification for structured tables (JSON):
+
+${JSON.stringify(structuredClassificationFiltered, null, 2)}
+
+Line-document corpus summary (each omitted table is one source document with page/line/text columns):
+
+${JSON.stringify(corpus, null, 2)}
+
+Propose the semantic model for structured tables only. Use doubts to explain how the document corpus should be grouped — do not list one entity per document table.`;
 }

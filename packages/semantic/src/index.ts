@@ -1,4 +1,4 @@
-/** Burst agentici LLM: inferenza semantica da profili compressi */
+/** Agentic LLM bursts: semantic inference from compressed profiles */
 
 export const PACKAGE_NAME = "@backed/semantic" as const;
 
@@ -12,10 +12,18 @@ export {
   REVIEW_CONFIDENCE_THRESHOLD_ENV,
   DEFAULT_CHEAP_MODEL,
   DEFAULT_FRONTIER_MODEL,
+  DEFAULT_REQUEST_TIMEOUT_MS,
+  DEFAULT_CLASSIFICATION_BATCH_SIZE,
+  REQUEST_TIMEOUT_MS_ENV,
+  CLASSIFICATION_BATCH_SIZE_ENV,
   MissingApiKeyError,
   InvalidReviewThresholdError,
+  InvalidRequestTimeoutError,
+  InvalidClassificationBatchSizeError,
   resolveSemanticModels,
   resolveReviewConfidenceThreshold,
+  resolveSemanticRequestTimeoutMs,
+  resolveClassificationBatchSize,
 } from "./env.js";
 export type { SemanticModels } from "./env.js";
 

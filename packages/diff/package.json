@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Confronto tra run: diff semantico + re-run incrementale",
+  "description": "Run comparison: semantic diff + incremental re-run",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

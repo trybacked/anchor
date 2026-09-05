@@ -1,4 +1,4 @@
-/** Schema e tipi condivisi per modello.yaml e artefatti .backed/ */
+/** Shared schemas and types for model.yaml and .backed/ artifacts */
 
 export const PACKAGE_NAME = "@backed/core" as const;
 
@@ -86,12 +86,19 @@ export {
   CONFIG_FILE_NAME,
   RUNS_DIR_NAME,
   MODEL_FILE_NAME,
+  DATA_FILE_NAME,
   RUN_ARTIFACTS,
   WorkspaceConfigSchema,
   workspacePaths,
   createRunId,
 } from "./workspace.js";
 export type { RunArtifactName, WorkspaceConfig, WorkspacePaths } from "./workspace.js";
+
+export {
+  DEFAULT_ROW_LIMIT,
+  MAX_ROW_LIMIT,
+} from "./data-query.js";
+export type { RowFilter, EntityRowRequest, RowReader } from "./data-query.js";
 
 export {
   initWorkspace,

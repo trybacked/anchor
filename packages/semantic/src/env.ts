@@ -12,9 +12,14 @@ export const AI_GATEWAY_API_KEY_ENV = "AI_GATEWAY_API_KEY";
 export const CHEAP_MODEL_ENV = "SEMANTIC_MODEL_CHEAP";
 export const FRONTIER_MODEL_ENV = "SEMANTIC_MODEL_FRONTIER";
 export const REVIEW_CONFIDENCE_THRESHOLD_ENV = "REVIEW_CONFIDENCE_THRESHOLD";
+export const REQUEST_TIMEOUT_MS_ENV = "SEMANTIC_REQUEST_TIMEOUT_MS";
+export const CLASSIFICATION_BATCH_SIZE_ENV = "SEMANTIC_CLASSIFICATION_BATCH_SIZE";
 
 export const DEFAULT_CHEAP_MODEL = "openai/gpt-5-mini";
 export const DEFAULT_FRONTIER_MODEL = "anthropic/claude-sonnet-4.5";
+/** AI SDK default is 300s; large folders (many PDF tables) need more headroom. */
+export const DEFAULT_REQUEST_TIMEOUT_MS = 600_000;
+export const DEFAULT_CLASSIFICATION_BATCH_SIZE = 12;
 
 export interface SemanticModels {
   cheap: LanguageModel;
@@ -71,6 +76,56 @@ export function resolveReviewConfidenceThreshold(
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1) {
     throw new InvalidReviewThresholdError(raw);
+  }
+
+  return parsed;
+}
+
+export class InvalidRequestTimeoutError extends Error {
+  constructor(raw: string) {
+    super(
+      `${REQUEST_TIMEOUT_MS_ENV} must be a positive integer (milliseconds, min 30000). Got: ${raw}`,
+    );
+    this.name = "InvalidRequestTimeoutError";
+  }
+}
+
+export function resolveSemanticRequestTimeoutMs(
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const raw = env[REQUEST_TIMEOUT_MS_ENV];
+  if (raw === undefined || raw.trim() === "") {
+    return DEFAULT_REQUEST_TIMEOUT_MS;
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 30_000) {
+    throw new InvalidRequestTimeoutError(raw);
+  }
+
+  return parsed;
+}
+
+export class InvalidClassificationBatchSizeError extends Error {
+  constructor(raw: string) {
+    super(
+      `${CLASSIFICATION_BATCH_SIZE_ENV} must be a positive integer (tables per burst). Got: ${raw}`,
+    );
+    this.name = "InvalidClassificationBatchSizeError";
+  }
+}
+
+export function resolveClassificationBatchSize(
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const raw = env[CLASSIFICATION_BATCH_SIZE_ENV];
+  if (raw === undefined || raw.trim() === "") {
+    return DEFAULT_CLASSIFICATION_BATCH_SIZE;
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new InvalidClassificationBatchSizeError(raw);
   }
 
   return parsed;

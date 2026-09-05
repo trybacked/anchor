@@ -22,17 +22,33 @@ import type {
 import { runBurst } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
 import { compressProfile } from "./compress.js";
+import type { CompressedTable } from "./compress.js";
 import type { SemanticModels } from "./env.js";
-import { resolveReviewConfidenceThreshold } from "./env.js";
+import {
+  resolveClassificationBatchSize,
+  resolveReviewConfidenceThreshold,
+  resolveSemanticRequestTimeoutMs,
+} from "./env.js";
 import { ColumnClassificationOutputSchema, OntologyOutputSchema } from "./llm-output.js";
 import type { ColumnClassificationOutput, OntologyOutput } from "./llm-output.js";
 import {
   COLUMN_CLASSIFICATION_SYSTEM_PROMPT,
+  DOCUMENT_CORPUS_ONTOLOGY_SYSTEM_PROMPT,
   ONTOLOGY_SYSTEM_PROMPT,
   columnClassificationPrompt,
+  documentCorpusOntologyPrompt,
   ontologyPrompt,
 } from "./prompts.js";
 import { selectReviewQuestions } from "./questions.js";
+import {
+  buildLineDocumentEntities,
+  classifyLineDocumentTables,
+  classifyPipelineMetadataTables,
+  isDocumentCorpus,
+  partitionStructuredTables,
+  splitTablesByKind,
+  summarizeLineDocumentCorpus,
+} from "./line-document.js";
 
 export interface ProposeModelOptions {
   profile: ProfileReport;
@@ -40,6 +56,8 @@ export interface ProposeModelOptions {
   models: SemanticModels;
   now?: Date;
   reviewConfidenceThreshold?: number;
+  /** Optional progress hook (CLI logs batch steps). */
+  onProgress?: (message: string) => void;
 }
 
 type ColumnClassification =
@@ -275,34 +293,174 @@ function sumUsage(first: BurstUsage, second: BurstUsage): Proposal["usage"] {
   };
 }
 
-export async function proposeModel(options: ProposeModelOptions): Promise<Proposal> {
-  const tables = compressProfile(options.profile);
+function mergeBurstUsage(current: BurstUsage, next: BurstUsage): BurstUsage {
+  const costs = [current.costUsd, next.costUsd].filter((cost): cost is number => cost !== null);
+  return {
+    inputTokens: current.inputTokens + next.inputTokens,
+    outputTokens: current.outputTokens + next.outputTokens,
+    costUsd: costs.length > 0 ? costs.reduce((total, cost) => total + cost, 0) : null,
+  };
+}
 
-  const classification = await runBurst({
-    model: options.models.cheap,
-    system: COLUMN_CLASSIFICATION_SYSTEM_PROMPT,
-    prompt: columnClassificationPrompt(tables),
-    schema: ColumnClassificationOutputSchema,
-    schemaName: "column_classification",
-  });
+function mergeClassificationOutputs(
+  ...outputs: ColumnClassificationOutput[]
+): ColumnClassificationOutput {
+  return { tables: outputs.flatMap((output) => output.tables) };
+}
 
-  const ontology = await runBurst({
-    model: options.models.frontier,
-    system: ONTOLOGY_SYSTEM_PROMPT,
-    prompt: ontologyPrompt(tables, classification.output),
+async function classifyColumnsInBatches(
+  tables: CompressedTable[],
+  models: SemanticModels,
+  batchSize: number,
+  timeoutMs: number,
+  onProgress?: (message: string) => void,
+): Promise<{ output: ColumnClassificationOutput; usage: BurstUsage }> {
+  if (tables.length === 0) {
+    return { output: { tables: [] }, usage: { inputTokens: 0, outputTokens: 0, costUsd: null } };
+  }
+
+  const merged: ColumnClassificationOutput = { tables: [] };
+  let usage: BurstUsage = { inputTokens: 0, outputTokens: 0, costUsd: null };
+  const batchCount = Math.ceil(tables.length / batchSize);
+
+  for (let offset = 0; offset < tables.length; offset += batchSize) {
+    const batch = tables.slice(offset, offset + batchSize);
+    const batchIndex = Math.floor(offset / batchSize) + 1;
+    onProgress?.(`Column classification batch ${String(batchIndex)}/${String(batchCount)} (${String(batch.length)} tables)...`);
+    const result = await runBurst({
+      model: models.cheap,
+      system: COLUMN_CLASSIFICATION_SYSTEM_PROMPT,
+      prompt: columnClassificationPrompt(batch),
+      schema: ColumnClassificationOutputSchema,
+      schemaName: `column_classification_${String(batchIndex)}_of_${String(batchCount)}`,
+      timeoutMs,
+      ...(onProgress !== undefined ? { onWaiting: onProgress } : {}),
+    });
+    merged.tables.push(...result.output.tables);
+    usage = mergeBurstUsage(usage, result.usage);
+  }
+
+  return { output: merged, usage };
+}
+
+async function runOntologyBurst(
+  models: SemanticModels,
+  timeoutMs: number,
+  system: string,
+  prompt: string,
+  onProgress?: (message: string) => void,
+): Promise<{ output: OntologyOutput; usage: BurstUsage }> {
+  onProgress?.("Ontology proposal...");
+  const result = await runBurst({
+    model: models.frontier,
+    system,
+    prompt,
     schema: OntologyOutputSchema,
     schemaName: "ontology_proposal",
+    timeoutMs,
+    ...(onProgress !== undefined ? { onWaiting: onProgress } : {}),
   });
+  return result;
+}
 
-  const doubts: Doubt[] = [...ontology.output.doubts];
-  const entities = assembleEntities(
-    ontology.output,
+export async function proposeModel(options: ProposeModelOptions): Promise<Proposal> {
+  const tables = compressProfile(options.profile);
+  const timeoutMs = resolveSemanticRequestTimeoutMs();
+  const batchSize = resolveClassificationBatchSize();
+  const onProgress = options.onProgress;
+
+  const { lineDocuments, structured } = splitTablesByKind(tables);
+  const { pipelineMetadata, business: businessStructured } = partitionStructuredTables(structured);
+  const documentCorpus = isDocumentCorpus(lineDocuments.length, tables.length);
+
+  if (lineDocuments.length > 0) {
+    onProgress?.(
+      `${String(lineDocuments.length)} line-document table(s) — deterministic column classification (no LLM).`,
+    );
+  }
+  if (pipelineMetadata.length > 0) {
+    onProgress?.(
+      `${String(pipelineMetadata.length)} pipeline metadata table(s) — deterministic classification (no LLM).`,
+    );
+  }
+
+  const lineDocumentClassification = classifyLineDocumentTables(lineDocuments);
+  const metadataClassification = classifyPipelineMetadataTables(pipelineMetadata);
+  const structuredClassification =
+    businessStructured.length > 0
+      ? await classifyColumnsInBatches(
+          businessStructured,
+          options.models,
+          batchSize,
+          timeoutMs,
+          onProgress,
+        )
+      : {
+          output: { tables: [] as ColumnClassificationOutput["tables"] },
+          usage: { inputTokens: 0, outputTokens: 0, costUsd: null },
+        };
+
+  const classification = mergeClassificationOutputs(
+    lineDocumentClassification,
+    metadataClassification,
+    structuredClassification.output,
+  );
+
+  let ontologyOutput: OntologyOutput;
+  let ontologyUsage: BurstUsage;
+
+  if (businessStructured.length === 0 && documentCorpus) {
+    onProgress?.("Document corpus only — skipping ontology LLM (deterministic entities per source file).");
+    ontologyOutput = {
+      entities: [],
+      relations: [],
+      rules: [],
+      doubts: [
+        {
+          topic: "document corpus",
+          question: `How should ${String(lineDocuments.length)} source documents be grouped into business entity types?`,
+          reason:
+            "Each line-document table is one extracted file (page/line/text). One entity per file was created deterministically; regroup by document type (determination, notice, publication, etc.) during review.",
+        },
+      ],
+    };
+    ontologyUsage = { inputTokens: 0, outputTokens: 0, costUsd: null };
+  } else if (documentCorpus) {
+    const corpus = summarizeLineDocumentCorpus(lineDocuments);
+    const ontology = await runOntologyBurst(
+      options.models,
+      timeoutMs,
+      DOCUMENT_CORPUS_ONTOLOGY_SYSTEM_PROMPT,
+      documentCorpusOntologyPrompt(businessStructured, classification, corpus),
+      onProgress,
+    );
+    ontologyOutput = ontology.output;
+    ontologyUsage = ontology.usage;
+  } else {
+    const ontology = await runOntologyBurst(
+      options.models,
+      timeoutMs,
+      ONTOLOGY_SYSTEM_PROMPT,
+      ontologyPrompt(tables, classification),
+      onProgress,
+    );
+    ontologyOutput = ontology.output;
+    ontologyUsage = ontology.usage;
+  }
+
+  const doubts: Doubt[] = [...ontologyOutput.doubts];
+  const llmEntities = assembleEntities(
+    ontologyOutput,
     options.profile,
-    classification.output,
+    classification,
     doubts,
   );
-  const relations = assembleRelations(ontology.output, entities, doubts);
-  const rules = assembleRules(ontology.output, entities, doubts);
+  const lineDocumentEntities = documentCorpus
+    ? buildLineDocumentEntities(options.profile, classification)
+    : [];
+  const entities = [...llmEntities, ...lineDocumentEntities];
+  const relations = assembleRelations(ontologyOutput, entities, doubts);
+  const rules = assembleRules(ontologyOutput, entities, doubts);
   const assembly: AssemblyResult = { entities, relations, rules, doubts };
 
   const reviewConfidenceThreshold =
@@ -328,6 +486,6 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     rules,
     doubts,
     questions,
-    usage: sumUsage(classification.usage, ontology.usage),
+    usage: sumUsage(structuredClassification.usage, ontologyUsage),
   });
 }

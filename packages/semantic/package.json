@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Burst agentici LLM: profile.json → proposta ontologia",
+  "description": "Agentic LLM bursts: profile.json → ontology proposal",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

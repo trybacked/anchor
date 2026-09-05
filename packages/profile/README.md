@@ -1,11 +1,9 @@
 # @backed/profile
 
-Profilazione deterministica via SQL. Zero LLM.
+Deterministic profiling via SQL. Zero LLM.
 
-**Output:** `profile.json` — l'evidenza statistica, input di tutto ciò che viene dopo.
+**Output:** `profile.json` — statistical evidence, input for everything downstream.
 
-**Per colonna:** null%, distinct, top values, distribuzione, pattern (PIVA, CF, date, email, importi), chiavi candidate.
+**Per column:** null%, distinct count, top values, distribution, patterns (VAT ID, fiscal code, dates, email, amounts), candidate keys.
 
-**Per coppia di colonne:** overlap valori → candidato relazione con confidenza deterministica.
-
-**Settimana:** 3–4
+**Per column pair:** value overlap → relation candidate with deterministic confidence.

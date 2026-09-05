@@ -8,13 +8,58 @@ import { isPopplerAvailable, renderPdfPagePng } from "./pdf-poppler.js";
 import type { PdfLine } from "./pdf.js";
 
 const DEFAULT_OCR_MAX_PAGES = 30;
+const OCR_STDERR_DRAIN_MS = 400;
+
+const OCR_STDERR_NOISE =
+  /Image too small to scale|Line cannot be recognized|Warning: TT: undefined function/;
+
+let workerPromise: Promise<Worker> | null = null;
+let stderrFilterDepth = 0;
+let originalStderrWrite: typeof process.stderr.write | null = null;
 
 function ocrLanguages(): string {
   const configured = process.env["BACKED_OCR_LANG"]?.trim();
   return configured !== undefined && configured.length > 0 ? configured : "eng";
 }
 
-let workerPromise: Promise<Worker> | null = null;
+function beginOcrStderrFilter(): void {
+  if (stderrFilterDepth === 0) {
+    originalStderrWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk, encoding, callback) => {
+      const text =
+        typeof chunk === "string"
+          ? chunk
+          : Buffer.isBuffer(chunk)
+            ? chunk.toString(typeof encoding === "string" ? encoding : "utf8")
+            : String(chunk);
+      if (OCR_STDERR_NOISE.test(text)) {
+        if (typeof callback === "function") {
+          callback();
+        }
+        return true;
+      }
+      return originalStderrWrite!(chunk, encoding, callback);
+    }) as typeof process.stderr.write;
+  }
+  stderrFilterDepth += 1;
+}
+
+async function endOcrStderrFilter(): Promise<void> {
+  if (stderrFilterDepth === 0) {
+    return;
+  }
+  stderrFilterDepth -= 1;
+  if (stderrFilterDepth > 0) {
+    return;
+  }
+  await new Promise((resolve) => {
+    setTimeout(resolve, OCR_STDERR_DRAIN_MS);
+  });
+  if (originalStderrWrite !== null) {
+    process.stderr.write = originalStderrWrite;
+    originalStderrWrite = null;
+  }
+}
 
 function ocrEnabled(): boolean {
   const flag = process.env["BACKED_SKIP_OCR"]?.trim().toLowerCase();
@@ -35,8 +80,13 @@ function ocrMaxPages(): number {
 
 async function getOcrWorker(): Promise<Worker> {
   if (workerPromise === null) {
+    beginOcrStderrFilter();
     workerPromise = (async () => {
-      const worker = await createWorker(ocrLanguages());
+      const worker = await createWorker(ocrLanguages(), 1, {
+        logger: () => {
+          // Tesseract progress logs are noisy during batch ingest.
+        },
+      });
       return worker;
     })();
   }
@@ -50,6 +100,7 @@ export async function terminateOcrWorker(): Promise<void> {
   const worker = await workerPromise;
   await worker.terminate();
   workerPromise = null;
+  await endOcrStderrFilter();
 }
 
 function linesFromOcrText(pageNum: number, text: string): PdfLine[] {

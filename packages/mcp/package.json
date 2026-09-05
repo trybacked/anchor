@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "MCP server locale: consumo ontologia via agenti AI",
+  "description": "Local MCP server: ontology consumption via AI agents",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

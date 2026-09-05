@@ -1,11 +1,14 @@
 # @backed/mcp
 
-MCP server locale: gli agenti AI del cliente consultano l'ontologia confermata (`modello.yaml`).
+Local MCP server: client AI agents query the confirmed ontology (`model.yaml`).
 
-**Responsabilità:**
+**Responsibilities:**
 
-- Mapping puro e testabile su `SemanticModel`: `listEntities`, `getEntity` (con relazioni e regole collegate), `listRelations`, `searchModel`.
-- `createModelMcpServer(model)` — `McpServer` with tools `list_entities`, `get_entity`, `list_relations`, `search_model` (English descriptions).
-- `startStdioMcpServer(model)` — avvio su transport stdio (usato da `backed serve`).
+- Pure, testable mapping over `SemanticModel`: `listEntities`, `getEntity` (with linked relations and rules), `listRelations`, `searchModel`.
+- `queryEntityRows(model, reader, input)` — validates entity id, filter columns, and row limit against the ontology before delegating to a `RowReader` from `@backed/ingest`.
+- `createModelMcpServer(model, options?)` — `McpServer` with tools `list_entities`, `get_entity`, `list_relations`, `search_model` (English descriptions). Registers `query_entity` only when `options.rowReader` is provided.
+- `startStdioMcpServer(model, options?)` — stdio transport startup (used by `backed serve`).
 
-**Non contiene:** pipeline, ingest, LLM.
+**Data access:** `backed model` persists ingested tables to `.backed/data.duckdb`. `backed serve` opens that snapshot read-only and passes a row reader to the MCP server. Structured filters only — no raw SQL.
+
+**Does not contain:** pipeline, ingest SQL, LLM.

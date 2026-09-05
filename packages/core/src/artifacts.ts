@@ -1,5 +1,5 @@
 /**
- * Read/write of local artifacts (.backed/ and modello.yaml).
+ * Read/write of local artifacts (.backed/ and model.yaml).
  * Every read is Zod-validated: a corrupt artifact fails loudly, never silently.
  */
 

@@ -7,19 +7,19 @@ Local-first CLI. Command orchestration only, no domain logic. User-facing copy i
 | Command | What it does |
 |---|---|
 | `backed init [folder]` | Create `.backed/config.yaml` with the sources folder (default `./sources`) |
-| `backed model [folder]` | Ingest → profile → `profile.json`, then semantic bursts → `proposal.json` |
-| `backed review` | Interactive review of all uncertain proposals → `review.json` + `modello.yaml` |
+| `backed model [folder]` | Ingest → profile → `profile.json`, then semantic bursts → `proposal.json`. Also writes `.backed/data.duckdb` (DuckDB snapshot of ingested tables). |
+| `backed review` | Interactive review of all uncertain proposals → `review.json` + `model.yaml` |
 | `backed diff` | Compare the last two runs → `diff.json` + English report |
-| `backed serve` | MCP stdio server on `modello.yaml` (tools: `list_entities`, `get_entity`, `list_relations`, `search_model`) |
+| `backed serve` | MCP stdio server on `model.yaml`. When `.backed/data.duckdb` exists, also exposes `query_entity` for read-only row access validated against the ontology. |
 
 ## Example
 
 ```bash
 cd client-folder
 backed init ./sources
-backed model            # requires AI_GATEWAY_API_KEY in .env
-backed review           # confirm/correct → writes modello.yaml
-backed serve            # AI agents query the ontology via MCP
+backed model            # requires AI_GATEWAY_API_KEY in .env; writes data.duckdb
+backed review           # confirm/correct → writes model.yaml
+backed serve            # AI agents query the ontology (+ rows) via MCP
 backed model && backed diff   # re-run when data changes
 ```
 

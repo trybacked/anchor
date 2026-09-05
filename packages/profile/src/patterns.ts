@@ -9,15 +9,15 @@ const DATE_PATTERNS: readonly RegExp[] = [
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-// TODO: validazione check-digit (algoritmo Luhn-like per PIVA).
+// TODO: check-digit validation (Luhn-like algorithm for Italian VAT numbers).
 const VAT_NUMBER_PATTERN = /^\d{11}$/;
 
-// Struttura standard del codice fiscale persona fisica.
-// TODO: validazione carattere di controllo e gestione omocodia.
+// Standard Italian personal fiscal code structure.
+// TODO: control-character validation and omocodia handling.
 const FISCAL_CODE_PATTERN = /^[A-Z]{6}\d{2}[ABCDEHLMPRST]\d{2}[A-Z]\d{3}[A-Z]$/i;
 
-// Importo con decimali obbligatori, separatore italiano o anglosassone,
-// migliaia opzionali. Un intero puro non è considerato importo.
+// Amount with required decimals, European or Anglo separator,
+// optional thousands grouping. A plain integer is not treated as an amount.
 const AMOUNT_PATTERN =
   /^-?(?:\d+|\d{1,3}(?:\.\d{3})+),\d{1,2}$|^-?(?:\d+|\d{1,3}(?:,\d{3})+)\.\d{1,2}$/;
 
@@ -52,7 +52,7 @@ const MATCHERS: ReadonlyArray<{
   { kind: "amount", matches: matchesAmount },
 ];
 
-/** Detection sui valori campionati: riporta i pattern sopra soglia. */
+/** Pattern detection on sampled values; returns patterns above threshold. */
 export function detectPatterns(values: readonly string[]): DetectedPattern[] {
   const trimmed = values.map((value) => value.trim()).filter((value) => value !== "");
   if (trimmed.length === 0) {
