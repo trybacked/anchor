@@ -8,6 +8,7 @@
 import { LOW_CONFIDENCE_THRESHOLD, ProposalSchema } from "@backed/core";
 import type {
   ColumnProfile,
+  DocumentCatalog,
   Doubt,
   Entity,
   ProfileReport,
@@ -40,6 +41,13 @@ import {
   ontologyPrompt,
 } from "./prompts.js";
 import { selectReviewQuestions } from "./questions.js";
+import { selectDocumentTypeReviewQuestions } from "./document-questions.js";
+import {
+  buildDocumentCorpusEntities,
+  buildDocumentCorpusRelations,
+  classifyTypedDocumentTables,
+  DOCUMENT_TEXT_ENTITY_ID,
+} from "./document-ontology.js";
 import {
   buildLineDocumentEntities,
   classifyLineDocumentTables,
@@ -56,6 +64,10 @@ export interface ProposeModelOptions {
   models: SemanticModels;
   now?: Date;
   reviewConfidenceThreshold?: number;
+  /** Materialized document catalog — enables typed document ontology instead of one entity per file. */
+  documentCatalog?: DocumentCatalog;
+  /** Token usage from document extraction burst (summed into proposal usage). */
+  extractionUsage?: BurstUsage;
   /** Optional progress hook (CLI logs batch steps). */
   onProgress?: (message: string) => void;
 }
@@ -284,13 +296,35 @@ function lowConfidenceDoubts(assembly: AssemblyResult, questionTargets: Set<stri
   return doubts;
 }
 
-function sumUsage(first: BurstUsage, second: BurstUsage): Proposal["usage"] {
-  const costs = [first.costUsd, second.costUsd].filter((cost): cost is number => cost !== null);
+function sumUsageMany(usages: BurstUsage[]): Proposal["usage"] {
+  let inputTokens = 0;
+  let outputTokens = 0;
+  const costs: number[] = [];
+  for (const usage of usages) {
+    inputTokens += usage.inputTokens;
+    outputTokens += usage.outputTokens;
+    if (usage.costUsd !== null) {
+      costs.push(usage.costUsd);
+    }
+  }
   return {
-    inputTokens: first.inputTokens + second.inputTokens,
-    outputTokens: first.outputTokens + second.outputTokens,
+    inputTokens,
+    outputTokens,
     costUsd: costs.length > 0 ? costs.reduce((total, cost) => total + cost, 0) : null,
   };
+}
+
+function documentEntityIds(catalog: DocumentCatalog): Set<string> {
+  const ids = new Set<string>([DOCUMENT_TEXT_ENTITY_ID]);
+  for (const type of catalog.documentTypes) {
+    ids.add(
+      type.id
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, ""),
+    );
+  }
+  return ids;
 }
 
 function mergeBurstUsage(current: BurstUsage, next: BurstUsage): BurstUsage {
@@ -368,12 +402,19 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
   const timeoutMs = resolveSemanticRequestTimeoutMs();
   const batchSize = resolveClassificationBatchSize();
   const onProgress = options.onProgress;
+  const documentCatalog = options.documentCatalog;
 
   const { lineDocuments, structured } = splitTablesByKind(tables);
   const { pipelineMetadata, business: businessStructured } = partitionStructuredTables(structured);
-  const documentCorpus = isDocumentCorpus(lineDocuments.length, tables.length);
+  const documentCorpus =
+    documentCatalog !== undefined ||
+    isDocumentCorpus(lineDocuments.length, tables.length);
 
-  if (lineDocuments.length > 0) {
+  if (documentCatalog !== undefined) {
+    onProgress?.(
+      `Document corpus materialized: ${String(documentCatalog.documentTypes.length)} type(s), ${String(documentCatalog.documents.length)} document(s).`,
+    );
+  } else if (lineDocuments.length > 0) {
     onProgress?.(
       `${String(lineDocuments.length)} line-document table(s) — deterministic column classification (no LLM).`,
     );
@@ -384,7 +425,12 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     );
   }
 
-  const lineDocumentClassification = classifyLineDocumentTables(lineDocuments);
+  const lineDocumentClassification =
+    documentCatalog !== undefined
+      ? { tables: [] as ColumnClassificationOutput["tables"] }
+      : classifyLineDocumentTables(lineDocuments);
+  const typedDocumentClassification =
+    documentCatalog !== undefined ? classifyTypedDocumentTables(documentCatalog) : { tables: [] };
   const metadataClassification = classifyPipelineMetadataTables(pipelineMetadata);
   const structuredClassification =
     businessStructured.length > 0
@@ -402,6 +448,7 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
 
   const classification = mergeClassificationOutputs(
     lineDocumentClassification,
+    typedDocumentClassification,
     metadataClassification,
     structuredClassification.output,
   );
@@ -409,7 +456,16 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
   let ontologyOutput: OntologyOutput;
   let ontologyUsage: BurstUsage;
 
-  if (businessStructured.length === 0 && documentCorpus) {
+  if (documentCatalog !== undefined) {
+    onProgress?.("Building typed document ontology (deterministic entities and relations).");
+    ontologyOutput = {
+      entities: [],
+      relations: [],
+      rules: [],
+      doubts: [],
+    };
+    ontologyUsage = { inputTokens: 0, outputTokens: 0, costUsd: null };
+  } else if (businessStructured.length === 0 && documentCorpus) {
     onProgress?.("Document corpus only — skipping ontology LLM (deterministic entities per source file).");
     ontologyOutput = {
       entities: [],
@@ -455,23 +511,45 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     classification,
     doubts,
   );
-  const lineDocumentEntities = documentCorpus
-    ? buildLineDocumentEntities(options.profile, classification)
-    : [];
+  const lineDocumentEntities =
+    documentCatalog !== undefined
+      ? buildDocumentCorpusEntities(documentCatalog, options.profile)
+      : documentCorpus
+        ? buildLineDocumentEntities(options.profile, classification)
+        : [];
   const entities = [...llmEntities, ...lineDocumentEntities];
-  const relations = assembleRelations(ontologyOutput, entities, doubts);
+  const documentRelations =
+    documentCatalog !== undefined
+      ? buildDocumentCorpusRelations(documentCatalog, entities)
+      : [];
+  const relations = [...assembleRelations(ontologyOutput, entities, doubts), ...documentRelations];
   const rules = assembleRules(ontologyOutput, entities, doubts);
   const assembly: AssemblyResult = { entities, relations, rules, doubts };
 
   const reviewConfidenceThreshold =
     options.reviewConfidenceThreshold ?? resolveReviewConfidenceThreshold();
 
-  const questions = selectReviewQuestions(
-    entities,
+  const excludedEntityIds =
+    documentCatalog !== undefined ? documentEntityIds(documentCatalog) : new Set<string>();
+
+  const standardQuestions = selectReviewQuestions(
+    entities.filter((entity) => !excludedEntityIds.has(entity.id)),
     relations,
     rules,
     tables,
     reviewConfidenceThreshold,
+  );
+  const documentTypeQuestions =
+    documentCatalog !== undefined
+      ? selectDocumentTypeReviewQuestions(
+          documentCatalog,
+          entities,
+          tables,
+          reviewConfidenceThreshold,
+        )
+      : [];
+  const questions = [...documentTypeQuestions, ...standardQuestions].sort(
+    (a, b) => b.risk - a.risk || a.id.localeCompare(b.id),
   );
   const questionTargets = new Set(
     questions.map((question) => `${question.kind}:${question.targetId}`),
@@ -486,6 +564,10 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     rules,
     doubts,
     questions,
-    usage: sumUsage(structuredClassification.usage, ontologyUsage),
+    usage: sumUsageMany([
+      structuredClassification.usage,
+      ontologyUsage,
+      ...(options.extractionUsage !== undefined ? [options.extractionUsage] : []),
+    ]),
   });
 }

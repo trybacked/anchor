@@ -12,6 +12,7 @@ export const DATA_FILE_NAME = "data.duckdb";
 
 export const RUN_ARTIFACTS = {
   profile: "profile.json",
+  documents: "documents.json",
   proposal: "proposal.json",
   review: "review.json",
   diff: "diff.json",

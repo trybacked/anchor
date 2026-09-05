@@ -13,6 +13,16 @@ import type { Dataset, IngestSession, IngestWarning } from "./types.js";
 
 export { quoteIdentifier, quoteString } from "./sql.js";
 export { createRowReader } from "./row-reader.js";
+export {
+  DOCUMENT_HEADER_LINE_LIMIT,
+  fetchDocumentHeaderText,
+  fetchDocumentHeaderSamples,
+  materializeDocumentTables,
+} from "./materialize-documents.js";
+export type {
+  DocumentHeaderSample,
+  MaterializeDocumentsResult,
+} from "./materialize-documents.js";
 export type {
   CsvDialect,
   CsvEncoding,

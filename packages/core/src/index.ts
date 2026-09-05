@@ -101,6 +101,21 @@ export {
 export type { RowFilter, EntityRowRequest, RowReader } from "./data-query.js";
 
 export {
+  DocumentFieldSchema,
+  DocumentCatalogEntrySchema,
+  DocumentTypeSummarySchema,
+  DocumentCatalogSchema,
+  DOCUMENT_LINES_TABLE,
+  documentTypeTableName,
+} from "./document-catalog.js";
+export type {
+  DocumentField,
+  DocumentCatalogEntry,
+  DocumentTypeSummary,
+  DocumentCatalog,
+} from "./document-catalog.js";
+
+export {
   initWorkspace,
   readWorkspaceConfig,
   writeRunArtifact,

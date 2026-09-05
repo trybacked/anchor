@@ -12,6 +12,8 @@ coverage/
 pnpm-debug.log*
 .vitest/
 tmp/
+test/
+test
 temp/
 .backed/
 **/src/generated/

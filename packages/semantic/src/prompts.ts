@@ -4,6 +4,7 @@
  */
 
 import type { CompressedTable } from "./compress.js";
+import type { DocumentExtractionSample } from "./extract-document-catalog.js";
 import type { ColumnClassificationOutput } from "./llm-output.js";
 import type { LineDocumentCorpusSummary } from "./line-document.js";
 
@@ -85,4 +86,40 @@ Line-document corpus summary (each omitted table is one source document with pag
 ${JSON.stringify(corpus, null, 2)}
 
 Propose the semantic model for structured tables only. Use doubts to explain how the document corpus should be grouped — do not list one entity per document table.`;
+}
+
+export const DOCUMENT_EXTRACTION_SYSTEM_PROMPT = `You classify official documents from Italian public administration and small-business exports.
+Each input item is one source document represented as page-1 header lines extracted from PDF/OCR (columns page, line, text in the source system).
+
+For each document, infer:
+- documentType: stable English slug (e.g. determination, notice, resolution, deliberation, publication, ordinance, announcement, unknown)
+- documentTypeLabel: singular English business name (e.g. Determination, Public Notice)
+- protocolNumber: protocol/registry number if visible, else null
+- publishedDate: ISO date YYYY-MM-DD if visible, else null
+- subject: short subject/title in English if inferable, else null
+- issuingOffice: issuing body/office if visible, else null
+- confidence: 0..1 for the overall classification
+
+Rules:
+- Use filename/table slug as a weak hint only; prefer header text.
+- Group similar administrative acts under the same documentType slug.
+- Prefer "unknown" with low confidence over inventing fields.
+- All labels and subjects in English.
+- Never invent protocol numbers or dates not supported by the header text.`;
+
+export function documentExtractionPrompt(samples: DocumentExtractionSample[]): string {
+  return `Classify each document and extract standard header fields.
+
+Documents (JSON):
+${JSON.stringify(
+  samples.map((sample) => ({
+    sourceTable: sample.sourceTable,
+    pageCount: sample.pageCount,
+    headerLines: sample.headerLines,
+  })),
+  null,
+  2,
+)}
+
+Return one entry per sourceTable.`;
 }

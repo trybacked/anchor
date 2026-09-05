@@ -32,6 +32,25 @@ export type { ColumnClassificationOutput, OntologyOutput } from "./llm-output.js
 
 export { selectReviewQuestions } from "./questions.js";
 
+export { runBurst } from "./burst.js";
+export type { BurstRequest, BurstUsage, BurstResult } from "./burst.js";
+
 export { proposeModel } from "./propose.js";
 export type { ProposeModelOptions } from "./propose.js";
 export { mergeIncrementalProposal } from "./merge-proposal.js";
+
+export { extractDocumentCatalog, DocumentExtractionOutputSchema, DOCUMENT_EXTRACTION_BATCH_SIZE } from "./extract-document-catalog.js";
+export type { DocumentExtractionSample, ExtractDocumentCatalogOptions } from "./extract-document-catalog.js";
+
+export {
+  buildDocumentCorpusEntities,
+  buildDocumentCorpusRelations,
+  classifyTypedDocumentTables,
+  DOCUMENT_TEXT_ENTITY_ID,
+} from "./document-ontology.js";
+
+export {
+  isLineDocumentTable,
+  isDocumentCorpus,
+  splitTablesByKind,
+} from "./line-document.js";

@@ -59,7 +59,7 @@ model.yaml  Anchor model
 
 **Profile** produces reproducible statistical evidence per column: null rates, distinct counts, patterns, candidate keys. Cross-column value overlap surfaces deterministic foreign-key candidates. No LLM participates. This evidence is the sole input to semantic inference.
 
-**Semantic inference** runs two schema-constrained bursts: column classification (cheap model), then ontology proposal (frontier model). The LLM sees compressed profiles, never raw rows. *"I don't know"* is valid output. Proposals referencing tables or columns absent from the profile are dropped and surfaced as doubts.
+**Semantic inference** runs two schema-constrained bursts: column classification (cheap model), then ontology proposal (frontier model). The LLM sees compressed profiles, never raw rows. *"I don't know"* is valid output. Proposals referencing tables or columns absent from the profile are dropped and surfaced as doubts. **Document corpora** (15+ PDF/text line tables) take a dedicated path: a cheap extraction burst classifies document types and header fields, materializes typed DuckDB tables, then builds deterministic object-type entities and relations.
 
 **Review** asks human confirmation for every element with **confidence below `REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`), ordered by **risk = impact × uncertainty**. High-confidence inferences pass through as `proposed` without a prompt. Each question includes profile evidence. Answers: Yes · No · Rename.
 
@@ -244,7 +244,7 @@ Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / 
 
 ## Scope
 
-**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · MCP export · incremental re-inference · ontology-guided data query (`query_entity`).
+**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · MCP export · incremental re-inference · ontology-guided data query (`query_entity`) · document corpus typing (extraction + materialized object types).
 
 **Out (v1):** Hosted cloud · SDK · registry · billing · dashboard · writeback.
 

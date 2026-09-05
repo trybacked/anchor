@@ -7,7 +7,7 @@ Local-first CLI. Command orchestration only, no domain logic. User-facing copy i
 | Command | What it does |
 |---|---|
 | `backed init [folder]` | Create `.backed/config.yaml` with the sources folder (default `./sources`) |
-| `backed model [folder]` | Ingest → profile → `profile.json`, then semantic bursts → `proposal.json`. Also writes `.backed/data.duckdb` (DuckDB snapshot of ingested tables). |
+| `backed model [folder]` | Ingest → profile → semantic inference → `proposal.json`. Document corpora (15+ PDF/text files) also run extraction, materialize typed tables, and write `documents.json`. Writes `.backed/data.duckdb`. |
 | `backed review` | Interactive review of all uncertain proposals → `review.json` + `model.yaml` |
 | `backed diff` | Compare the last two runs → `diff.json` + English report |
 | `backed serve` | MCP stdio server on `model.yaml`. When `.backed/data.duckdb` exists, also exposes `query_entity` for read-only row access validated against the ontology. |

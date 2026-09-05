@@ -12,26 +12,34 @@ import {
   workspacePaths,
   writeRunArtifact,
 } from "@backed/core";
-import type { Proposal } from "@backed/core";
+import type { DocumentCatalog, Proposal } from "@backed/core";
 import {
   affectedTablesFromProfileDiff,
   filterProfileToTables,
 } from "@backed/diff";
-import { ingestFolder } from "@backed/ingest";
+import {
+  fetchDocumentHeaderSamples,
+  ingestFolder,
+  materializeDocumentTables,
+} from "@backed/ingest";
 import { profileTables } from "@backed/profile";
 import {
   MissingApiKeyError,
+  compressProfile,
+  extractDocumentCatalog,
+  isDocumentCorpus,
   mergeIncrementalProposal,
   proposeModel,
   resolveSemanticModels,
+  splitTablesByKind,
 } from "@backed/semantic";
+import type { BurstUsage } from "@backed/semantic";
 
 import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 
 function resolveSourcesDir(root: string, positional: string | undefined): string {
   if (positional) {
-    // A folder passed explicitly also (re)initializes the workspace config.
     initWorkspace(root, { sourcesDir: positional });
     return positional;
   }
@@ -92,9 +100,13 @@ export const modelCommand: CommandHandler = async (args) => {
       console.log(`  Warning [${warning.file}]: ${warning.message}`);
     }
 
-    const profile = await profileTables(session);
-    const profilePath = writeRunArtifact(root, runId, "profile", profile);
-    console.log(`Profile saved: ${profilePath}`);
+    let profile = await profileTables(session);
+    const compressedTables = compressProfile(profile);
+    const { lineDocuments } = splitTablesByKind(compressedTables);
+    const documentCorpus = isDocumentCorpus(lineDocuments.length, compressedTables.length);
+
+    let documentCatalog: DocumentCatalog | undefined;
+    let extractionUsage: BurstUsage | undefined;
 
     let models;
     try {
@@ -108,10 +120,60 @@ export const modelCommand: CommandHandler = async (args) => {
       throw error;
     }
 
+    if (documentCorpus) {
+      console.log(
+        `Document corpus detected (${String(lineDocuments.length)} line-document tables) — running extraction and materialization...`,
+      );
+
+      const headerSamples = await fetchDocumentHeaderSamples(
+        session.query,
+        lineDocuments.map((table) => ({
+          sourceTable: table.table,
+          pageCount: table.rowCount,
+        })),
+      );
+
+      const extracted = await extractDocumentCatalog({
+        runId,
+        models,
+        samples: headerSamples,
+        onProgress: (message) => {
+          console.log(`  ${message}`);
+        },
+      });
+      extractionUsage = extracted.usage;
+
+      const sourceFileByTable = new Map(
+        session.datasets.map((dataset) => [dataset.tableName, dataset.sourceFile]),
+      );
+      const materialized = await materializeDocumentTables(
+        session.query,
+        extracted.catalog,
+        sourceFileByTable,
+      );
+      documentCatalog = materialized.catalog;
+
+      session.datasets = session.datasets.filter(
+        (dataset) => !materialized.datasetsRemoved.includes(dataset.tableName),
+      );
+      session.datasets.push(...materialized.datasetsAdded);
+
+      const documentsPath = writeRunArtifact(root, runId, "documents", documentCatalog);
+      console.log(`Document catalog saved: ${documentsPath}`);
+      console.log(
+        `Materialized tables: ${documentCatalog.documentTypes.map((type) => type.tableName).join(", ")}, document_lines`,
+      );
+
+      profile = await profileTables(session);
+    }
+
+    const profilePath = writeRunArtifact(root, runId, "profile", profile);
+    console.log(`Profile saved: ${profilePath}`);
+
     let incrementalTables: Set<string> | null = null;
     let existingModel = null;
 
-    if (!forceFull && previousRunId !== undefined) {
+    if (!forceFull && !documentCorpus && previousRunId !== undefined) {
       try {
         existingModel = readModelYaml(root);
         const previousProfile = readRunArtifact(
@@ -142,6 +204,8 @@ export const modelCommand: CommandHandler = async (args) => {
       console.log(
         `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from model.yaml.`,
       );
+    } else if (documentCatalog !== undefined) {
+      console.log("Running semantic inference on materialized document ontology...");
     } else {
       console.log("Running semantic inference (line-document tables skip LLM; see progress below)...");
     }
@@ -150,6 +214,8 @@ export const modelCommand: CommandHandler = async (args) => {
       profile: profileForInference,
       runId,
       models,
+      ...(documentCatalog !== undefined ? { documentCatalog } : {}),
+      ...(extractionUsage !== undefined ? { extractionUsage } : {}),
       onProgress: (message) => {
         console.log(`  ${message}`);
       },
