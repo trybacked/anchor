@@ -9,9 +9,11 @@ export {
   AI_GATEWAY_API_KEY_ENV,
   CHEAP_MODEL_ENV,
   FRONTIER_MODEL_ENV,
+  EMBEDDING_MODEL_ENV,
   REVIEW_CONFIDENCE_THRESHOLD_ENV,
   DEFAULT_CHEAP_MODEL,
   DEFAULT_FRONTIER_MODEL,
+  DEFAULT_EMBEDDING_MODEL,
   DEFAULT_REQUEST_TIMEOUT_MS,
   DEFAULT_CLASSIFICATION_BATCH_SIZE,
   REQUEST_TIMEOUT_MS_ENV,
@@ -42,11 +44,15 @@ export { mergeIncrementalProposal } from "./merge-proposal.js";
 export { extractDocumentCatalog, DocumentExtractionOutputSchema, DOCUMENT_EXTRACTION_BATCH_SIZE } from "./extract-document-catalog.js";
 export type { DocumentExtractionSample, ExtractDocumentCatalogOptions } from "./extract-document-catalog.js";
 
+export { embedTexts, embedQuery, EMBEDDING_BATCH_SIZE } from "./embed-chunks.js";
+export type { EmbedTextsUsage, EmbedTextsResult } from "./embed-chunks.js";
+
 export {
   buildDocumentCorpusEntities,
   buildDocumentCorpusRelations,
   classifyTypedDocumentTables,
   DOCUMENT_TEXT_ENTITY_ID,
+  DOCUMENT_CHUNK_ENTITY_ID,
 } from "./document-ontology.js";
 
 export {

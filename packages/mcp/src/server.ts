@@ -6,7 +6,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { RowReader, SemanticModel } from "@backed/core";
+import type { ChunkSearcher, RowReader, SemanticModel } from "@backed/core";
 import { MAX_ROW_LIMIT } from "@backed/core";
 import { z } from "zod";
 
@@ -24,6 +24,7 @@ const rowFilterSchema = z.object({
 
 export interface ModelMcpServerOptions {
   rowReader?: RowReader | undefined;
+  chunkSearcher?: ChunkSearcher | undefined;
 }
 
 function jsonContent(data: unknown): { content: { type: "text"; text: string }[] } {
@@ -94,18 +95,33 @@ export function createModelMcpServer(
 
   if (options.rowReader) {
     const rowReader = options.rowReader;
+    const chunkSearcher = options.chunkSearcher;
     server.registerTool(
       "query_entity",
       {
-        title: "Query entity rows",
+        title: "Query entity",
         description:
-          "Return actual source rows for an entity. Filters and orderBy must use source column names from get_entity. Read-only; no raw SQL.",
+          "Fetch rows for an entity. Use filters for structured columns (from get_entity). Use text for free-text search — document types and document_chunk search PDF body (keyword/semantic hybrid); other entities search text columns. Read-only; no raw SQL.",
         inputSchema: {
-          id: z.string().min(1).describe("Entity id, e.g. 'invoice'"),
+          id: z.string().min(1).describe("Entity id, e.g. 'invoice' or 'determination'"),
           filters: z
             .array(rowFilterSchema)
             .optional()
             .describe("Structured column filters (AND-combined)"),
+          text: z
+            .string()
+            .min(1)
+            .optional()
+            .describe("Free-text search within this entity's data"),
+          textMode: z
+            .enum(["keyword", "semantic", "hybrid"])
+            .optional()
+            .describe("Document text search mode. Default: hybrid when embeddings exist"),
+          documentId: z
+            .string()
+            .min(1)
+            .optional()
+            .describe("Limit document search to one ingested file id"),
           orderBy: z
             .string()
             .min(1)
@@ -121,7 +137,8 @@ export function createModelMcpServer(
         },
       },
       async (input) => {
-        const result = await queryEntityRows(model, rowReader, input);
+        const dependencies = chunkSearcher !== undefined ? { chunkSearcher } : {};
+        const result = await queryEntityRows(model, rowReader, input, dependencies);
         if (!result.ok) {
           return {
             isError: true,

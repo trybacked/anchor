@@ -18,14 +18,18 @@ import {
   filterProfileToTables,
 } from "@backed/diff";
 import {
+  chunkDocumentLines,
+  fetchChunkTextsForEmbedding,
   fetchDocumentHeaderSamples,
   ingestFolder,
   materializeDocumentTables,
+  storeChunkEmbeddings,
 } from "@backed/ingest";
 import { profileTables } from "@backed/profile";
 import {
   MissingApiKeyError,
   compressProfile,
+  embedTexts,
   extractDocumentCatalog,
   isDocumentCorpus,
   mergeIncrementalProposal,
@@ -48,19 +52,19 @@ function resolveSourcesDir(root: string, positional: string | undefined): string
 
 function printProposalSummary(proposal: Proposal): void {
   console.log(
-    `Model proposal: ${String(proposal.entities.length)} entities, ${String(proposal.relations.length)} relations, ${String(proposal.rules.length)} rules.`,
+    `Done: ${String(proposal.entities.length)} entities, ${String(proposal.relations.length)} relations.`,
   );
   if (proposal.doubts.length > 0) {
-    console.log(`Doubts declared by the model: ${String(proposal.doubts.length)}`);
+    console.log(`Open doubts: ${String(proposal.doubts.length)}`);
   }
   if (proposal.usage) {
     const cost = proposal.usage.costUsd !== null ? ` (~$${proposal.usage.costUsd.toFixed(4)})` : "";
     console.log(
-      `Tokens: ${String(proposal.usage.inputTokens)} in / ${String(proposal.usage.outputTokens)} out${cost}`,
+      `LLM usage: ${String(proposal.usage.inputTokens)} in / ${String(proposal.usage.outputTokens)} out${cost}`,
     );
   }
   console.log(
-    `Review questions selected: ${String(proposal.questions.length)}. Next step: "backed review".`,
+    `Review: ${String(proposal.questions.length)} question(s). Run "backed review" to confirm.`,
   );
 }
 
@@ -81,7 +85,7 @@ export const modelCommand: CommandHandler = async (args) => {
   const previousRunIds = listRunIds(root);
   const previousRunId = previousRunIds.at(-1);
 
-  console.log(`Run ${runId} — profiling sources in "${sourcesDir}"...`);
+  console.log(`Run ${runId} — reading sources in "${sourcesDir}"...`);
 
   const paths = workspacePaths(root);
   const session = await ingestFolder(absoluteSources, { databasePath: paths.dataPath });
@@ -122,7 +126,7 @@ export const modelCommand: CommandHandler = async (args) => {
 
     if (documentCorpus) {
       console.log(
-        `Document corpus detected (${String(lineDocuments.length)} line-document tables) — running extraction and materialization...`,
+        `Documents detected (${String(lineDocuments.length)} files) — classifying and indexing...`,
       );
 
       const headerSamples = await fetchDocumentHeaderSamples(
@@ -159,10 +163,37 @@ export const modelCommand: CommandHandler = async (args) => {
       session.datasets.push(...materialized.datasetsAdded);
 
       const documentsPath = writeRunArtifact(root, runId, "documents", documentCatalog);
-      console.log(`Document catalog saved: ${documentsPath}`);
+      console.log(`Document types saved: ${documentsPath}`);
       console.log(
-        `Materialized tables: ${documentCatalog.documentTypes.map((type) => type.tableName).join(", ")}, document_lines`,
+        `Indexed: ${documentCatalog.documentTypes.map((type) => type.name).join(", ")}`,
       );
+
+      const chunked = await chunkDocumentLines(session.query);
+      session.datasets = session.datasets.filter(
+        (dataset) => dataset.tableName !== chunked.dataset.tableName,
+      );
+      session.datasets.push(chunked.dataset);
+      console.log(`Search index: ${String(chunked.chunkCount)} text segments`);
+
+      const chunkTexts = await fetchChunkTextsForEmbedding(session.query);
+      if (chunkTexts.length > 0) {
+        const embedded = await embedTexts(
+          models.embedding,
+          chunkTexts.map((row) => row.text),
+          (message) => {
+            console.log(`  ${message}`);
+          },
+        );
+        await storeChunkEmbeddings(
+          session.query,
+          chunkTexts.map((row, index) => ({
+            document_id: row.document_id,
+            chunk_index: row.chunk_index,
+            embedding: embedded.embeddings[index] ?? [],
+          })),
+        );
+        console.log(`Semantic search ready (${String(chunkTexts.length)} vectors indexed)`);
+      }
 
       profile = await profileTables(session);
     }
@@ -205,9 +236,9 @@ export const modelCommand: CommandHandler = async (args) => {
         `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from model.yaml.`,
       );
     } else if (documentCatalog !== undefined) {
-      console.log("Running semantic inference on materialized document ontology...");
+      console.log("Building semantic model from documents...");
     } else {
-      console.log("Running semantic inference (line-document tables skip LLM; see progress below)...");
+      console.log("Building semantic model...");
     }
 
     const freshProposal = await proposeModel({

@@ -63,9 +63,24 @@ model.yaml  Anchor model
 
 **Review** asks human confirmation for every element with **confidence below `REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`), ordered by **risk = impact × uncertainty**. High-confidence inferences pass through as `proposed` without a prompt. Each question includes profile evidence. Answers: Yes · No · Rename.
 
-**Consumption** exposes the model over MCP (`list_entities`, `get_entity`, `list_relations`, `search_model`, `query_entity`) for Cursor, Claude Desktop, and custom agent runtimes. After `backed model`, a DuckDB snapshot (`.backed/data.duckdb`) holds ingested source tables; `backed serve` opens it read-only so agents can fetch actual rows through `query_entity` — filters validated against entity properties, no raw SQL.
+**Consumption** exposes the model over MCP for Cursor, Claude Desktop, and custom agents. After `backed model`, a DuckDB snapshot (`.backed/data.duckdb`) holds your sources; `backed serve` opens it read-only. Agents use **`query_entity`** for everything: structured filters on columns, or **`text`** for free-text search (spreadsheet columns, document metadata, or full PDF body via semantic/keyword hybrid). No raw SQL.
 
 ---
+
+## Quick start
+
+1. **Drop files** in `sources/` — CSV, Excel, JSON, PDF, ZIP, etc. Anchor detects format automatically.
+2. **`backed model`** — ingest, profile, infer ontology, index documents when present.
+3. **`backed review`** then **`backed serve`** — confirm uncertain items; agents query via MCP.
+
+```bash
+backed init ./sources   # once
+backed model            # any mix of files
+backed review           # confirm what matters
+backed serve            # MCP for agents
+```
+
+Agent pattern: `list_entities` → `get_entity` → `query_entity` with `filters` or `text`.
 
 ## The model
 
@@ -244,7 +259,7 @@ Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / 
 
 ## Scope
 
-**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · MCP export · incremental re-inference · ontology-guided data query (`query_entity`) · document corpus typing (extraction + materialized object types).
+**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · MCP export · incremental re-inference · ontology-guided data query (`query_entity`, structured + text search) · document corpus typing · semantic document search (embedded chunks, via `query_entity`).
 
 **Out (v1):** Hosted cloud · SDK · registry · billing · dashboard · writeback.
 

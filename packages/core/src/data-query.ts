@@ -11,6 +11,9 @@ export interface EntityRowRequest {
   filters: RowFilter[];
   orderBy?: string;
   limit: number;
+  /** Case-insensitive substring match across columns (OR-combined). */
+  textSearch?: string;
+  textSearchColumns?: string[];
 }
 
 export type RowReader = (request: EntityRowRequest) => Promise<Record<string, unknown>[]>;

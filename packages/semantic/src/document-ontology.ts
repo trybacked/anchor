@@ -4,6 +4,7 @@
  */
 
 import {
+  DOCUMENT_CHUNKS_TABLE,
   DOCUMENT_LINES_TABLE,
   documentTypeTableName,
 } from "@backed/core";
@@ -89,6 +90,40 @@ const DOCUMENT_LINES_COLUMNS = [
 ];
 
 export const DOCUMENT_TEXT_ENTITY_ID = "document_text";
+export const DOCUMENT_CHUNK_ENTITY_ID = "document_chunk";
+
+const DOCUMENT_CHUNK_COLUMNS = [
+  {
+    column: "document_id",
+    label: "Document ID",
+    semanticType: "identifier" as const,
+    role: "foreign_key" as const,
+  },
+  {
+    column: "chunk_index",
+    label: "Chunk index",
+    semanticType: "number" as const,
+    role: "attribute" as const,
+  },
+  {
+    column: "page_start",
+    label: "Start page",
+    semanticType: "number" as const,
+    role: "attribute" as const,
+  },
+  {
+    column: "page_end",
+    label: "End page",
+    semanticType: "number" as const,
+    role: "attribute" as const,
+  },
+  {
+    column: "text",
+    label: "Chunk text",
+    semanticType: "text" as const,
+    role: "attribute" as const,
+  },
+];
 
 function slugToEntityId(typeId: string): string {
   return typeId
@@ -112,6 +147,13 @@ export function classifyTypedDocumentTables(
       {
         table: DOCUMENT_LINES_TABLE,
         columns: DOCUMENT_LINES_COLUMNS.map((column) => ({
+          ...column,
+          confidence: 0.95,
+        })),
+      },
+      {
+        table: DOCUMENT_CHUNKS_TABLE,
+        columns: DOCUMENT_CHUNK_COLUMNS.map((column) => ({
           ...column,
           confidence: 0.95,
         })),
@@ -195,6 +237,41 @@ function buildDocumentTextEntity(profile: ProfileReport): Entity {
   };
 }
 
+function buildDocumentChunkEntity(profile: ProfileReport): Entity {
+  const table = profile.find((entry) => entry.table === DOCUMENT_CHUNKS_TABLE);
+
+  return {
+    id: DOCUMENT_CHUNK_ENTITY_ID,
+    name: "Document Chunk",
+    description: "Searchable text segments from documents, split for semantic retrieval",
+    sourceTable: DOCUMENT_CHUNKS_TABLE,
+    status: "proposed",
+    confidence: 0.95,
+    provenance: {
+      table: DOCUMENT_CHUNKS_TABLE,
+      evidence: `Chunk table with ${String(table?.rowCount ?? 0)} searchable segments across the document corpus`,
+    },
+    properties: DOCUMENT_CHUNK_COLUMNS.map((columnDef) => {
+      const column = table?.columns.find((entry) => entry.name === columnDef.column);
+      return {
+        name: columnDef.label,
+        columnName: columnDef.column,
+        semanticType: columnDef.semanticType,
+        role: columnDef.role,
+        nullable: column?.nullCount ? column.nullCount > 0 : false,
+        confidence: 0.95,
+        provenance: {
+          table: DOCUMENT_CHUNKS_TABLE,
+          column: columnDef.column,
+          evidence: column
+            ? `${columnDef.label} column (${column.sqlType})`
+            : `${columnDef.label} on document chunk table`,
+        },
+      };
+    }),
+  };
+}
+
 export function buildDocumentCorpusEntities(
   catalog: DocumentCatalog,
   profile: ProfileReport,
@@ -202,6 +279,7 @@ export function buildDocumentCorpusEntities(
   return [
     ...catalog.documentTypes.map((type) => buildTypedEntity(catalog, type, profile)),
     buildDocumentTextEntity(profile),
+    buildDocumentChunkEntity(profile),
   ];
 }
 
@@ -210,33 +288,54 @@ export function buildDocumentCorpusRelations(
   entities: Entity[],
 ): Relation[] {
   const documentText = entities.find((entity) => entity.id === DOCUMENT_TEXT_ENTITY_ID);
-  if (!documentText) {
+  const documentChunk = entities.find((entity) => entity.id === DOCUMENT_CHUNK_ENTITY_ID);
+  if (!documentText || !documentChunk) {
     return [];
   }
 
-  return catalog.documentTypes.map((type) => {
+  const typeRelations = catalog.documentTypes.flatMap((type) => {
     const entityId = slugToEntityId(type.id);
-    return {
-      id: `${entityId}_has_text`,
-      name: `${type.name} has document text`,
-      fromEntity: entityId,
-      toEntity: DOCUMENT_TEXT_ENTITY_ID,
-      fromColumn: "document_id",
-      toColumn: "document_id",
-      cardinality: "one_to_many" as const,
-      status: "proposed" as const,
-      confidence: type.confidence,
-      provenance: {
-        table: type.tableName,
-        column: "document_id",
-        evidence: `Each ${type.name.toLowerCase()} row links to line-level text rows via document_id`,
+    return [
+      {
+        id: `${entityId}_has_text`,
+        name: `${type.name} has document text`,
+        fromEntity: entityId,
+        toEntity: DOCUMENT_TEXT_ENTITY_ID,
+        fromColumn: "document_id",
+        toColumn: "document_id",
+        cardinality: "one_to_many" as const,
+        status: "proposed" as const,
+        confidence: type.confidence,
+        provenance: {
+          table: type.tableName,
+          column: "document_id",
+          evidence: `Each ${type.name.toLowerCase()} row links to line-level text rows via document_id`,
+        },
       },
-    };
+      {
+        id: `${entityId}_has_chunks`,
+        name: `${type.name} has document chunks`,
+        fromEntity: entityId,
+        toEntity: DOCUMENT_CHUNK_ENTITY_ID,
+        fromColumn: "document_id",
+        toColumn: "document_id",
+        cardinality: "one_to_many" as const,
+        status: "proposed" as const,
+        confidence: type.confidence,
+        provenance: {
+          table: type.tableName,
+          column: "document_id",
+          evidence: `Each ${type.name.toLowerCase()} row links to searchable text chunks via document_id`,
+        },
+      },
+    ];
   });
+
+  return typeRelations;
 }
 
 export function isMaterializedDocumentTable(tableName: string, catalog: DocumentCatalog): boolean {
-  if (tableName === DOCUMENT_LINES_TABLE) {
+  if (tableName === DOCUMENT_LINES_TABLE || tableName === DOCUMENT_CHUNKS_TABLE) {
     return true;
   }
   return catalog.documentTypes.some((type) => type.tableName === tableName);

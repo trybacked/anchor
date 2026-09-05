@@ -6,7 +6,7 @@
 
 import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "@backed/core";
 import { createGateway } from "@ai-sdk/gateway";
-import type { LanguageModel } from "ai";
+import type { EmbeddingModel, LanguageModel } from "ai";
 
 export const AI_GATEWAY_API_KEY_ENV = "AI_GATEWAY_API_KEY";
 export const CHEAP_MODEL_ENV = "SEMANTIC_MODEL_CHEAP";
@@ -14,16 +14,19 @@ export const FRONTIER_MODEL_ENV = "SEMANTIC_MODEL_FRONTIER";
 export const REVIEW_CONFIDENCE_THRESHOLD_ENV = "REVIEW_CONFIDENCE_THRESHOLD";
 export const REQUEST_TIMEOUT_MS_ENV = "SEMANTIC_REQUEST_TIMEOUT_MS";
 export const CLASSIFICATION_BATCH_SIZE_ENV = "SEMANTIC_CLASSIFICATION_BATCH_SIZE";
+export const EMBEDDING_MODEL_ENV = "SEMANTIC_EMBEDDING_MODEL";
 
 export const DEFAULT_CHEAP_MODEL = "openai/gpt-5-mini";
 export const DEFAULT_FRONTIER_MODEL = "anthropic/claude-sonnet-4.5";
 /** AI SDK default is 300s; large folders (many PDF tables) need more headroom. */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 600_000;
 export const DEFAULT_CLASSIFICATION_BATCH_SIZE = 12;
+export const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
 
 export interface SemanticModels {
   cheap: LanguageModel;
   frontier: LanguageModel;
+  embedding: EmbeddingModel;
 }
 
 export class MissingApiKeyError extends Error {
@@ -53,6 +56,7 @@ export function resolveSemanticModels(
   return {
     cheap: gateway(env[CHEAP_MODEL_ENV] ?? DEFAULT_CHEAP_MODEL),
     frontier: gateway(env[FRONTIER_MODEL_ENV] ?? DEFAULT_FRONTIER_MODEL),
+    embedding: gateway.textEmbeddingModel(env[EMBEDDING_MODEL_ENV] ?? DEFAULT_EMBEDDING_MODEL),
   };
 }
 

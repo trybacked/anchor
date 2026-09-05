@@ -47,6 +47,7 @@ import {
   buildDocumentCorpusRelations,
   classifyTypedDocumentTables,
   DOCUMENT_TEXT_ENTITY_ID,
+  DOCUMENT_CHUNK_ENTITY_ID,
 } from "./document-ontology.js";
 import {
   buildLineDocumentEntities,
@@ -315,7 +316,7 @@ function sumUsageMany(usages: BurstUsage[]): Proposal["usage"] {
 }
 
 function documentEntityIds(catalog: DocumentCatalog): Set<string> {
-  const ids = new Set<string>([DOCUMENT_TEXT_ENTITY_ID]);
+  const ids = new Set<string>([DOCUMENT_TEXT_ENTITY_ID, DOCUMENT_CHUNK_ENTITY_ID]);
   for (const type of catalog.documentTypes) {
     ids.add(
       type.id

@@ -116,6 +116,16 @@ export type {
 } from "./document-catalog.js";
 
 export {
+  DOCUMENT_CHUNKS_TABLE,
+  DEFAULT_CHUNK_SIZE,
+  MAX_CHUNK_SIZE,
+  DEFAULT_CHUNK_OVERLAP,
+  DEFAULT_CHUNK_SEARCH_LIMIT,
+  MAX_CHUNK_SEARCH_LIMIT,
+} from "./document-chunk.js";
+export type { ChunkSearchRequest, ChunkSearcher, ChunkSearchMode, QueryEmbedder } from "./document-chunk.js";
+
+export {
   initWorkspace,
   readWorkspaceConfig,
   writeRunArtifact,

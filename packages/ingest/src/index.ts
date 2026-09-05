@@ -13,16 +13,31 @@ import type { Dataset, IngestSession, IngestWarning } from "./types.js";
 
 export { quoteIdentifier, quoteString } from "./sql.js";
 export { createRowReader } from "./row-reader.js";
+export { createChunkSearcher } from "./chunk-search.js";
+export type { ChunkSearcherOptions } from "./chunk-search.js";
+export {
+  ensureChunkEmbeddingColumn,
+  fetchChunkTextsForEmbedding,
+  storeChunkEmbeddings,
+  documentChunksHaveEmbeddings,
+} from "./chunk-embeddings.js";
+export type { StoredChunkEmbedding, ChunkTextRow } from "./chunk-embeddings.js";
 export {
   DOCUMENT_HEADER_LINE_LIMIT,
   fetchDocumentHeaderText,
   fetchDocumentHeaderSamples,
   materializeDocumentTables,
 } from "./materialize-documents.js";
+export { chunkDocumentLines, chunkDocumentLineRows } from "./chunk-document-lines.js";
 export type {
   DocumentHeaderSample,
   MaterializeDocumentsResult,
 } from "./materialize-documents.js";
+export type {
+  DocumentLineRow,
+  DocumentChunkRow,
+  ChunkDocumentLinesOptions,
+} from "./chunk-document-lines.js";
 export type {
   CsvDialect,
   CsvEncoding,

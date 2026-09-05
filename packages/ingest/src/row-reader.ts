@@ -35,10 +35,20 @@ function buildFilterClause(filter: RowFilter): string {
 
 export function createRowReader(query: SqlQuery): RowReader {
   return async (request: EntityRowRequest) => {
-    const whereClause =
-      request.filters.length > 0
-        ? ` WHERE ${request.filters.map(buildFilterClause).join(" AND ")}`
-        : "";
+    const conditions = request.filters.map(buildFilterClause);
+
+    if (request.textSearch !== undefined && request.textSearchColumns !== undefined) {
+      const text = quoteString(request.textSearch);
+      const textClause = request.textSearchColumns
+        .map(
+          (column) =>
+            `contains(lower(${quoteIdentifier(column)}), lower(${text}))`,
+        )
+        .join(" OR ");
+      conditions.push(`(${textClause})`);
+    }
+
+    const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
     const orderClause = request.orderBy
       ? ` ORDER BY ${quoteIdentifier(request.orderBy)}`
       : "";
