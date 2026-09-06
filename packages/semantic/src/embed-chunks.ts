@@ -16,10 +16,16 @@ export interface EmbedTextsResult {
   usage: EmbedTextsUsage;
 }
 
+export interface EmbedBatchProgress {
+  completed: number;
+  total: number;
+}
+
 export async function embedTexts(
   model: EmbeddingModel,
   texts: string[],
   onProgress?: (message: string) => void,
+  onBatchProgress?: (progress: EmbedBatchProgress) => void,
 ): Promise<EmbedTextsResult> {
   if (texts.length === 0) {
     return { embeddings: [], usage: { tokens: 0 } };
@@ -28,6 +34,7 @@ export async function embedTexts(
   const embeddings: number[][] = [];
   let tokens = 0;
   const batchCount = Math.ceil(texts.length / EMBEDDING_BATCH_SIZE);
+  onBatchProgress?.({ completed: 0, total: batchCount });
 
   for (let offset = 0; offset < texts.length; offset += EMBEDDING_BATCH_SIZE) {
     const batch = texts.slice(offset, offset + EMBEDDING_BATCH_SIZE);
@@ -43,6 +50,7 @@ export async function embedTexts(
       embeddings.push([...embedding]);
     }
     tokens += result.usage.tokens ?? 0;
+    onBatchProgress?.({ completed: batchIndex, total: batchCount });
   }
 
   return { embeddings, usage: { tokens } };

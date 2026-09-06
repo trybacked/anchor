@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { registerSource } from "./register.js";
 import { PdfNoExtractableTextError } from "./errors.js";
+import { beginPdfIngestNoiseFilter, endPdfIngestNoiseFilter } from "./pdf-ingest-noise.js";
 import { terminateOcrWorker } from "./pdf-ocr.js";
 import { scanFolder } from "./scan.js";
 import { createDuckDbSession } from "./session.js";
@@ -52,6 +53,7 @@ export type {
   IngestWarningKind,
   SqlQuery,
 } from "./types.js";
+export { toTableName, uniqueTableName } from "./table-names.js";
 export type { DuckDbSession, DuckDbSessionOptions } from "./session.js";
 
 export interface IngestFolderOptions {
@@ -88,28 +90,33 @@ export async function ingestFolder(
   ];
 
   const usedNames = new Set<string>();
-  for (const source of scan.sources) {
-    const tableName = uniqueTableName(toTableName(source.relativePath), usedNames);
-    try {
-      const registration = await registerSource(session.query, source, tableName);
-      datasets.push(registration.dataset);
-      warnings.push(...registration.warnings);
-    } catch (error) {
-      if (error instanceof PdfNoExtractableTextError) {
+  beginPdfIngestNoiseFilter();
+  try {
+    for (const source of scan.sources) {
+      const tableName = uniqueTableName(toTableName(source.relativePath), usedNames);
+      try {
+        const registration = await registerSource(session.query, source, tableName);
+        datasets.push(registration.dataset);
+        warnings.push(...registration.warnings);
+      } catch (error) {
+        if (error instanceof PdfNoExtractableTextError) {
+          warnings.push({
+            kind: "pdf_no_extractable_text",
+            file: source.relativePath,
+            message:
+              "PDF has no extractable text after native parse and OCR (empty or OCR disabled)",
+          });
+          continue;
+        }
         warnings.push({
-          kind: "pdf_no_extractable_text",
+          kind: "unreadable_file",
           file: source.relativePath,
-          message:
-            "PDF has no extractable text after native parse and OCR (empty or OCR disabled)",
+          message: `Unreadable file: ${error instanceof Error ? error.message : String(error)}`,
         });
-        continue;
       }
-      warnings.push({
-        kind: "unreadable_file",
-        file: source.relativePath,
-        message: `Unreadable file: ${error instanceof Error ? error.message : String(error)}`,
-      });
     }
+  } finally {
+    await endPdfIngestNoiseFilter();
   }
 
   const tempDirs = scan.tempDirs;

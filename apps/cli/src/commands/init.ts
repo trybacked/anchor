@@ -1,16 +1,19 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-import type { DocumentTypeHintConfig, WorkspaceConfig } from "@backed/core";
+import type { WorkspaceConfig } from "@backed/core";
 import {
   initWorkspace,
   readWorkspaceConfig,
   workspacePaths,
   writeWorkspaceConfig,
 } from "@backed/core";
-import { checkbox, confirm, input } from "@inquirer/prompts";
+import { input } from "@inquirer/prompts";
 
-import { DOCUMENT_TYPE_GROUPS, flattenDocumentTypeGroups } from "../document-type-presets.js";
+import {
+  promptDocumentTypeHints,
+  summarizeDocumentTypeHints,
+} from "../document-type-hint-guide.js";
 import { createPromptTheme, getUi, initUi, renderLogo } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
 
@@ -18,90 +21,6 @@ const DEFAULT_SOURCES_DIR = "./sources";
 
 function filterArgs(args: string[]): string[] {
   return args.filter((arg) => !arg.startsWith("-"));
-}
-
-async function promptCustomDocumentType(theme: ReturnType<typeof createPromptTheme>) {
-  const add = await confirm({
-    message: "Add a custom document type rule?",
-    default: false,
-    theme,
-  });
-  if (!add) {
-    return null;
-  }
-
-  const match = await input({
-    message: "Filename slug match (substring, case-insensitive):",
-    validate: (value) => (value.trim().length > 0 ? true : "Match is required"),
-    theme,
-  });
-  const documentType = await input({
-    message: "Document type id (slug, e.g. invoice):",
-    validate: (value) => (/^[a-z][a-z0-9_]*$/.test(value.trim()) ? true : "Use lowercase slug"),
-    theme,
-  });
-  const documentTypeLabel = await input({
-    message: "Display name (English, e.g. Invoice):",
-    validate: (value) => (value.trim().length > 0 ? true : "Label is required"),
-    theme,
-  });
-
-  return {
-    match: match.trim(),
-    documentType: documentType.trim(),
-    documentTypeLabel: documentTypeLabel.trim(),
-    confidence: 0.9,
-  } satisfies DocumentTypeHintConfig;
-}
-
-async function collectCustomHints(theme: ReturnType<typeof createPromptTheme>) {
-  const hints: DocumentTypeHintConfig[] = [];
-  for (;;) {
-    const hint = await promptCustomDocumentType(theme);
-    if (hint === null) {
-      break;
-    }
-    hints.push(hint);
-  }
-  return hints;
-}
-
-async function promptDocumentTypeHints(
-  existingHints: DocumentTypeHintConfig[],
-  theme: ReturnType<typeof createPromptTheme>,
-): Promise<DocumentTypeHintConfig[]> {
-  const selected = await checkbox({
-    message: "Which document types should filename rules cover?",
-    choices: DOCUMENT_TYPE_GROUPS.map((group) => ({
-      name: `${group.label} — ${group.description}`,
-      value: group.id,
-      checked:
-        existingHints.length > 0
-          ? group.hints.every((hint) =>
-              existingHints.some(
-                (existing) =>
-                  existing.match === hint.match && existing.documentType === hint.documentType,
-              ),
-            )
-          : true,
-    })),
-    theme,
-  });
-
-  const documentTypeHints = flattenDocumentTypeGroups(
-    DOCUMENT_TYPE_GROUPS.filter((group) => selected.includes(group.id)),
-  );
-
-  const addMore = await confirm({
-    message: "Add custom filename rules?",
-    default: false,
-    theme,
-  });
-  if (addMore) {
-    documentTypeHints.push(...(await collectCustomHints(theme)));
-  }
-
-  return documentTypeHints;
 }
 
 async function promptSourcesDir(defaultDir: string, theme: ReturnType<typeof createPromptTheme>) {
@@ -125,7 +44,12 @@ async function buildInteractiveConfig(
     existing = undefined;
   }
 
-  const documentTypeHints = await promptDocumentTypeHints(existing?.documentTypeHints ?? [], theme);
+  const ui = getUi();
+  const documentTypeHints = await promptDocumentTypeHints(
+    existing?.documentTypeHints ?? [],
+    theme,
+    ui,
+  );
   const defaultSources = sourcesArg ?? existing?.sourcesDir ?? DEFAULT_SOURCES_DIR;
   const sourcesDir = await promptSourcesDir(defaultSources, theme);
 
@@ -170,9 +94,7 @@ export const initCommand: CommandHandler = async (args) => {
     alreadyInitialized ? `Workspace updated → ${ui.path(configPath)}` : `Workspace initialized → ${ui.path(configPath)}`,
   );
   ui.log(`  ${ui.label("Sources")}     ${config.sourcesDir}`);
-  ui.log(
-    `  ${ui.label("Doc rules")}  ${String(config.documentTypeHints.length)} filename pattern(s)`,
-  );
+  ui.log(`  ${ui.label("Doc rules")}  ${summarizeDocumentTypeHints(config.documentTypeHints)}`);
   ui.blank();
   ui.step('Review `.backed/config.yaml` if needed, then run "backed model".');
 };

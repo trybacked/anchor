@@ -82,24 +82,31 @@ mkdir -p sources
 backed init                 
 ```
 
-**Prompts:** document types (checkbox) → optional custom filename rules → sources folder.
+**Prompts:** optional document filename rules (explained in the wizard) → sources folder.
 
 **Output:** `.backed/config.yaml`. Edit before `backed model` to fine-tune rules.
+
+Each PDF filename becomes a **slug** (lowercase, punctuation → underscores). Rules check whether the slug **contains** your keyword.
 
 ```yaml
 sourcesDir: ./sources
 documentTypeHints:
-  - match: determina
-    documentType: determination
-    documentTypeLabel: Determination
+  # keyword in filename slug → type id + display name (no LLM when confidence ≥ 0.85)
+  - match: invoice          # matches invoice_acme_2026.pdf, acme_invoice_q1.pdf, …
+    documentType: invoice       # id in model.yaml / MCP
+    documentTypeLabel: Invoice  # label in review
     confidence: 0.95
-  - match: avviso
+  - match: inv              # second keyword, same type — add one rule per keyword
+    documentType: invoice
+    documentTypeLabel: Invoice
+    confidence: 0.95
+  - match: notice
     documentType: notice
     documentTypeLabel: Notice
     confidence: 0.9
 ```
 
-Rules match the **table slug** from each filename (`documento - avviso.pdf` → `documento_avviso`). Confidence ≥ 0.85 → deterministic (no LLM). No match → one LLM call per file. **No built-in rules at runtime** — only `config.yaml`. Empty list = LLM for every document.
+Example: `public_notice_board.pdf` → slug `public_notice_board` → matches `notice`. Confidence ≥ 0.85 → deterministic (no LLM). No match → one LLM call per file. **No built-in rules at runtime** — only `config.yaml`. Empty list = LLM for every document.
 
 ### 2. Build (`backed model`)
 

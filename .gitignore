@@ -24,3 +24,4 @@ docs/*
 !docs/assets/**
 test/
 *.traineddata
+scripts/

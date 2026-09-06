@@ -8,7 +8,7 @@ Local-first CLI. Command orchestration only, no domain logic. User-facing copy i
 cd client-folder
 mkdir -p sources
 
-backed init              # interactive: document types, sources folder
+backed init              # interactive: optional filename rules, sources folder
 # edit .backed/config.yaml if needed
 
 backed model             # ingest → profile → proposal (needs AI_GATEWAY_API_KEY)
@@ -23,9 +23,9 @@ backed model && backed diff   # when sources change
 Requires an interactive terminal. Writes `.backed/config.yaml` with:
 
 - **`sourcesDir`** — where CSV, Excel, PDF, etc. live (default `./sources`)
-- **`documentTypeHints`** — filename slug rules for document classification (no runtime defaults; empty list = LLM for every document)
+- **`documentTypeHints`** — filename keyword rules (see README). One keyword per rule; repeat the same `documentType` for aliases (`invoice`, `inv`, …). Empty = LLM for every document.
 
-Document type presets are init-time templates only; at inference time only `config.yaml` rules apply.
+At inference time only `config.yaml` rules apply — no built-in document types.
 
 ### `backed model`
 

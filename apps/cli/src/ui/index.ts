@@ -4,7 +4,9 @@ import { createPromptTheme } from "./prompts.js";
 
 export { renderLogo } from "./logo.js";
 export { LOGO_ART_LINES } from "./logo-art.js";
-export type { Ui } from "./format.js";
+export type { ProgressHandle, ProgressUpdate, Ui } from "./format.js";
+export { createAiProgressReporter, createTaskProgress } from "./progress.js";
+export type { AiProgressReporter } from "./progress.js";
 export { printHelp } from "./help.js";
 export { createPromptTheme } from "./prompts.js";
 

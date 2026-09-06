@@ -46,7 +46,7 @@ import {
 import type { BurstUsage, SemanticModels } from "@backed/semantic";
 
 import { findWorkspaceRoot } from "../env.js";
-import { getUi, initUi } from "../ui/index.js";
+import { createAiProgressReporter, getUi, initUi } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
 
 interface DocumentStageResult {
@@ -140,15 +140,23 @@ async function runDocumentStage(
     })),
   );
 
+  const aiProgress = createAiProgressReporter((message) => {
+    ui.detail(message);
+  });
+
   const extracted = await extractDocumentCatalog({
     runId,
     models,
     samples: headerSamples,
     documentTypeHints,
     onProgress: (message) => {
-      ui.detail(message);
+      aiProgress.detail(message);
+    },
+    onLlmProgress: ({ completed, total }) => {
+      aiProgress.track("Classifying documents (LLM)", completed, total);
     },
   });
+  aiProgress.end();
   const extractionMs = Date.now() - extractionStarted;
 
   const sourceFileByTable = new Map(
@@ -188,13 +196,18 @@ async function runDocumentStage(
     const chunkTexts = await fetchChunkTextsForEmbedding(session.query);
     if (chunkTexts.length > 0) {
       const embedStarted = Date.now();
+      const embedProgress = createAiProgressReporter((message) => {
+        ui.detail(message);
+      });
       const embedded = await embedTexts(
         models.embedding,
         chunkTexts.map((row) => row.text),
-        (message) => {
-          ui.detail(message);
+        undefined,
+        ({ completed, total }) => {
+          embedProgress.track("Embedding document chunks", completed, total);
         },
       );
+      embedProgress.end();
       await storeChunkEmbeddings(
         session.query,
         chunkTexts.map((row, index) => ({
@@ -402,6 +415,9 @@ export const modelCommand: CommandHandler = async (args) => {
     logInferenceScope(incrementalScope, documentCatalog !== undefined);
 
     const proposalStarted = Date.now();
+    const proposalProgress = createAiProgressReporter((message) => {
+      ui.detail(message);
+    });
     const freshProposal = await proposeModel({
       profile: incrementalScope.profileForInference,
       runId,
@@ -409,9 +425,17 @@ export const modelCommand: CommandHandler = async (args) => {
       ...(documentCatalog !== undefined ? { documentCatalog } : {}),
       ...(extractionUsage !== undefined ? { extractionUsage } : {}),
       onProgress: (message) => {
-        ui.detail(message);
+        if (message.startsWith("Building ontology")) {
+          proposalProgress.indeterminate(message);
+          return;
+        }
+        proposalProgress.detail(message);
+      },
+      onBatchProgress: ({ completed, total }) => {
+        proposalProgress.track("Column classification (LLM)", completed, total);
       },
     });
+    proposalProgress.end();
     timings.proposalMs = Date.now() - proposalStarted;
 
     const proposal: Proposal =

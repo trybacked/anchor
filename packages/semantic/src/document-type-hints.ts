@@ -1,6 +1,6 @@
 /**
  * Document-type hints from workspace config (`.backed/config.yaml`).
- * No built-in rules at runtime — run `backed init` to populate documentTypeHints.
+ * No built-in rules at runtime — configure documentTypeHints in `.backed/config.yaml`.
  */
 
 import type { DocumentTypeHintConfig } from "@backed/core";

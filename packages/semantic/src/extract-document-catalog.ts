@@ -63,12 +63,19 @@ export interface DocumentExtractionSample {
   pageCount: number;
 }
 
+export interface DocumentLlmProgress {
+  completed: number;
+  total: number;
+  inFlight: number;
+}
+
 export interface ExtractDocumentCatalogOptions {
   runId: string;
   models: SemanticModels;
   samples: DocumentExtractionSample[];
   now?: Date;
   onProgress?: (message: string) => void;
+  onLlmProgress?: (progress: DocumentLlmProgress) => void;
   /** Workspace slug rules from .backed/config.yaml (required for deterministic classification). */
   documentTypeHints?: DocumentTypeHintConfig[];
 }
@@ -159,28 +166,21 @@ function toCatalogEntry(
 
 async function extractOneDocumentWithLlm(
   sample: DocumentExtractionSample,
-  index: number,
-  total: number,
   options: {
     models: SemanticModels;
     timeoutMs: number;
     documentTypeHints?: DocumentTypeHintConfig[];
-    onProgress?: (message: string) => void;
   },
 ): Promise<{ entry: DocumentCatalogEntry; usage: BurstUsage }> {
   const typeHint = inferDocumentTypeHint(sample.sourceTable, options.documentTypeHints);
-  options.onProgress?.(
-    `LLM document ${String(index + 1)}/${String(total)}: ${sample.sourceTable}...`,
-  );
 
   const result = await runBurst({
     model: options.models.language,
     system: DOCUMENT_EXTRACTION_SYSTEM_PROMPT,
     prompt: documentExtractionPrompt(sample, typeHint),
     schema: SingleDocumentExtractionSchema,
-    schemaName: `document_extraction_${String(index + 1)}_of_${String(total)}`,
+    schemaName: "document_extraction",
     timeoutMs: options.timeoutMs,
-    ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
   });
 
   return {
@@ -211,26 +211,47 @@ export async function extractDocumentCatalog(
 
   let usage: BurstUsage = { inputTokens: 0, outputTokens: 0, costUsd: null };
 
+  const llmTotal = llmSamples.length;
+  let llmCompleted = 0;
+  let llmInFlight = 0;
+
+  const reportLlmProgress = (): void => {
+    options.onLlmProgress?.({
+      completed: llmCompleted,
+      total: llmTotal,
+      inFlight: llmInFlight,
+    });
+  };
+
+  if (llmTotal > 0) {
+    reportLlmProgress();
+  }
+
   const llmResults =
-    llmSamples.length > 0
+    llmTotal > 0
       ? await mapWithConcurrency(
           llmSamples,
           DOCUMENT_EXTRACTION_CONCURRENCY,
           async (sample, index) => {
+            llmInFlight += 1;
+            reportLlmProgress();
             try {
-              return await extractOneDocumentWithLlm(sample, index, llmSamples.length, {
+              return await extractOneDocumentWithLlm(sample, {
                 models: options.models,
                 timeoutMs,
                 ...(options.documentTypeHints !== undefined
                   ? { documentTypeHints: options.documentTypeHints }
                   : {}),
-                ...(options.onProgress !== undefined ? { onProgress: options.onProgress } : {}),
               });
             } catch (error) {
               const detail = error instanceof Error ? error.message : String(error);
               throw new Error(
-                `Document extraction failed for "${sample.sourceTable}" (${String(index + 1)}/${String(llmSamples.length)}). ${detail}`,
+                `Document extraction failed for "${sample.sourceTable}" (${String(index + 1)}/${String(llmTotal)}). ${detail}`,
               );
+            } finally {
+              llmInFlight -= 1;
+              llmCompleted += 1;
+              reportLlmProgress();
             }
           },
         )

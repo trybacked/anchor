@@ -72,6 +72,8 @@ export interface ProposeModelOptions {
   extractionUsage?: BurstUsage;
   /** Optional progress hook (CLI logs batch steps). */
   onProgress?: (message: string) => void;
+  /** Structured batch progress for column classification. */
+  onBatchProgress?: (progress: { completed: number; total: number }) => void;
 }
 
 type ColumnClassification =
@@ -368,6 +370,7 @@ async function classifyColumnsInBatches(
   batchSize: number,
   timeoutMs: number,
   onProgress?: (message: string) => void,
+  onBatchProgress?: (progress: { completed: number; total: number }) => void,
 ): Promise<{ output: ColumnClassificationOutput; usage: BurstUsage }> {
   if (tables.length === 0) {
     return { output: emptyClassification(), usage: emptyUsage() };
@@ -376,6 +379,7 @@ async function classifyColumnsInBatches(
   const merged: ColumnClassificationOutput = { tables: [] };
   let usage = emptyUsage();
   const batchCount = Math.ceil(tables.length / batchSize);
+  onBatchProgress?.({ completed: 0, total: batchCount });
 
   for (let offset = 0; offset < tables.length; offset += batchSize) {
     const batch = tables.slice(offset, offset + batchSize);
@@ -388,12 +392,12 @@ async function classifyColumnsInBatches(
       system: COLUMN_CLASSIFICATION_SYSTEM_PROMPT,
       prompt: columnClassificationPrompt(batch),
       schema: ColumnClassificationOutputSchema,
-      schemaName: `column_classification_${String(batchIndex)}_of_${String(batchCount)}`,
+      schemaName: "column_classification",
       timeoutMs,
-      ...(onProgress !== undefined ? { onWaiting: onProgress } : {}),
     });
     merged.tables.push(...result.output.tables);
     usage = mergeBurstUsage(usage, result.usage);
+    onBatchProgress?.({ completed: batchIndex, total: batchCount });
   }
 
   return { output: merged, usage };
@@ -445,7 +449,13 @@ async function runOntologyBurst(
     schema: OntologyOutputSchema,
     schemaName: "ontology_proposal",
     timeoutMs,
-    ...(onProgress !== undefined ? { onWaiting: onProgress } : {}),
+    ...(onProgress !== undefined
+      ? {
+          onWaiting: () => {
+            onProgress("Building ontology (LLM)…");
+          },
+        }
+      : {}),
   });
   return result;
 }
@@ -560,6 +570,7 @@ async function classifyAllColumns(
   batchSize: number,
   timeoutMs: number,
   onProgress?: (message: string) => void,
+  onBatchProgress?: (progress: { completed: number; total: number }) => void,
 ): Promise<{ classification: ColumnClassificationOutput; usage: BurstUsage }> {
   const lineDocumentClassification =
     documentCatalog !== undefined
@@ -576,6 +587,7 @@ async function classifyAllColumns(
           batchSize,
           timeoutMs,
           onProgress,
+          onBatchProgress,
         )
       : { output: emptyClassification(), usage: emptyUsage() };
 
@@ -680,6 +692,7 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     batchSize,
     timeoutMs,
     onProgress,
+    options.onBatchProgress,
   );
 
   const ontologyStrategy = resolveOntologyStrategy(routing, documentCatalog);

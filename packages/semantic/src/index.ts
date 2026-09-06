@@ -47,10 +47,10 @@ export { mergeIncrementalProposal } from "./merge-proposal.js";
 export { extractDocumentCatalog, SingleDocumentExtractionSchema, DocumentExtractionOutputSchema, DOCUMENT_EXTRACTION_BATCH_SIZE } from "./extract-document-catalog.js";
 export { inferDocumentTypeHint } from "./document-type-hints.js";
 export type { DocumentTypeHint } from "./document-type-hints.js";
-export type { DocumentExtractionSample, ExtractDocumentCatalogOptions } from "./extract-document-catalog.js";
+export type { DocumentExtractionSample, DocumentLlmProgress, ExtractDocumentCatalogOptions } from "./extract-document-catalog.js";
 
 export { embedTexts, embedQuery, EMBEDDING_BATCH_SIZE } from "./embed-chunks.js";
-export type { EmbedTextsUsage, EmbedTextsResult } from "./embed-chunks.js";
+export type { EmbedTextsUsage, EmbedTextsResult, EmbedBatchProgress } from "./embed-chunks.js";
 
 export {
   buildDocumentCorpusEntities,
