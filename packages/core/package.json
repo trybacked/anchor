@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "modello.yaml schema, tipi condivisi, artefatti run (.backed/)",
+  "description": "model.yaml schema, shared types, run artifacts (.backed/)",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

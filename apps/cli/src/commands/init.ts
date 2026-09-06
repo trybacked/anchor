@@ -1,30 +1,100 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-import { initWorkspace, workspacePaths } from "@backed/core";
+import type { WorkspaceConfig } from "@backed/core";
+import {
+  initWorkspace,
+  readWorkspaceConfig,
+  workspacePaths,
+  writeWorkspaceConfig,
+} from "@backed/core";
+import { input } from "@inquirer/prompts";
 
+import {
+  promptDocumentTypeHints,
+  summarizeDocumentTypeHints,
+} from "../document-type-hint-guide.js";
+import { createPromptTheme, getUi, initUi, renderLogo } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
 
 const DEFAULT_SOURCES_DIR = "./sources";
 
-export const initCommand: CommandHandler = async (args) => {
-  const root = process.cwd();
-  const sourcesDir = args[0] ?? DEFAULT_SOURCES_DIR;
+function filterArgs(args: string[]): string[] {
+  return args.filter((arg) => !arg.startsWith("-"));
+}
 
-  if (!existsSync(path.resolve(root, sourcesDir))) {
-    console.log(
-      `Note: sources folder "${sourcesDir}" does not exist yet. Create it and add your files (CSV, Excel, Parquet, JSON, PDF, TXT, DOCX, ZIP, RAR) before running "backed model".`,
+async function promptSourcesDir(defaultDir: string, theme: ReturnType<typeof createPromptTheme>) {
+  const sourcesDir = await input({
+    message: "Sources folder (CSV, Excel, PDF, …):",
+    default: defaultDir,
+    theme,
+  });
+  return sourcesDir.trim() || defaultDir;
+}
+
+async function buildInteractiveConfig(
+  root: string,
+  sourcesArg: string | undefined,
+  theme: ReturnType<typeof createPromptTheme>,
+): Promise<WorkspaceConfig> {
+  let existing: WorkspaceConfig | undefined;
+  try {
+    existing = readWorkspaceConfig(root);
+  } catch {
+    existing = undefined;
+  }
+
+  const ui = getUi();
+  const documentTypeHints = await promptDocumentTypeHints(
+    existing?.documentTypeHints ?? [],
+    theme,
+    ui,
+  );
+  const defaultSources = sourcesArg ?? existing?.sourcesDir ?? DEFAULT_SOURCES_DIR;
+  const sourcesDir = await promptSourcesDir(defaultSources, theme);
+
+  return {
+    sourcesDir,
+    documentTypeHints,
+  };
+}
+
+export const initCommand: CommandHandler = async (args) => {
+  const ui = initUi();
+
+  if (!process.stdin.isTTY) {
+    ui.writeError("backed init requires an interactive terminal.");
+    process.exitCode = 1;
+    return;
+  }
+
+  ui.log(renderLogo());
+  ui.blank();
+  ui.heading("Initialize workspace");
+  ui.hr();
+
+  const theme = createPromptTheme();
+  const root = process.cwd();
+  const positional = filterArgs(args)[0];
+  const config = await buildInteractiveConfig(root, positional, theme);
+
+  if (!existsSync(path.resolve(root, config.sourcesDir))) {
+    ui.writeWarn(
+      `Sources folder "${config.sourcesDir}" does not exist yet. Create it before running "backed model".`,
     );
   }
 
   const alreadyInitialized = existsSync(workspacePaths(root).configPath);
-  const configPath = initWorkspace(root, { sourcesDir });
+  const configPath = alreadyInitialized
+    ? writeWorkspaceConfig(root, config)
+    : initWorkspace(root, config);
 
-  console.log(
-    alreadyInitialized
-      ? `Workspace updated: ${configPath} (sources: ${sourcesDir})`
-      : `Workspace initialized: ${configPath} (sources: ${sourcesDir})`,
+  ui.blank();
+  ui.writeSuccess(
+    alreadyInitialized ? `Workspace updated → ${ui.path(configPath)}` : `Workspace initialized → ${ui.path(configPath)}`,
   );
-  console.log('Next step: "backed model" to profile sources and propose the semantic model.');
-  return Promise.resolve();
+  ui.log(`  ${ui.label("Sources")}     ${config.sourcesDir}`);
+  ui.log(`  ${ui.label("Doc rules")}  ${summarizeDocumentTypeHints(config.documentTypeHints)}`);
+  ui.blank();
+  ui.step('Review `.backed/config.yaml` if needed, then run "backed model".');
 };

@@ -1,29 +1,63 @@
 #!/usr/bin/env node
 import {
   diffCommand,
+  gatewayCommand,
   initCommand,
+  loginCommand,
+  logoutCommand,
   modelCommand,
   reviewCommand,
   serveCommand,
 } from "./commands/index.js";
 import { loadWorkspaceDotEnv } from "./env.js";
+import { getUi, initUi, printHelp } from "./ui/index.js";
 import type { Command } from "./types.js";
 
 export const COMMANDS: readonly Command[] = [
-  { name: "init", description: "Initialize .backed/ workspace", handler: initCommand },
-  { name: "model", description: "Ingest + profile + semantic → ontology proposal", handler: modelCommand },
-  { name: "review", description: "Human review (risk-ranked questions) → modello.yaml", handler: reviewCommand },
-  { name: "diff", description: "Compare the last two runs", handler: diffCommand },
-  { name: "serve", description: "Local MCP server on modello.yaml", handler: serveCommand },
+  {
+    name: "init",
+    description: "Initialize workspace (interactive document type setup)",
+    handler: initCommand,
+  },
+  {
+    name: "gateway",
+    description: "Save Vercel AI Gateway API key to workspace .env",
+    handler: gatewayCommand,
+  },
+  {
+    name: "login",
+    description: "Sign in to your Backed account (device authorization)",
+    handler: loginCommand,
+  },
+  {
+    name: "logout",
+    description: "Sign out of your Backed account on this machine",
+    handler: logoutCommand,
+  },
+  {
+    name: "model",
+    description: "Ingest + profile + semantic → ontology proposal",
+    handler: modelCommand,
+  },
+  {
+    name: "review",
+    description: "Human review (risk-ranked questions) → model.yaml",
+    handler: reviewCommand,
+  },
+  {
+    name: "diff",
+    description: "Compare the last two runs",
+    handler: diffCommand,
+  },
+  {
+    name: "serve",
+    description: "Local MCP server on model.yaml",
+    handler: serveCommand,
+  },
 ];
 
-export function printHelp(): void {
-  console.log("backed — local-first semantic layer\n");
-  console.log("Usage: backed <command> [args]\n");
-  console.log("Commands:");
-  for (const cmd of COMMANDS) {
-    console.log(`  ${cmd.name.padEnd(8)} ${cmd.description}`);
-  }
+export function printCliHelp(): void {
+  printHelp(getUi(), COMMANDS);
 }
 
 /** Load `.env` from the Anchor workspace root when present. */
@@ -32,17 +66,20 @@ function loadDotEnv(): void {
 }
 
 async function main(): Promise<void> {
+  initUi();
   const [, , commandName, ...args] = process.argv;
 
   if (!commandName || commandName === "--help" || commandName === "-h") {
-    printHelp();
+    printCliHelp();
     return;
   }
 
   const command = COMMANDS.find((c) => c.name === commandName);
   if (!command) {
-    console.error(`Unknown command: ${commandName}`);
-    printHelp();
+    const ui = getUi();
+    ui.writeError(`Unknown command: ${commandName}`);
+    ui.blank();
+    printCliHelp();
     process.exitCode = 1;
     return;
   }
@@ -52,6 +89,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+  const ui = getUi();
+  ui.writeError(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });

@@ -1,10 +1,26 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+
+function runPdftoppm(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("pdftoppm", args, {
+      stdio: ["ignore", "ignore", "ignore"],
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`pdftoppm exited with code ${String(code)}`));
+    });
+  });
+}
 
 const DEFAULT_OCR_DPI = 150;
 
@@ -55,7 +71,7 @@ export async function renderPdfPagePng(
   const dpi = ocrDpi();
 
   try {
-    await execFileAsync("pdftoppm", [
+    await runPdftoppm([
       "-png",
       "-singlefile",
       "-f",

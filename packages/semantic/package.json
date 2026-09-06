@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Burst agentici LLM: profile.json → proposta ontologia",
+  "description": "Agentic LLM bursts: profile.json → ontology proposal",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,7 +13,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.69",

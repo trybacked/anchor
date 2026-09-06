@@ -1,10 +1,10 @@
 # @backed/diff
 
-Confronto deterministico tra run — zero LLM nell'MVP.
+Deterministic run comparison — zero LLM in the MVP.
 
-**Responsabilità:**
+**Responsibilities:**
 
-- `diffRuns(previous, next)` — confronta due `RunSnapshot` (profilo + modello opzionale): tabella/colonna nuova o sparita, tipo cambiato, entità sparita, relazione nuova/sparita/**rotta** (le colonne di aggancio non esistono più nel nuovo profilo). Output validato con `ModelDiffSchema` (`diff.json`).
+- `diffRuns(previous, next)` — compares two `RunSnapshot`s (profile + optional `model.yaml`): table/column added or removed, type changed, entity removed, relation added/removed/**broken** (join columns no longer exist in the new profile). Output validated with `ModelDiffSchema` (`diff.json`).
 - `formatDiff(diff)` — human-readable English report for the CLI.
 
-**Non contiene:** ingest, LLM, UI.
+**Does not contain:** ingest, LLM, UI.

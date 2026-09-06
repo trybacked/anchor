@@ -9,8 +9,9 @@ import {
 import { diffRuns, formatDiff } from "@backed/diff";
 import type { RunSnapshot } from "@backed/diff";
 
-import type { CommandHandler } from "../types.js";
 import { findWorkspaceRoot } from "../env.js";
+import { getUi, initUi } from "../ui/index.js";
+import type { CommandHandler } from "../types.js";
 
 function loadSnapshot(root: string, runId: string): RunSnapshot {
   const profile = readRunArtifact(root, runId, "profile", ProfileReportSchema);
@@ -30,12 +31,13 @@ function loadSnapshot(root: string, runId: string): RunSnapshot {
 }
 
 export const diffCommand: CommandHandler = async () => {
+  const ui = initUi();
   const root = findWorkspaceRoot(process.cwd());
 
   const runIds = listRunIds(root).filter((runId) => hasRunArtifact(root, runId, "profile"));
   if (runIds.length < 2) {
-    console.error(
-      `At least two runs are required for a comparison (found: ${String(runIds.length)}). Run "backed model" again when the data changes.`,
+    ui.writeError(
+      `At least two runs are required (found: ${String(runIds.length)}). Run "backed model" again when the data changes.`,
     );
     process.exitCode = 1;
     return;
@@ -50,7 +52,10 @@ export const diffCommand: CommandHandler = async () => {
   const diff = diffRuns(loadSnapshot(root, previousRunId), loadSnapshot(root, latestRunId));
   const diffPath = writeRunArtifact(root, latestRunId, "diff", diff);
 
-  console.log(formatDiff(diff));
-  console.log(`\nDiff saved: ${diffPath}`);
-  return Promise.resolve();
+  ui.heading("Run diff");
+  ui.detail(`${ui.dim("from")} ${previousRunId} ${ui.dim("→")} ${latestRunId}`);
+  ui.blank();
+  ui.log(ui.colorizeDiff(formatDiff(diff)));
+  ui.blank();
+  ui.writeSuccess(`Diff saved → ${ui.path(diffPath)}`);
 };

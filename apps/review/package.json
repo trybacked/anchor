@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Review UI: 10 domande per rischio, Sì/No/Rinomina",
+  "description": "Review UI: 10 risk-ranked questions, Yes/No/Rename",
   "scripts": {
-    "build": "echo 'review app: da configurare'",
-    "typecheck": "echo 'review app: da configurare'",
+    "build": "echo 'review app: not configured yet'",
+    "typecheck": "echo 'review app: not configured yet'",
     "lint": "eslint src --no-error-on-unmatched-pattern",
-    "dev": "echo 'review app: da configurare'"
+    "dev": "echo 'review app: not configured yet'"
   },
   "dependencies": {
     "@backed/core": "workspace:*",

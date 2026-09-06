@@ -1,4 +1,4 @@
-/** Diff semantico tra run: colonna nuova, tipo cambiato, relazione rotta */
+/** Semantic diff between runs: new column, changed type, broken relation */
 
 export const PACKAGE_NAME = "@backed/diff" as const;
 

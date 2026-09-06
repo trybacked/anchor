@@ -1,6 +1,6 @@
 /**
- * Schema Zod di profile.json — l'evidenza statistica prodotta da @backed/profile.
- * Vive in core perché è un artefatto condiviso della pipeline (profile → semantic).
+ * Zod schema for profile.json — statistical evidence produced by @backed/profile.
+ * Lives in core because it is a shared pipeline artifact (profile → semantic).
  */
 
 import { z } from "zod";
@@ -35,7 +35,7 @@ export const DetectedPatternKindSchema = z.enum([
 
 export const DetectedPatternSchema = z.object({
   kind: DetectedPatternKindSchema,
-  // Quota di valori campionati che corrispondono al pattern (0..1).
+  // Share of sampled values matching the pattern (0..1).
   matchRatio: z.number().min(0).max(1),
 });
 
@@ -64,7 +64,7 @@ export const TableProfileSchema = z.object({
   columns: z.array(ColumnProfileSchema),
 });
 
-// profile.json è un array di profili tabella, uno per dataset registrato.
+// profile.json is an array of table profiles, one per registered dataset.
 export const ProfileReportSchema = z.array(TableProfileSchema);
 
 export type DetectedPatternKind = z.infer<typeof DetectedPatternKindSchema>;

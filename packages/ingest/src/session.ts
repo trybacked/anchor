@@ -7,8 +7,17 @@ export interface DuckDbSession {
   close: () => void;
 }
 
-export async function createDuckDbSession(): Promise<DuckDbSession> {
-  const instance = await DuckDBInstance.create(":memory:");
+export interface DuckDbSessionOptions {
+  databasePath?: string;
+  readOnly?: boolean;
+}
+
+export async function createDuckDbSession(
+  options: DuckDbSessionOptions = {},
+): Promise<DuckDbSession> {
+  const { databasePath = ":memory:", readOnly = false } = options;
+  const duckOptions = readOnly ? { access_mode: "READ_ONLY" } : undefined;
+  const instance = await DuckDBInstance.create(databasePath, duckOptions);
   const connection = await instance.connect();
 
   return {

@@ -24,7 +24,7 @@ export const DiffChangeSchema = z.object({
   kind: DiffChangeKindSchema,
   // Table name, entity id, or relation id the change refers to.
   subject: z.string().min(1),
-  // Italian copy describing the change for the user.
+  // Human-readable copy describing the change for the user.
   detail: z.string().min(1),
   before: z.string().optional(),
   after: z.string().optional(),

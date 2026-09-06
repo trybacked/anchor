@@ -9,6 +9,8 @@ import { Output, generateText } from "ai";
 import type { LanguageModel } from "ai";
 import type { z } from "zod";
 
+import { SEMANTIC_MODEL_ENV } from "./env.js";
+
 const MAX_BURST_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [0, 750, 2000] as const;
 
@@ -18,6 +20,8 @@ export interface BurstRequest<TSchema extends z.ZodTypeAny> {
   prompt: string;
   schema: TSchema;
   schemaName: string;
+  timeoutMs?: number;
+  onWaiting?: (message: string) => void;
 }
 
 export interface BurstUsage {
@@ -44,7 +48,9 @@ function isRetryableBurstError(error: unknown): boolean {
     message.includes("invalid json") ||
     message.includes("failed to parse") ||
     message.includes("validation failed") ||
-    message.includes("unexpected token")
+    message.includes("unexpected token") ||
+    message.includes("timeout") ||
+    message.includes("timed out")
   );
 }
 
@@ -69,7 +75,10 @@ function sleep(ms: number): Promise<void> {
 
 async function runAttempt<TSchema extends z.ZodTypeAny>(
   request: BurstRequest<TSchema>,
+  onWaiting?: (message: string) => void,
 ): Promise<BurstResult<z.infer<TSchema>>> {
+  onWaiting?.(`Waiting for LLM (${request.schemaName})...`);
+
   const result = await generateText({
     model: request.model,
     output: Output.object({ schema: request.schema }),
@@ -77,6 +86,7 @@ async function runAttempt<TSchema extends z.ZodTypeAny>(
     prompt: request.prompt,
     temperature: 0,
     maxRetries: 0,
+    ...(request.timeoutMs !== undefined ? { timeout: { totalMs: request.timeoutMs } } : {}),
   });
 
   if (result.output === undefined) {
@@ -105,7 +115,7 @@ export async function runBurst<TSchema extends z.ZodTypeAny>(
     }
 
     try {
-      return await runAttempt(request);
+      return await runAttempt(request, request.onWaiting);
     } catch (error) {
       lastError = error;
       if (!isRetryableBurstError(error)) {
@@ -115,8 +125,10 @@ export async function runBurst<TSchema extends z.ZodTypeAny>(
   }
 
   if (lastError instanceof Error && isRetryableBurstError(lastError)) {
+    const detail =
+      lastError.message.length > 0 ? ` Last error: ${lastError.message}` : "";
     throw new Error(
-      `Il modello LLM ha restituito JSON non valido per "${request.schemaName}" dopo ${String(MAX_BURST_ATTEMPTS)} tentativi. Riprova; se persiste, cambia modello (SEMANTIC_MODEL_CHEAP / SEMANTIC_MODEL_FRONTIER).`,
+      `LLM returned invalid JSON for "${request.schemaName}" after ${String(MAX_BURST_ATTEMPTS)} attempts.${detail} Retry; if it persists, change ${SEMANTIC_MODEL_ENV} in .env.`,
     );
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));

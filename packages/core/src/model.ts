@@ -1,5 +1,5 @@
 /**
- * Zod schema of modello.yaml — the Anchor model artifact. See README.md.
+ * Zod schema of model.yaml — the Anchor model artifact. See README.md.
  * Every inferred element carries confidence (0..1) and provenance.
  */
 
@@ -72,7 +72,7 @@ export const RelationSchema = z.object({
 export const RuleSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  // Business definition in Italian — the copy the SME owner reads and confirms.
+  // Business definition — the copy the SME owner reads and confirms.
   definition: z.string().min(1),
   appliesTo: z.string().min(1),
   column: z.string().min(1).optional(),

@@ -102,7 +102,7 @@ async function detectColumnPatterns(
   column: string,
   sqlType: string,
 ): Promise<DetectedPattern[]> {
-  // I tipi già riconosciuti da DuckDB sono evidenza certa: niente regex.
+  // Types already inferred by DuckDB are certain evidence: skip regex.
   if (DATE_TYPE_PATTERN.test(sqlType)) {
     return [{ kind: "date", matchRatio: 1 }];
   }
@@ -125,12 +125,12 @@ async function detectColumnPatterns(
 function toCount(value: unknown): number {
   const count = Number(value);
   if (!Number.isSafeInteger(count) || count < 0) {
-    throw new Error(`Conteggio SQL non valido: ${JSON.stringify(value)}`);
+    throw new Error(`Invalid SQL count: ${JSON.stringify(value)}`);
   }
   return count;
 }
 
-// min/max sono castati a VARCHAR in SQL: qui arrivano stringhe o null.
+// min/max are cast to VARCHAR in SQL: strings or null arrive here.
 function toNullableString(value: unknown): string | null {
   if (value === null || value === undefined) {
     return null;

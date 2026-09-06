@@ -4,16 +4,16 @@ import { quoteString } from "./sql.js";
 import type { CsvDialect, CsvEncoding, SqlQuery } from "./types.js";
 
 const ENCODING_PROBE_MAX_BYTES = 1024 * 1024;
-// Un carattere UTF-8 occupa al più 4 byte: scartare la coda evita
-// falsi positivi da caratteri troncati al limite del probe.
+// A UTF-8 character uses at most 4 bytes: trimming the tail avoids
+// false positives from characters truncated at the probe limit.
 const UTF8_TAIL_TRIM_BYTES = 4;
 
-// Solo i tipi frazionari cambiano quando lo sniffer usa la virgola decimale.
+// Only fractional types change when the sniffer uses decimal comma.
 const FRACTIONAL_TYPE_PATTERN = /^(DOUBLE|FLOAT|DECIMAL)/;
 
 export interface SniffedCsv {
   dialect: CsvDialect;
-  /** `FROM read_csv(...)` con dialetto pinnato, generato da sniff_csv. */
+  /** Pinned `FROM read_csv(...)` clause produced by sniff_csv. */
   readCsvClause: string;
 }
 
@@ -38,8 +38,8 @@ export async function detectEncoding(filePath: string): Promise<CsvEncoding> {
       new TextDecoder("utf-8", { fatal: true }).decode(probe);
       return "utf-8";
     } catch {
-      // Non UTF-8: nel mercato PMI italiano è quasi sempre Windows-1252,
-      // che DuckDB legge come latin-1.
+      // Non-UTF-8: in the Italian SMB market this is almost always Windows-1252,
+      // which DuckDB reads as latin-1.
       return "latin-1";
     }
   } finally {
@@ -56,11 +56,11 @@ export async function sniffCsvDialect(
   const commaSniff = await sniffCsv(query, filePath, encoding, ",");
 
   if (defaultSniff === undefined && commaSniff === undefined) {
-    throw new Error("sniff_csv non ha prodotto un dialetto valido");
+    throw new Error("sniff_csv did not produce a valid dialect");
   }
 
-  // La virgola decimale è rilevata quando produce più colonne frazionarie
-  // rispetto allo sniffing standard (dove restano VARCHAR).
+  // Decimal comma is detected when it yields more fractional columns
+  // than standard sniffing (where they stay VARCHAR).
   const useDecimalComma =
     commaSniff !== undefined &&
     (defaultSniff === undefined ||
@@ -68,7 +68,7 @@ export async function sniffCsvDialect(
 
   const chosen = useDecimalComma ? commaSniff : defaultSniff;
   if (chosen === undefined) {
-    throw new Error("sniff_csv non ha prodotto un dialetto valido");
+    throw new Error("sniff_csv did not produce a valid dialect");
   }
 
   return {
@@ -97,8 +97,8 @@ async function sniffCsv(
   try {
     rows = await query(`FROM sniff_csv(${options})`);
   } catch {
-    // Lo sniffing con virgola decimale può fallire su file che quello
-    // standard accetta: il chiamante sceglie tra i tentativi riusciti.
+    // Decimal-comma sniffing may fail on files the standard sniff accepts;
+    // the caller picks among successful attempts.
     return undefined;
   }
 

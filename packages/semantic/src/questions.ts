@@ -4,8 +4,8 @@
  * Every question carries a mini-table of statistical evidence from the profile.
  */
 
-import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "@backed/core";
-import type { Entity, EvidenceTable, Relation, ReviewQuestion, Rule } from "@backed/core";
+import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, MAX_REVIEW_QUESTIONS } from "@backed/core";
+import type { Doubt, Entity, EvidenceTable, Relation, ReviewQuestion, Rule } from "@backed/core";
 
 import type { CompressedTable } from "./compress.js";
 
@@ -146,4 +146,29 @@ export function selectReviewQuestions(
     .map((candidate) => candidate.question)
     .filter((question) => question.risk > 0)
     .sort((a, b) => b.risk - a.risk || a.id.localeCompare(b.id));
+}
+
+export interface CappedReviewQuestions {
+  questions: ReviewQuestion[];
+  dropped: ReviewQuestion[];
+}
+
+/** Apply the per-folder review question budget after risk sorting. */
+export function capReviewQuestions(
+  questions: ReviewQuestion[],
+  maxQuestions: number = MAX_REVIEW_QUESTIONS,
+): CappedReviewQuestions {
+  const sorted = [...questions].sort((a, b) => b.risk - a.risk || a.id.localeCompare(b.id));
+  return {
+    questions: sorted.slice(0, maxQuestions),
+    dropped: sorted.slice(maxQuestions),
+  };
+}
+
+export function reviewBudgetDoubts(dropped: ReviewQuestion[]): Doubt[] {
+  return dropped.map((question) => ({
+    topic: `${question.kind} ${question.targetId}`,
+    question: question.question,
+    reason: "Outside question budget, verify manually.",
+  }));
 }

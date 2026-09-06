@@ -26,6 +26,9 @@ const EXTENSION_FORMATS: Readonly<Record<string, DatasetFormat>> = {
 
 const ARCHIVE_EXTENSIONS = new Set([".zip", ".rar"]);
 
+/** Pipeline metadata files — not organizational data; never ingested. */
+const IGNORED_SOURCE_BASENAMES = new Set(["manifest.json"]);
+
 export interface SourceFile {
   absolutePath: string;
   relativePath: string;
@@ -74,6 +77,10 @@ async function walkDirectory(
     }
 
     if (!entry.isFile()) {
+      continue;
+    }
+
+    if (IGNORED_SOURCE_BASENAMES.has(entry.name.toLowerCase())) {
       continue;
     }
 

@@ -9,12 +9,12 @@ import type { PdfLine } from "./pdf.js";
 
 const DEFAULT_OCR_MAX_PAGES = 30;
 
+let workerPromise: Promise<Worker> | null = null;
+
 function ocrLanguages(): string {
   const configured = process.env["BACKED_OCR_LANG"]?.trim();
   return configured !== undefined && configured.length > 0 ? configured : "eng";
 }
-
-let workerPromise: Promise<Worker> | null = null;
 
 function ocrEnabled(): boolean {
   const flag = process.env["BACKED_SKIP_OCR"]?.trim().toLowerCase();
@@ -36,7 +36,11 @@ function ocrMaxPages(): number {
 async function getOcrWorker(): Promise<Worker> {
   if (workerPromise === null) {
     workerPromise = (async () => {
-      const worker = await createWorker(ocrLanguages());
+      const worker = await createWorker(ocrLanguages(), 1, {
+        logger: () => {
+          // Tesseract progress logs are noisy during batch ingest.
+        },
+      });
       return worker;
     })();
   }

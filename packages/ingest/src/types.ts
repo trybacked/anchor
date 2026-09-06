@@ -27,7 +27,7 @@ export type IngestWarningKind =
   | "pdf_ocr_skipped"
   | "archive_extracted";
 
-/** Segnalazione strutturata con provenienza — mai fallire in silenzio. */
+/** Structured warning with provenance — never fail silently. */
 export interface IngestWarning {
   kind: IngestWarningKind;
   file: string;
@@ -48,7 +48,7 @@ export interface IngestResult {
 
 export type SqlQuery = (sql: string) => Promise<Record<string, unknown>[]>;
 
-/** Handle vivo sulla connessione DuckDB, consumato da @backed/profile. */
+/** Live handle on the DuckDB connection, consumed by @backed/profile. */
 export interface IngestSession extends IngestResult {
   query: SqlQuery;
   close: () => void;

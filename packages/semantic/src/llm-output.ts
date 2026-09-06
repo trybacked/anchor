@@ -7,7 +7,7 @@
 import { CardinalitySchema, ConfidenceSchema, PropertyRoleSchema, SemanticTypeSchema } from "@backed/core";
 import { z } from "zod";
 
-/** Burst 1 (cheap model): per-column classification and labels. */
+/** Burst 1: per-column classification and labels. */
 export const ColumnClassificationOutputSchema = z.object({
   tables: z.array(
     z.object({
@@ -30,7 +30,7 @@ const EvidenceFieldSchema = z
   .min(1)
   .describe("Statistical evidence supporting the inference, in English");
 
-/** Burst 2 (frontier model): entities, relations, business rules, explicit doubts. */
+/** Burst 2: entities, relations, business rules, explicit doubts. */
 export const OntologyOutputSchema = z.object({
   entities: z.array(
     z.object({

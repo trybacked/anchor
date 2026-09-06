@@ -1,6 +1,6 @@
 /**
  * Zod schema of review.json (human answers) and the deterministic application
- * of those answers to a proposal, producing the final modello.yaml content.
+ * of those answers to a proposal, producing the final model.yaml content.
  */
 
 import { z } from "zod";
@@ -18,7 +18,7 @@ export const ReviewAnswerSchema = z
     newName: z.string().min(1).optional(),
   })
   .refine((answer) => answer.decision !== "rename" || answer.newName !== undefined, {
-    message: "La risposta 'rename' richiede newName",
+    message: "A 'rename' answer requires newName",
   });
 
 export const ReviewSchema = z.object({
@@ -69,7 +69,7 @@ function collectVerdicts(
       }
       default: {
         const _exhaustive: never = answer.decision;
-        throw new Error(`Decisione review non gestita: ${String(_exhaustive)}`);
+        throw new Error(`Unhandled review decision: ${String(_exhaustive)}`);
       }
     }
   }

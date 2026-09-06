@@ -1,24 +1,41 @@
 /**
  * Local MCP server (stdio transport) exposing the confirmed ontology to AI
  * agents. Pattern adapted from the previous repo's local-server: McpServer +
- * registerTool; here the tools query modello.yaml instead of HTTP bindings.
+ * registerTool; here the tools query model.yaml instead of HTTP bindings.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { SemanticModel } from "@backed/core";
+import type { ChunkSearcher, RowReader, SemanticModel } from "@backed/core";
+import { MAX_ROW_LIMIT } from "@backed/core";
 import { z } from "zod";
 
+import { queryEntityErrorMessage, queryEntityRows } from "./data.js";
 import { getEntity, listEntities, listRelations, searchModel } from "./mapping.js";
+import { traverseRelationErrorMessage, traverseRelationRows } from "./traverse.js";
 
 const SERVER_NAME = "backed-model";
 const SERVER_VERSION = "0.1.0";
+
+const rowFilterSchema = z.object({
+  column: z.string().min(1).describe("Source column name from the entity properties"),
+  op: z.enum(["=", "!=", ">", ">=", "<", "<="]).describe("Comparison operator"),
+  value: z.union([z.string(), z.number()]).describe("Value to compare against"),
+});
+
+export interface ModelMcpServerOptions {
+  rowReader?: RowReader | undefined;
+  chunkSearcher?: ChunkSearcher | undefined;
+}
 
 function jsonContent(data: unknown): { content: { type: "text"; text: string }[] } {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
 
-export function createModelMcpServer(model: SemanticModel): McpServer {
+export function createModelMcpServer(
+  model: SemanticModel,
+  options: ModelMcpServerOptions = {},
+): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
 
   server.registerTool(
@@ -77,11 +94,110 @@ export function createModelMcpServer(model: SemanticModel): McpServer {
     ({ query }) => jsonContent(searchModel(model, query)),
   );
 
+  if (options.rowReader) {
+    const rowReader = options.rowReader;
+    const chunkSearcher = options.chunkSearcher;
+    server.registerTool(
+      "query_entity",
+      {
+        title: "Query entity",
+        description:
+          "Fetch rows for an entity. Use filters for structured columns (from get_entity). Use text for free-text search — document types and document_chunk search PDF body (keyword/semantic hybrid); other entities search text columns. Read-only; no raw SQL.",
+        inputSchema: {
+          id: z.string().min(1).describe("Entity id, e.g. 'invoice' or 'determination'"),
+          filters: z
+            .array(rowFilterSchema)
+            .optional()
+            .describe("Structured column filters (AND-combined)"),
+          text: z
+            .string()
+            .min(1)
+            .optional()
+            .describe("Free-text search within this entity's data"),
+          textMode: z
+            .enum(["keyword", "semantic", "hybrid"])
+            .optional()
+            .describe("Document text search mode. Default: hybrid when embeddings exist"),
+          documentId: z
+            .string()
+            .min(1)
+            .optional()
+            .describe("Limit document search to one ingested file id"),
+          orderBy: z
+            .string()
+            .min(1)
+            .optional()
+            .describe("Source column name to sort by"),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(MAX_ROW_LIMIT)
+            .optional()
+            .describe(`Max rows to return (default 25, max ${String(MAX_ROW_LIMIT)})`),
+        },
+      },
+      async (input) => {
+        const dependencies = chunkSearcher !== undefined ? { chunkSearcher } : {};
+        const result = await queryEntityRows(model, rowReader, input, dependencies);
+        if (!result.ok) {
+          return {
+            isError: true,
+            content: [{ type: "text" as const, text: queryEntityErrorMessage(result.error) }],
+          };
+        }
+        return jsonContent(result.rows);
+      },
+    );
+
+    server.registerTool(
+      "traverse_relation",
+      {
+        title: "Traverse relation",
+        description:
+          "Follow a relation from a known join key value to linked entity rows. Pattern: get_entity → query_entity to read a key → traverse_relation with that value and a relation id from get_entity. Forward (default) returns rows of the to entity; reverse returns rows of the from entity. Read-only.",
+        inputSchema: {
+          relationId: z
+            .string()
+            .min(1)
+            .describe("Relation id from get_entity or list_relations, e.g. 'determination-has-text'"),
+          value: z
+            .union([z.string(), z.number()])
+            .describe("Join key value from a prior query_entity result"),
+          direction: z
+            .enum(["forward", "reverse"])
+            .optional()
+            .describe("Traversal direction. Default: forward (from → to entity)"),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(MAX_ROW_LIMIT)
+            .optional()
+            .describe(`Max rows to return (default 25, max ${String(MAX_ROW_LIMIT)})`),
+        },
+      },
+      async (input) => {
+        const result = await traverseRelationRows(model, rowReader, input);
+        if (!result.ok) {
+          return {
+            isError: true,
+            content: [{ type: "text" as const, text: traverseRelationErrorMessage(result.error) }],
+          };
+        }
+        return jsonContent(result.rows);
+      },
+    );
+  }
+
   return server;
 }
 
-export async function startStdioMcpServer(model: SemanticModel): Promise<McpServer> {
-  const server = createModelMcpServer(model);
+export async function startStdioMcpServer(
+  model: SemanticModel,
+  options: ModelMcpServerOptions = {},
+): Promise<McpServer> {
+  const server = createModelMcpServer(model, options);
   await server.connect(new StdioServerTransport());
   return server;
 }

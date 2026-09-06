@@ -1,8 +1,13 @@
-/** Schema e tipi condivisi per modello.yaml e artefatti .backed/ */
+/** Shared schemas and types for model.yaml and .backed/ artifacts */
 
 export const PACKAGE_NAME = "@backed/core" as const;
 
-export { MODEL_FORMAT_VERSION, LOW_CONFIDENCE_THRESHOLD, DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "./constants.js";
+export {
+  MODEL_FORMAT_VERSION,
+  LOW_CONFIDENCE_THRESHOLD,
+  DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
+  MAX_REVIEW_QUESTIONS,
+} from "./constants.js";
 
 export {
   PROFILE_TOP_VALUES_LIMIT,
@@ -86,6 +91,7 @@ export {
   CONFIG_FILE_NAME,
   RUNS_DIR_NAME,
   MODEL_FILE_NAME,
+  DATA_FILE_NAME,
   RUN_ARTIFACTS,
   WorkspaceConfigSchema,
   workspacePaths,
@@ -93,8 +99,44 @@ export {
 } from "./workspace.js";
 export type { RunArtifactName, WorkspaceConfig, WorkspacePaths } from "./workspace.js";
 
+export { DocumentTypeHintConfigSchema } from "./document-type-hints.js";
+export type { DocumentTypeHintConfig } from "./document-type-hints.js";
+
+export {
+  DEFAULT_ROW_LIMIT,
+  MAX_ROW_LIMIT,
+} from "./data-query.js";
+export type { RowFilter, EntityRowRequest, RowReader } from "./data-query.js";
+
+export {
+  DocumentFieldSchema,
+  DocumentCatalogEntrySchema,
+  DocumentTypeSummarySchema,
+  DocumentCatalogSchema,
+  DOCUMENT_LINES_TABLE,
+  documentTypeTableName,
+} from "./document-catalog.js";
+export type {
+  DocumentField,
+  DocumentCatalogEntry,
+  DocumentTypeSummary,
+  DocumentCatalog,
+} from "./document-catalog.js";
+
+export {
+  DOCUMENT_CHUNKS_TABLE,
+  DEFAULT_CHUNK_SIZE,
+  MAX_CHUNK_SIZE,
+  DEFAULT_CHUNK_OVERLAP,
+  DEFAULT_CHUNK_SEARCH_LIMIT,
+  MAX_CHUNK_SEARCH_LIMIT,
+} from "./document-chunk.js";
+export type { ChunkSearchRequest, ChunkSearcher, ChunkSearchMode, QueryEmbedder } from "./document-chunk.js";
+
 export {
   initWorkspace,
+  writeWorkspaceConfig,
+  patchWorkspaceConfig,
   readWorkspaceConfig,
   writeRunArtifact,
   readRunArtifact,

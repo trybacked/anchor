@@ -7,3 +7,6 @@ export const LOW_CONFIDENCE_THRESHOLD = 0.7;
 
 /** At or above this confidence, an inference skips human review (stays proposed). */
 export const DEFAULT_REVIEW_CONFIDENCE_THRESHOLD = 0.95;
+
+/** Maximum review questions per folder run — AI_GUIDELINES governance budget. */
+export const MAX_REVIEW_QUESTIONS = 10;

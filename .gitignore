@@ -12,6 +12,8 @@ coverage/
 pnpm-debug.log*
 .vitest/
 tmp/
+test/
+test
 temp/
 .backed/
 **/src/generated/
@@ -22,3 +24,4 @@ docs/*
 !docs/assets/**
 test/
 *.traineddata
+scripts/
