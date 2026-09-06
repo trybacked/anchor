@@ -1,1 +1,1 @@
-export { COMMANDS, printHelp } from "./cli.js";
+export { COMMANDS, printCliHelp } from "./cli.js";

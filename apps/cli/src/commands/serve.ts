@@ -7,9 +7,20 @@ import { startStdioMcpServer } from "@backed/mcp";
 import { embedQuery, resolveSemanticModels } from "@backed/semantic";
 
 import { findWorkspaceRoot } from "../env.js";
+import { initUi } from "../ui/index.js";
+import { ANSI, wrap } from "../ui/ansi.js";
 import type { CommandHandler } from "../types.js";
 
+function stderrLine(text: string): void {
+  console.error(wrap(ANSI.dim, text));
+}
+
+function stderrAccent(text: string): void {
+  console.error(wrap(ANSI.brand, text));
+}
+
 export const serveCommand: CommandHandler = async () => {
+  initUi();
   const root = findWorkspaceRoot(process.cwd());
   const paths = workspacePaths(root);
   const model = readModelYaml(root);
@@ -34,10 +45,10 @@ export const serveCommand: CommandHandler = async () => {
     chunkSearcher = createChunkSearcher(session.query, {
       ...(embedQueryFn !== undefined ? { embedQuery: embedQueryFn } : {}),
     });
-    console.error(`Data snapshot loaded: ${paths.dataPath}`);
+    stderrLine(`Data snapshot loaded: ${paths.dataPath}`);
   } else {
-    console.error(
-      'No data snapshot found (.backed/data.duckdb). Data tools disabled until you run "backed model".',
+    stderrLine(
+      'No data snapshot (.backed/data.duckdb). Data tools disabled until you run "backed model".',
     );
   }
 
@@ -49,10 +60,10 @@ export const serveCommand: CommandHandler = async () => {
     ...(rowReader ? ["query_entity", "traverse_relation"] : []),
   ];
 
-  console.error(
-    `MCP server "backed-model" started on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations.`,
+  stderrAccent(
+    `MCP server "backed-model" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`,
   );
-  console.error(`Tools: ${tools.join(", ")}. Ctrl+C to exit.`);
+  stderrLine(`Tools: ${tools.join(", ")} · Ctrl+C to exit`);
 
   const serverOptions: { rowReader?: RowReader; chunkSearcher?: ChunkSearcher } = {};
   if (rowReader) {

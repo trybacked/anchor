@@ -11,6 +11,7 @@ import {
 import { checkbox, confirm, input } from "@inquirer/prompts";
 
 import { DOCUMENT_TYPE_GROUPS, flattenDocumentTypeGroups } from "../document-type-presets.js";
+import { createPromptTheme, getUi, initUi, renderLogo } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
 
 const DEFAULT_SOURCES_DIR = "./sources";
@@ -19,10 +20,11 @@ function filterArgs(args: string[]): string[] {
   return args.filter((arg) => !arg.startsWith("-"));
 }
 
-async function promptCustomDocumentType(): Promise<DocumentTypeHintConfig | null> {
+async function promptCustomDocumentType(theme: ReturnType<typeof createPromptTheme>) {
   const add = await confirm({
     message: "Add a custom document type rule?",
     default: false,
+    theme,
   });
   if (!add) {
     return null;
@@ -31,14 +33,17 @@ async function promptCustomDocumentType(): Promise<DocumentTypeHintConfig | null
   const match = await input({
     message: "Filename slug match (substring, case-insensitive):",
     validate: (value) => (value.trim().length > 0 ? true : "Match is required"),
+    theme,
   });
   const documentType = await input({
     message: "Document type id (slug, e.g. invoice):",
     validate: (value) => (/^[a-z][a-z0-9_]*$/.test(value.trim()) ? true : "Use lowercase slug"),
+    theme,
   });
   const documentTypeLabel = await input({
     message: "Display name (English, e.g. Invoice):",
     validate: (value) => (value.trim().length > 0 ? true : "Label is required"),
+    theme,
   });
 
   return {
@@ -46,13 +51,13 @@ async function promptCustomDocumentType(): Promise<DocumentTypeHintConfig | null
     documentType: documentType.trim(),
     documentTypeLabel: documentTypeLabel.trim(),
     confidence: 0.9,
-  };
+  } satisfies DocumentTypeHintConfig;
 }
 
-async function collectCustomHints(): Promise<DocumentTypeHintConfig[]> {
+async function collectCustomHints(theme: ReturnType<typeof createPromptTheme>) {
   const hints: DocumentTypeHintConfig[] = [];
   for (;;) {
-    const hint = await promptCustomDocumentType();
+    const hint = await promptCustomDocumentType(theme);
     if (hint === null) {
       break;
     }
@@ -63,6 +68,7 @@ async function collectCustomHints(): Promise<DocumentTypeHintConfig[]> {
 
 async function promptDocumentTypeHints(
   existingHints: DocumentTypeHintConfig[],
+  theme: ReturnType<typeof createPromptTheme>,
 ): Promise<DocumentTypeHintConfig[]> {
   const selected = await checkbox({
     message: "Which document types should filename rules cover?",
@@ -79,6 +85,7 @@ async function promptDocumentTypeHints(
             )
           : true,
     })),
+    theme,
   });
 
   const documentTypeHints = flattenDocumentTypeGroups(
@@ -88,18 +95,20 @@ async function promptDocumentTypeHints(
   const addMore = await confirm({
     message: "Add custom filename rules?",
     default: false,
+    theme,
   });
   if (addMore) {
-    documentTypeHints.push(...(await collectCustomHints()));
+    documentTypeHints.push(...(await collectCustomHints(theme)));
   }
 
   return documentTypeHints;
 }
 
-async function promptSourcesDir(defaultDir: string): Promise<string> {
+async function promptSourcesDir(defaultDir: string, theme: ReturnType<typeof createPromptTheme>) {
   const sourcesDir = await input({
     message: "Sources folder (CSV, Excel, PDF, …):",
     default: defaultDir,
+    theme,
   });
   return sourcesDir.trim() || defaultDir;
 }
@@ -107,6 +116,7 @@ async function promptSourcesDir(defaultDir: string): Promise<string> {
 async function buildInteractiveConfig(
   root: string,
   sourcesArg: string | undefined,
+  theme: ReturnType<typeof createPromptTheme>,
 ): Promise<WorkspaceConfig> {
   let existing: WorkspaceConfig | undefined;
   try {
@@ -115,9 +125,9 @@ async function buildInteractiveConfig(
     existing = undefined;
   }
 
-  const documentTypeHints = await promptDocumentTypeHints(existing?.documentTypeHints ?? []);
+  const documentTypeHints = await promptDocumentTypeHints(existing?.documentTypeHints ?? [], theme);
   const defaultSources = sourcesArg ?? existing?.sourcesDir ?? DEFAULT_SOURCES_DIR;
-  const sourcesDir = await promptSourcesDir(defaultSources);
+  const sourcesDir = await promptSourcesDir(defaultSources, theme);
 
   return {
     sourcesDir,
@@ -126,20 +136,27 @@ async function buildInteractiveConfig(
 }
 
 export const initCommand: CommandHandler = async (args) => {
+  const ui = initUi();
+
   if (!process.stdin.isTTY) {
-    console.error("backed init requires an interactive terminal.");
+    ui.writeError("backed init requires an interactive terminal.");
     process.exitCode = 1;
     return;
   }
 
+  ui.log(renderLogo());
+  ui.blank();
+  ui.heading("Initialize workspace");
+  ui.hr();
+
+  const theme = createPromptTheme();
   const root = process.cwd();
   const positional = filterArgs(args)[0];
-
-  const config = await buildInteractiveConfig(root, positional);
+  const config = await buildInteractiveConfig(root, positional, theme);
 
   if (!existsSync(path.resolve(root, config.sourcesDir))) {
-    console.log(
-      `Note: sources folder "${config.sourcesDir}" does not exist yet. Create it and add your files before running "backed model".`,
+    ui.writeWarn(
+      `Sources folder "${config.sourcesDir}" does not exist yet. Create it before running "backed model".`,
     );
   }
 
@@ -148,14 +165,14 @@ export const initCommand: CommandHandler = async (args) => {
     ? writeWorkspaceConfig(root, config)
     : initWorkspace(root, config);
 
-  console.log(
-    alreadyInitialized
-      ? `Workspace updated: ${configPath}`
-      : `Workspace initialized: ${configPath}`,
+  ui.blank();
+  ui.writeSuccess(
+    alreadyInitialized ? `Workspace updated → ${ui.path(configPath)}` : `Workspace initialized → ${ui.path(configPath)}`,
   );
-  console.log(`Sources: ${config.sourcesDir}`);
-  console.log(
-    `Document type rules: ${String(config.documentTypeHints.length)} (edit in config before "backed model")`,
+  ui.log(`  ${ui.label("Sources")}     ${config.sourcesDir}`);
+  ui.log(
+    `  ${ui.label("Doc rules")}  ${String(config.documentTypeHints.length)} filename pattern(s)`,
   );
-  console.log('Next: review `.backed/config.yaml` if needed, then run "backed model".');
+  ui.blank();
+  ui.step('Review `.backed/config.yaml` if needed, then run "backed model".');
 };

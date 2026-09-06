@@ -46,6 +46,7 @@ import {
 import type { BurstUsage, SemanticModels } from "@backed/semantic";
 
 import { findWorkspaceRoot } from "../env.js";
+import { getUi, initUi } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
 
 interface DocumentStageResult {
@@ -83,32 +84,36 @@ function formatDurationMs(ms: number): string {
 }
 
 function printStageTimings(timings: StageTimings, skippedEmbed: boolean): void {
+  const ui = getUi();
   const parts: string[] = [
-    `Ingest ${formatDurationMs(timings.ingestMs)}`,
+    `${ui.label("Ingest")} ${formatDurationMs(timings.ingestMs)}`,
     skippedEmbed
-      ? `Documents ${formatDurationMs(timings.documentsMs)} (extraction ${formatDurationMs(timings.extractionMs)}, embed skipped)`
-      : `Documents ${formatDurationMs(timings.documentsMs)} (extraction ${formatDurationMs(timings.extractionMs)}, embed ${formatDurationMs(timings.embedMs)})`,
-    `Profile ${formatDurationMs(timings.profileMs)}`,
-    `Proposal ${formatDurationMs(timings.proposalMs)}`,
+      ? `${ui.label("Documents")} ${formatDurationMs(timings.documentsMs)} ${ui.dim(`(extraction ${formatDurationMs(timings.extractionMs)}, embed skipped)`)}`
+      : `${ui.label("Documents")} ${formatDurationMs(timings.documentsMs)} ${ui.dim(`(extraction ${formatDurationMs(timings.extractionMs)}, embed ${formatDurationMs(timings.embedMs)})`)}`,
+    `${ui.label("Profile")} ${formatDurationMs(timings.profileMs)}`,
+    `${ui.label("Proposal")} ${formatDurationMs(timings.proposalMs)}`,
   ];
-  console.log(parts.join(" · "));
+  ui.blank();
+  ui.log(parts.join(` ${ui.dim("·")} `));
 }
 
 function printProposalSummary(proposal: Proposal): void {
-  console.log(
-    `Done: ${String(proposal.entities.length)} entities, ${String(proposal.relations.length)} relations.`,
+  const ui = getUi();
+  ui.blank();
+  ui.writeSuccess(
+    `${String(proposal.entities.length)} entities, ${String(proposal.relations.length)} relations`,
   );
   if (proposal.doubts.length > 0) {
-    console.log(`Open doubts: ${String(proposal.doubts.length)}`);
+    ui.log(`  ${ui.label("Doubts")}  ${String(proposal.doubts.length)} open`);
   }
   if (proposal.usage) {
-    const cost = proposal.usage.costUsd !== null ? ` (~$${proposal.usage.costUsd.toFixed(4)})` : "";
-    console.log(
-      `LLM usage: ${String(proposal.usage.inputTokens)} in / ${String(proposal.usage.outputTokens)} out${cost}`,
+    const cost = proposal.usage.costUsd !== null ? ` ${ui.dim(`(~$${proposal.usage.costUsd.toFixed(4)})`)}` : "";
+    ui.log(
+      `  ${ui.label("LLM")}     ${String(proposal.usage.inputTokens)} in / ${String(proposal.usage.outputTokens)} out${cost}`,
     );
   }
-  console.log(
-    `Review: ${String(proposal.questions.length)} question(s). Run "backed review" to confirm.`,
+  ui.step(
+    `${String(proposal.questions.length)} review question(s) — run ${ui.command("backed review")}`,
   );
 }
 
@@ -121,8 +126,9 @@ async function runDocumentStage(
   documentTypeHints: DocumentTypeHintConfig[],
   skipEmbed: boolean,
 ): Promise<DocumentStageResult> {
-  console.log(
-    `Documents detected (${String(lineDocuments.length)} file(s)) — classifying and indexing...`,
+  const ui = getUi();
+  ui.step(
+    `Documents (${String(lineDocuments.length)} file(s)) — classifying and indexing…`,
   );
 
   const extractionStarted = Date.now();
@@ -140,7 +146,7 @@ async function runDocumentStage(
     samples: headerSamples,
     documentTypeHints,
     onProgress: (message) => {
-      console.log(`  ${message}`);
+      ui.detail(message);
     },
   });
   const extractionMs = Date.now() - extractionStarted;
@@ -161,8 +167,8 @@ async function runDocumentStage(
   session.datasets.push(...materialized.datasetsAdded);
 
   const documentsPath = writeRunArtifact(root, runId, "documents", documentCatalog);
-  console.log(`Document types saved: ${documentsPath}`);
-  console.log(`Indexed: ${documentCatalog.documentTypes.map((type) => type.name).join(", ")}`);
+  ui.writeSuccess(`Document types → ${ui.path(documentsPath)}`);
+  ui.log(`  ${ui.label("Types")}  ${documentCatalog.documentTypes.map((type) => type.name).join(", ")}`);
 
   const chunked = await chunkDocumentLines(session.query);
   session.datasets = session.datasets.filter(
@@ -170,9 +176,11 @@ async function runDocumentStage(
   );
   session.datasets.push(chunked.dataset);
   if (chunked.embeddingsRestored > 0) {
-    console.log(`Search index: ${String(chunked.chunkCount)} text segments (${String(chunked.embeddingsRestored)} embeddings preserved)`);
+    ui.log(
+      `  ${ui.label("Index")}  ${String(chunked.chunkCount)} segments (${String(chunked.embeddingsRestored)} embeddings preserved)`,
+    );
   } else {
-    console.log(`Search index: ${String(chunked.chunkCount)} text segments`);
+    ui.log(`  ${ui.label("Index")}  ${String(chunked.chunkCount)} text segments`);
   }
 
   let embedMs = 0;
@@ -184,7 +192,7 @@ async function runDocumentStage(
         models.embedding,
         chunkTexts.map((row) => row.text),
         (message) => {
-          console.log(`  ${message}`);
+          ui.detail(message);
         },
       );
       await storeChunkEmbeddings(
@@ -196,12 +204,12 @@ async function runDocumentStage(
         })),
       );
       embedMs = Date.now() - embedStarted;
-      console.log(`Semantic search ready (${String(chunkTexts.length)} vectors indexed)`);
+      ui.writeSuccess(`Semantic search ready (${String(chunkTexts.length)} vectors)`);
     } else if (chunked.embeddingsRestored > 0) {
-      console.log(`Semantic search ready (${String(chunked.embeddingsRestored)} vectors preserved)`);
+      ui.writeSuccess(`Semantic search ready (${String(chunked.embeddingsRestored)} vectors preserved)`);
     }
   } else {
-    console.log("Semantic search: embeddings skipped (--no-embed, keyword mode only)");
+    ui.writeWarn("Embeddings skipped (--no-embed, keyword search only)");
   }
 
   return {
@@ -261,27 +269,29 @@ function logInferenceScope(
   incrementalScope: IncrementalScope,
   hasDocumentCatalog: boolean,
 ): void {
+  const ui = getUi();
   const { incrementalTables, existingModel } = incrementalScope;
 
   if (incrementalTables !== null && existingModel !== null) {
-    console.log(
+    ui.step(
       `Incremental inference on ${String(incrementalTables.size)} changed table(s): ${[...incrementalTables].join(", ")}`,
     );
-    console.log(
-      `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from model.yaml.`,
+    ui.detail(
+      `Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from model.yaml`,
     );
     return;
   }
 
   if (hasDocumentCatalog) {
-    console.log("Building semantic model from documents...");
+    ui.step("Building semantic model from documents…");
     return;
   }
 
-  console.log("Building semantic model...");
+  ui.step("Building semantic model…");
 }
 
 export const modelCommand: CommandHandler = async (args) => {
+  const ui = initUi();
   const root = findWorkspaceRoot(process.cwd());
   const forceFull = args.includes("--full");
   const skipEmbed = args.includes("--no-embed");
@@ -290,7 +300,7 @@ export const modelCommand: CommandHandler = async (args) => {
   const sourcesDir = resolveSourcesDir(root, positional);
   const absoluteSources = path.resolve(root, sourcesDir);
   if (!existsSync(absoluteSources)) {
-    console.error(`Sources folder not found: ${absoluteSources}`);
+    ui.writeError(`Sources folder not found: ${absoluteSources}`);
     process.exitCode = 1;
     return;
   }
@@ -299,7 +309,8 @@ export const modelCommand: CommandHandler = async (args) => {
   const previousRunIds = listRunIds(root);
   const previousRunId = previousRunIds.at(-1);
 
-  console.log(`Run ${runId} — reading sources in "${sourcesDir}"...`);
+  ui.heading("Model run");
+  ui.step(`${ui.accent(runId)} · reading ${ui.path(sourcesDir)}`);
 
   const paths = workspacePaths(root);
   const workspaceConfig = readWorkspaceConfig(root);
@@ -318,17 +329,15 @@ export const modelCommand: CommandHandler = async (args) => {
 
   try {
     if (session.datasets.length === 0) {
-      console.error(`No readable tables found in "${sourcesDir}".`);
+      ui.writeError(`No readable tables found in "${sourcesDir}".`);
       process.exitCode = 1;
       return;
     }
 
-    console.log(
-      `Tables found: ${session.datasets.map((dataset) => dataset.tableName).join(", ")}`,
-    );
-    console.log(`Data snapshot saved: ${paths.dataPath}`);
+    ui.log(`  ${ui.label("Tables")}  ${session.datasets.map((dataset) => dataset.tableName).join(", ")}`);
+    ui.writeSuccess(`Data snapshot → ${ui.path(paths.dataPath)}`);
     for (const warning of session.warnings) {
-      console.log(`  Warning [${warning.file}]: ${warning.message}`);
+      ui.writeWarn(`[${warning.file}] ${warning.message}`);
     }
 
     let models;
@@ -336,7 +345,7 @@ export const modelCommand: CommandHandler = async (args) => {
       models = resolveSemanticModels();
     } catch (error) {
       if (error instanceof MissingApiKeyError) {
-        console.error(error.message);
+        ui.writeError(error.message);
         process.exitCode = 1;
         return;
       }
@@ -354,8 +363,8 @@ export const modelCommand: CommandHandler = async (args) => {
     let extractionUsage: BurstUsage | undefined;
 
     if (hasLineDocuments && workspaceConfig.documentTypeHints.length === 0) {
-      console.log(
-        "  No documentTypeHints in config — all documents will use LLM classification. Run \"backed init\" or edit .backed/config.yaml.",
+      ui.writeWarn(
+        'No documentTypeHints in config — all documents use LLM classification. Run "backed init" or edit .backed/config.yaml.',
       );
     }
 
@@ -381,7 +390,7 @@ export const modelCommand: CommandHandler = async (args) => {
       timings.profileMs += Date.now() - reprofileStarted;
     }
     const profilePath = writeRunArtifact(root, runId, "profile", profile);
-    console.log(`Profile saved: ${profilePath}`);
+    ui.writeSuccess(`Profile → ${ui.path(profilePath)}`);
 
     const incrementalScope = resolveIncrementalScope(
       root,
@@ -400,7 +409,7 @@ export const modelCommand: CommandHandler = async (args) => {
       ...(documentCatalog !== undefined ? { documentCatalog } : {}),
       ...(extractionUsage !== undefined ? { extractionUsage } : {}),
       onProgress: (message) => {
-        console.log(`  ${message}`);
+        ui.detail(message);
       },
     });
     timings.proposalMs = Date.now() - proposalStarted;
@@ -416,7 +425,7 @@ export const modelCommand: CommandHandler = async (args) => {
         : freshProposal;
 
     const proposalPath = writeRunArtifact(root, runId, "proposal", proposal);
-    console.log(`Proposal saved: ${proposalPath}`);
+    ui.writeSuccess(`Proposal → ${ui.path(proposalPath)}`);
     printProposalSummary(proposal);
     printStageTimings(timings, skipEmbed);
   } finally {
