@@ -60,7 +60,8 @@ export class MissingApiKeyError extends Error {
         `Missing AI Gateway key: set ${AI_GATEWAY_API_KEY_ENV} in the environment or in a .env file.`,
         "How to fix:",
         "  1. Create a key at https://vercel.com/ai-gateway (or use your team's key).",
-        `  2. Add to a .env file in your working directory: ${AI_GATEWAY_API_KEY_ENV}=<your-key>`,
+        `  2. Run: backed gateway`,
+        `     Or add to .env: ${AI_GATEWAY_API_KEY_ENV}=<your-key>`,
         `Optional: ${SEMANTIC_MODEL_ENV} (default ${DEFAULT_SEMANTIC_MODEL}), ${EMBEDDING_MODEL_ENV} (default ${DEFAULT_EMBEDDING_MODEL}).`,
       ].join("\n"),
     );

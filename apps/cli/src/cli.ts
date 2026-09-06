@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import {
   diffCommand,
+  gatewayCommand,
   initCommand,
+  loginCommand,
+  logoutCommand,
   modelCommand,
   reviewCommand,
   serveCommand,
@@ -15,6 +18,21 @@ export const COMMANDS: readonly Command[] = [
     name: "init",
     description: "Initialize workspace (interactive document type setup)",
     handler: initCommand,
+  },
+  {
+    name: "gateway",
+    description: "Save Vercel AI Gateway API key to workspace .env",
+    handler: gatewayCommand,
+  },
+  {
+    name: "login",
+    description: "Sign in to your Backed account (device authorization)",
+    handler: loginCommand,
+  },
+  {
+    name: "logout",
+    description: "Sign out of your Backed account on this machine",
+    handler: logoutCommand,
   },
   {
     name: "model",

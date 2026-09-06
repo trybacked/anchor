@@ -21,6 +21,7 @@ export interface Ui {
   hr: () => void;
   colorizeDiff: (text: string) => string;
   box: (title: string, lines: string[]) => string;
+  spinner: (label: string) => { stop: () => void };
 }
 
 function paint(code: string, text: string): string {
@@ -129,6 +130,31 @@ export function createUi(): Ui {
       const header = paint(ANSI.brandBold, title);
       const body = lines.map((line) => `│ ${line.padEnd(innerWidth)} │`).join("\n");
       return `${ui.dim(`┌${bar}┐`)}\n│ ${header.padEnd(innerWidth + 9)} │\n${ui.dim(`├${bar}┤`)}\n${body}\n${ui.dim(`└${bar}┘`)}`;
+    },
+
+    spinner(label: string): { stop: () => void } {
+      if (!process.stderr.isTTY) {
+        return { stop: () => {} };
+      }
+
+      const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+      let frameIndex = 0;
+
+      const render = (): void => {
+        const frame = paint(ANSI.brand, frames[frameIndex % frames.length] ?? "⠋");
+        frameIndex += 1;
+        process.stderr.write(`\r${frame} ${paint(ANSI.dim, label)}`);
+      };
+
+      render();
+      const timer = setInterval(render, 80);
+
+      return {
+        stop(): void {
+          clearInterval(timer);
+          process.stderr.write("\r\x1b[2K");
+        },
+      };
     },
   };
 

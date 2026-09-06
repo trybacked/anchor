@@ -14,6 +14,7 @@
     "format:check": "prettier --check .",
     "test": "turbo run test",
     "cli": "node apps/cli/dist/cli.js",
+    "auth-api": "node apps/auth-api/dist/index.js",
     "generate:logo": "python3 scripts/generate-logo-art.py"
   },
   "devDependencies": {
