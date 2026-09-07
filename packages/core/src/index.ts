@@ -1,149 +1,37 @@
-/** Shared schemas and types for model.yaml and .backed/ artifacts */
-
 export const PACKAGE_NAME = "@backed/core" as const;
-
-export {
-  MODEL_FORMAT_VERSION,
-  LOW_CONFIDENCE_THRESHOLD,
-  DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
-  MAX_REVIEW_QUESTIONS,
-} from "./constants.js";
-
-export {
-  PROFILE_TOP_VALUES_LIMIT,
-  PROFILE_PATTERN_SAMPLE_SIZE,
-  PROFILE_PATTERN_MATCH_THRESHOLD,
-  PROFILE_FK_OVERLAP_THRESHOLD,
-  PROFILE_FK_SAMPLE_SIZE,
-  PROFILE_FK_CANDIDATES_PER_COLUMN,
-  ForeignKeyCandidateSchema,
-  DetectedPatternKindSchema,
-  DetectedPatternSchema,
-  TopValueSchema,
-  ColumnProfileSchema,
-  TableProfileSchema,
-  ProfileReportSchema,
-} from "./profile.js";
-export type {
-  DetectedPatternKind,
-  DetectedPattern,
-  ForeignKeyCandidate,
-  TopValue,
-  ColumnProfile,
-  TableProfile,
-  ProfileReport,
-} from "./profile.js";
-
-export {
-  ConfidenceSchema,
-  ProvenanceSchema,
-  SemanticTypeSchema,
-  PropertyRoleSchema,
-  ElementStatusSchema,
-  PropertySchema,
-  EntitySchema,
-  CardinalitySchema,
-  RelationSchema,
-  RuleSchema,
-  ModelMetadataSchema,
-  SemanticModelSchema,
-} from "./model.js";
-export type {
-  Confidence,
-  Provenance,
-  SemanticType,
-  PropertyRole,
-  ElementStatus,
-  Property,
-  Entity,
-  Cardinality,
-  Relation,
-  Rule,
-  ModelMetadata,
-  SemanticModel,
-} from "./model.js";
-
-export {
-  DoubtSchema,
-  EvidenceTableSchema,
-  ReviewQuestionKindSchema,
-  ReviewQuestionSchema,
-  ProposalUsageSchema,
-  ProposalSchema,
-} from "./proposal.js";
-export type {
-  Doubt,
-  EvidenceTable,
-  ReviewQuestionKind,
-  ReviewQuestion,
-  ProposalUsage,
-  Proposal,
-} from "./proposal.js";
-
+export { MODEL_FORMAT_VERSION, LOW_CONFIDENCE_THRESHOLD, DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, MAX_REVIEW_QUESTIONS, } from "./constants.js";
+export { PROFILE_TOP_VALUES_LIMIT, PROFILE_PATTERN_SAMPLE_SIZE, PROFILE_PATTERN_MATCH_THRESHOLD, PROFILE_FK_OVERLAP_THRESHOLD, PROFILE_FK_SAMPLE_SIZE, PROFILE_FK_CANDIDATES_PER_COLUMN, ForeignKeyCandidateSchema, DetectedPatternKindSchema, DetectedPatternSchema, TopValueSchema, ColumnProfileSchema, TableProfileSchema, ProfileReportSchema, } from "./profile.js";
+export type { DetectedPatternKind, DetectedPattern, ForeignKeyCandidate, TopValue, ColumnProfile, TableProfile, ProfileReport, } from "./profile.js";
+export { ConfidenceSchema, ProvenanceSchema, SemanticTypeSchema, PropertyRoleSchema, ElementStatusSchema, PropertySchema, EntitySchema, CardinalitySchema, RelationSchema, RuleSchema, ModelMetadataSchema, SemanticModelSchema, } from "./model.js";
+export type { Confidence, Provenance, SemanticType, PropertyRole, ElementStatus, Property, Entity, Cardinality, Relation, Rule, ModelMetadata, SemanticModel, } from "./model.js";
+export { DoubtSchema, EvidenceTableSchema, ReviewQuestionKindSchema, ReviewQuestionSchema, ProposalUsageSchema, ProposalSchema, } from "./proposal.js";
+export type { Doubt, EvidenceTable, ReviewQuestionKind, ReviewQuestion, ProposalUsage, Proposal, } from "./proposal.js";
 export { ReviewDecisionSchema, ReviewAnswerSchema, ReviewSchema, applyReview } from "./review.js";
 export type { ReviewDecision, ReviewAnswer, Review } from "./review.js";
-
 export { DiffChangeKindSchema, DiffChangeSchema, ModelDiffSchema } from "./diff.js";
 export type { DiffChangeKind, DiffChange, ModelDiff } from "./diff.js";
-
-export {
-  BACKED_DIR_NAME,
-  CONFIG_FILE_NAME,
-  RUNS_DIR_NAME,
-  MODEL_FILE_NAME,
-  DATA_FILE_NAME,
-  RUN_ARTIFACTS,
-  WorkspaceConfigSchema,
-  workspacePaths,
-  createRunId,
-} from "./workspace.js";
+export { BACKED_DIR_NAME, CONFIG_FILE_NAME, RUNS_DIR_NAME, MODEL_FILE_NAME, DATA_FILE_NAME, RUN_ARTIFACTS, WorkspaceConfigSchema, workspacePaths, createRunId, } from "./workspace.js";
 export type { RunArtifactName, WorkspaceConfig, WorkspacePaths } from "./workspace.js";
-
 export { DocumentTypeHintConfigSchema } from "./document-type-hints.js";
 export type { DocumentTypeHintConfig } from "./document-type-hints.js";
-
-export {
-  DEFAULT_ROW_LIMIT,
-  MAX_ROW_LIMIT,
-} from "./data-query.js";
-export type { RowFilter, EntityRowRequest, RowReader } from "./data-query.js";
-
-export {
-  DocumentFieldSchema,
-  DocumentCatalogEntrySchema,
-  DocumentTypeSummarySchema,
-  DocumentCatalogSchema,
-  DOCUMENT_LINES_TABLE,
-  documentTypeTableName,
-} from "./document-catalog.js";
-export type {
-  DocumentField,
-  DocumentCatalogEntry,
-  DocumentTypeSummary,
-  DocumentCatalog,
-} from "./document-catalog.js";
-
-export {
-  DOCUMENT_CHUNKS_TABLE,
-  DEFAULT_CHUNK_SIZE,
-  MAX_CHUNK_SIZE,
-  DEFAULT_CHUNK_OVERLAP,
-  DEFAULT_CHUNK_SEARCH_LIMIT,
-  MAX_CHUNK_SEARCH_LIMIT,
-} from "./document-chunk.js";
+export { MIN_TRAVERSE_DEPTH, MAX_TRAVERSE_DEPTH, clampTraverseDepth, buildRelationPath, resolveRelationPath, } from "./graph-traverse.js";
+export type { GraphTraverseRequest, GraphTraverser, RelationHop, RelationPathSegment, TraverseDirection, } from "./graph-traverse.js";
+export { DEFAULT_ROW_LIMIT, MAX_ROW_LIMIT, } from "./data-query.js";
+export { ROW_FILTER_OPS } from "./data-query.js";
+export type { RowFilter, RowFilterOp, EntityRowRequest, RowReader, EntityAggregateRequest, AggregateReader, } from "./data-query.js";
+export { AGGREGATE_OPS, DEFAULT_OBJECT_QUERY_LIMIT, MAX_OBJECT_QUERY_LIMIT, } from "./object-query.js";
+export { resolveAggregationAlias } from "./object-query.js";
+export type { AggregateOp, AggregateOpKind, ObjectQueryExecutor, ObjectQueryReader, ObjectQueryRequest, ObjectSetDefinition, TableObjectQueryRequest, TimeRange, } from "./object-query.js";
+export { DEFAULT_PROFILE_MATCH_LIMIT, MAX_PROFILE_MATCH_LIMIT, DEFAULT_PROFILE_FACT_LIMIT, DEFAULT_PROFILE_DOCUMENT_LIMIT, MAX_PROFILE_ROW_LIMIT, } from "./entity-profile.js";
+export type { EntityProfileRequest, EntityProfileResult, EntityProfileReader, } from "./entity-profile.js";
+export { DEFAULT_ENTITY_SEARCH_LIMIT, MAX_ENTITY_SEARCH_LIMIT, DEFAULT_ENTITY_SEARCH_MIN_SCORE, INDEXED_ONTOLOGY_TABLES, isIndexedOntologyTable, } from "./entity-search.js";
+export type { EntitySearchMode, EntitySearchRequest, EntitySearcher, } from "./entity-search.js";
+export { DocumentFieldSchema, DocumentCatalogEntrySchema, DocumentTypeSummarySchema, DocumentCatalogSchema, DOCUMENT_LINES_TABLE, documentTypeTableName, } from "./document-catalog.js";
+export type { DocumentField, DocumentCatalogEntry, DocumentTypeSummary, DocumentCatalog, } from "./document-catalog.js";
+export { DOCUMENT_CHUNKS_TABLE, DEFAULT_CHUNK_SIZE, MAX_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SEARCH_LIMIT, MAX_CHUNK_SEARCH_LIMIT, DEFAULT_CHUNK_SEARCH_MIN_SCORE, DEFAULT_EMBEDDING_DIMENSION, } from "./document-chunk.js";
 export type { ChunkSearchRequest, ChunkSearcher, ChunkSearchMode, QueryEmbedder } from "./document-chunk.js";
-
-export {
-  initWorkspace,
-  writeWorkspaceConfig,
-  patchWorkspaceConfig,
-  readWorkspaceConfig,
-  writeRunArtifact,
-  readRunArtifact,
-  hasRunArtifact,
-  listRunIds,
-  serializeModelYaml,
-  parseModelYaml,
-  writeModelYaml,
-  readModelYaml,
-} from "./artifacts.js";
+export { DOCUMENT_MENTIONS_TABLE, DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, ENTITY_PROFILES_TABLE, ENTITY_MENTION_TYPE, MENTION_CONTEXT_MAX_CHARS, MENTION_CONTEXT_LINE_RADIUS, } from "./document-mentions.js";
+export { DomainTermSchema, FactTypeSchema, IdentifierFormatSchema, NameConventionSchema, DomainVocabularySchema, NUMBER_FORMATS, DATE_ORDERS, EMPTY_DOMAIN_VOCABULARY, describeTerms, mergeVocabulary, termIds, } from "./domain.js";
+export type { DateOrder, DomainTerm, DomainVocabulary, DomainVocabularyOverrides, FactType, IdentifierFormat, NameConvention, NumberFormat, } from "./domain.js";
+export { parseLocalizedNumber } from "./numbers.js";
+export { initWorkspace, writeWorkspaceConfig, patchWorkspaceConfig, readWorkspaceConfig, writeRunArtifact, readRunArtifact, hasRunArtifact, listRunIds, serializeModelYaml, parseModelYaml, writeModelYaml, readModelYaml, } from "./artifacts.js";

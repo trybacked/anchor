@@ -3,88 +3,79 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-
 const execFileAsync = promisify(execFile);
-
 function runPdftoppm(args: string[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn("pdftoppm", args, {
-      stdio: ["ignore", "ignore", "ignore"],
+    return new Promise((resolve, reject) => {
+        const child = spawn("pdftoppm", args, {
+            stdio: ["ignore", "ignore", "ignore"],
+        });
+        child.on("error", reject);
+        child.on("close", (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(`pdftoppm exited with code ${String(code)}`));
+        });
     });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-      reject(new Error(`pdftoppm exited with code ${String(code)}`));
-    });
-  });
 }
-
 const DEFAULT_OCR_DPI = 150;
-
+const OCR_TEMP_DIR_PREFIX = "backed-pdf-ocr-";
+const MIN_OCR_DPI = 72;
 let popplerAvailable: boolean | null = null;
-
 function ocrDpi(): number {
-  const raw = process.env["BACKED_OCR_DPI"];
-  if (raw === undefined || raw.trim() === "") {
-    return DEFAULT_OCR_DPI;
-  }
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 72) {
-    return DEFAULT_OCR_DPI;
-  }
-  return Math.floor(parsed);
-}
-
-/** True when `pdftoppm` from Poppler is on PATH (required for scanned PDF OCR). */
-export async function isPopplerAvailable(): Promise<boolean> {
-  if (popplerAvailable !== null) {
-    return popplerAvailable;
-  }
-  try {
-    await execFileAsync("pdftoppm", ["-h"]);
-    popplerAvailable = true;
-  } catch {
-    try {
-      await execFileAsync("which", ["pdftoppm"]);
-      popplerAvailable = true;
-    } catch {
-      popplerAvailable = false;
+    const raw = process.env["BACKED_OCR_DPI"];
+    if (raw === undefined || raw.trim() === "") {
+        return DEFAULT_OCR_DPI;
     }
-  }
-  return popplerAvailable;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed < MIN_OCR_DPI) {
+        return DEFAULT_OCR_DPI;
+    }
+    return Math.floor(parsed);
 }
-
-/** Render one PDF page to PNG via Poppler. Returns null when Poppler is missing. */
-export async function renderPdfPagePng(
-  absolutePath: string,
-  pageNum: number,
-): Promise<Buffer | null> {
-  if (!(await isPopplerAvailable())) {
-    return null;
-  }
-
-  const tempDir = await mkdtemp(join(tmpdir(), "backed-pdf-ocr-"));
-  const prefix = join(tempDir, "page");
-  const dpi = ocrDpi();
-
-  try {
-    await runPdftoppm([
-      "-png",
-      "-singlefile",
-      "-f",
-      String(pageNum),
-      "-l",
-      String(pageNum),
-      "-r",
-      String(dpi),
-      absolutePath,
-      prefix,
-    ]);
-    return await readFile(`${prefix}.png`);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
+export async function isPopplerAvailable(): Promise<boolean> {
+    if (popplerAvailable !== null) {
+        return popplerAvailable;
+    }
+    try {
+        await execFileAsync("pdftoppm", ["-h"]);
+        popplerAvailable = true;
+    }
+    catch {
+        try {
+            await execFileAsync("which", ["pdftoppm"]);
+            popplerAvailable = true;
+        }
+        catch {
+            popplerAvailable = false;
+        }
+    }
+    return popplerAvailable;
+}
+export async function renderPdfPagePng(absolutePath: string, pageNum: number): Promise<Buffer | null> {
+    if (!(await isPopplerAvailable())) {
+        return null;
+    }
+    const tempDir = await mkdtemp(join(tmpdir(), OCR_TEMP_DIR_PREFIX));
+    const prefix = join(tempDir, "page");
+    const dpi = ocrDpi();
+    try {
+        await runPdftoppm([
+            "-png",
+            "-singlefile",
+            "-f",
+            String(pageNum),
+            "-l",
+            String(pageNum),
+            "-r",
+            String(dpi),
+            absolutePath,
+            prefix,
+        ]);
+        return await readFile(`${prefix}.png`);
+    }
+    finally {
+        await rm(tempDir, { recursive: true, force: true });
+    }
 }

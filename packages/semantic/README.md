@@ -11,3 +11,5 @@ Agentic LLM bursts: `profile.json` → `proposal.json`. "Agents where they think
 - `resolveSemanticModels` — `language` + `embedding` models from env via AI Gateway (`AI_GATEWAY_API_KEY`); missing key → clear English error.
 
 **Does not contain:** ingest, SQL, UI.
+
+**Fact extraction:** `ensureCurrencyFactTypes`, `extractMentionsFromLines`, and `extractFactsFromLines` run in the `backed model` document stage before facts are materialized to DuckDB. Existing workspaces must re-run `backed model` after parser changes — facts are not backfilled into older snapshots.

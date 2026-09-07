@@ -62,9 +62,15 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.30.0
+        version: 1.30.0(zod@3.25.76)
       ai:
         specifier: ^7.0.85
         version: 7.0.92(zod@3.25.76)
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.1)(yaml@2.9.0)
 
   apps/review:
     dependencies:

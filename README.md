@@ -65,7 +65,39 @@ model.yaml        Anchor model (committable)
 
 **Review** presents risk-ranked questions for elements below **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`). Answers: Yes · No · Rename.
 
-**Consumption** via MCP: **`query_entity`** (filters or semantic **`text`** on document chunks) and **`traverse_relation`**.
+**Consumption** via MCP: five deterministic operations on `model.yaml` — see [MCP surface](#mcp-surface) and [Auth](#auth).
+
+---
+
+## MCP surface
+
+`backed serve` exposes the semantic model over MCP stdio. Every response is structured JSON, Zod-validated, with **no LLM** in the path.
+
+| Operation | Input | Returns |
+|---|---|---|
+| `list_entities()` | — | id, name, description, status |
+| `get_entity(id)` | entity id | properties (semanticType, role, provenance), entity provenance |
+| `list_relations(entity_id?)` | optional entity id | relations with cardinality and status |
+| `search_model(query)` | text | substring matches on entities, properties, relations, rules |
+| `get_definition(term)` | term | confirmed rule with provenance, or structured not-found |
+
+Data is read from local `model.yaml` only. DuckDB snapshots are used by `backed model`, not by `serve`.
+
+---
+
+## Auth
+
+`backed serve` **requires** a prior `backed login`. Without stored credentials the command exits with a clear message pointing to `backed login`.
+
+On startup the CLI:
+
+1. Verifies the Backed gateway is reachable (`/health`)
+2. Validates the stored Bearer token (`/v1/me`)
+3. Starts MCP stdio
+
+On every MCP tool call the CLI posts **only the operation name** to `/v1/usage` (e.g. `list_entities`). **Model data never leaves the machine** — the gateway sees authentication and usage metadata, not entity rows or definitions.
+
+Offline mode is not supported: if the gateway is unreachable, `serve` refuses to start.
 
 ---
 
@@ -120,9 +152,12 @@ backed model --full       # re-infer everything
 |---|---|---|---|
 | Ingest | Always | No | `.backed/data.duckdb` |
 | Documents | PDF/TXT/DOCX | Ambiguous files only | `documents.json` |
+| Mentions + facts | Documents | No | `document_mentions`, `document_facts`, `entity_profiles` in DuckDB |
 | Chunk + embed | Documents | Embeddings only | vectors in DuckDB |
 | Profile | Always | No | `profile.json` |
 | Proposal | Always | Structured tables | `proposal.json` |
+
+Fact extraction is deterministic and runs during `backed model`. Upgrading `@backed/semantic` does not mutate an existing snapshot — **re-run `backed model`** on workspaces that already have document corpora when fact parsing improves.
 
 **PDF-only folders:** `doc_*` tables get deterministic ontology (no column-classification LLM). **Mixed folders:** CSV gets LLM ontology; documents stay deterministic.
 
@@ -132,9 +167,9 @@ Requires `AI_GATEWAY_API_KEY` — see [Install](#install).
 
 Confirms or rejects proposals → writes **`model.yaml`**.
 
-### 4. Serve (`backed serve`)
+### 4. Serve (`backed login` then `backed serve`)
 
-MCP stdio for agents (`list_entities`, `query_entity`, `traverse_relation`).
+Authenticated MCP stdio — five deterministic operations on `model.yaml` (see [MCP surface](#mcp-surface)).
 
 ### 5. Data changes
 
@@ -145,10 +180,10 @@ backed model && backed diff
 ### Cheat sheet
 
 ```bash
-backed init && backed model && backed review && backed serve
+backed init && backed login && backed model && backed review && backed serve
 ```
 
-Agent pattern: `list_entities` → `get_entity` → `query_entity` → `traverse_relation`.
+Agent pattern: `list_entities` → `get_entity` → `search_model` / `get_definition`.
 
 ---
 
@@ -278,7 +313,8 @@ All files are schema-validated on read and write.
 | `backed model [folder]` | Full pipeline: ingest → documents (if any) → profile → proposal. Incremental when `model.yaml` exists; `--full` re-infers everything. |
 | `backed review` | Interactive review → writes `model.yaml` |
 | `backed diff` | Compare last two runs |
-| `backed serve` | MCP stdio server (`query_entity`, `traverse_relation` when snapshot exists) |
+| `backed login` | Sign in to Backed (required before `serve`) |
+| `backed serve` | Authenticated MCP stdio server (5 operations on `model.yaml`) |
 
 See [Operational workflow](#operational-workflow) for the step-by-step guide.
 
@@ -324,7 +360,7 @@ Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / 
 
 ## Scope
 
-**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · MCP export · incremental re-inference · ontology-guided data query (`query_entity`, structured + text search) · document corpus typing · semantic document search (embedded chunks, via `query_entity`).
+**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · authenticated MCP export (5 operations) · incremental re-inference · document corpus typing.
 
 **Out (v1):** Hosted cloud · SDK · registry · billing · dashboard · writeback.
 

@@ -1,9 +1,8 @@
 import { defineConfig } from "vitest/config";
-
 export default defineConfig({
-  test: {
-    name: "mcp-unit",
-    include: ["tests/unit/**/*.test.ts"],
-    passWithNoTests: true,
-  },
+    test: {
+        name: "mcp-unit",
+        include: ["tests/unit/**/*.test.ts"],
+        passWithNoTests: true,
+    },
 });
