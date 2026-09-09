@@ -3,6 +3,7 @@ import type { LanguageModel } from "ai";
 import type { z } from "zod";
 import { SEMANTIC_MODEL_ENV } from "./env.js";
 import { BURST_RETRY_DELAYS_MS, MAX_BURST_ATTEMPTS, RAW_FALLBACK_DEFAULT_MAX_OUTPUT_TOKENS, RAW_FALLBACK_MAX_OUTPUT_TOKENS, } from "./constants.js";
+import { cacheKey, loadCachedOutput, saveCachedOutput } from "./llm-cache.js";
 export interface BurstRequest<TSchema extends z.ZodTypeAny> {
     model: LanguageModel;
     system: string;
@@ -11,6 +12,8 @@ export interface BurstRequest<TSchema extends z.ZodTypeAny> {
     schemaName: string;
     timeoutMs?: number;
     onWaiting?: (message: string) => void;
+    cacheDir?: string;
+    modelId?: string;
 }
 export interface BurstUsage {
     inputTokens: number;
@@ -20,6 +23,7 @@ export interface BurstUsage {
 export interface BurstResult<TOutput> {
     output: TOutput;
     usage: BurstUsage;
+    fromCache?: boolean;
 }
 export const EMPTY_BURST_USAGE: BurstUsage = {
     inputTokens: 0,
@@ -196,6 +200,45 @@ async function runRawAttempt<TSchema extends z.ZodTypeAny>(request: BurstRequest
         },
     };
 }
+async function serializeBurstSchemaJson<TSchema extends z.ZodTypeAny>(schema: TSchema): Promise<string> {
+    const { zodToJsonSchema } = await import("zod-to-json-schema");
+    return JSON.stringify(zodToJsonSchema(schema, {
+        target: "openApi3",
+        $refStrategy: "none",
+    }));
+}
+
+async function resolveBurstCacheKey<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>): Promise<string | undefined> {
+    if (request.cacheDir === undefined || request.modelId === undefined) {
+        return undefined;
+    }
+    const schemaJson = await serializeBurstSchemaJson(request.schema);
+    return cacheKey({
+        modelId: request.modelId,
+        system: request.system,
+        prompt: request.prompt,
+        schemaName: request.schemaName,
+        schemaJson,
+    });
+}
+
+async function readValidatedBurstCache<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>, key: string): Promise<BurstResult<z.infer<TSchema>> | undefined> {
+    const hit = await loadCachedOutput(request.cacheDir!, key);
+    if (hit === undefined) {
+        return undefined;
+    }
+    try {
+        return {
+            output: request.schema.parse(hit.output),
+            usage: hit.usage,
+            fromCache: true,
+        };
+    }
+    catch {
+        return undefined;
+    }
+}
+
 async function runAttempt<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>, onWaiting?: (message: string) => void, forceStrictJson = false): Promise<BurstResult<z.infer<TSchema>>> {
     onWaiting?.(`Waiting for LLM (${request.schemaName})...`);
     const prompt = forceStrictJson ? request.prompt + STRICT_JSON_SUFFIX : request.prompt;
@@ -236,6 +279,13 @@ async function runAttempt<TSchema extends z.ZodTypeAny>(request: BurstRequest<TS
     throw new Error(`No output generated for "${request.schemaName}"`);
 }
 export async function runBurst<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>): Promise<BurstResult<z.infer<TSchema>>> {
+    const cacheKeyValue = await resolveBurstCacheKey(request);
+    if (cacheKeyValue !== undefined) {
+        const cached = await readValidatedBurstCache(request, cacheKeyValue);
+        if (cached !== undefined) {
+            return cached;
+        }
+    }
     let lastError: unknown;
     for (let attempt = 0; attempt < MAX_BURST_ATTEMPTS; attempt += 1) {
         const delayMs = BURST_RETRY_DELAYS_MS[attempt] ?? 0;
@@ -248,10 +298,14 @@ export async function runBurst<TSchema extends z.ZodTypeAny>(request: BurstReque
             // final attempt: raw fallback — schema in prompt, local parsing
             // and Zod validation (rescues models whose structured-output
             // mode fails hard, e.g. DeepSeek).
-            if (attempt === MAX_BURST_ATTEMPTS - 1 && attempt > 0) {
-                return await runRawAttempt(request);
+            const isRawFallback = attempt === MAX_BURST_ATTEMPTS - 1 && attempt > 0;
+            const result = isRawFallback
+                ? await runRawAttempt(request)
+                : await runAttempt(request, request.onWaiting, attempt > 0);
+            if (!isRawFallback && cacheKeyValue !== undefined && request.cacheDir !== undefined) {
+                await saveCachedOutput(request.cacheDir, cacheKeyValue, result.output, result.usage);
             }
-            return await runAttempt(request, request.onWaiting, attempt > 0);
+            return result;
         }
         catch (error) {
             lastError = error;

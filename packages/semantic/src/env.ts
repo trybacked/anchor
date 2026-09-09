@@ -19,7 +19,7 @@ export interface SemanticModels {
     language: LanguageModel;
     embedding: EmbeddingModel;
 }
-function resolveLanguageModelId(env: Record<string, string | undefined>): string {
+export function resolveLanguageModelId(env: Record<string, string | undefined> = process.env): string {
     const explicit = env[SEMANTIC_MODEL_ENV]?.trim();
     if (explicit !== undefined && explicit.length > 0) {
         return explicit;

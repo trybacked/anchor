@@ -6,6 +6,7 @@ import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage, type BurstUsage } from "./b
 import { mapWithConcurrency } from "./concurrency.js";
 import { BOILERPLATE_DOCUMENT_RATIO, BOILERPLATE_MIN_DOCUMENTS, DOCUMENT_ENRICHMENT_BATCH_SIZE, DOCUMENT_ENRICHMENT_CONCURRENCY, DOCUMENT_ENRICHMENT_MAX_SAMPLE_CHARS, DOCUMENT_ENRICHMENT_MAX_SUMMARY_CHARS, DOCUMENT_ENRICHMENT_MAX_TOPICS, DOCUMENT_ENRICHMENT_SAMPLE_LINE_LIMIT, } from "./constants.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
+import { burstCacheFields, type LlmCacheContext } from "./llm-cache.js";
 import type { DocumentLineRow } from "./extract-document-mentions.js";
 export { BOILERPLATE_DOCUMENT_RATIO, BOILERPLATE_MIN_DOCUMENTS, DOCUMENT_ENRICHMENT_BATCH_SIZE, DOCUMENT_ENRICHMENT_CONCURRENCY, } from "./constants.js";
 function buildEnrichmentSchema(vocabulary: DomainVocabulary) {
@@ -49,6 +50,7 @@ export interface EnrichDocumentsOptions {
     documents: DocumentCatalogEntry[];
     sampleByDocument: Map<string, string>;
     vocabulary: DomainVocabulary;
+    llmCache?: LlmCacheContext;
     onProgress?: (message: string) => void;
     onBatchProgress?: (progress: {
         completed: number;
@@ -163,6 +165,7 @@ export async function enrichDocuments(options: EnrichDocumentsOptions): Promise<
             schema,
             schemaName: "document_enrichment",
             timeoutMs: resolveSemanticRequestTimeoutMs(),
+            ...burstCacheFields(options.llmCache),
         });
         completed += 1;
         options.onBatchProgress?.({ completed, total: batches.length });

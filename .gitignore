@@ -34,3 +34,4 @@ fixtures/pmi-minimal/*
 !fixtures/pmi-minimal/.backed/
 fixtures/pmi-minimal/.backed/*
 !fixtures/pmi-minimal/.backed/config.yaml
+.hermes/

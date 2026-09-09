@@ -32,6 +32,7 @@ export interface WorkspacePaths {
     backedDir: string;
     configPath: string;
     runsDir: string;
+    llmCacheDir: string;
     modelPath: string;
     dataPath: string;
     runDir: (runId: string) => string;
@@ -45,6 +46,7 @@ export function workspacePaths(root: string): WorkspacePaths {
         backedDir,
         configPath: path.join(backedDir, CONFIG_FILE_NAME),
         runsDir,
+        llmCacheDir: path.join(backedDir, "cache", "llm"),
         modelPath: path.join(root, MODEL_FILE_NAME),
         dataPath: path.join(backedDir, DATA_FILE_NAME),
         runDir: (runId) => path.join(runsDir, runId),

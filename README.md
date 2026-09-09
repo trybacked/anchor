@@ -157,6 +157,8 @@ backed model --full       # re-infer everything
 | Profile | Always | No | `profile.json` |
 | Proposal | Always | Structured tables | `proposal.json` |
 
+LLM responses are cached on disk in `.backed/cache/llm/`, keyed by model + prompt + schema. The cache only reduces cost and latency — it never changes validated outputs. Delete the folder or run `backed model --full` to re-infer from scratch.
+
 Fact extraction is deterministic and runs during `backed model`. Upgrading `@backed/semantic` does not mutate an existing snapshot — **re-run `backed model`** on workspaces that already have document corpora when fact parsing improves.
 
 **PDF-only folders:** `doc_*` tables get deterministic ontology (no column-classification LLM). **Mixed folders:** CSV gets LLM ontology; documents stay deterministic.

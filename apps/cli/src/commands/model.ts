@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, DocumentCatalogSchema, DomainVocabularySchema, ProfileReportSchema, createRunId, listRunIds, mergeVocabulary, patchWorkspaceConfig, readModelYaml, readRunArtifact, readWorkspaceConfig, workspacePaths, writeRunArtifact, } from "@backed/core";
 import type { DocumentCatalog, DocumentTypeHintConfig, DomainVocabulary, ProfileReport, Proposal, SemanticModel, WorkspaceConfig, } from "@backed/core";
@@ -6,8 +7,8 @@ import { affectedTablesFromProfileDiff, filterProfileToTables, } from "@backed/d
 import type { IngestSession } from "@backed/ingest";
 import { applyDocumentTopics, chunkDocumentLines, fetchAllDocumentLines, fetchChunkTextsForEmbedding, fetchCorpusSampleLines, fetchDocumentHeaderSamples, ingestFolder, materializeDocumentMentions, materializeDocumentTables, materializeEntityProfiles, materializeFacts, storeChunkEmbeddings, } from "@backed/ingest";
 import { profileTables } from "@backed/profile";
-import { MissingApiKeyError, buildDocumentTopicSamples, buildEntityIndex, compressProfile, discoverDomain, embedTexts, EMPTY_BURST_USAGE, enrichDocuments, enrichEntities, ensureCurrencyFactTypes, extractDocumentCatalog, extractFactsFromLines, extractMentionsFromLines, mergeCorpusNameSuffixes, mergeIncrementalProposal, proposeModel, resolveSemanticModels, splitTablesByKind, sumBurstUsage, toMaterializedMentions, } from "@backed/semantic";
-import type { BurstUsage, DocumentCatalogCacheEntry, SemanticModels } from "@backed/semantic";
+import { MissingApiKeyError, buildDocumentTopicSamples, buildEntityIndex, compressProfile, discoverDomain, embedTexts, EMPTY_BURST_USAGE, enrichDocuments, enrichEntities, ensureCurrencyFactTypes, extractDocumentCatalog, extractFactsFromLines, extractMentionsFromLines, mergeCorpusNameSuffixes, mergeIncrementalProposal, proposeModel, resolveLanguageModelId, resolveSemanticModels, splitTablesByKind, sumBurstUsage, toMaterializedMentions, } from "@backed/semantic";
+import type { BurstUsage, DocumentCatalogCacheEntry, LlmCacheContext, SemanticModels } from "@backed/semantic";
 import { findWorkspaceRoot } from "../env.js";
 import { CORPUS_SAMPLE_LINES_PER_TABLE, COMMANDS, FLAGS, formatCliCommand, isOptionArg, MODEL_FILE_LABEL, MS_PER_SECOND, PROPOSAL_ONTOLOGY_PREFIX, } from "../config.js";
 import { MESSAGES } from "../messages.js";
@@ -40,6 +41,17 @@ const PIPELINE_DATASET_TABLES = new Set<string>([
     DOCUMENT_FACTS_TABLE,
     ENTITY_PROFILES_TABLE,
 ]);
+async function prepareLlmCache(root: string, forceFull: boolean): Promise<LlmCacheContext> {
+    const { llmCacheDir } = workspacePaths(root);
+    if (forceFull && existsSync(llmCacheDir)) {
+        await rm(llmCacheDir, { recursive: true, force: true });
+    }
+    await mkdir(llmCacheDir, { recursive: true });
+    return {
+        cacheDir: llmCacheDir,
+        modelId: resolveLanguageModelId(),
+    };
+}
 function resolveSourcesDir(root: string, positional: string | undefined): string {
     if (positional) {
         patchWorkspaceConfig(root, { sourcesDir: positional });
@@ -114,7 +126,7 @@ function printProposalSummary(proposal: Proposal): void {
     }
     ui.step(`${String(proposal.questions.length)} review question(s) — run ${ui.command(formatCliCommand(COMMANDS.REVIEW))}`);
 }
-async function resolveVocabulary(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], configured: WorkspaceConfig["domain"], onProgress: (message: string) => void, previousRunId: string | undefined, forceFull: boolean): Promise<{
+async function resolveVocabulary(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], configured: WorkspaceConfig["domain"], onProgress: (message: string) => void, previousRunId: string | undefined, forceFull: boolean, llmCache: LlmCacheContext): Promise<{
     vocabulary: DomainVocabulary;
     usage: BurstUsage;
 }> {
@@ -136,6 +148,7 @@ async function resolveVocabulary(session: IngestSession, models: SemanticModels,
         model: models.language,
         lines: sampleLines,
         onProgress,
+        llmCache,
     });
     const vocabulary = mergeVocabulary(discovered.vocabulary, configured);
     writeRunArtifact(root, runId, "vocabulary", vocabulary);
@@ -168,7 +181,7 @@ function loadDocumentCatalogCache(root: string, previousRunId: string | undefine
         return undefined;
     }
 }
-async function runDocumentStage(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], workspaceConfig: WorkspaceConfig, skipEmbed: boolean, previousRunId: string | undefined, forceFull: boolean): Promise<DocumentStageResult> {
+async function runDocumentStage(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], workspaceConfig: WorkspaceConfig, skipEmbed: boolean, previousRunId: string | undefined, forceFull: boolean, llmCache: LlmCacheContext): Promise<DocumentStageResult> {
     const ui = getUi();
     ui.step(`Documents (${String(lineDocuments.length)} file(s)) — classifying and indexing…`);
     const extractionStarted = Date.now();
@@ -185,13 +198,14 @@ async function runDocumentStage(session: IngestSession, models: SemanticModels, 
     });
     const vocabularyPromise = resolveVocabulary(session, models, runId, root, lineDocuments, workspaceConfig.domain, (message) => {
         vocabularyProgress.detail(message);
-    }, previousRunId, forceFull);
+    }, previousRunId, forceFull, llmCache);
     const extractedPromise = extractDocumentCatalog({
         runId,
         models,
         samples: headerSamples,
         documentTypeHints: workspaceConfig.documentTypeHints,
         vocabulary: vocabularyPromise.then((result) => result.vocabulary),
+        llmCache,
         ...(catalogCache !== undefined ? { catalogCache } : {}),
         onProgress: (message) => {
             aiProgress.detail(message);
@@ -224,6 +238,7 @@ async function runDocumentStage(session: IngestSession, models: SemanticModels, 
         documents: materialized.catalog.documents,
         sampleByDocument: buildDocumentTopicSamples(lineRows),
         vocabulary,
+        llmCache,
         onProgress: (message) => {
             topicsProgress.detail(message);
         },
@@ -262,6 +277,7 @@ async function runDocumentStage(session: IngestSession, models: SemanticModels, 
             entities: entityIndex,
             mentions: rawMentions,
             vocabulary,
+            llmCache,
             onProgress: (message) => {
                 enrichProgress.detail(message);
             },
@@ -407,6 +423,7 @@ export const modelCommand: CommandHandler = async (args) => {
         if (models === null) {
             return;
         }
+        const llmCache = await prepareLlmCache(root, forceFull);
         const profileStarted = Date.now();
         let profile = await profileTables(session);
         timings.profileMs += Date.now() - profileStarted;
@@ -420,7 +437,7 @@ export const modelCommand: CommandHandler = async (args) => {
         }
         if (hasLineDocuments) {
             const documentsStarted = Date.now();
-            const documentStage = await runDocumentStage(session, models, runId, root, lineDocuments, workspaceConfig, skipEmbed, previousRunId, forceFull);
+            const documentStage = await runDocumentStage(session, models, runId, root, lineDocuments, workspaceConfig, skipEmbed, previousRunId, forceFull, llmCache);
             timings.documentsMs = Date.now() - documentsStarted;
             timings.extractionMs = documentStage.extractionMs;
             timings.embedMs = documentStage.embedMs;
@@ -443,6 +460,7 @@ export const modelCommand: CommandHandler = async (args) => {
             profile: incrementalScope.profileForInference,
             runId,
             models,
+            llmCache,
             ...(documentCatalog !== undefined ? { documentCatalog } : {}),
             ...(vocabulary !== undefined ? { vocabulary } : {}),
             ...(extractionUsage !== undefined ? { extractionUsage } : {}),

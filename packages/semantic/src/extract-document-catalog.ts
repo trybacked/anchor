@@ -3,6 +3,7 @@ import { DocumentCatalogSchema, EMPTY_DOMAIN_VOCABULARY } from "@backed/core";
 import { z } from "zod";
 import { runBurst, sumBurstUsage } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
+import { burstCacheFields, type LlmCacheContext } from "./llm-cache.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { DOCUMENT_EXTRACTION_BATCH_SIZE, DOCUMENT_EXTRACTION_CONCURRENCY, DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE, } from "./constants.js";
 import { hashDocumentSample } from "./document-sample-fingerprint.js";
@@ -58,6 +59,7 @@ export interface ExtractDocumentCatalogOptions {
     documentTypeHints?: DocumentTypeHintConfig[];
     vocabulary?: DomainVocabulary | Promise<DomainVocabulary>;
     catalogCache?: Map<string, DocumentCatalogCacheEntry>;
+    llmCache?: LlmCacheContext;
 }
 function fieldFromValue(value: string | null, confidence: number): DocumentCatalogEntry["protocolNumber"] {
     return {
@@ -137,6 +139,7 @@ async function extractDocumentBatchWithLlm(samples: DocumentExtractionSample[], 
     timeoutMs: number;
     documentTypeHints?: DocumentTypeHintConfig[];
     recurringLines: Set<string>;
+    llmCache?: LlmCacheContext;
 }): Promise<{
     entries: DocumentCatalogEntry[];
     usage: BurstUsage;
@@ -163,6 +166,7 @@ async function extractDocumentBatchWithLlmOnce(samples: DocumentExtractionSample
     timeoutMs: number;
     documentTypeHints?: DocumentTypeHintConfig[];
     recurringLines: Set<string>;
+    llmCache?: LlmCacheContext;
 }): Promise<{
     entries: DocumentCatalogEntry[];
     usage: BurstUsage;
@@ -179,6 +183,7 @@ async function extractDocumentBatchWithLlmOnce(samples: DocumentExtractionSample
         schema,
         schemaName: "document_extraction",
         timeoutMs: options.timeoutMs,
+        ...burstCacheFields(options.llmCache),
     });
     if (samples.length === 1) {
         const sample = samples[0];
@@ -265,6 +270,7 @@ export async function extractDocumentCatalog(options: ExtractDocumentCatalogOpti
                     ...(options.documentTypeHints !== undefined
                         ? { documentTypeHints: options.documentTypeHints }
                         : {}),
+                    ...(options.llmCache !== undefined ? { llmCache: options.llmCache } : {}),
                 });
             }
             catch (error) {

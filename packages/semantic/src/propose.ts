@@ -2,6 +2,7 @@ import { EMPTY_DOMAIN_VOCABULARY, LOW_CONFIDENCE_THRESHOLD, ProposalSchema, } fr
 import type { ColumnProfile, DocumentCatalog, DomainVocabulary, Doubt, Entity, ProfileReport, Property, Proposal, Relation, Rule, SemanticType, TableProfile, } from "@backed/core";
 import { runBurst } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
+import { burstCacheFields, type LlmCacheContext } from "./llm-cache.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { COLUMN_CLASSIFICATION_CONCURRENCY } from "./constants.js";
 import { compressProfile } from "./compress.js";
@@ -31,6 +32,7 @@ export interface ProposeModelOptions {
         completed: number;
         total: number;
     }) => void;
+    llmCache?: LlmCacheContext;
 }
 type ColumnClassification = ColumnClassificationOutput["tables"][number]["columns"][number];
 type OntologyStrategy = {
@@ -253,7 +255,7 @@ function emptyClassification(): ColumnClassificationOutput {
 function emptyUsage(): BurstUsage {
     return { inputTokens: 0, outputTokens: 0, costUsd: null };
 }
-async function classifyColumnsInBatches(tables: CompressedTable[], models: SemanticModels, batchSize: number, timeoutMs: number, onProgress?: (message: string) => void, onBatchProgress?: (progress: {
+async function classifyColumnsInBatches(tables: CompressedTable[], models: SemanticModels, batchSize: number, timeoutMs: number, llmCache: LlmCacheContext | undefined, onProgress?: (message: string) => void, onBatchProgress?: (progress: {
     completed: number;
     total: number;
 }) => void): Promise<{
@@ -280,6 +282,7 @@ async function classifyColumnsInBatches(tables: CompressedTable[], models: Seman
             schema: ColumnClassificationOutputSchema,
             schemaName: "column_classification",
             timeoutMs,
+            ...burstCacheFields(llmCache),
         });
         completed += 1;
         onBatchProgress?.({ completed, total: batchCount });
@@ -310,7 +313,7 @@ function classificationForTables(classification: ColumnClassificationOutput, tab
         tables: classification.tables.filter((table) => tableNames.has(table.table)),
     };
 }
-async function runOntologyBurst(models: SemanticModels, timeoutMs: number, system: string, prompt: string, onProgress?: (message: string) => void): Promise<{
+async function runOntologyBurst(models: SemanticModels, timeoutMs: number, system: string, prompt: string, llmCache: LlmCacheContext | undefined, onProgress?: (message: string) => void): Promise<{
     output: OntologyOutput;
     usage: BurstUsage;
 }> {
@@ -322,6 +325,7 @@ async function runOntologyBurst(models: SemanticModels, timeoutMs: number, syste
         schema: OntologyOutputSchema,
         schemaName: "ontology_proposal",
         timeoutMs,
+        ...burstCacheFields(llmCache),
         ...(onProgress !== undefined
             ? {
                 onWaiting: () => {
@@ -350,11 +354,11 @@ function resolveOntologyStrategy(routing: TableRouting, documentCatalog: Documen
     }
     return { kind: "llm-full", tables: routing.allTables };
 }
-async function runOntologyStrategy(strategy: OntologyStrategy, models: SemanticModels, classification: ColumnClassificationOutput, timeoutMs: number, onProgress?: (message: string) => void): Promise<OntologyRunResult> {
+async function runOntologyStrategy(strategy: OntologyStrategy, models: SemanticModels, classification: ColumnClassificationOutput, timeoutMs: number, llmCache: LlmCacheContext | undefined, onProgress?: (message: string) => void): Promise<OntologyRunResult> {
     switch (strategy.kind) {
         case "llm-with-catalog": {
             onProgress?.("Ontology proposal for structured tables alongside document catalog...");
-            const ontology = await runOntologyBurst(models, timeoutMs, ONTOLOGY_SYSTEM_PROMPT, ontologyPrompt(strategy.tables, classificationForTables(classification, strategy.tables), strategy.catalog), onProgress);
+            const ontology = await runOntologyBurst(models, timeoutMs, ONTOLOGY_SYSTEM_PROMPT, ontologyPrompt(strategy.tables, classificationForTables(classification, strategy.tables), strategy.catalog), llmCache, onProgress);
             const filtered = filterDocumentEntitiesFromOntology(ontology.output);
             return {
                 output: filtered.ontology,
@@ -390,7 +394,7 @@ async function runOntologyStrategy(strategy: OntologyStrategy, models: SemanticM
             };
         }
         case "llm-full": {
-            const ontology = await runOntologyBurst(models, timeoutMs, ONTOLOGY_SYSTEM_PROMPT, ontologyPrompt(strategy.tables, classification), onProgress);
+            const ontology = await runOntologyBurst(models, timeoutMs, ONTOLOGY_SYSTEM_PROMPT, ontologyPrompt(strategy.tables, classification), llmCache, onProgress);
             return {
                 output: ontology.output,
                 usage: ontology.usage,
@@ -403,7 +407,7 @@ async function runOntologyStrategy(strategy: OntologyStrategy, models: SemanticM
         }
     }
 }
-async function classifyAllColumns(routing: TableRouting, documentCatalog: DocumentCatalog | undefined, vocabulary: DomainVocabulary, profile: ProfileReport, models: SemanticModels, batchSize: number, timeoutMs: number, onProgress?: (message: string) => void, onBatchProgress?: (progress: {
+async function classifyAllColumns(routing: TableRouting, documentCatalog: DocumentCatalog | undefined, vocabulary: DomainVocabulary, profile: ProfileReport, models: SemanticModels, batchSize: number, timeoutMs: number, llmCache: LlmCacheContext | undefined, onProgress?: (message: string) => void, onBatchProgress?: (progress: {
     completed: number;
     total: number;
 }) => void): Promise<{
@@ -419,7 +423,7 @@ async function classifyAllColumns(routing: TableRouting, documentCatalog: Docume
         ? classifyMentionTables(profile, vocabulary)
         : emptyClassification();
     const structuredClassification = routing.llmStructured.length > 0
-        ? await classifyColumnsInBatches(routing.llmStructured, models, batchSize, timeoutMs, onProgress, onBatchProgress)
+        ? await classifyColumnsInBatches(routing.llmStructured, models, batchSize, timeoutMs, llmCache, onProgress, onBatchProgress)
         : { output: emptyClassification(), usage: emptyUsage() };
     return {
         classification: mergeClassificationOutputs(lineDocumentClassification, typedDocumentClassification, mentionClassification, metadataClassification, structuredClassification.output),
@@ -471,9 +475,9 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     if (routingSummary.length > 0) {
         onProgress?.(routingSummary);
     }
-    const { classification, usage: classificationUsage } = await classifyAllColumns(routing, documentCatalog, vocabulary, options.profile, options.models, batchSize, timeoutMs, onProgress, options.onBatchProgress);
+    const { classification, usage: classificationUsage } = await classifyAllColumns(routing, documentCatalog, vocabulary, options.profile, options.models, batchSize, timeoutMs, options.llmCache, onProgress, options.onBatchProgress);
     const ontologyStrategy = resolveOntologyStrategy(routing, documentCatalog);
-    const { output: ontologyOutput, usage: ontologyUsage, extraDoubts } = await runOntologyStrategy(ontologyStrategy, options.models, classification, timeoutMs, onProgress);
+    const { output: ontologyOutput, usage: ontologyUsage, extraDoubts } = await runOntologyStrategy(ontologyStrategy, options.models, classification, timeoutMs, options.llmCache, onProgress);
     const assembly = assembleProposal(ontologyOutput, extraDoubts, classification, options.profile, routing, documentCatalog, vocabulary);
     const allQuestions = buildReviewQuestions(assembly, routing, documentCatalog, vocabulary, reviewConfidenceThreshold);
     const questions = finalizeReviewQuestions(assembly, allQuestions);

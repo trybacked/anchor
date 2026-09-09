@@ -2,6 +2,7 @@ import { DomainVocabularySchema, EMPTY_DOMAIN_VOCABULARY } from "@backed/core";
 import type { DomainVocabulary } from "@backed/core";
 import type { LanguageModel } from "ai";
 import { EMPTY_BURST_USAGE, runBurst, type BurstUsage } from "./burst.js";
+import { burstCacheFields, type LlmCacheContext } from "./llm-cache.js";
 import { DISCOVERY_DOCUMENT_SAMPLE, DISCOVERY_LINES_PER_DOCUMENT, DISCOVERY_MAX_CHARS, } from "./constants.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
 import type { DocumentLineRow } from "./extract-document-mentions.js";
@@ -50,6 +51,7 @@ export interface DiscoverDomainOptions {
     model: LanguageModel;
     lines: DocumentLineRow[];
     onProgress?: (message: string) => void;
+    llmCache?: LlmCacheContext;
 }
 export interface DiscoverDomainResult {
     vocabulary: DomainVocabulary;
@@ -82,6 +84,7 @@ export async function discoverDomain(options: DiscoverDomainOptions): Promise<Di
             schema: DomainVocabularySchema,
             schemaName: "domain_vocabulary",
             timeoutMs: resolveSemanticRequestTimeoutMs(),
+            ...burstCacheFields(options.llmCache),
             ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
         });
     }
