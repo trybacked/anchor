@@ -72,15 +72,6 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@22.20.1)(yaml@2.9.0)
 
-  apps/review:
-    dependencies:
-      '@backed/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@backed/semantic':
-        specifier: workspace:*
-        version: link:../../packages/semantic
-
   packages/core:
     dependencies:
       yaml:
@@ -89,6 +80,10 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+    devDependencies:
+      zod-to-json-schema:
+        specifier: ^3.24.0
+        version: 3.25.2(zod@3.25.76)
 
   packages/diff:
     dependencies:

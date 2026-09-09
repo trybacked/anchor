@@ -13,6 +13,8 @@ export { createRowReader } from "./row-reader.js";
 export { createAggregateReader } from "./aggregate-reader.js";
 export { createObjectQueryReader } from "./object-query-reader.js";
 export { createChunkSearcher } from "./chunk-search.js";
+export { searchModelViaDocumentChunks } from "./model-search.js";
+export type { ModelSearchHit } from "./model-search.js";
 export { createEntityProfileReader } from "./entity-profile-reader.js";
 export type { ChunkSearcherOptions } from "./chunk-search.js";
 export { ensureChunkEmbeddingColumn, fetchChunkTextsForEmbedding, storeChunkEmbeddings, documentChunksHaveEmbeddings, capturePreservedChunkEmbeddings, restorePreservedChunkEmbeddings, formatEmbeddingLiteral, chunkEmbeddingColumnRef, } from "./chunk-embeddings.js";

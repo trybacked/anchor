@@ -32,6 +32,8 @@ Anchor does not move data or replace systems. It builds the **ontology layer** a
 | **`model.yaml`** | Protocol artifact (the output) |
 | **`backed`** | CLI command (reference implementation) |
 
+**Protocol artifacts:** [`schema/anchor-schema-v1.json`](./schema/anchor-schema-v1.json) (JSON Schema) · [`docs/MODEL-FORMAT-v1.md`](./docs/MODEL-FORMAT-v1.md) (format spec)
+
 ---
 
 ## Why
@@ -63,9 +65,9 @@ model.yaml        Anchor model (committable)
 
 **Semantic inference** runs schema-constrained LLM bursts on compressed profiles (never raw rows). Column classification and ontology use **`SEMANTIC_MODEL`** (default **`zai/glm-5.3-flash`**); ambiguous document headers use the same model. If domain vocabulary discovery fails, the pipeline **degrades gracefully** (deterministic extraction continues with minimal defaults). **Mixed folders** merge structured-table inference with deterministic document entities in one proposal.
 
-**Review** presents risk-ranked questions for elements below **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`). Answers: Yes · No · Rename.
+**Review** presents risk-ranked questions for elements below **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`). Answers: Yes · No · Rename. Elements at or above the threshold that were not asked become **`confirmed`** in `model.yaml`; only explicit **No** answers are omitted.
 
-**Consumption** via MCP: five deterministic operations on `model.yaml` — see [MCP surface](#mcp-surface) and [Auth](#auth).
+**Consumption** via MCP: five deterministic operations on `model.yaml` — see [MCP surface](#mcp-surface) and [Serve and telemetry](#serve-and-telemetry).
 
 ---
 
@@ -77,27 +79,25 @@ model.yaml        Anchor model (committable)
 |---|---|---|
 | `list_entities()` | — | id, name, description, status |
 | `get_entity(id)` | entity id | properties (semanticType, role, provenance), entity provenance |
-| `list_relations(entity_id?)` | optional entity id | relations with cardinality and status |
-| `search_model(query)` | text | substring matches on entities, properties, relations, rules |
-| `get_definition(term)` | term | confirmed rule with provenance, or structured not-found |
+| `list_relations(id?)` | optional entity id | relations with cardinality and status |
+| `search_model(query)` | text | semantic document-chunk search when DuckDB vectors exist, plus substring matches on entities, properties, relations, rules |
+| `get_definition(term)` | term | confirmed rule (substring match), or structured not-found |
 
 Data is read from local `model.yaml` only. DuckDB snapshots are used by `backed model`, not by `serve`.
 
 ---
 
-## Auth
+## Serve and telemetry
 
-`backed serve` **requires** a prior `backed login`. Without stored credentials the command exits with a clear message pointing to `backed login`.
+`backed serve` runs **locally by default** — no login, no network, no gateway. MCP reads `model.yaml` (and DuckDB for semantic search when available) on this machine only.
 
-On startup the CLI:
+Optional usage telemetry is **opt-in**:
 
-1. Verifies the Backed gateway is reachable (`/health`)
-2. Validates the stored Bearer token (`/v1/me`)
-3. Starts MCP stdio
+1. Run `backed login` once
+2. Set `BACKED_TELEMETRY=1` in `.env`
+3. Run `backed serve`
 
-On every MCP tool call the CLI posts **only the operation name** to `/v1/usage` (e.g. `list_entities`). **Model data never leaves the machine** — the gateway sees authentication and usage metadata, not entity rows or definitions.
-
-Offline mode is not supported: if the gateway is unreachable, `serve` refuses to start.
+When enabled, the CLI verifies the gateway at startup and posts **only the operation name** (e.g. `list_entities`) in the background on each tool call. Metering failures are silent and never block local tools. **Model data never leaves the machine.**
 
 ---
 
@@ -167,7 +167,7 @@ Requires `AI_GATEWAY_API_KEY` — see [Install](#install).
 
 Confirms or rejects proposals → writes **`model.yaml`**.
 
-### 4. Serve (`backed login` then `backed serve`)
+### 4. Serve (`backed serve`)
 
 Authenticated MCP stdio — five deterministic operations on `model.yaml` (see [MCP surface](#mcp-surface)).
 
@@ -180,7 +180,7 @@ backed model && backed diff
 ### Cheat sheet
 
 ```bash
-backed init && backed login && backed model && backed review && backed serve
+backed init && backed model && backed review && backed serve
 ```
 
 Agent pattern: `list_entities` → `get_entity` → `search_model` / `get_definition`.
@@ -201,7 +201,6 @@ A typical organization: **4–15 entities**, **5–20 relations**, a handful of 
 | Property | `entities[].properties` | Source column |
 | Relation | `relations` | Column pair (`fromColumn` → `toColumn`) |
 | Rule | `rules` | Entity (+ optional column) |
-| Action | `actions` | Reserved for writeback (empty in v1) |
 
 Property semantic types: `text` · `number` · `amount` · `date` · `boolean` · `identifier` · `email` · `vat_number` · `fiscal_code` · `category`
 
@@ -213,11 +212,11 @@ Every element carries **`confidence`** (0–1), **`provenance`** (table, optiona
 
 | Status | Meaning |
 |---|---|
-| `proposed` | Inferred, not explicitly reviewed |
-| `confirmed` | Accepted (Yes) |
+| `proposed` | Inferred, not explicitly reviewed (below threshold or unanswered question) |
+| `confirmed` | Accepted (Yes) or auto-confirmed when confidence ≥ review threshold and no question was asked |
 | `renamed` | Accepted with corrected label (Rename) |
 
-Rejected elements (No) are omitted. Below confidence threshold 0.7, elements become doubts or review questions — never silent facts.
+Rejected elements (No) are omitted. Elements at or above **`REVIEW_CONFIDENCE_THRESHOLD`** that were not asked in review are written as **`confirmed`**. Below confidence threshold 0.7, elements become doubts or review questions — never silent facts.
 
 ### Example
 
@@ -266,8 +265,6 @@ rules:
     column: status
     status: proposed
     confidence: 0.7
-
-actions: []
 ```
 
 ### Run artifacts
@@ -313,8 +310,8 @@ All files are schema-validated on read and write.
 | `backed model [folder]` | Full pipeline: ingest → documents (if any) → profile → proposal. Incremental when `model.yaml` exists; `--full` re-infers everything. |
 | `backed review` | Interactive review → writes `model.yaml` |
 | `backed diff` | Compare last two runs |
-| `backed login` | Sign in to Backed (required before `serve`) |
-| `backed serve` | Authenticated MCP stdio server (5 operations on `model.yaml`) |
+| `backed login` | Sign in to Backed (optional — required only for telemetry) |
+| `backed serve` | Local MCP stdio server (5 operations on `model.yaml`) |
 
 See [Operational workflow](#operational-workflow) for the step-by-step guide.
 
@@ -351,10 +348,14 @@ Licensed under [Apache-2.0](./LICENSE).
 
 ```bash
 pnpm install && pnpm build
+pnpm generate:schema   # refresh schema/anchor-schema-v1.json after Zod changes
+pnpm test
 pnpm cli --help
 ```
 
 Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `apps/cli`.
+
+CI (GitHub Actions) runs build, schema drift check, and tests including the **Gerace golden** `model.yaml` fixture.
 
 ---
 

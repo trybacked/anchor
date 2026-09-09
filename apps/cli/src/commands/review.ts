@@ -1,4 +1,5 @@
 import { DocumentCatalogSchema, ProposalSchema, applyReview, hasRunArtifact, listRunIds, patchWorkspaceConfig, readRunArtifact, readWorkspaceConfig, writeModelYaml, writeRunArtifact, } from "@backed/core";
+import { resolveReviewConfidenceThreshold } from "@backed/semantic";
 import type { DocumentCatalog, EvidenceTable, Proposal, Review, ReviewAnswer } from "@backed/core";
 import { input, select } from "@inquirer/prompts";
 import { findWorkspaceRoot } from "../env.js";
@@ -127,7 +128,17 @@ export const reviewCommand: CommandHandler = async () => {
     const reviewPath = writeRunArtifact(root, runId, "review", review);
     ui.blank();
     ui.writeSuccess(`Answers saved → ${ui.path(reviewPath)}`);
-    const model = applyReview(proposal, review);
+    const { model, staleAnswerCount } = applyReview(proposal, review, new Date(), {
+        reviewConfidenceThreshold: resolveReviewConfidenceThreshold(process.env),
+    });
+    if (staleAnswerCount > 0) {
+        ui.writeWarn(`${String(staleAnswerCount)} review answer(s) ignored — they no longer match this proposal.`);
+        if (staleAnswerCount === review.answers.length && review.answers.length > 0) {
+            ui.writeError("All review answers are stale for this proposal.");
+            process.exitCode = 1;
+            return;
+        }
+    }
     const modelPath = writeModelYaml(root, model);
     ui.writeSuccess(`Model written → ${ui.path(modelPath)} (${String(model.entities.length)} entities, ${String(model.relations.length)} relations, ${String(model.rules.length)} rules)`);
     const documentCatalog = hasRunArtifact(root, runId, "documents")

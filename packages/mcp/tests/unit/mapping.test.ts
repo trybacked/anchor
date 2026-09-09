@@ -38,8 +38,28 @@ describe("mapping surface", () => {
         expect(filtered.length).toBeLessThanOrEqual(all.length);
         expect(filtered.every((relation) => relation.fromEntity === "fattura" || relation.toEntity === "fattura")).toBe(true);
     });
-    it("searchModel matches cliente", () => {
-        const matches = searchModel(model, "cliente");
+    it("searchModel matches cliente", async () => {
+        const matches = await searchModel(model, "cliente");
+        expect(matches.some((match) => match.id === "cliente")).toBe(true);
+    });
+    it("searchModel merges semantic hits with substring fallback", async () => {
+        const matches = await searchModel(model, "cliente", {
+            semanticSearch: async () => [{
+                kind: "entity",
+                id: "fattura",
+                name: "Fattura",
+                snippet: "Semantic hit for invoice context",
+            }],
+        });
+        expect(matches.some((match) => match.id === "cliente")).toBe(true);
+        expect(matches.some((match) => match.id === "fattura")).toBe(true);
+    });
+    it("searchModel falls back to substring when semantic search fails", async () => {
+        const matches = await searchModel(model, "cliente", {
+            semanticSearch: async () => {
+                throw new Error("embeddings unavailable");
+            },
+        });
         expect(matches.some((match) => match.id === "cliente")).toBe(true);
     });
     it("getDefinition returns confirmed rule for fattura scaduta", () => {

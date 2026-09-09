@@ -5,12 +5,14 @@ import { z } from "zod";
 import { MCP_SURFACE_TOOLS, SERVER_NAME, SERVER_VERSION, TOOL_NAMES } from "./constants.js";
 import { entityNotFoundMessage } from "./errors.js";
 import { getDefinition, getEntity, listEntities, listRelations, searchModel, } from "./mapping.js";
+import type { SearchModelOptions } from "./mapping.js";
 export interface ServeUsageRecorder {
     record(operation: McpSurfaceOperation): Promise<void>;
 }
 export type McpSurfaceOperation = (typeof MCP_SURFACE_TOOLS)[number];
 export interface ModelMcpServerOptions {
     usageRecorder?: ServeUsageRecorder;
+    searchModelOptions?: SearchModelOptions;
 }
 function jsonContent(data: unknown): {
     content: {
@@ -34,13 +36,16 @@ function errorContent(text: string): {
 }
 async function withUsage<T>(operation: McpSurfaceOperation, usageRecorder: ServeUsageRecorder | undefined, handler: () => T | Promise<T>): Promise<T> {
     if (usageRecorder !== undefined) {
-        await usageRecorder.record(operation);
+        void usageRecorder.record(operation).catch(() => {
+            // Metering must not block or fail local MCP tools.
+        });
     }
     return handler();
 }
 export function createModelMcpServer(model: SemanticModel, options: ModelMcpServerOptions = {}): McpServer {
     const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
     const usageRecorder = options.usageRecorder;
+    const searchModelOptions = options.searchModelOptions;
     server.registerTool(TOOL_NAMES.listEntities, {
         title: "List entities",
         description: "List semantic model entities (id, name, description, status).",
@@ -60,18 +65,18 @@ export function createModelMcpServer(model: SemanticModel, options: ModelMcpServ
         title: "List relations",
         description: "List relations between entities with cardinality and status. Optionally filter by entity id.",
         inputSchema: {
-            entity_id: z
+            id: z
                 .string()
                 .min(1)
                 .optional()
                 .describe("Optional entity id — returns relations touching this entity"),
         },
-    }, async ({ entity_id: entityId }) => withUsage(TOOL_NAMES.listRelations, usageRecorder, () => jsonContent(listRelations(model, entityId))));
+    }, async ({ id: entityId }) => withUsage(TOOL_NAMES.listRelations, usageRecorder, () => jsonContent(listRelations(model, entityId))));
     server.registerTool(TOOL_NAMES.searchModel, {
         title: "Search model",
-        description: "Text match on entity names, property names, relations, and business definitions. No vectors.",
+        description: "Search entities, properties, relations, and rules. Uses semantic document-chunk vectors when available, with substring fallback.",
         inputSchema: { query: z.string().min(1).describe("Text to search, e.g. 'cliente'") },
-    }, async ({ query }) => withUsage(TOOL_NAMES.searchModel, usageRecorder, () => jsonContent(searchModel(model, query))));
+    }, async ({ query }) => withUsage(TOOL_NAMES.searchModel, usageRecorder, async () => jsonContent(await searchModel(model, query, searchModelOptions))));
     server.registerTool(TOOL_NAMES.getDefinition, {
         title: "Get definition",
         description: "Return a confirmed business definition with provenance, or a structured not-found response.",

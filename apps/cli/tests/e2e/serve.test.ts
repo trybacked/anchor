@@ -226,7 +226,7 @@ describe("backed serve e2e", () => {
                     expect.objectContaining({ semanticType: "vat_number", role: "attribute" }),
                 ]),
             }));
-            const relations = parseToolJson(await client.callTool({ name: "list_relations", arguments: { entity_id: "fattura" } }));
+            const relations = parseToolJson(await client.callTool({ name: "list_relations", arguments: { id: "fattura" } }));
             expect(relations).toEqual(expect.arrayContaining([
                 expect.objectContaining({ id: "fattura-cliente", cardinality: "one_to_many" }),
             ]));
@@ -242,14 +242,18 @@ describe("backed serve e2e", () => {
             }));
         });
     });
-    it("refuses to start without credentials", async () => {
+    it("starts in local mode without credentials", async () => {
         const missingCredentialsPath = join(tempDir, "missing-credentials.json");
-        const result = await runServeAndCapture(FIXTURE_ROOT, {
+        await withMcpClient({
             ...process.env,
             BACKED_API_URL: authBaseUrl,
             BACKED_CREDENTIALS_PATH: missingCredentialsPath,
+            BACKED_TELEMETRY: "0",
+        }, FIXTURE_ROOT, async (client) => {
+            const entities = parseToolJson(await client.callTool({ name: "list_entities", arguments: {} }));
+            expect(entities).toEqual(expect.arrayContaining([
+                expect.objectContaining({ id: "cliente" }),
+            ]));
         });
-        expect(result.exitCode).toBe(1);
-        expect(result.stderr).toContain("backed login");
     });
 });

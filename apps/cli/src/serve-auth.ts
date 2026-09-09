@@ -4,17 +4,28 @@ import { readBackedCredentials } from "./auth/credentials.js";
 import { resolveBackedApiUrl, BACKED_API_PATHS } from "./auth/config.js";
 import { verifyAccessToken } from "./auth/device-flow.js";
 import { COMMANDS, formatCliCommand } from "./config.js";
+import type { ServeUsageRecorder } from "@backed/mcp";
+
+export const BACKED_TELEMETRY_ENV = "BACKED_TELEMETRY";
+
 export class ServeAuthError extends Error {
     constructor(message: string) {
         super(message);
         this.name = "ServeAuthError";
     }
 }
-export interface ServeAuthContext {
-    apiUrl: string;
-    credentials: BackedCredentials;
-    recordUsage: (operation: string) => Promise<void>;
+
+export interface ServeContext {
+    mode: "local" | "telemetry";
+    userEmail?: string;
+    usageRecorder?: ServeUsageRecorder;
 }
+
+function isTelemetryEnabled(env: Record<string, string | undefined>): boolean {
+    const raw = env[BACKED_TELEMETRY_ENV]?.trim().toLowerCase();
+    return raw === "1" || raw === "true" || raw === "yes";
+}
+
 async function assertGatewayReachable(apiUrl: string): Promise<void> {
     let response: Response;
     try {
@@ -29,12 +40,9 @@ async function assertGatewayReachable(apiUrl: string): Promise<void> {
         throw new ServeAuthError(`Backed gateway unreachable at ${apiUrl} (HTTP ${String(response.status)}).`);
     }
 }
-export async function resolveServeAuthContext(): Promise<ServeAuthContext> {
+
+async function buildTelemetryRecorder(credentials: BackedCredentials): Promise<ServeContext> {
     const apiUrl = resolveBackedApiUrl();
-    const credentials = readBackedCredentials();
-    if (credentials === null) {
-        throw new ServeAuthError(`Authentication required. Run ${formatCliCommand(COMMANDS.LOGIN)} before ${formatCliCommand(COMMANDS.SERVE)}.`);
-    }
     await assertGatewayReachable(apiUrl);
     try {
         await verifyAccessToken(apiUrl, credentials.accessToken);
@@ -48,10 +56,23 @@ export async function resolveServeAuthContext(): Promise<ServeAuthContext> {
     }
     const client = new BackedAuthClient(apiUrl);
     return {
-        apiUrl,
-        credentials,
-        recordUsage: async (operation: string) => {
-            await client.recordMcpUsage(credentials.accessToken, operation);
+        mode: "telemetry",
+        userEmail: credentials.user.email,
+        usageRecorder: {
+            record: async (operation: string) => {
+                await client.recordMcpUsage(credentials.accessToken, operation);
+            },
         },
     };
+}
+
+export async function resolveServeContext(env: Record<string, string | undefined> = process.env): Promise<ServeContext> {
+    if (!isTelemetryEnabled(env)) {
+        return { mode: "local" };
+    }
+    const credentials = readBackedCredentials();
+    if (credentials === null) {
+        return { mode: "local" };
+    }
+    return buildTelemetryRecorder(credentials);
 }

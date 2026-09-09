@@ -58,7 +58,23 @@ export function listRelations(model: SemanticModel, entityId?: string): Relation
 function matches(query: string, ...fields: (string | undefined)[]): boolean {
     return fields.some((field) => field?.toLowerCase().includes(query));
 }
-export function searchModel(model: SemanticModel, rawQuery: string): SearchMatch[] {
+export interface SearchModelOptions {
+    semanticSearch?: (query: string) => Promise<SearchMatch[]>;
+}
+function mergeSearchMatches(semanticMatches: SearchMatch[], substringMatches: SearchMatch[]): SearchMatch[] {
+    const seen = new Set<string>();
+    const merged: SearchMatch[] = [];
+    for (const match of [...semanticMatches, ...substringMatches]) {
+        const key = `${match.kind}:${match.id}`;
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        merged.push(match);
+    }
+    return merged;
+}
+function searchModelBySubstring(model: SemanticModel, rawQuery: string): SearchMatch[] {
     const query = rawQuery.trim().toLowerCase();
     if (query.length === 0) {
         return [];
@@ -105,6 +121,23 @@ export function searchModel(model: SemanticModel, rawQuery: string): SearchMatch
         }
     }
     return results.map((match) => validateModelPayload(SearchMatchSchema, match));
+}
+export async function searchModel(model: SemanticModel, rawQuery: string, options: SearchModelOptions = {}): Promise<SearchMatch[]> {
+    const substringMatches = searchModelBySubstring(model, rawQuery);
+    if (options.semanticSearch === undefined) {
+        return substringMatches;
+    }
+    const trimmedQuery = rawQuery.trim();
+    if (trimmedQuery.length === 0) {
+        return substringMatches;
+    }
+    try {
+        const semanticMatches = await options.semanticSearch(trimmedQuery);
+        return mergeSearchMatches(semanticMatches, substringMatches);
+    }
+    catch {
+        return substringMatches;
+    }
 }
 function ruleMatchScore(rule: Rule, normalizedTerm: string): number {
     if (rule.id.toLowerCase() === normalizedTerm) {

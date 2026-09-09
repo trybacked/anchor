@@ -1,5 +1,6 @@
 node_modules/
 dist/
+**/dist/
 .turbo/
 .next/
 coverage/
@@ -22,7 +23,8 @@ design/
 docs/*
 !docs/assets/
 !docs/assets/**
+!docs/MODEL-FORMAT-v1.md
 test/
 *.traineddata
-scripts/
+/scripts/
 fixtures/

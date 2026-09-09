@@ -1,13 +1,14 @@
 import { readModelYaml } from "@backed/core";
 import { MCP_SURFACE_TOOLS, runStdioMcpServerUntilClose } from "@backed/mcp";
 import { findWorkspaceRoot } from "../env.js";
+import { createServeSearchModelOptions } from "../serve-model-search.js";
 import { MCP_SERVER_NAME } from "../config.js";
-import { resolveServeAuthContext, ServeAuthError } from "../serve-auth.js";
+import { BACKED_TELEMETRY_ENV, resolveServeContext, ServeAuthError } from "../serve-auth.js";
 import { getUi, initUi } from "../ui/index.js";
 import { ANSI, wrap } from "../ui/ansi.js";
 import type { CommandHandler } from "../types.js";
 
-const SERVE_PRIVACY_NOTE = "Model data stays local — only auth and usage metadata pass through the gateway.";
+const SERVE_PRIVACY_NOTE = "Model data stays local — MCP reads model.yaml and DuckDB on this machine only.";
 
 function writeServeStderr(text: string, style: "dim" | "brand" = "dim"): void {
     console.error(wrap(style === "brand" ? ANSI.brand : ANSI.dim, text));
@@ -18,9 +19,9 @@ export const serveCommand: CommandHandler = async () => {
     const ui = getUi();
     const root = findWorkspaceRoot(process.cwd());
     const model = readModelYaml(root);
-    let authContext;
+    let serveContext;
     try {
-        authContext = await resolveServeAuthContext();
+        serveContext = await resolveServeContext();
     }
     catch (error) {
         if (error instanceof ServeAuthError) {
@@ -31,12 +32,17 @@ export const serveCommand: CommandHandler = async () => {
         throw error;
     }
     writeServeStderr(`MCP server "${MCP_SERVER_NAME}" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`, "brand");
-    writeServeStderr(`Signed in as ${authContext.credentials.user.email}`);
+    if (serveContext.mode === "telemetry" && serveContext.userEmail !== undefined) {
+        writeServeStderr(`Telemetry on · signed in as ${serveContext.userEmail}`);
+    }
+    else {
+        writeServeStderr(`Local mode · no telemetry (set ${BACKED_TELEMETRY_ENV}=1 after ${"backed login"} to opt in)`);
+    }
     writeServeStderr(`Tools: ${MCP_SURFACE_TOOLS.join(", ")} · Ctrl+C to exit`);
     writeServeStderr(SERVE_PRIVACY_NOTE);
+    const searchModelOptions = await createServeSearchModelOptions(root, model);
     await runStdioMcpServerUntilClose(model, {
-        usageRecorder: {
-            record: authContext.recordUsage,
-        },
+        ...(serveContext.usageRecorder !== undefined ? { usageRecorder: serveContext.usageRecorder } : {}),
+        ...(searchModelOptions !== undefined ? { searchModelOptions } : {}),
     });
 };

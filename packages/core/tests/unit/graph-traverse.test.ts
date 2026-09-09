@@ -62,7 +62,6 @@ const model: SemanticModel = {
         },
     ],
     rules: [],
-    actions: [],
 };
 describe("clampTraverseDepth", () => {
     it("defaults to one hop", () => {

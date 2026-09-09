@@ -1,0 +1,356 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anchor.dev/schema/anchor-schema-v1.json",
+  "title": "Anchor Semantic Model",
+  "description": "Versioned protocol artifact (model.yaml). Normative human-readable spec: docs/MODEL-FORMAT-v1.md",
+  "formatVersion": "1",
+  "$ref": "#/definitions/AnchorSemanticModel",
+  "definitions": {
+    "AnchorSemanticModel": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "formatVersion": {
+              "type": "string",
+              "const": "1"
+            },
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "generatedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "sourceDir": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "formatVersion",
+            "runId",
+            "generatedAt"
+          ],
+          "additionalProperties": false
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string"
+              },
+              "sourceTable": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "proposed",
+                  "confirmed",
+                  "renamed"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "table": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "column": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "table",
+                  "evidence"
+                ],
+                "additionalProperties": false
+              },
+              "properties": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "columnName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "semanticType": {
+                      "type": "string",
+                      "enum": [
+                        "text",
+                        "number",
+                        "amount",
+                        "date",
+                        "boolean",
+                        "identifier",
+                        "email",
+                        "vat_number",
+                        "fiscal_code",
+                        "category"
+                      ]
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "primary_key",
+                        "foreign_key",
+                        "attribute"
+                      ]
+                    },
+                    "nullable": {
+                      "type": "boolean"
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "provenance": {
+                      "type": "object",
+                      "properties": {
+                        "table": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "column": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "evidence": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "table",
+                        "evidence"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "columnName",
+                    "semanticType",
+                    "role",
+                    "nullable",
+                    "confidence",
+                    "provenance"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sourceTable",
+              "status",
+              "confidence",
+              "provenance",
+              "properties"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fromEntity": {
+                "type": "string",
+                "minLength": 1
+              },
+              "toEntity": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fromColumn": {
+                "type": "string",
+                "minLength": 1
+              },
+              "toColumn": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cardinality": {
+                "type": "string",
+                "enum": [
+                  "one_to_one",
+                  "one_to_many",
+                  "many_to_many"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "proposed",
+                  "confirmed",
+                  "renamed"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "table": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "column": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "table",
+                  "evidence"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "fromEntity",
+              "toEntity",
+              "fromColumn",
+              "toColumn",
+              "cardinality",
+              "status",
+              "confidence",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "appliesTo": {
+                "type": "string",
+                "minLength": 1
+              },
+              "column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "proposed",
+                  "confirmed",
+                  "renamed"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "table": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "column": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "table",
+                  "evidence"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "definition",
+              "appliesTo",
+              "status",
+              "confidence",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "metadata",
+        "entities",
+        "relations",
+        "rules"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

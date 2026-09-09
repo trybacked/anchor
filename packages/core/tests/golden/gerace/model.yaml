@@ -1,0 +1,3721 @@
+metadata:
+  formatVersion: "1"
+  runId: 20260907T132043-7189
+  generatedAt: 2026-09-07T15:19:39.190Z
+entities:
+  - id: determina
+    name: Determina
+    description: Determina documents extracted from source files
+    sourceTable: doc_determina
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: doc_determina
+      evidence: '41 documents classified as "Determina" from header extraction
+        (examples: determinazioni_set_amm_n_251_2026_gen_741,
+        determinazioni_set_amm_n_252_2026_gen_742,
+        determinazioni_set_amm_n_253_2026_gen_743)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 41 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: source_file
+          evidence: Source file column (VARCHAR) on 41 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 41 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: published_date
+          evidence: Published date column (VARCHAR) on 41 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: subject
+          evidence: Subject column (VARCHAR) on 41 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 41 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: topics
+          evidence: Topics column (VARCHAR) on 41 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: summary
+          evidence: Summary column (VARCHAR) on 41 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: doc_determina
+          column: page_count
+          evidence: Page count column (INTEGER) on 41 rows
+  - id: underage_citizens_list
+    name: List of citizens under 18 years of age
+    description: List of citizens under 18 years of age documents extracted from
+      source files
+    sourceTable: doc_underage_citizens_list
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_underage_citizens_list
+      evidence: '1 documents classified as "List of citizens under 18 years of age"
+        from header extraction (examples: aspc982920)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_underage_citizens_list
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: notice
+    name: Public Notice
+    description: Public Notice documents extracted from source files
+    sourceTable: doc_notice
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_notice
+      evidence: '1 documents classified as "Public Notice" from header extraction
+        (examples:
+        documento_0_avviso_attivazione_indifferenziato_quindicinale_1)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_notice
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: public_auction_notice
+    name: Public Auction Notice
+    description: Public Auction Notice documents extracted from source files
+    sourceTable: doc_public_auction_notice
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: doc_public_auction_notice
+      evidence: '1 documents classified as "Public Auction Notice" from header
+        extraction (examples: documento_avviso_alienazione_scuolabus_ok_signed)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: doc_public_auction_notice
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: public_notice
+    name: Public Notice
+    description: Public Notice documents extracted from source files
+    sourceTable: doc_public_notice
+    status: proposed
+    confidence: 0.86
+    provenance:
+      table: doc_public_notice
+      evidence: '6 documents classified as "Public Notice" from header extraction
+        (examples: documento_avviso_utenza_locri_2026, documento_avviso,
+        documento_avviso_ammendante_agricolo)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 6 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: source_file
+          evidence: Source file column (VARCHAR) on 6 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 6 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: published_date
+          evidence: Published date column (VARCHAR) on 6 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: subject
+          evidence: Subject column (VARCHAR) on 6 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 6 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: topics
+          evidence: Topics column (VARCHAR) on 6 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: summary
+          evidence: Summary column (VARCHAR) on 6 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.86
+        provenance:
+          table: doc_public_notice
+          column: page_count
+          evidence: Page count column (INTEGER) on 6 rows
+  - id: election_notice
+    name: Election Notice
+    description: Election Notice documents extracted from source files
+    sourceTable: doc_election_notice
+    status: proposed
+    confidence: 0.88
+    provenance:
+      table: doc_election_notice
+      evidence: '2 documents classified as "Election Notice" from header extraction
+        (examples: documento_convocazione_comizi, documento_manifesto)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 2 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: source_file
+          evidence: Source file column (VARCHAR) on 2 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 2 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: published_date
+          evidence: Published date column (VARCHAR) on 2 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: subject
+          evidence: Subject column (VARCHAR) on 2 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 2 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: topics
+          evidence: Topics column (VARCHAR) on 2 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: summary
+          evidence: Summary column (VARCHAR) on 2 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.88
+        provenance:
+          table: doc_election_notice
+          column: page_count
+          evidence: Page count column (INTEGER) on 2 rows
+  - id: municipal_executive_resolution
+    name: Municipal Executive Resolution
+    description: Municipal Executive Resolution documents extracted from source files
+    sourceTable: doc_municipal_executive_resolution
+    status: proposed
+    confidence: 0.93
+    provenance:
+      table: doc_municipal_executive_resolution
+      evidence: '4 documents classified as "Municipal Executive Resolution" from
+        header extraction (examples:
+        documento_delibera_g_c_n_98_2026_programma_erasmus_progetto_inclusive_adult_education_for_cultural_heritage_approvazione_comvenzione_di_sovvenzione,
+        prot_par_0010783_del_31_08_2026_documento_delibera_g_c_n,
+        prot_par_0010784_del_31_08_2026_documento_delibera_g_c_n_100_2026_risarcimento_danni_autovettura_curulli_giuseppa_indirizzi_ed_autorizzazione)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 4 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: source_file
+          evidence: Source file column (VARCHAR) on 4 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 4 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: published_date
+          evidence: Published date column (VARCHAR) on 4 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: subject
+          evidence: Subject column (VARCHAR) on 4 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 4 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: topics
+          evidence: Topics column (VARCHAR) on 4 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: summary
+          evidence: Summary column (VARCHAR) on 4 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.93
+        provenance:
+          table: doc_municipal_executive_resolution
+          column: page_count
+          evidence: Page count column (INTEGER) on 4 rows
+  - id: scrutineer_list
+    name: List of Scrutineers
+    description: List of Scrutineers documents extracted from source files
+    sourceTable: doc_scrutineer_list
+    status: confirmed
+    confidence: 0.3
+    provenance:
+      table: doc_scrutineer_list
+      evidence: '1 documents classified as "List of Scrutineers" from header
+        extraction (examples: documento_elenco_scrutatori)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.3
+        provenance:
+          table: doc_scrutineer_list
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: clearance
+    name: Director's clearance
+    description: Director's clearance documents extracted from source files
+    sourceTable: doc_clearance
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_clearance
+      evidence: "2 documents classified as \"Director's clearance\" from header
+        extraction (examples: documento_no_n_209_2026_gerace_varinate_rupe,
+        documento_no_n_210_2026_gerace_zona_est)"
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 2 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: source_file
+          evidence: Source file column (VARCHAR) on 2 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 2 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: published_date
+          evidence: Published date column (VARCHAR) on 2 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: subject
+          evidence: Subject column (VARCHAR) on 2 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 2 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: topics
+          evidence: Topics column (VARCHAR) on 2 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: summary
+          evidence: Summary column (VARCHAR) on 2 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_clearance
+          column: page_count
+          evidence: Page count column (INTEGER) on 2 rows
+  - id: registration_notice
+    name: Registration notice
+    description: Registration notice documents extracted from source files
+    sourceTable: doc_registration_notice
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_registration_notice
+      evidence: '1 documents classified as "Registration notice" from header
+        extraction (examples: documento_avviso_iscrizione_registri_hcp2014)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_registration_notice
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: call_for_expressions_of_interest
+    name: Call for Expressions of Interest
+    description: Call for Expressions of Interest documents extracted from source files
+    sourceTable: doc_call_for_expressions_of_interest
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_call_for_expressions_of_interest
+      evidence: '1 documents classified as "Call for Expressions of Interest" from
+        header extraction (examples:
+        documento_buoni_spesa_avviso_manifestazione_interesse_esercizi_commerciali)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.92
+        provenance:
+          table: doc_call_for_expressions_of_interest
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: admitted_candidates_communication
+    name: Communication of Admitted Candidates
+    description: Communication of Admitted Candidates documents extracted from source files
+    sourceTable: doc_admitted_candidates_communication
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_admitted_candidates_communication
+      evidence: '1 documents classified as "Communication of Admitted Candidates" from
+        header extraction (examples:
+        documento_concorso_pubblico_n_2_posti_di_autista_scuolabus_e_mezzi_pesanti_categoria_giuridica_b3_comunicazione_candidati_ammessi_2_2)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: doc_admitted_candidates_communication
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: building_abuse_report
+    name: Building Abuse Report
+    description: Building Abuse Report documents extracted from source files
+    sourceTable: doc_building_abuse_report
+    status: confirmed
+    confidence: 0.4
+    provenance:
+      table: doc_building_abuse_report
+      evidence: '1 documents classified as "Building Abuse Report" from header
+        extraction (examples:
+        prot_int_0010621_del_26_08_2026_documento_mese_luglio)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.4
+        provenance:
+          table: doc_building_abuse_report
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: protocol_record
+    name: Protocol Record
+    description: Protocol Record documents extracted from source files
+    sourceTable: doc_protocol_record
+    status: proposed
+    confidence: 0.75
+    provenance:
+      table: doc_protocol_record
+      evidence: '1 documents classified as "Protocol Record" from header extraction
+        (examples: prot_par_0009651_del_30_09_2020_documento)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.75
+        provenance:
+          table: doc_protocol_record
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: protocol
+    name: Protocol
+    description: Protocol documents extracted from source files
+    sourceTable: doc_protocol
+    status: proposed
+    confidence: 0.8
+    provenance:
+      table: doc_protocol
+      evidence: '2 documents classified as "Protocol" from header extraction
+        (examples: prot_par_0009672_del_01_10_2020_documento,
+        prot_par_0011482_del_05_11_2025_documento_11482)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 2 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: source_file
+          evidence: Source file column (VARCHAR) on 2 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 2 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: published_date
+          evidence: Published date column (VARCHAR) on 2 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: subject
+          evidence: Subject column (VARCHAR) on 2 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 2 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: topics
+          evidence: Topics column (VARCHAR) on 2 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: summary
+          evidence: Summary column (VARCHAR) on 2 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.8
+        provenance:
+          table: doc_protocol
+          column: page_count
+          evidence: Page count column (INTEGER) on 2 rows
+  - id: unknown
+    name: Unknown
+    description: Unknown documents extracted from source files
+    sourceTable: doc_unknown
+    status: confirmed
+    confidence: 0.05
+    provenance:
+      table: doc_unknown
+      evidence: '2 documents classified as "Unknown" from header extraction (examples:
+        prot_par_0009673_del_01_10_2020_documento,
+        pubblicazione_n_592_del_20_06_2019_documento)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 2 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: source_file
+          evidence: Source file column (VARCHAR) on 2 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 2 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: published_date
+          evidence: Published date column (VARCHAR) on 2 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: subject
+          evidence: Subject column (VARCHAR) on 2 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 2 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: topics
+          evidence: Topics column (VARCHAR) on 2 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: summary
+          evidence: Summary column (VARCHAR) on 2 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.05
+        provenance:
+          table: doc_unknown
+          column: page_count
+          evidence: Page count column (INTEGER) on 2 rows
+  - id: disciplinary_code
+    name: Disciplinary Code
+    description: Disciplinary Code documents extracted from source files
+    sourceTable: doc_disciplinary_code
+    status: proposed
+    confidence: 0.97
+    provenance:
+      table: doc_disciplinary_code
+      evidence: '1 documents classified as "Disciplinary Code" from header extraction
+        (examples:
+        prot_par_0010282_del_23_10_2024_documento_codice_disciplinare_dopo_ccnl_segretari_gerace)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.97
+        provenance:
+          table: doc_disciplinary_code
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: ordinance
+    name: Municipal Ordinance
+    description: Municipal Ordinance documents extracted from source files
+    sourceTable: doc_ordinance
+    status: proposed
+    confidence: 0.98
+    provenance:
+      table: doc_ordinance
+      evidence: '1 documents classified as "Municipal Ordinance" from header
+        extraction (examples:
+        prot_par_0010907_del_02_09_2026_documento_49_ordinanza_n_49_chiusura_al_traffico_cavalieri_vittorio_veneto_e_piazza_del_tocco)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.98
+        provenance:
+          table: doc_ordinance
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: municipal_council_meeting_notice
+    name: Municipal Council Meeting Notice
+    description: Municipal Council Meeting Notice documents extracted from source files
+    sourceTable: doc_municipal_council_meeting_notice
+    status: proposed
+    confidence: 0.78
+    provenance:
+      table: doc_municipal_council_meeting_notice
+      evidence: '1 documents classified as "Municipal Council Meeting Notice" from
+        header extraction (examples:
+        pubblicazione_n_937_del_14_10_2021_documento)'
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: document_id
+          evidence: Document ID column (VARCHAR) on 1 rows
+      - name: Source file
+        columnName: source_file
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: source_file
+          evidence: Source file column (VARCHAR) on 1 rows
+      - name: Registry number
+        columnName: protocol_number
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: protocol_number
+          evidence: Registry number column (VARCHAR) on 1 rows
+      - name: Published date
+        columnName: published_date
+        semanticType: date
+        role: attribute
+        nullable: true
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: published_date
+          evidence: Published date column (VARCHAR) on 1 rows
+      - name: Subject
+        columnName: subject
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: subject
+          evidence: Subject column (VARCHAR) on 1 rows
+      - name: Issuing office
+        columnName: issuing_office
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: issuing_office
+          evidence: Issuing office column (VARCHAR) on 1 rows
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: topics
+          evidence: Topics column (VARCHAR) on 1 rows
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: summary
+          evidence: Summary column (VARCHAR) on 1 rows
+      - name: Page count
+        columnName: page_count
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.78
+        provenance:
+          table: doc_municipal_council_meeting_notice
+          column: page_count
+          evidence: Page count column (INTEGER) on 1 rows
+  - id: document_text
+    name: Document Text
+    description: Line-level text content for all documents in the corpus
+    sourceTable: document_lines
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: document_lines
+      evidence: Unified line table with 15395 rows across the document corpus
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: foreign_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_lines
+          column: document_id
+          evidence: Document ID column (VARCHAR)
+      - name: Page number
+        columnName: page
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_lines
+          column: page
+          evidence: Page number column (INTEGER)
+      - name: Line number
+        columnName: line
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_lines
+          column: line
+          evidence: Line number column (INTEGER)
+      - name: Text content
+        columnName: text
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_lines
+          column: text
+          evidence: Text content column (VARCHAR)
+  - id: document_chunk
+    name: Document Chunk
+    description: Searchable text segments from documents, split for semantic retrieval
+    sourceTable: document_chunks
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: document_chunks
+      evidence: Chunk table with 972 searchable segments across the document corpus
+    properties:
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: foreign_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_chunks
+          column: document_id
+          evidence: Document ID column (VARCHAR)
+      - name: Chunk index
+        columnName: chunk_index
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_chunks
+          column: chunk_index
+          evidence: Chunk index column (INTEGER)
+      - name: Start page
+        columnName: page_start
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_chunks
+          column: page_start
+          evidence: Start page column (INTEGER)
+      - name: End page
+        columnName: page_end
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_chunks
+          column: page_end
+          evidence: End page column (INTEGER)
+      - name: Chunk text
+        columnName: text
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_chunks
+          column: text
+          evidence: Chunk text column (VARCHAR)
+  - id: party
+    name: Party
+    description: Named partys mentioned in document body text
+    sourceTable: document_entities
+    status: proposed
+    confidence: 0.9
+    provenance:
+      table: document_entities
+      evidence: Entity table with 121 deduplicated partys from body-text extraction
+    properties:
+      - name: Entity ID
+        columnName: entity_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: entity_id
+          evidence: Entity ID column (VARCHAR)
+      - name: Name
+        columnName: name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: name
+          evidence: Name column (VARCHAR)
+      - name: Normalized name
+        columnName: normalized_name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: normalized_name
+          evidence: Normalized name column (VARCHAR)
+      - name: Mention count
+        columnName: mention_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: mention_count
+          evidence: Mention count column (INTEGER)
+      - name: Document count
+        columnName: document_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: document_count
+          evidence: Document count column (INTEGER)
+      - name: Sector
+        columnName: sector
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: sector
+          evidence: Sector column (VARCHAR)
+      - name: Role
+        columnName: role
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: role
+          evidence: Role column (VARCHAR)
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: summary
+          evidence: Summary column (VARCHAR)
+      - name: Enrichment confidence
+        columnName: enrichment_confidence
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: document_entities
+          column: enrichment_confidence
+          evidence: Enrichment confidence column (DOUBLE)
+  - id: document_mention
+    name: Document Mention
+    description: Occurrences of partys and coded identifiers in document body text
+    sourceTable: document_mentions
+    status: proposed
+    confidence: 0.9
+    provenance:
+      table: document_mentions
+      evidence: Mention table with 923 extracted mentions from document lines
+    properties:
+      - name: Mention ID
+        columnName: mention_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: mention_id
+          evidence: Mention ID column (VARCHAR)
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: foreign_key
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: document_id
+          evidence: Document ID column (VARCHAR)
+      - name: Entity ID
+        columnName: entity_id
+        semanticType: identifier
+        role: foreign_key
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: entity_id
+          evidence: Entity ID column (VARCHAR)
+      - name: Mention type
+        columnName: mention_type
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: mention_type
+          evidence: Mention type column (VARCHAR)
+      - name: Mention text
+        columnName: text
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: text
+          evidence: Mention text column (VARCHAR)
+      - name: Normalized value
+        columnName: normalized_value
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: normalized_value
+          evidence: Normalized value column (VARCHAR)
+      - name: Page number
+        columnName: page
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: page
+          evidence: Page number column (INTEGER)
+      - name: Line number
+        columnName: line
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: line
+          evidence: Line number column (INTEGER)
+      - name: Confidence
+        columnName: confidence
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: confidence
+          evidence: Confidence column (DOUBLE)
+      - name: Context
+        columnName: context
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: document_mentions
+          column: context
+          evidence: Context column (VARCHAR)
+  - id: document_fact
+    name: Document Fact
+    description: "Quantities stated in the documents: number of present members,
+      number of absent members, period duration, contract amount"
+    sourceTable: document_facts
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: document_facts
+      evidence: Fact table with 528 quantities extracted from document lines
+    properties:
+      - name: Fact ID
+        columnName: fact_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: fact_id
+          evidence: Fact ID column (VARCHAR)
+      - name: Document ID
+        columnName: document_id
+        semanticType: identifier
+        role: foreign_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: document_id
+          evidence: Document ID column (VARCHAR)
+      - name: Entity ID
+        columnName: entity_id
+        semanticType: identifier
+        role: foreign_key
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: entity_id
+          evidence: Entity ID column (VARCHAR)
+      - name: Identifier type
+        columnName: identifier_type
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: identifier_type
+          evidence: Identifier type column (VARCHAR)
+      - name: Identifier value
+        columnName: identifier_value
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: identifier_value
+          evidence: Identifier value column (VARCHAR)
+      - name: Quantity type
+        columnName: fact_type
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: fact_type
+          evidence: Quantity type column (VARCHAR)
+      - name: Value
+        columnName: amount
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: amount
+          evidence: Value column (DOUBLE)
+      - name: Raw text
+        columnName: raw_text
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: raw_text
+          evidence: Raw text column (VARCHAR)
+      - name: Page number
+        columnName: page
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: page
+          evidence: Page number column (INTEGER)
+      - name: Line number
+        columnName: line
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: document_facts
+          column: line
+          evidence: Line number column (INTEGER)
+  - id: party_profile
+    name: Party Profile
+    description: "Precomputed rollup per party: documents, aggregated quantities,
+      coded identifiers, related partys, and topics. Answers single-party
+      questions from one row instead of joining mentions and facts."
+    sourceTable: entity_profiles
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: entity_profiles
+      evidence: Rollup with 121 rows aggregating mentions, facts, and co-occurring partys
+    properties:
+      - name: Entity id
+        columnName: entity_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: entity_id
+          evidence: Entity id column (VARCHAR)
+      - name: Name
+        columnName: name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: name
+          evidence: Name column (VARCHAR)
+      - name: Normalized name
+        columnName: normalized_name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: normalized_name
+          evidence: Normalized name column (VARCHAR)
+      - name: Sector
+        columnName: sector
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: sector
+          evidence: Sector column (VARCHAR)
+      - name: Role
+        columnName: role
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: role
+          evidence: Role column (VARCHAR)
+      - name: Summary
+        columnName: summary
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: summary
+          evidence: Summary column (VARCHAR)
+      - name: Mention count
+        columnName: mention_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: mention_count
+          evidence: Mention count column (INTEGER)
+      - name: Document count
+        columnName: document_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: document_count
+          evidence: Document count column (INTEGER)
+      - name: Fact count
+        columnName: fact_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: fact_count
+          evidence: Fact count column (BIGINT)
+      - name: Total contract amount
+        columnName: total_contract_amount
+        semanticType: number
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: total_contract_amount
+          evidence: Total contract amount column (DOUBLE)
+      - name: CIG code count
+        columnName: cig_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: cig_count
+          evidence: CIG code count column (BIGINT)
+      - name: CIG codes in the entity's documents
+        columnName: cig_list
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: cig_list
+          evidence: CIG codes in the entity's documents column (VARCHAR)
+      - name: CUP code count
+        columnName: cup_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: cup_count
+          evidence: CUP code count column (BIGINT)
+      - name: CUP codes in the entity's documents
+        columnName: cup_list
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: cup_list
+          evidence: CUP codes in the entity's documents column (VARCHAR)
+      - name: Partita IVA count
+        columnName: piva_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: piva_count
+          evidence: Partita IVA count column (BIGINT)
+      - name: Partita IVAs in the entity's documents
+        columnName: piva_list
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: piva_list
+          evidence: Partita IVAs in the entity's documents column (VARCHAR)
+      - name: General register number count
+        columnName: rg_number_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: rg_number_count
+          evidence: General register number count column (BIGINT)
+      - name: General register numbers in the entity's documents
+        columnName: rg_number_list
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: rg_number_list
+          evidence: General register numbers in the entity's documents column (VARCHAR)
+      - name: Internal register number count
+        columnName: ri_number_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: ri_number_count
+          evidence: Internal register number count column (BIGINT)
+      - name: Internal register numbers in the entity's documents
+        columnName: ri_number_list
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: ri_number_list
+          evidence: Internal register numbers in the entity's documents column (VARCHAR)
+      - name: Document ids
+        columnName: document_ids
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: document_ids
+          evidence: Document ids column (VARCHAR)
+      - name: Related count
+        columnName: related_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: related_count
+          evidence: Related count column (BIGINT)
+      - name: Related names
+        columnName: related_names
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: related_names
+          evidence: Related names column (VARCHAR)
+      - name: Topics
+        columnName: topics
+        semanticType: text
+        role: attribute
+        nullable: true
+        confidence: 0.95
+        provenance:
+          table: entity_profiles
+          column: topics
+          evidence: Topics column (VARCHAR)
+relations:
+  - id: determina_has_text
+    name: Determina has document text
+    fromEntity: determina
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.9
+    provenance:
+      table: doc_determina
+      column: document_id
+      evidence: Each determina row links to line-level text rows via document_id
+  - id: determina_has_chunks
+    name: Determina has document chunks
+    fromEntity: determina
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.9
+    provenance:
+      table: doc_determina
+      column: document_id
+      evidence: Each determina row links to searchable text chunks via document_id
+  - id: underage_citizens_list_has_text
+    name: List of citizens under 18 years of age has document text
+    fromEntity: underage_citizens_list
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_underage_citizens_list
+      column: document_id
+      evidence: Each list of citizens under 18 years of age row links to line-level
+        text rows via document_id
+  - id: underage_citizens_list_has_chunks
+    name: List of citizens under 18 years of age has document chunks
+    fromEntity: underage_citizens_list
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_underage_citizens_list
+      column: document_id
+      evidence: Each list of citizens under 18 years of age row links to searchable
+        text chunks via document_id
+  - id: notice_has_text
+    name: Public Notice has document text
+    fromEntity: notice
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_notice
+      column: document_id
+      evidence: Each public notice row links to line-level text rows via document_id
+  - id: notice_has_chunks
+    name: Public Notice has document chunks
+    fromEntity: notice
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_notice
+      column: document_id
+      evidence: Each public notice row links to searchable text chunks via document_id
+  - id: public_auction_notice_has_text
+    name: Public Auction Notice has document text
+    fromEntity: public_auction_notice
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: doc_public_auction_notice
+      column: document_id
+      evidence: Each public auction notice row links to line-level text rows via
+        document_id
+  - id: public_auction_notice_has_chunks
+    name: Public Auction Notice has document chunks
+    fromEntity: public_auction_notice
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: doc_public_auction_notice
+      column: document_id
+      evidence: Each public auction notice row links to searchable text chunks via
+        document_id
+  - id: public_notice_has_text
+    name: Public Notice has document text
+    fromEntity: public_notice
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.86
+    provenance:
+      table: doc_public_notice
+      column: document_id
+      evidence: Each public notice row links to line-level text rows via document_id
+  - id: public_notice_has_chunks
+    name: Public Notice has document chunks
+    fromEntity: public_notice
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.86
+    provenance:
+      table: doc_public_notice
+      column: document_id
+      evidence: Each public notice row links to searchable text chunks via document_id
+  - id: election_notice_has_text
+    name: Election Notice has document text
+    fromEntity: election_notice
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.88
+    provenance:
+      table: doc_election_notice
+      column: document_id
+      evidence: Each election notice row links to line-level text rows via document_id
+  - id: election_notice_has_chunks
+    name: Election Notice has document chunks
+    fromEntity: election_notice
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.88
+    provenance:
+      table: doc_election_notice
+      column: document_id
+      evidence: Each election notice row links to searchable text chunks via document_id
+  - id: municipal_executive_resolution_has_text
+    name: Municipal Executive Resolution has document text
+    fromEntity: municipal_executive_resolution
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.93
+    provenance:
+      table: doc_municipal_executive_resolution
+      column: document_id
+      evidence: Each municipal executive resolution row links to line-level text rows
+        via document_id
+  - id: municipal_executive_resolution_has_chunks
+    name: Municipal Executive Resolution has document chunks
+    fromEntity: municipal_executive_resolution
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.93
+    provenance:
+      table: doc_municipal_executive_resolution
+      column: document_id
+      evidence: Each municipal executive resolution row links to searchable text
+        chunks via document_id
+  - id: scrutineer_list_has_text
+    name: List of Scrutineers has document text
+    fromEntity: scrutineer_list
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.3
+    provenance:
+      table: doc_scrutineer_list
+      column: document_id
+      evidence: Each list of scrutineers row links to line-level text rows via
+        document_id
+  - id: scrutineer_list_has_chunks
+    name: List of Scrutineers has document chunks
+    fromEntity: scrutineer_list
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.3
+    provenance:
+      table: doc_scrutineer_list
+      column: document_id
+      evidence: Each list of scrutineers row links to searchable text chunks via
+        document_id
+  - id: clearance_has_text
+    name: Director's clearance has document text
+    fromEntity: clearance
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_clearance
+      column: document_id
+      evidence: Each director's clearance row links to line-level text rows via
+        document_id
+  - id: clearance_has_chunks
+    name: Director's clearance has document chunks
+    fromEntity: clearance
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_clearance
+      column: document_id
+      evidence: Each director's clearance row links to searchable text chunks via
+        document_id
+  - id: registration_notice_has_text
+    name: Registration notice has document text
+    fromEntity: registration_notice
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_registration_notice
+      column: document_id
+      evidence: Each registration notice row links to line-level text rows via
+        document_id
+  - id: registration_notice_has_chunks
+    name: Registration notice has document chunks
+    fromEntity: registration_notice
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_registration_notice
+      column: document_id
+      evidence: Each registration notice row links to searchable text chunks via
+        document_id
+  - id: call_for_expressions_of_interest_has_text
+    name: Call for Expressions of Interest has document text
+    fromEntity: call_for_expressions_of_interest
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_call_for_expressions_of_interest
+      column: document_id
+      evidence: Each call for expressions of interest row links to line-level text
+        rows via document_id
+  - id: call_for_expressions_of_interest_has_chunks
+    name: Call for Expressions of Interest has document chunks
+    fromEntity: call_for_expressions_of_interest
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_call_for_expressions_of_interest
+      column: document_id
+      evidence: Each call for expressions of interest row links to searchable text
+        chunks via document_id
+  - id: admitted_candidates_communication_has_text
+    name: Communication of Admitted Candidates has document text
+    fromEntity: admitted_candidates_communication
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_admitted_candidates_communication
+      column: document_id
+      evidence: Each communication of admitted candidates row links to line-level text
+        rows via document_id
+  - id: admitted_candidates_communication_has_chunks
+    name: Communication of Admitted Candidates has document chunks
+    fromEntity: admitted_candidates_communication
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_admitted_candidates_communication
+      column: document_id
+      evidence: Each communication of admitted candidates row links to searchable text
+        chunks via document_id
+  - id: building_abuse_report_has_text
+    name: Building Abuse Report has document text
+    fromEntity: building_abuse_report
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.4
+    provenance:
+      table: doc_building_abuse_report
+      column: document_id
+      evidence: Each building abuse report row links to line-level text rows via
+        document_id
+  - id: building_abuse_report_has_chunks
+    name: Building Abuse Report has document chunks
+    fromEntity: building_abuse_report
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.4
+    provenance:
+      table: doc_building_abuse_report
+      column: document_id
+      evidence: Each building abuse report row links to searchable text chunks via
+        document_id
+  - id: protocol_record_has_text
+    name: Protocol Record has document text
+    fromEntity: protocol_record
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.75
+    provenance:
+      table: doc_protocol_record
+      column: document_id
+      evidence: Each protocol record row links to line-level text rows via document_id
+  - id: protocol_record_has_chunks
+    name: Protocol Record has document chunks
+    fromEntity: protocol_record
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.75
+    provenance:
+      table: doc_protocol_record
+      column: document_id
+      evidence: Each protocol record row links to searchable text chunks via document_id
+  - id: protocol_has_text
+    name: Protocol has document text
+    fromEntity: protocol
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.8
+    provenance:
+      table: doc_protocol
+      column: document_id
+      evidence: Each protocol row links to line-level text rows via document_id
+  - id: protocol_has_chunks
+    name: Protocol has document chunks
+    fromEntity: protocol
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.8
+    provenance:
+      table: doc_protocol
+      column: document_id
+      evidence: Each protocol row links to searchable text chunks via document_id
+  - id: unknown_has_text
+    name: Unknown has document text
+    fromEntity: unknown
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.05
+    provenance:
+      table: doc_unknown
+      column: document_id
+      evidence: Each unknown row links to line-level text rows via document_id
+  - id: unknown_has_chunks
+    name: Unknown has document chunks
+    fromEntity: unknown
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.05
+    provenance:
+      table: doc_unknown
+      column: document_id
+      evidence: Each unknown row links to searchable text chunks via document_id
+  - id: disciplinary_code_has_text
+    name: Disciplinary Code has document text
+    fromEntity: disciplinary_code
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.97
+    provenance:
+      table: doc_disciplinary_code
+      column: document_id
+      evidence: Each disciplinary code row links to line-level text rows via document_id
+  - id: disciplinary_code_has_chunks
+    name: Disciplinary Code has document chunks
+    fromEntity: disciplinary_code
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.97
+    provenance:
+      table: doc_disciplinary_code
+      column: document_id
+      evidence: Each disciplinary code row links to searchable text chunks via
+        document_id
+  - id: ordinance_has_text
+    name: Municipal Ordinance has document text
+    fromEntity: ordinance
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.98
+    provenance:
+      table: doc_ordinance
+      column: document_id
+      evidence: Each municipal ordinance row links to line-level text rows via
+        document_id
+  - id: ordinance_has_chunks
+    name: Municipal Ordinance has document chunks
+    fromEntity: ordinance
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.98
+    provenance:
+      table: doc_ordinance
+      column: document_id
+      evidence: Each municipal ordinance row links to searchable text chunks via
+        document_id
+  - id: municipal_council_meeting_notice_has_text
+    name: Municipal Council Meeting Notice has document text
+    fromEntity: municipal_council_meeting_notice
+    toEntity: document_text
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.78
+    provenance:
+      table: doc_municipal_council_meeting_notice
+      column: document_id
+      evidence: Each municipal council meeting notice row links to line-level text
+        rows via document_id
+  - id: municipal_council_meeting_notice_has_chunks
+    name: Municipal Council Meeting Notice has document chunks
+    fromEntity: municipal_council_meeting_notice
+    toEntity: document_chunk
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.78
+    provenance:
+      table: doc_municipal_council_meeting_notice
+      column: document_id
+      evidence: Each municipal council meeting notice row links to searchable text
+        chunks via document_id
+  - id: determina_has_mentions
+    name: Determina has document mentions
+    fromEntity: determina
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.9
+    provenance:
+      table: doc_determina
+      column: document_id
+      evidence: Each determina row links to extracted mentions via document_id
+  - id: determina_has_facts
+    name: Determina has document facts
+    fromEntity: determina
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.9
+    provenance:
+      table: doc_determina
+      column: document_id
+      evidence: Each determina row links to extracted quantities via document_id
+  - id: underage_citizens_list_has_mentions
+    name: List of citizens under 18 years of age has document mentions
+    fromEntity: underage_citizens_list
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_underage_citizens_list
+      column: document_id
+      evidence: Each list of citizens under 18 years of age row links to extracted
+        mentions via document_id
+  - id: underage_citizens_list_has_facts
+    name: List of citizens under 18 years of age has document facts
+    fromEntity: underage_citizens_list
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_underage_citizens_list
+      column: document_id
+      evidence: Each list of citizens under 18 years of age row links to extracted
+        quantities via document_id
+  - id: notice_has_mentions
+    name: Public Notice has document mentions
+    fromEntity: notice
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_notice
+      column: document_id
+      evidence: Each public notice row links to extracted mentions via document_id
+  - id: notice_has_facts
+    name: Public Notice has document facts
+    fromEntity: notice
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_notice
+      column: document_id
+      evidence: Each public notice row links to extracted quantities via document_id
+  - id: public_auction_notice_has_mentions
+    name: Public Auction Notice has document mentions
+    fromEntity: public_auction_notice
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: doc_public_auction_notice
+      column: document_id
+      evidence: Each public auction notice row links to extracted mentions via
+        document_id
+  - id: public_auction_notice_has_facts
+    name: Public Auction Notice has document facts
+    fromEntity: public_auction_notice
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: doc_public_auction_notice
+      column: document_id
+      evidence: Each public auction notice row links to extracted quantities via
+        document_id
+  - id: public_notice_has_mentions
+    name: Public Notice has document mentions
+    fromEntity: public_notice
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.86
+    provenance:
+      table: doc_public_notice
+      column: document_id
+      evidence: Each public notice row links to extracted mentions via document_id
+  - id: public_notice_has_facts
+    name: Public Notice has document facts
+    fromEntity: public_notice
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.86
+    provenance:
+      table: doc_public_notice
+      column: document_id
+      evidence: Each public notice row links to extracted quantities via document_id
+  - id: election_notice_has_mentions
+    name: Election Notice has document mentions
+    fromEntity: election_notice
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.88
+    provenance:
+      table: doc_election_notice
+      column: document_id
+      evidence: Each election notice row links to extracted mentions via document_id
+  - id: election_notice_has_facts
+    name: Election Notice has document facts
+    fromEntity: election_notice
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.88
+    provenance:
+      table: doc_election_notice
+      column: document_id
+      evidence: Each election notice row links to extracted quantities via document_id
+  - id: municipal_executive_resolution_has_mentions
+    name: Municipal Executive Resolution has document mentions
+    fromEntity: municipal_executive_resolution
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.93
+    provenance:
+      table: doc_municipal_executive_resolution
+      column: document_id
+      evidence: Each municipal executive resolution row links to extracted mentions
+        via document_id
+  - id: municipal_executive_resolution_has_facts
+    name: Municipal Executive Resolution has document facts
+    fromEntity: municipal_executive_resolution
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.93
+    provenance:
+      table: doc_municipal_executive_resolution
+      column: document_id
+      evidence: Each municipal executive resolution row links to extracted quantities
+        via document_id
+  - id: scrutineer_list_has_mentions
+    name: List of Scrutineers has document mentions
+    fromEntity: scrutineer_list
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.3
+    provenance:
+      table: doc_scrutineer_list
+      column: document_id
+      evidence: Each list of scrutineers row links to extracted mentions via document_id
+  - id: scrutineer_list_has_facts
+    name: List of Scrutineers has document facts
+    fromEntity: scrutineer_list
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.3
+    provenance:
+      table: doc_scrutineer_list
+      column: document_id
+      evidence: Each list of scrutineers row links to extracted quantities via
+        document_id
+  - id: clearance_has_mentions
+    name: Director's clearance has document mentions
+    fromEntity: clearance
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_clearance
+      column: document_id
+      evidence: Each director's clearance row links to extracted mentions via document_id
+  - id: clearance_has_facts
+    name: Director's clearance has document facts
+    fromEntity: clearance
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_clearance
+      column: document_id
+      evidence: Each director's clearance row links to extracted quantities via
+        document_id
+  - id: registration_notice_has_mentions
+    name: Registration notice has document mentions
+    fromEntity: registration_notice
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_registration_notice
+      column: document_id
+      evidence: Each registration notice row links to extracted mentions via document_id
+  - id: registration_notice_has_facts
+    name: Registration notice has document facts
+    fromEntity: registration_notice
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_registration_notice
+      column: document_id
+      evidence: Each registration notice row links to extracted quantities via
+        document_id
+  - id: call_for_expressions_of_interest_has_mentions
+    name: Call for Expressions of Interest has document mentions
+    fromEntity: call_for_expressions_of_interest
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_call_for_expressions_of_interest
+      column: document_id
+      evidence: Each call for expressions of interest row links to extracted mentions
+        via document_id
+  - id: call_for_expressions_of_interest_has_facts
+    name: Call for Expressions of Interest has document facts
+    fromEntity: call_for_expressions_of_interest
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.92
+    provenance:
+      table: doc_call_for_expressions_of_interest
+      column: document_id
+      evidence: Each call for expressions of interest row links to extracted
+        quantities via document_id
+  - id: admitted_candidates_communication_has_mentions
+    name: Communication of Admitted Candidates has document mentions
+    fromEntity: admitted_candidates_communication
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_admitted_candidates_communication
+      column: document_id
+      evidence: Each communication of admitted candidates row links to extracted
+        mentions via document_id
+  - id: admitted_candidates_communication_has_facts
+    name: Communication of Admitted Candidates has document facts
+    fromEntity: admitted_candidates_communication
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.85
+    provenance:
+      table: doc_admitted_candidates_communication
+      column: document_id
+      evidence: Each communication of admitted candidates row links to extracted
+        quantities via document_id
+  - id: building_abuse_report_has_mentions
+    name: Building Abuse Report has document mentions
+    fromEntity: building_abuse_report
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.4
+    provenance:
+      table: doc_building_abuse_report
+      column: document_id
+      evidence: Each building abuse report row links to extracted mentions via
+        document_id
+  - id: building_abuse_report_has_facts
+    name: Building Abuse Report has document facts
+    fromEntity: building_abuse_report
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.4
+    provenance:
+      table: doc_building_abuse_report
+      column: document_id
+      evidence: Each building abuse report row links to extracted quantities via
+        document_id
+  - id: protocol_record_has_mentions
+    name: Protocol Record has document mentions
+    fromEntity: protocol_record
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.75
+    provenance:
+      table: doc_protocol_record
+      column: document_id
+      evidence: Each protocol record row links to extracted mentions via document_id
+  - id: protocol_record_has_facts
+    name: Protocol Record has document facts
+    fromEntity: protocol_record
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.75
+    provenance:
+      table: doc_protocol_record
+      column: document_id
+      evidence: Each protocol record row links to extracted quantities via document_id
+  - id: protocol_has_mentions
+    name: Protocol has document mentions
+    fromEntity: protocol
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.8
+    provenance:
+      table: doc_protocol
+      column: document_id
+      evidence: Each protocol row links to extracted mentions via document_id
+  - id: protocol_has_facts
+    name: Protocol has document facts
+    fromEntity: protocol
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.8
+    provenance:
+      table: doc_protocol
+      column: document_id
+      evidence: Each protocol row links to extracted quantities via document_id
+  - id: unknown_has_mentions
+    name: Unknown has document mentions
+    fromEntity: unknown
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.05
+    provenance:
+      table: doc_unknown
+      column: document_id
+      evidence: Each unknown row links to extracted mentions via document_id
+  - id: unknown_has_facts
+    name: Unknown has document facts
+    fromEntity: unknown
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.05
+    provenance:
+      table: doc_unknown
+      column: document_id
+      evidence: Each unknown row links to extracted quantities via document_id
+  - id: disciplinary_code_has_mentions
+    name: Disciplinary Code has document mentions
+    fromEntity: disciplinary_code
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.97
+    provenance:
+      table: doc_disciplinary_code
+      column: document_id
+      evidence: Each disciplinary code row links to extracted mentions via document_id
+  - id: disciplinary_code_has_facts
+    name: Disciplinary Code has document facts
+    fromEntity: disciplinary_code
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.97
+    provenance:
+      table: doc_disciplinary_code
+      column: document_id
+      evidence: Each disciplinary code row links to extracted quantities via document_id
+  - id: ordinance_has_mentions
+    name: Municipal Ordinance has document mentions
+    fromEntity: ordinance
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.98
+    provenance:
+      table: doc_ordinance
+      column: document_id
+      evidence: Each municipal ordinance row links to extracted mentions via document_id
+  - id: ordinance_has_facts
+    name: Municipal Ordinance has document facts
+    fromEntity: ordinance
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.98
+    provenance:
+      table: doc_ordinance
+      column: document_id
+      evidence: Each municipal ordinance row links to extracted quantities via
+        document_id
+  - id: municipal_council_meeting_notice_has_mentions
+    name: Municipal Council Meeting Notice has document mentions
+    fromEntity: municipal_council_meeting_notice
+    toEntity: document_mention
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.78
+    provenance:
+      table: doc_municipal_council_meeting_notice
+      column: document_id
+      evidence: Each municipal council meeting notice row links to extracted mentions
+        via document_id
+  - id: municipal_council_meeting_notice_has_facts
+    name: Municipal Council Meeting Notice has document facts
+    fromEntity: municipal_council_meeting_notice
+    toEntity: document_fact
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.78
+    provenance:
+      table: doc_municipal_council_meeting_notice
+      column: document_id
+      evidence: Each municipal council meeting notice row links to extracted
+        quantities via document_id
+  - id: mention_of_party
+    name: Document mention refers to party
+    fromEntity: party
+    toEntity: document_mention
+    fromColumn: entity_id
+    toColumn: entity_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.9
+    provenance:
+      table: document_mentions
+      column: entity_id
+      evidence: Mentions link to deduplicated party rows via entity_id
+  - id: party_has_facts
+    name: Party has document facts
+    fromEntity: party
+    toEntity: document_fact
+    fromColumn: entity_id
+    toColumn: entity_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: document_facts
+      column: entity_id
+      evidence: Facts link to the party named nearest in the document text
+  - id: party_has_profile
+    name: Party has rollup profile
+    fromEntity: party
+    toEntity: party_profile
+    fromColumn: entity_id
+    toColumn: entity_id
+    cardinality: one_to_one
+    status: proposed
+    confidence: 0.98
+    provenance:
+      table: entity_profiles
+      column: entity_id
+      evidence: One precomputed rollup row per party
+  - id: party_profile_has_mentions
+    name: Party profile has document mentions
+    fromEntity: party_profile
+    toEntity: document_mention
+    fromColumn: entity_id
+    toColumn: entity_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: entity_profiles
+      column: entity_id
+      evidence: Profile rows expand to the underlying mentions via entity_id
+  - id: party_profile_has_facts
+    name: Party profile has document facts
+    fromEntity: party_profile
+    toEntity: document_fact
+    fromColumn: entity_id
+    toColumn: entity_id
+    cardinality: one_to_many
+    status: proposed
+    confidence: 0.95
+    provenance:
+      table: entity_profiles
+      column: entity_id
+      evidence: Profile totals expand to the individual facts via entity_id
+rules: []
+actions: []

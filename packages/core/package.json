@@ -14,10 +14,14 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "generate:schema": "node scripts/generate-json-schema.mjs"
   },
   "dependencies": {
     "yaml": "^2.7.0",
     "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "zod-to-json-schema": "^3.24.0"
   }
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MODEL_FORMAT_VERSION } from "./constants.js";
+import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, MODEL_FORMAT_VERSION } from "./constants.js";
 import type { Entity, Relation, Rule, SemanticModel } from "./model.js";
 import type { Proposal, ReviewQuestion, ReviewQuestionKind } from "./proposal.js";
 export const ReviewDecisionSchema = z.enum(["yes", "no", "rename"]);
@@ -25,15 +25,31 @@ interface ElementVerdict {
     confirmed: boolean;
     newName?: string;
 }
+export interface CollectVerdictsResult {
+    verdicts: Map<string, ElementVerdict>;
+    staleAnswerCount: number;
+}
+export interface ApplyReviewOptions {
+    reviewConfidenceThreshold?: number;
+}
+export interface ApplyReviewResult {
+    model: SemanticModel;
+    staleAnswerCount: number;
+}
 function verdictKey(kind: ReviewQuestionKind, targetId: string): string {
     return `${kind}:${targetId}`;
 }
-function collectVerdicts(questions: ReviewQuestion[], answers: ReviewAnswer[]): Map<string, ElementVerdict> {
+function buildReviewedTargetKeys(questions: ReviewQuestion[]): Set<string> {
+    return new Set(questions.map((question) => verdictKey(question.kind, question.targetId)));
+}
+export function collectVerdicts(questions: ReviewQuestion[], answers: ReviewAnswer[]): CollectVerdictsResult {
     const questionsById = new Map(questions.map((question) => [question.id, question]));
     const verdicts = new Map<string, ElementVerdict>();
+    let staleAnswerCount = 0;
     for (const answer of answers) {
         const question = questionsById.get(answer.questionId);
         if (!question) {
+            staleAnswerCount += 1;
             continue;
         }
         const key = verdictKey(question.kind, question.targetId);
@@ -60,40 +76,47 @@ function collectVerdicts(questions: ReviewQuestion[], answers: ReviewAnswer[]): 
             }
         }
     }
-    return verdicts;
+    return { verdicts, staleAnswerCount };
 }
-function applyVerdict<T extends Entity | Relation | Rule>(element: T, verdict: ElementVerdict | undefined): T | null {
-    if (!verdict) {
-        return element;
+function applyVerdict<T extends Entity | Relation | Rule>(element: T, verdict: ElementVerdict | undefined, wasReviewed: boolean, reviewConfidenceThreshold: number): T | null {
+    if (verdict !== undefined) {
+        if (verdict.rejected) {
+            return null;
+        }
+        if (verdict.newName !== undefined) {
+            return { ...element, name: verdict.newName, status: "renamed" };
+        }
+        return { ...element, status: "confirmed" };
     }
-    if (verdict.rejected) {
-        return null;
+    if (!wasReviewed && element.confidence >= reviewConfidenceThreshold) {
+        return { ...element, status: "confirmed" };
     }
-    if (verdict.newName !== undefined) {
-        return { ...element, name: verdict.newName, status: "renamed" };
-    }
-    return { ...element, status: "confirmed" };
+    return element;
 }
-function applyVerdicts<T extends Entity | Relation | Rule>(elements: T[], kind: ReviewQuestionKind, verdicts: Map<string, ElementVerdict>, shouldKeep: (element: T) => boolean = () => true): T[] {
+function applyVerdicts<T extends Entity | Relation | Rule>(elements: T[], kind: ReviewQuestionKind, verdicts: Map<string, ElementVerdict>, reviewedTargetKeys: Set<string>, reviewConfidenceThreshold: number, shouldKeep: (element: T) => boolean = () => true): T[] {
     return elements
-        .map((element) => applyVerdict(element, verdicts.get(verdictKey(kind, element.id))))
+        .map((element) => applyVerdict(element, verdicts.get(verdictKey(kind, element.id)), reviewedTargetKeys.has(verdictKey(kind, element.id)), reviewConfidenceThreshold))
         .filter((element): element is T => element !== null && shouldKeep(element));
 }
-export function applyReview(proposal: Proposal, review: Review, now: Date = new Date()): SemanticModel {
-    const verdicts = collectVerdicts(proposal.questions, review.answers);
-    const entities = applyVerdicts(proposal.entities, "entity", verdicts);
+export function applyReview(proposal: Proposal, review: Review, now: Date = new Date(), options: ApplyReviewOptions = {}): ApplyReviewResult {
+    const reviewConfidenceThreshold = options.reviewConfidenceThreshold ?? DEFAULT_REVIEW_CONFIDENCE_THRESHOLD;
+    const { verdicts, staleAnswerCount } = collectVerdicts(proposal.questions, review.answers);
+    const reviewedTargetKeys = buildReviewedTargetKeys(proposal.questions);
+    const entities = applyVerdicts(proposal.entities, "entity", verdicts, reviewedTargetKeys, reviewConfidenceThreshold);
     const keptEntityIds = new Set(entities.map((entity) => entity.id));
-    const relations = applyVerdicts(proposal.relations, "relation", verdicts, (relation) => keptEntityIds.has(relation.fromEntity) && keptEntityIds.has(relation.toEntity));
-    const rules = applyVerdicts(proposal.rules, "rule", verdicts, (rule) => keptEntityIds.has(rule.appliesTo));
+    const relations = applyVerdicts(proposal.relations, "relation", verdicts, reviewedTargetKeys, reviewConfidenceThreshold, (relation) => keptEntityIds.has(relation.fromEntity) && keptEntityIds.has(relation.toEntity));
+    const rules = applyVerdicts(proposal.rules, "rule", verdicts, reviewedTargetKeys, reviewConfidenceThreshold, (rule) => keptEntityIds.has(rule.appliesTo));
     return {
-        metadata: {
-            formatVersion: MODEL_FORMAT_VERSION,
-            runId: proposal.runId,
-            generatedAt: now.toISOString(),
+        model: {
+            metadata: {
+                formatVersion: MODEL_FORMAT_VERSION,
+                runId: proposal.runId,
+                generatedAt: now.toISOString(),
+            },
+            entities,
+            relations,
+            rules,
         },
-        entities,
-        relations,
-        rules,
-        actions: [],
+        staleAnswerCount,
     };
 }

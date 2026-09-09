@@ -6,8 +6,8 @@ export { ConfidenceSchema, ProvenanceSchema, SemanticTypeSchema, PropertyRoleSch
 export type { Confidence, Provenance, SemanticType, PropertyRole, ElementStatus, Property, Entity, Cardinality, Relation, Rule, ModelMetadata, SemanticModel, } from "./model.js";
 export { DoubtSchema, EvidenceTableSchema, ReviewQuestionKindSchema, ReviewQuestionSchema, ProposalUsageSchema, ProposalSchema, } from "./proposal.js";
 export type { Doubt, EvidenceTable, ReviewQuestionKind, ReviewQuestion, ProposalUsage, Proposal, } from "./proposal.js";
-export { ReviewDecisionSchema, ReviewAnswerSchema, ReviewSchema, applyReview } from "./review.js";
-export type { ReviewDecision, ReviewAnswer, Review } from "./review.js";
+export { ReviewDecisionSchema, ReviewAnswerSchema, ReviewSchema, collectVerdicts, applyReview } from "./review.js";
+export type { ReviewDecision, ReviewAnswer, Review, CollectVerdictsResult, ApplyReviewOptions, ApplyReviewResult, } from "./review.js";
 export { DiffChangeKindSchema, DiffChangeSchema, ModelDiffSchema } from "./diff.js";
 export type { DiffChangeKind, DiffChange, ModelDiff } from "./diff.js";
 export { BACKED_DIR_NAME, CONFIG_FILE_NAME, RUNS_DIR_NAME, MODEL_FILE_NAME, DATA_FILE_NAME, RUN_ARTIFACTS, WorkspaceConfigSchema, workspacePaths, createRunId, } from "./workspace.js";

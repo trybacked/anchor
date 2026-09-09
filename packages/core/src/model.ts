@@ -73,7 +73,6 @@ export const SemanticModelSchema = z.object({
     entities: z.array(EntitySchema),
     relations: z.array(RelationSchema),
     rules: z.array(RuleSchema),
-    actions: z.array(z.unknown()).default([]),
 });
 export type Confidence = z.infer<typeof ConfidenceSchema>;
 export type Provenance = z.infer<typeof ProvenanceSchema>;
