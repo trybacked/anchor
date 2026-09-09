@@ -1,7 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { PMI_MINIMAL_NUMERIC_FIXTURE } from "../helpers/paths.js";
 import { runCli } from "../helpers/run-cli.js";
 import { createTempWorkspace, removeTempWorkspace } from "../helpers/temp-workspace.js";
 
@@ -63,7 +62,19 @@ describe("headless CLI", () => {
     });
 
     it("model does not hang without a TTY", async () => {
-        const result = await runCli(["model"], PMI_MINIMAL_NUMERIC_FIXTURE, process.env, 20_000);
+        tempWorkspace = await createTempWorkspace("backed-headless-model-");
+        const sourcesDir = join(tempWorkspace, "sources");
+        await mkdir(sourcesDir, { recursive: true });
+        await writeFile(join(sourcesDir, "customers.csv"), "id,name\n1,Acme\n", "utf8");
+        await runCli([
+            "init",
+            "--sources",
+            "./sources",
+            "--rules",
+            '{"documentTypeHints":[]}',
+            "-y",
+        ], tempWorkspace);
+        const result = await runCli(["model", "--no-embed"], tempWorkspace, process.env, 20_000);
         expect(result.exitCode).not.toBeNull();
         expect(result.stdout.length + result.stderr.length).toBeGreaterThan(0);
     });
