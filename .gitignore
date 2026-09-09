@@ -27,4 +27,10 @@ docs/*
 test/
 *.traineddata
 /scripts/
-fixtures/
+fixtures/*
+!fixtures/pmi-minimal/
+fixtures/pmi-minimal/*
+!fixtures/pmi-minimal/model.yaml
+!fixtures/pmi-minimal/.backed/
+fixtures/pmi-minimal/.backed/*
+!fixtures/pmi-minimal/.backed/config.yaml

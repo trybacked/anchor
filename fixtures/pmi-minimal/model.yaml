@@ -1,0 +1,107 @@
+metadata:
+  formatVersion: "1"
+  runId: 20260907T180000-test
+  generatedAt: 2026-09-07T18:00:00.000Z
+
+entities:
+  - id: cliente
+    name: Cliente
+    description: A business customer in the PMI dataset.
+    sourceTable: customers
+    status: confirmed
+    confidence: 0.95
+    provenance:
+      table: customers
+      evidence: "Fixture entity for MCP e2e tests"
+    properties:
+      - name: Customer Name
+        columnName: name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: customers
+          column: name
+          evidence: "Primary label column"
+      - name: VAT Number
+        columnName: vat_number
+        semanticType: vat_number
+        role: attribute
+        nullable: true
+        confidence: 0.9
+        provenance:
+          table: customers
+          column: vat_number
+          evidence: "Italian VAT pattern"
+
+  - id: fattura
+    name: Fattura
+    description: Customer invoice document.
+    sourceTable: invoices
+    status: confirmed
+    confidence: 0.95
+    provenance:
+      table: invoices
+      evidence: "Fixture entity for MCP e2e tests"
+    properties:
+      - name: Invoice Status
+        columnName: cod_stato
+        semanticType: category
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: invoices
+          column: cod_stato
+          evidence: "Lifecycle status column (ERP codes)"
+      - name: Amount
+        columnName: importo
+        semanticType: amount
+        role: attribute
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: invoices
+          column: amount
+          evidence: "Monetary total"
+
+relations:
+  - id: fattura-cliente
+    name: Invoice issued to Customer
+    fromEntity: fattura
+    toEntity: cliente
+    fromColumn: customer_id
+    toColumn: id
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: invoices
+      column: customer_id
+      evidence: "Foreign key to customers.id"
+
+rules:
+  - id: fattura-scaduta
+    name: Fattura scaduta
+    definition: Una fattura è scaduta quando cod_stato è "SCAD".
+    appliesTo: fattura
+    column: cod_stato
+    status: confirmed
+    confidence: 0.95
+    provenance:
+      table: invoices
+      column: cod_stato
+      evidence: "Confirmed business definition in fixture model"
+
+  - id: fattura-bozza
+    name: Fattura in bozza
+    definition: Una fattura è in bozza quando cod_stato è "BOZ".
+    appliesTo: fattura
+    column: cod_stato
+    status: proposed
+    confidence: 0.7
+    provenance:
+      table: invoices
+      column: status
+      evidence: "Proposed rule — must not be returned by get_definition"
