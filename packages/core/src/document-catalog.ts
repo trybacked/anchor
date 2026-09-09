@@ -18,6 +18,7 @@ export const DocumentCatalogEntrySchema = z.object({
     summary: z.string().min(1).optional(),
     confidence: ConfidenceSchema,
     pageCount: z.number().int().nonnegative(),
+    headerFingerprint: z.string().min(1).optional(),
 });
 export const DocumentTypeSummarySchema = z.object({
     id: z.string().min(1),

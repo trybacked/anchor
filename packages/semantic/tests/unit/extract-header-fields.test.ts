@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractHeaderFields, findRecurringLines, isOcrNoiseLine, normalizeLine, } from "../../src/extract-header-fields.js";
+import { extractHeaderFields, filterHeaderLinesForLlm, findRecurringLines, isOcrNoiseLine, normalizeLine, } from "../../src/extract-header-fields.js";
 import type { HeaderFieldContext } from "../../src/extract-header-fields.js";
 import { ENGLISH_INVOICE_VOCABULARY, ITALIAN_PROCUREMENT_VOCABULARY, } from "../fixtures/vocabulary.js";
 const LETTERHEAD = "Comune di Gerace - Ufficio Tecnico";
@@ -45,6 +45,19 @@ describe("findRecurringLines", () => {
     });
     it("stays empty below the minimum sample count", () => {
         expect(findRecurringLines([[LETTERHEAD], [LETTERHEAD]]).size).toBe(0);
+    });
+});
+describe("filterHeaderLinesForLlm", () => {
+    it("drops recurring boilerplate before the LLM prompt", () => {
+        const recurring = findRecurringLines([
+            [LETTERHEAD, "Oggetto: appalto strada"],
+            [LETTERHEAD, "Oggetto: tributi IMU"],
+            [LETTERHEAD, "Oggetto: avviso elettorale"],
+            [LETTERHEAD, "Oggetto: bando cultura"],
+        ]);
+        expect(filterHeaderLinesForLlm([LETTERHEAD, "Oggetto: appalto strada"], recurring)).toEqual([
+            "Oggetto: appalto strada",
+        ]);
     });
 });
 describe("extractHeaderFields", () => {

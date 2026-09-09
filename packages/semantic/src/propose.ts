@@ -2,6 +2,8 @@ import { EMPTY_DOMAIN_VOCABULARY, LOW_CONFIDENCE_THRESHOLD, ProposalSchema, } fr
 import type { ColumnProfile, DocumentCatalog, DomainVocabulary, Doubt, Entity, ProfileReport, Property, Proposal, Relation, Rule, SemanticType, TableProfile, } from "@backed/core";
 import { runBurst } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
+import { mapWithConcurrency } from "./concurrency.js";
+import { COLUMN_CLASSIFICATION_CONCURRENCY } from "./constants.js";
 import { compressProfile } from "./compress.js";
 import type { CompressedTable } from "./compress.js";
 import type { SemanticModels } from "./env.js";
@@ -261,13 +263,15 @@ async function classifyColumnsInBatches(tables: CompressedTable[], models: Seman
     if (tables.length === 0) {
         return { output: emptyClassification(), usage: emptyUsage() };
     }
-    const merged: ColumnClassificationOutput = { tables: [] };
-    let usage = emptyUsage();
-    const batchCount = Math.ceil(tables.length / batchSize);
-    onBatchProgress?.({ completed: 0, total: batchCount });
+    const batches: CompressedTable[][] = [];
     for (let offset = 0; offset < tables.length; offset += batchSize) {
-        const batch = tables.slice(offset, offset + batchSize);
-        const batchIndex = Math.floor(offset / batchSize) + 1;
+        batches.push(tables.slice(offset, offset + batchSize));
+    }
+    const batchCount = batches.length;
+    onBatchProgress?.({ completed: 0, total: batchCount });
+    let completed = 0;
+    const results = await mapWithConcurrency(batches, COLUMN_CLASSIFICATION_CONCURRENCY, async (batch, index) => {
+        const batchIndex = index + 1;
         onProgress?.(`Column classification batch ${String(batchIndex)}/${String(batchCount)} (${String(batch.length)} tables)...`);
         const result = await runBurst({
             model: models.language,
@@ -277,11 +281,14 @@ async function classifyColumnsInBatches(tables: CompressedTable[], models: Seman
             schemaName: "column_classification",
             timeoutMs,
         });
-        merged.tables.push(...result.output.tables);
-        usage = mergeBurstUsage(usage, result.usage);
-        onBatchProgress?.({ completed: batchIndex, total: batchCount });
-    }
-    return { output: merged, usage };
+        completed += 1;
+        onBatchProgress?.({ completed, total: batchCount });
+        return result;
+    });
+    return {
+        output: mergeClassificationOutputs(...results.map((result) => result.output)),
+        usage: results.reduce((usage, result) => mergeBurstUsage(usage, result.usage), emptyUsage()),
+    };
 }
 function filterDocumentEntitiesFromOntology(ontology: OntologyOutput): {
     ontology: OntologyOutput;

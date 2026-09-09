@@ -2,11 +2,13 @@ import { ENTITY_MENTION_TYPE, describeTerms } from "@backed/core";
 import type { DomainTerm, DomainVocabulary } from "@backed/core";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
-import { EMPTY_BURST_USAGE, runBurst, type BurstUsage } from "./burst.js";
-import { ENTITY_ENRICHMENT_MAX_CONTEXT_SNIPPETS, ENTITY_ENRICHMENT_MAX_SNIPPET_CHARS, ENTITY_ENRICHMENT_MAX_SUMMARY_CHARS, } from "./constants.js";
+import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage, type BurstUsage } from "./burst.js";
+import { mapWithConcurrency } from "./concurrency.js";
+import { ENTITY_ENRICHMENT_BATCH_SIZE, ENTITY_ENRICHMENT_CONCURRENCY, ENTITY_ENRICHMENT_MAX_CONTEXT_SNIPPETS, ENTITY_ENRICHMENT_MAX_SNIPPET_CHARS, ENTITY_ENRICHMENT_MAX_SUMMARY_CHARS, } from "./constants.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
 import { entityIdFromName } from "./extract-document-mentions.js";
 import type { EntityRecord, RawDocumentMention } from "./extract-document-mentions.js";
+export { ENTITY_ENRICHMENT_BATCH_SIZE, ENTITY_ENRICHMENT_CONCURRENCY } from "./constants.js";
 function termEnum(terms: DomainTerm[]): z.ZodTypeAny {
     const ids = terms.map((term) => term.id);
     return ids.length > 0 ? z.enum(ids as [
@@ -46,6 +48,10 @@ export interface EnrichEntitiesOptions {
     mentions: RawDocumentMention[];
     vocabulary: DomainVocabulary;
     onProgress?: (message: string) => void;
+    onBatchProgress?: (progress: {
+        completed: number;
+        total: number;
+    }) => void;
 }
 export interface EnrichEntitiesResult {
     entities: Map<string, EntityRecord>;
@@ -73,8 +79,8 @@ function collectContextSnippets(entityId: string, mentions: RawDocumentMention[]
     }
     return snippets;
 }
-function buildEnrichmentPrompt(entities: Map<string, EntityRecord>, mentions: RawDocumentMention[]): string {
-    const blocks = [...entities.values()].map((entity) => {
+function buildEnrichmentPrompt(entities: EntityRecord[], mentions: RawDocumentMention[]): string {
+    const blocks = entities.map((entity) => {
         const snippets = collectContextSnippets(entity.entityId, mentions);
         const contextText = snippets.length > 0
             ? snippets.map((snippet, index) => `${String(index + 1)}. ${snippet}`).join("\n")
@@ -113,25 +119,45 @@ function applyEnrichment(entities: Map<string, EntityRecord>, enriched: Enriched
     }
     return next;
 }
+function chunkEntities(entities: EntityRecord[], size: number): EntityRecord[][] {
+    const batches: EntityRecord[][] = [];
+    for (let index = 0; index < entities.length; index += size) {
+        batches.push(entities.slice(index, index + size));
+    }
+    return batches;
+}
 export async function enrichEntities(options: EnrichEntitiesOptions): Promise<EnrichEntitiesResult> {
     if (options.entities.size === 0) {
         return { entities: options.entities, usage: EMPTY_BURST_USAGE };
     }
-    options.onProgress?.(`Enriching ${String(options.entities.size)} ${options.vocabulary.entityLabel}(s) via LLM...`);
-    const result = await runBurst({
-        model: options.model,
-        system: buildSystemPrompt(options.vocabulary),
-        prompt: buildEnrichmentPrompt(options.entities, options.mentions),
-        schema: buildEnrichmentSchema(options.vocabulary),
-        schemaName: "entity_enrichment",
-        timeoutMs: resolveSemanticRequestTimeoutMs(),
-        ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
+    const entityList = [...options.entities.values()];
+    const batches = chunkEntities(entityList, ENTITY_ENRICHMENT_BATCH_SIZE);
+    const schema = buildEnrichmentSchema(options.vocabulary);
+    const system = buildSystemPrompt(options.vocabulary);
+    options.onProgress?.(`Enriching ${String(entityList.length)} ${options.vocabulary.entityLabel}(s) in ${String(batches.length)} batch(es)...`);
+    let completed = 0;
+    const results = await mapWithConcurrency(batches, ENTITY_ENRICHMENT_CONCURRENCY, async (batch) => {
+        const result = await runBurst({
+            model: options.model,
+            system,
+            prompt: buildEnrichmentPrompt(batch, options.mentions),
+            schema,
+            schemaName: "entity_enrichment",
+            timeoutMs: resolveSemanticRequestTimeoutMs(),
+        });
+        completed += 1;
+        options.onBatchProgress?.({ completed, total: batches.length });
+        return result;
     });
-    const output = result.output as {
-        entities: EnrichedEntity[];
-    };
+    const enriched: EnrichedEntity[] = [];
+    for (const result of results) {
+        const output = result.output as {
+            entities: EnrichedEntity[];
+        };
+        enriched.push(...output.entities);
+    }
     return {
-        entities: applyEnrichment(options.entities, output.entities),
-        usage: result.usage,
+        entities: applyEnrichment(options.entities, enriched),
+        usage: sumBurstUsage(...results.map((result) => result.usage)),
     };
 }

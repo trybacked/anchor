@@ -15,7 +15,9 @@
     "test": "turbo run test",
     "cli": "node apps/cli/dist/cli.js",
     "auth-api": "node apps/auth-api/dist/index.js",
-    "generate:logo": "python3 scripts/generate-logo-art.py"
+    "generate:logo": "python3 scripts/generate-logo-art.py",
+    "compare:ontology": "pnpm --filter @backed/semantic run compare:ontology",
+    "compare:ontology:complex": "pnpm --filter @backed/semantic run compare:ontology:complex"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

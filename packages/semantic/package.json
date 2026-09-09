@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Agentic LLM bursts: profile.json → ontology proposal",
+  "description": "Agentic LLM bursts: profile.json \u2192 ontology proposal",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,12 +14,16 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "compare:ontology": "node --env-file-if-exists=../../.env scripts/compare-ontology.mjs --all",
+    "compare:ontology:simple": "node --env-file-if-exists=../../.env scripts/compare-ontology.mjs --simple",
+    "compare:ontology:complex": "node --env-file-if-exists=../../.env scripts/compare-ontology.mjs --complex"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.69",
     "@backed/core": "workspace:*",
     "ai": "^7.0.85",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.0"
   }
 }

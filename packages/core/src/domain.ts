@@ -19,7 +19,7 @@ export const FactTypeSchema = z.object({
     quantity: z.enum(["currency", "percentage", "count", "duration"]),
     cues: z.array(z.string().min(1)).min(1),
     aggregation: z.enum(["sum", "max", "min", "avg"]),
-    isDefault: z.boolean().default(false),
+    isDefault: z.boolean(),
 });
 export const IdentifierFormatSchema = z.object({
     id: z

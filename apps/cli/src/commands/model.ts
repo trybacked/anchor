@@ -1,13 +1,13 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, ProfileReportSchema, createRunId, listRunIds, mergeVocabulary, patchWorkspaceConfig, readModelYaml, readRunArtifact, readWorkspaceConfig, workspacePaths, writeRunArtifact, } from "@backed/core";
+import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, DocumentCatalogSchema, DomainVocabularySchema, ProfileReportSchema, createRunId, listRunIds, mergeVocabulary, patchWorkspaceConfig, readModelYaml, readRunArtifact, readWorkspaceConfig, workspacePaths, writeRunArtifact, } from "@backed/core";
 import type { DocumentCatalog, DocumentTypeHintConfig, DomainVocabulary, ProfileReport, Proposal, SemanticModel, WorkspaceConfig, } from "@backed/core";
 import { affectedTablesFromProfileDiff, filterProfileToTables, } from "@backed/diff";
 import type { IngestSession } from "@backed/ingest";
 import { applyDocumentTopics, chunkDocumentLines, fetchAllDocumentLines, fetchChunkTextsForEmbedding, fetchCorpusSampleLines, fetchDocumentHeaderSamples, ingestFolder, materializeDocumentMentions, materializeDocumentTables, materializeEntityProfiles, materializeFacts, storeChunkEmbeddings, } from "@backed/ingest";
 import { profileTables } from "@backed/profile";
 import { MissingApiKeyError, buildDocumentTopicSamples, buildEntityIndex, compressProfile, discoverDomain, embedTexts, EMPTY_BURST_USAGE, enrichDocuments, enrichEntities, ensureCurrencyFactTypes, extractDocumentCatalog, extractFactsFromLines, extractMentionsFromLines, mergeCorpusNameSuffixes, mergeIncrementalProposal, proposeModel, resolveSemanticModels, splitTablesByKind, sumBurstUsage, toMaterializedMentions, } from "@backed/semantic";
-import type { BurstUsage, SemanticModels } from "@backed/semantic";
+import type { BurstUsage, DocumentCatalogCacheEntry, SemanticModels } from "@backed/semantic";
 import { findWorkspaceRoot } from "../env.js";
 import { CORPUS_SAMPLE_LINES_PER_TABLE, COMMANDS, FLAGS, formatCliCommand, isOptionArg, MODEL_FILE_LABEL, MS_PER_SECOND, PROPOSAL_ONTOLOGY_PREFIX, } from "../config.js";
 import { MESSAGES } from "../messages.js";
@@ -114,10 +114,23 @@ function printProposalSummary(proposal: Proposal): void {
     }
     ui.step(`${String(proposal.questions.length)} review question(s) — run ${ui.command(formatCliCommand(COMMANDS.REVIEW))}`);
 }
-async function resolveVocabulary(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], configured: WorkspaceConfig["domain"], onProgress: (message: string) => void): Promise<{
+async function resolveVocabulary(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], configured: WorkspaceConfig["domain"], onProgress: (message: string) => void, previousRunId: string | undefined, forceFull: boolean): Promise<{
     vocabulary: DomainVocabulary;
     usage: BurstUsage;
 }> {
+    if (!forceFull && previousRunId !== undefined) {
+        try {
+            const cached = readRunArtifact(root, previousRunId, "vocabulary", DomainVocabularySchema);
+            const vocabulary = mergeVocabulary(cached, configured);
+            onProgress("Reusing vocabulary from previous run...");
+            const ui = getUi();
+            ui.log(`  ${ui.label("Domain")}  ${vocabulary.entityLabel} · ${String(vocabulary.documentTopics.length)} topic(s), ${String(vocabulary.factTypes.length)} quantity type(s), ${String(vocabulary.identifierFormats.length)} identifier format(s) ${ui.dim("(cached)")}`);
+            return { vocabulary, usage: EMPTY_BURST_USAGE };
+        }
+        catch {
+            // fall through to discovery
+        }
+    }
     const sampleLines = await fetchCorpusSampleLines(session.query, lineDocuments.map((table) => table.table), CORPUS_SAMPLE_LINES_PER_TABLE);
     const discovered = await discoverDomain({
         model: models.language,
@@ -127,33 +140,59 @@ async function resolveVocabulary(session: IngestSession, models: SemanticModels,
     const vocabulary = mergeVocabulary(discovered.vocabulary, configured);
     writeRunArtifact(root, runId, "vocabulary", vocabulary);
     const ui = getUi();
-    ui.log(`  ${ui.label("Domain")}  ${vocabulary.entityLabel} · ${String(vocabulary.documentTopics.length)} topic(s), ${String(vocabulary.factTypes.length)} quantity type(s), ${String(vocabulary.identifierFormats.length)} identifier format(s)`);
+    if (discovered.degraded) {
+        ui.writeWarn("Domain vocabulary degraded to defaults — fact/identifier tagging may be reduced until the next successful run.");
+    }
+    ui.log(`  ${ui.label("Domain")}  ${vocabulary.entityLabel} · ${String(vocabulary.documentTopics.length)} topic(s), ${String(vocabulary.factTypes.length)} quantity type(s), ${String(vocabulary.identifierFormats.length)} identifier format(s)${discovered.degraded ? ui.dim(" (degraded)") : ""}`);
     return { vocabulary, usage: discovered.usage };
 }
-async function runDocumentStage(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], workspaceConfig: WorkspaceConfig, skipEmbed: boolean): Promise<DocumentStageResult> {
+function loadDocumentCatalogCache(root: string, previousRunId: string | undefined, forceFull: boolean): Map<string, DocumentCatalogCacheEntry> | undefined {
+    if (forceFull || previousRunId === undefined) {
+        return undefined;
+    }
+    try {
+        const catalog = readRunArtifact(root, previousRunId, "documents", DocumentCatalogSchema);
+        const cache = new Map<string, DocumentCatalogCacheEntry>();
+        for (const entry of catalog.documents) {
+            if (entry.headerFingerprint === undefined) {
+                continue;
+            }
+            cache.set(entry.sourceTable, {
+                entry,
+                headerFingerprint: entry.headerFingerprint,
+            });
+        }
+        return cache.size > 0 ? cache : undefined;
+    }
+    catch {
+        return undefined;
+    }
+}
+async function runDocumentStage(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], workspaceConfig: WorkspaceConfig, skipEmbed: boolean, previousRunId: string | undefined, forceFull: boolean): Promise<DocumentStageResult> {
     const ui = getUi();
     ui.step(`Documents (${String(lineDocuments.length)} file(s)) — classifying and indexing…`);
     const extractionStarted = Date.now();
-    const vocabularyProgress = createAiProgressReporter((message) => {
-        ui.detail(message);
-    });
-    let { vocabulary, usage: vocabularyUsage } = await resolveVocabulary(session, models, runId, root, lineDocuments, workspaceConfig.domain, (message) => {
-        vocabularyProgress.detail(message);
-    });
-    vocabularyProgress.end();
     const headerSamples = await fetchDocumentHeaderSamples(session.query, lineDocuments.map((table) => ({
         sourceTable: table.table,
         pageCount: table.rowCount,
     })));
+    const catalogCache = loadDocumentCatalogCache(root, previousRunId, forceFull);
+    const vocabularyProgress = createAiProgressReporter((message) => {
+        ui.detail(message);
+    });
     const aiProgress = createAiProgressReporter((message) => {
         ui.detail(message);
     });
-    const extracted = await extractDocumentCatalog({
+    const vocabularyPromise = resolveVocabulary(session, models, runId, root, lineDocuments, workspaceConfig.domain, (message) => {
+        vocabularyProgress.detail(message);
+    }, previousRunId, forceFull);
+    const extractedPromise = extractDocumentCatalog({
         runId,
         models,
         samples: headerSamples,
         documentTypeHints: workspaceConfig.documentTypeHints,
-        vocabulary,
+        vocabulary: vocabularyPromise.then((result) => result.vocabulary),
+        ...(catalogCache !== undefined ? { catalogCache } : {}),
         onProgress: (message) => {
             aiProgress.detail(message);
         },
@@ -161,7 +200,13 @@ async function runDocumentStage(session: IngestSession, models: SemanticModels, 
             aiProgress.track("Classifying documents (LLM)", completed, total);
         },
     });
+    let [{ vocabulary, usage: vocabularyUsage }, extracted] = await Promise.all([
+        vocabularyPromise,
+        extractedPromise,
+    ]);
+    vocabularyProgress.end();
     aiProgress.end();
+    writeRunArtifact(root, runId, "vocabulary", vocabulary);
     const extractionMs = Date.now() - extractionStarted;
     const sourceFileByTable = new Map(session.datasets.map((dataset) => [dataset.tableName, dataset.sourceFile]));
     const materialized = await materializeDocumentTables(session.query, extracted.catalog, sourceFileByTable);
@@ -375,7 +420,7 @@ export const modelCommand: CommandHandler = async (args) => {
         }
         if (hasLineDocuments) {
             const documentsStarted = Date.now();
-            const documentStage = await runDocumentStage(session, models, runId, root, lineDocuments, workspaceConfig, skipEmbed);
+            const documentStage = await runDocumentStage(session, models, runId, root, lineDocuments, workspaceConfig, skipEmbed, previousRunId, forceFull);
             timings.documentsMs = Date.now() - documentsStarted;
             timings.extractionMs = documentStage.extractionMs;
             timings.embedMs = documentStage.embedMs;

@@ -103,6 +103,12 @@ function extractIssuingOffice(headerLines: string[], recurringLines: Set<string>
 export function normalizeLine(line: string): string {
     return line.trim().toLowerCase().replace(/\d+/g, "#").replace(/\s+/g, " ");
 }
+export function filterHeaderLinesForLlm(headerLines: string[], recurringLines: Set<string>): string[] {
+    return headerLines.filter((line) => {
+        const normalized = normalizeLine(line);
+        return normalized.length > 0 && !recurringLines.has(normalized);
+    });
+}
 export function findRecurringLines(headerLinesBySample: string[][], ratio = BOILERPLATE_DOCUMENT_RATIO, minSamples = BOILERPLATE_MIN_DOCUMENTS): Set<string> {
     if (headerLinesBySample.length < minSamples) {
         return new Set();

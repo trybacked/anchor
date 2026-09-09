@@ -61,7 +61,7 @@ model.yaml        Anchor model (committable)
 
 **Profile** produces reproducible statistical evidence per column: null rates, distinct counts, patterns, candidate keys. Cross-column value overlap surfaces deterministic foreign-key candidates. No LLM participates.
 
-**Semantic inference** runs schema-constrained LLM bursts on compressed profiles (never raw rows). Column classification and ontology use `SEMANTIC_MODEL`; ambiguous document headers use the same model. **Mixed folders** merge structured-table inference with deterministic document entities in one proposal.
+**Semantic inference** runs schema-constrained LLM bursts on compressed profiles (never raw rows). Column classification and ontology use **`SEMANTIC_MODEL`** (default **`zai/glm-5.3-flash`**); ambiguous document headers use the same model. If domain vocabulary discovery fails, the pipeline **degrades gracefully** (deterministic extraction continues with minimal defaults). **Mixed folders** merge structured-table inference with deterministic document entities in one proposal.
 
 **Review** presents risk-ranked questions for elements below **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`). Answers: Yes · No · Rename.
 
@@ -337,7 +337,7 @@ Create `.env` in your **workspace root** (the folder containing `.backed/`, or a
 ```bash
 AI_GATEWAY_API_KEY=...                          # required
 REVIEW_CONFIDENCE_THRESHOLD=0.95                # optional — review when confidence is below this
-# SEMANTIC_MODEL=anthropic/claude-sonnet-4.5
+# SEMANTIC_MODEL=zai/glm-5.3-flash
 # SEMANTIC_EMBEDDING_MODEL=openai/text-embedding-3-small
 ```
 

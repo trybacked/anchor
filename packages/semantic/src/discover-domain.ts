@@ -54,22 +54,45 @@ export interface DiscoverDomainOptions {
 export interface DiscoverDomainResult {
     vocabulary: DomainVocabulary;
     usage: BurstUsage;
+    degraded: boolean;
+}
+export function buildFallbackDomainVocabulary(lines: DocumentLineRow[]): DomainVocabulary {
+    const scannedSuffixes = scanNameSuffixes(lines);
+    const suffixes = filterPlausibleSuffixes(scannedSuffixes);
+    return DomainVocabularySchema.parse({
+        ...EMPTY_DOMAIN_VOCABULARY,
+        nameConventions: {
+            suffixes,
+            leadingNoise: [],
+        },
+    });
 }
 export async function discoverDomain(options: DiscoverDomainOptions): Promise<DiscoverDomainResult> {
     const sample = sampleCorpusText(options.lines);
     if (sample.trim().length === 0) {
-        return { vocabulary: EMPTY_DOMAIN_VOCABULARY, usage: EMPTY_BURST_USAGE };
+        return { vocabulary: EMPTY_DOMAIN_VOCABULARY, usage: EMPTY_BURST_USAGE, degraded: false };
     }
     options.onProgress?.("Profiling corpus vocabulary via LLM...");
-    const result = await runBurst({
-        model: options.model,
-        system: DISCOVER_DOMAIN_SYSTEM_PROMPT,
-        prompt: `Corpus excerpts:\n\n${sample}`,
-        schema: DomainVocabularySchema,
-        schemaName: "domain_vocabulary",
-        timeoutMs: resolveSemanticRequestTimeoutMs(),
-        ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
-    });
+    let result: Awaited<ReturnType<typeof runBurst>>;
+    try {
+        result = await runBurst({
+            model: options.model,
+            system: DISCOVER_DOMAIN_SYSTEM_PROMPT,
+            prompt: `Corpus excerpts:\n\n${sample}`,
+            schema: DomainVocabularySchema,
+            schemaName: "domain_vocabulary",
+            timeoutMs: resolveSemanticRequestTimeoutMs(),
+            ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
+        });
+    }
+    catch {
+        options.onProgress?.("Vocabulary discovery failed — continuing with minimal defaults (deterministic extraction only)...");
+        return {
+            vocabulary: buildFallbackDomainVocabulary(options.lines),
+            usage: EMPTY_BURST_USAGE,
+            degraded: true,
+        };
+    }
     const scannedSuffixes = scanNameSuffixes(options.lines);
     const mergedSuffixes = filterPlausibleSuffixes([
         ...result.output.nameConventions.suffixes,
@@ -82,7 +105,7 @@ export async function discoverDomain(options: DiscoverDomainOptions): Promise<Di
             suffixes: mergedSuffixes.length > 0 ? mergedSuffixes : scannedSuffixes,
         },
     });
-    return { vocabulary, usage: result.usage };
+    return { vocabulary, usage: result.usage, degraded: false };
 }
 export function mergeCorpusNameSuffixes(vocabulary: DomainVocabulary, lines: DocumentLineRow[]): DomainVocabulary {
     const scannedSuffixes = scanNameSuffixes(lines);

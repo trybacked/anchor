@@ -66,10 +66,10 @@ Do NOT propose entities for those tables. You may propose relations between stru
     sections.push("Propose the semantic model (entities, relations, rules) and declare your doubts.");
     return sections.join("\n\n");
 }
-export const DOCUMENT_EXTRACTION_SYSTEM_PROMPT = `You classify one document from an exported PDF/OCR corpus.
+export const DOCUMENT_EXTRACTION_SYSTEM_PROMPT = `You classify documents from an exported PDF/OCR corpus.
 The input is page-1 header lines extracted from PDF/OCR (columns page, line, text in the source system).
 
-Infer:
+For each document infer:
 - documentType: stable English slug naming the kind of document this is, or "unknown"
 - documentTypeLabel: the same kind as a singular English business name
 - protocolNumber: registry, protocol, or reference number if visible, else null
@@ -83,27 +83,37 @@ Rules:
 - Prefer header text over filename hints.
 - Prefer "unknown" with low confidence over inventing fields.
 - All labels and subjects in English.
-- Never invent protocol numbers or dates not supported by the header text.`;
+- Never invent protocol numbers or dates not supported by the header text.
+- When multiple documents are provided, return one result per input document with the matching sourceTable.`;
 export function documentExtractionPrompt(sample: DocumentExtractionSample, typeHint: DocumentTypeHint | null): string {
-    const sections = [
-        "Classify this document and extract standard header fields.",
+    return documentBatchExtractionPrompt([{ sample, typeHint }]);
+}
+export function documentBatchExtractionPrompt(items: Array<{
+    sample: DocumentExtractionSample;
+    typeHint: DocumentTypeHint | null;
+}>): string {
+    const documents = items.map(({ sample, typeHint }) => ({
+        sourceTable: sample.sourceTable,
+        pageCount: sample.pageCount,
+        headerLines: sample.headerLines,
+        ...(typeHint !== null
+            ? {
+                typeHint: {
+                    documentType: typeHint.documentType,
+                    documentTypeLabel: typeHint.documentTypeLabel,
+                    confidence: typeHint.confidence,
+                    evidence: typeHint.evidence,
+                },
+            }
+            : {}),
+    }));
+    const intro = documents.length === 1
+        ? "Classify this document and extract standard header fields."
+        : `Classify each of the ${String(documents.length)} documents and extract standard header fields.`;
+    return [
+        intro,
         "",
-        "Document (JSON):",
-        JSON.stringify({
-            sourceTable: sample.sourceTable,
-            pageCount: sample.pageCount,
-            headerLines: sample.headerLines,
-            ...(typeHint !== null
-                ? {
-                    typeHint: {
-                        documentType: typeHint.documentType,
-                        documentTypeLabel: typeHint.documentTypeLabel,
-                        confidence: typeHint.confidence,
-                        evidence: typeHint.evidence,
-                    },
-                }
-                : {}),
-        }, null, 2),
-    ];
-    return sections.join("\n");
+        "Documents (JSON):",
+        JSON.stringify(documents, null, 2),
+    ].join("\n");
 }

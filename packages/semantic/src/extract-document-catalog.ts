@@ -5,13 +5,14 @@ import { runBurst, sumBurstUsage } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { DOCUMENT_EXTRACTION_BATCH_SIZE, DOCUMENT_EXTRACTION_CONCURRENCY, DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE, } from "./constants.js";
+import { hashDocumentSample } from "./document-sample-fingerprint.js";
 import type { DocumentTypeHint } from "./document-type-hints.js";
 import { inferDocumentTypeHint } from "./document-type-hints.js";
 import type { SemanticModels } from "./env.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
-import { extractHeaderFields, findRecurringLines } from "./extract-header-fields.js";
+import { extractHeaderFields, filterHeaderLinesForLlm, findRecurringLines } from "./extract-header-fields.js";
 import type { HeaderFieldContext } from "./extract-header-fields.js";
-import { documentExtractionPrompt, DOCUMENT_EXTRACTION_SYSTEM_PROMPT, } from "./prompts.js";
+import { documentBatchExtractionPrompt, DOCUMENT_EXTRACTION_SYSTEM_PROMPT, } from "./prompts.js";
 import { slugify } from "./string-utils.js";
 export { DOCUMENT_EXTRACTION_BATCH_SIZE, DOCUMENT_EXTRACTION_CONCURRENCY, DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE, } from "./constants.js";
 export const SingleDocumentExtractionSchema = z.object({
@@ -38,6 +39,10 @@ export interface DocumentExtractionSample {
     headerLines: string[];
     pageCount: number;
 }
+export interface DocumentCatalogCacheEntry {
+    entry: DocumentCatalogEntry;
+    headerFingerprint: string;
+}
 export interface DocumentLlmProgress {
     completed: number;
     total: number;
@@ -51,7 +56,8 @@ export interface ExtractDocumentCatalogOptions {
     onProgress?: (message: string) => void;
     onLlmProgress?: (progress: DocumentLlmProgress) => void;
     documentTypeHints?: DocumentTypeHintConfig[];
-    vocabulary?: DomainVocabulary;
+    vocabulary?: DomainVocabulary | Promise<DomainVocabulary>;
+    catalogCache?: Map<string, DocumentCatalogCacheEntry>;
 }
 function fieldFromValue(value: string | null, confidence: number): DocumentCatalogEntry["protocolNumber"] {
     return {
@@ -66,7 +72,7 @@ function normalizeDocumentTypeSlug(raw: string): string {
 function shouldSkipLlm(typeHint: DocumentTypeHint | null): typeHint is DocumentTypeHint {
     return typeHint !== null && typeHint.confidence >= DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE;
 }
-function buildDeterministicCatalogEntry(sample: DocumentExtractionSample, typeHint: DocumentTypeHint, headerContext: HeaderFieldContext): DocumentCatalogEntry {
+function buildDeterministicCatalogEntry(sample: DocumentExtractionSample, typeHint: DocumentTypeHint, headerContext: HeaderFieldContext, headerFingerprint: string): DocumentCatalogEntry {
     const fields = extractHeaderFields(sample.sourceTable, sample.headerLines, headerContext);
     const fieldConfidence = typeHint.confidence;
     return {
@@ -75,6 +81,7 @@ function buildDeterministicCatalogEntry(sample: DocumentExtractionSample, typeHi
         documentTypeLabel: typeHint.documentTypeLabel,
         confidence: typeHint.confidence,
         pageCount: sample.pageCount,
+        headerFingerprint,
         ...(fields.protocolNumber !== null
             ? { protocolNumber: fieldFromValue(fields.protocolNumber, fieldConfidence) }
             : {}),
@@ -87,7 +94,7 @@ function buildDeterministicCatalogEntry(sample: DocumentExtractionSample, typeHi
             : {}),
     };
 }
-function toCatalogEntry(sourceTable: string, extracted: SingleDocumentExtraction, sample: DocumentExtractionSample): DocumentCatalogEntry {
+function toCatalogEntry(sourceTable: string, extracted: SingleDocumentExtraction, sample: DocumentExtractionSample, headerFingerprint: string): DocumentCatalogEntry {
     const fieldConfidence = extracted.confidence;
     const documentType = normalizeDocumentTypeSlug(extracted.documentType);
     return {
@@ -96,6 +103,7 @@ function toCatalogEntry(sourceTable: string, extracted: SingleDocumentExtraction
         documentTypeLabel: extracted.documentTypeLabel,
         confidence: extracted.confidence,
         pageCount: sample.pageCount,
+        headerFingerprint,
         ...(extracted.protocolNumber !== null
             ? { protocolNumber: fieldFromValue(extracted.protocolNumber, fieldConfidence) }
             : {}),
@@ -108,49 +116,130 @@ function toCatalogEntry(sourceTable: string, extracted: SingleDocumentExtraction
             : {}),
     };
 }
-async function extractOneDocumentWithLlm(sample: DocumentExtractionSample, options: {
+function filteredSample(sample: DocumentExtractionSample, recurringLines: Set<string>): DocumentExtractionSample {
+    return {
+        ...sample,
+        headerLines: filterHeaderLinesForLlm(sample.headerLines, recurringLines),
+    };
+}
+function chunkSamples<TItem>(items: TItem[], size: number): TItem[][] {
+    if (size <= 1) {
+        return items.map((item) => [item]);
+    }
+    const batches: TItem[][] = [];
+    for (let index = 0; index < items.length; index += size) {
+        batches.push(items.slice(index, index + size));
+    }
+    return batches;
+}
+async function extractDocumentBatchWithLlm(samples: DocumentExtractionSample[], options: {
     models: SemanticModels;
     timeoutMs: number;
     documentTypeHints?: DocumentTypeHintConfig[];
+    recurringLines: Set<string>;
 }): Promise<{
-    entry: DocumentCatalogEntry;
+    entries: DocumentCatalogEntry[];
     usage: BurstUsage;
 }> {
-    const typeHint = inferDocumentTypeHint(sample.sourceTable, options.documentTypeHints);
+    try {
+        return await extractDocumentBatchWithLlmOnce(samples, options);
+    }
+    catch (error) {
+        if (samples.length <= 1) {
+            throw error;
+        }
+        const entries: DocumentCatalogEntry[] = [];
+        let usage: BurstUsage = { inputTokens: 0, outputTokens: 0, costUsd: null };
+        for (const sample of samples) {
+            const single = await extractDocumentBatchWithLlmOnce([sample], options);
+            entries.push(...single.entries);
+            usage = sumBurstUsage(usage, single.usage);
+        }
+        return { entries, usage };
+    }
+}
+async function extractDocumentBatchWithLlmOnce(samples: DocumentExtractionSample[], options: {
+    models: SemanticModels;
+    timeoutMs: number;
+    documentTypeHints?: DocumentTypeHintConfig[];
+    recurringLines: Set<string>;
+}): Promise<{
+    entries: DocumentCatalogEntry[];
+    usage: BurstUsage;
+}> {
+    const items = samples.map((sample) => ({
+        sample: filteredSample(sample, options.recurringLines),
+        typeHint: inferDocumentTypeHint(sample.sourceTable, options.documentTypeHints),
+    }));
+    const schema = samples.length === 1 ? SingleDocumentExtractionSchema : DocumentExtractionOutputSchema;
     const result = await runBurst({
         model: options.models.language,
         system: DOCUMENT_EXTRACTION_SYSTEM_PROMPT,
-        prompt: documentExtractionPrompt(sample, typeHint),
-        schema: SingleDocumentExtractionSchema,
+        prompt: documentBatchExtractionPrompt(items),
+        schema,
         schemaName: "document_extraction",
         timeoutMs: options.timeoutMs,
     });
-    return {
-        entry: toCatalogEntry(sample.sourceTable, result.output, sample),
-        usage: result.usage,
-    };
+    if (samples.length === 1) {
+        const sample = samples[0];
+        if (sample === undefined) {
+            throw new Error("Document extraction batch was empty.");
+        }
+        const extracted = result.output as SingleDocumentExtraction;
+        return {
+            entries: [toCatalogEntry(sample.sourceTable, extracted, sample, hashDocumentSample(sample, options.recurringLines))],
+            usage: result.usage,
+        };
+    }
+    const output = result.output as DocumentExtractionOutput;
+    const bySourceTable = new Map(output.documents.map((document) => [document.sourceTable, document]));
+    const entries: DocumentCatalogEntry[] = [];
+    for (const sample of samples) {
+        const extracted = bySourceTable.get(sample.sourceTable);
+        if (extracted === undefined) {
+            throw new Error(`Document extraction batch missing result for "${sample.sourceTable}".`);
+        }
+        entries.push(toCatalogEntry(sample.sourceTable, extracted, sample, hashDocumentSample(sample, options.recurringLines)));
+    }
+    return { entries, usage: result.usage };
+}
+async function resolveVocabulary(vocabulary: DomainVocabulary | Promise<DomainVocabulary> | undefined): Promise<DomainVocabulary> {
+    if (vocabulary === undefined) {
+        return EMPTY_DOMAIN_VOCABULARY;
+    }
+    return vocabulary instanceof Promise ? vocabulary : Promise.resolve(vocabulary);
 }
 export async function extractDocumentCatalog(options: ExtractDocumentCatalogOptions): Promise<{
     catalog: Omit<DocumentCatalog, "documentTypes">;
     usage: BurstUsage;
 }> {
     const timeoutMs = resolveSemanticRequestTimeoutMs();
-    const deterministicEntries: DocumentCatalogEntry[] = [];
+    const recurringLines = findRecurringLines(options.samples.map((sample) => sample.headerLines));
+    const cachedEntries: DocumentCatalogEntry[] = [];
+    const deterministicSamples: DocumentExtractionSample[] = [];
     const llmSamples: DocumentExtractionSample[] = [];
-    const headerContext: HeaderFieldContext = {
-        vocabulary: options.vocabulary ?? EMPTY_DOMAIN_VOCABULARY,
-        recurringLines: findRecurringLines(options.samples.map((sample) => sample.headerLines)),
-    };
+    let cacheHits = 0;
     for (const sample of options.samples) {
+        const headerFingerprint = hashDocumentSample(sample, recurringLines);
+        const cached = options.catalogCache?.get(sample.sourceTable);
+        if (cached !== undefined && cached.headerFingerprint === headerFingerprint) {
+            cachedEntries.push({
+                ...cached.entry,
+                headerFingerprint,
+            });
+            cacheHits += 1;
+            continue;
+        }
         const typeHint = inferDocumentTypeHint(sample.sourceTable, options.documentTypeHints);
         if (shouldSkipLlm(typeHint)) {
-            deterministicEntries.push(buildDeterministicCatalogEntry(sample, typeHint, headerContext));
+            deterministicSamples.push(sample);
         }
         else {
             llmSamples.push(sample);
         }
     }
-    options.onProgress?.(`Documents: ${String(deterministicEntries.length)} classified from filename, ${String(llmSamples.length)} need LLM...`);
+    const vocabularyPromise = resolveVocabulary(options.vocabulary);
+    const llmBatches = chunkSamples(llmSamples, DOCUMENT_EXTRACTION_BATCH_SIZE);
     const llmTotal = llmSamples.length;
     let llmCompleted = 0;
     let llmInFlight = 0;
@@ -164,14 +253,15 @@ export async function extractDocumentCatalog(options: ExtractDocumentCatalogOpti
     if (llmTotal > 0) {
         reportLlmProgress();
     }
-    const llmResults = llmTotal > 0
-        ? await mapWithConcurrency(llmSamples, DOCUMENT_EXTRACTION_CONCURRENCY, async (sample, index) => {
-            llmInFlight += 1;
+    const llmPromise = llmTotal > 0
+        ? mapWithConcurrency(llmBatches, DOCUMENT_EXTRACTION_CONCURRENCY, async (batch) => {
+            llmInFlight += batch.length;
             reportLlmProgress();
             try {
-                return await extractOneDocumentWithLlm(sample, {
+                return await extractDocumentBatchWithLlm(batch, {
                     models: options.models,
                     timeoutMs,
+                    recurringLines,
                     ...(options.documentTypeHints !== undefined
                         ? { documentTypeHints: options.documentTypeHints }
                         : {}),
@@ -179,17 +269,38 @@ export async function extractDocumentCatalog(options: ExtractDocumentCatalogOpti
             }
             catch (error) {
                 const detail = error instanceof Error ? error.message : String(error);
-                throw new Error(`Document extraction failed for "${sample.sourceTable}" (${String(index + 1)}/${String(llmTotal)}). ${detail}`);
+                const label = batch.map((sample) => sample.sourceTable).join(", ");
+                throw new Error(`Document extraction failed for batch [${label}]. ${detail}`);
             }
             finally {
-                llmInFlight -= 1;
-                llmCompleted += 1;
+                llmInFlight -= batch.length;
+                llmCompleted += batch.length;
                 reportLlmProgress();
             }
         })
-        : [];
-    const usage = sumBurstUsage(...llmResults.map((result) => result.usage));
-    const documents = [...deterministicEntries, ...llmResults.map((result) => result.entry)];
+        : Promise.resolve([]);
+    const vocabulary = await vocabularyPromise;
+    const headerContext: HeaderFieldContext = {
+        vocabulary,
+        recurringLines,
+    };
+    const deterministicEntries = deterministicSamples.map((sample) => {
+        const typeHint = inferDocumentTypeHint(sample.sourceTable, options.documentTypeHints);
+        if (!shouldSkipLlm(typeHint)) {
+            throw new Error(`Internal error: "${sample.sourceTable}" was routed to deterministic extraction without a type hint.`);
+        }
+        return buildDeterministicCatalogEntry(sample, typeHint, headerContext, hashDocumentSample(sample, recurringLines));
+    });
+    const llmBatchResults = await llmPromise;
+    const llmEntries = llmBatchResults.flatMap((result) => result.entries);
+    const usage = sumBurstUsage(...llmBatchResults.map((result) => result.usage));
+    options.onProgress?.([
+        `${String(cachedEntries.length)} unchanged`,
+        `${String(deterministicEntries.length)} from filename`,
+        `${String(llmEntries.length)} via LLM`,
+        cacheHits > 0 ? `${String(cacheHits)} cache hit(s)` : null,
+    ].filter((part): part is string => part !== null).join(", "));
+    const documents = [...cachedEntries, ...deterministicEntries, ...llmEntries];
     const catalog = DocumentCatalogSchema.omit({ documentTypes: true }).parse({
         runId: options.runId,
         generatedAt: (options.now ?? new Date()).toISOString(),

@@ -125,6 +125,90 @@ describe("extractDocumentCatalog", () => {
                     pageCount: 2,
                 },
             ],
-        })).rejects.toThrow('Document extraction failed for "aspc982920"');
+        })).rejects.toThrow('Document extraction failed for batch [aspc982920]');
+    });
+    it("batches multiple ambiguous documents into one LLM call", async () => {
+        mockedRunBurst.mockReset();
+        mockedRunBurst.mockResolvedValue({
+            output: {
+                documents: [
+                    {
+                        sourceTable: "doc_a",
+                        documentType: "notice",
+                        documentTypeLabel: "Notice",
+                        protocolNumber: "1",
+                        publishedDate: null,
+                        subject: "A",
+                        issuingOffice: null,
+                        confidence: 0.9,
+                    },
+                    {
+                        sourceTable: "doc_b",
+                        documentType: "notice",
+                        documentTypeLabel: "Notice",
+                        protocolNumber: "2",
+                        publishedDate: null,
+                        subject: "B",
+                        issuingOffice: null,
+                        confidence: 0.9,
+                    },
+                ],
+            },
+            usage: { inputTokens: 10, outputTokens: 5, costUsd: null },
+        });
+        const { catalog } = await extractDocumentCatalog({
+            runId: "test-run",
+            models: mockModels,
+            samples: [
+                { sourceTable: "doc_a", headerLines: ["Header A"], pageCount: 1 },
+                { sourceTable: "doc_b", headerLines: ["Header B"], pageCount: 1 },
+            ],
+        });
+        expect(mockedRunBurst).toHaveBeenCalledTimes(1);
+        expect(catalog.documents).toHaveLength(2);
+    });
+    it("reuses cached catalog entries when the header fingerprint is unchanged", async () => {
+        mockedRunBurst.mockReset();
+        mockedRunBurst.mockResolvedValue({
+            output: {
+                documentType: "notice",
+                documentTypeLabel: "Notice",
+                protocolNumber: "123",
+                publishedDate: null,
+                subject: "Public notice",
+                issuingOffice: null,
+                confidence: 0.9,
+            },
+            usage: { inputTokens: 10, outputTokens: 5, costUsd: null },
+        });
+        const sample = {
+            sourceTable: "aspc982920",
+            headerLines: ["Header"],
+            pageCount: 1,
+        };
+        const { catalog: first } = await extractDocumentCatalog({
+            runId: "test-run",
+            models: mockModels,
+            samples: [sample],
+        });
+        mockedRunBurst.mockClear();
+        const fingerprint = first.documents[0]?.headerFingerprint;
+        expect(fingerprint).toBeDefined();
+        const { catalog: second } = await extractDocumentCatalog({
+            runId: "test-run-2",
+            models: mockModels,
+            samples: [sample],
+            catalogCache: new Map([
+                [
+                    sample.sourceTable,
+                    {
+                        entry: first.documents[0]!,
+                        headerFingerprint: fingerprint!,
+                    },
+                ],
+            ]),
+        });
+        expect(mockedRunBurst).not.toHaveBeenCalled();
+        expect(second.documents[0]?.documentType).toBe(first.documents[0]?.documentType);
     });
 });

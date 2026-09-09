@@ -86,9 +86,22 @@ export const ENTITY_ENRICHMENT_MAX_SNIPPET_CHARS = 200;
 export const ENTITY_ENRICHMENT_MAX_SUMMARY_CHARS = 240;
 export const MAX_BURST_ATTEMPTS = 3;
 export const BURST_RETRY_DELAYS_MS = [0, 750, 2000] as const;
+export const COLUMN_CLASSIFICATION_CONCURRENCY = 4;
+export const RAW_FALLBACK_MAX_OUTPUT_TOKENS: Record<string, number> = {
+    document_extraction: 8192,
+    document_enrichment: 2048,
+    entity_enrichment: 2048,
+    column_classification: 4096,
+    domain_vocabulary: 8192,
+    ontology_proposal: 6144,
+};
+export const RAW_FALLBACK_DEFAULT_MAX_OUTPUT_TOKENS = 4096;
 export const DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE = 0.85;
 export const DOCUMENT_EXTRACTION_CONCURRENCY = 8;
-export const DOCUMENT_EXTRACTION_BATCH_SIZE = 1;
+export const DOCUMENT_EXTRACTION_BATCH_SIZE = 5;
+export const ENTITY_ENRICHMENT_BATCH_SIZE = 20;
+export const ENTITY_ENRICHMENT_CONCURRENCY = 4;
+export const EMBEDDING_CONCURRENCY = 3;
 export const DISCOVERY_DOCUMENT_SAMPLE = 12;
 export const DISCOVERY_LINES_PER_DOCUMENT = 60;
 export const DISCOVERY_MAX_CHARS = 24000;
