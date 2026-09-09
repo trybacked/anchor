@@ -1,4 +1,6 @@
 import { DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE } from "@backed/core";
+import { CHUNK_EMBEDDING_STORE_BATCH_SIZE } from "./constants.js";
+import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { quoteIdentifier, quoteString } from "./sql.js";
 import type { SqlQuery } from "./types.js";
 export interface StoredChunkEmbedding {
@@ -11,7 +13,6 @@ export interface ChunkTextRow {
     chunk_index: number;
     text: string;
 }
-const STORE_BATCH_SIZE = 100;
 const CHUNK_EMBEDDING_COLUMN = "embedding";
 export function formatEmbeddingLiteral(values: number[], dimension: number = DEFAULT_EMBEDDING_DIMENSION): string {
     if (values.length !== dimension) {
@@ -37,8 +38,8 @@ export async function capturePreservedChunkEmbeddings(query: SqlQuery): Promise<
         const rows = await query(`SELECT ${quoteIdentifier("document_id")}, ${quoteIdentifier("text")}, ${quoteIdentifier(CHUNK_EMBEDDING_COLUMN)} FROM ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} WHERE ${quoteIdentifier(CHUNK_EMBEDDING_COLUMN)} IS NOT NULL`);
         const preserved = new Map<string, number[]>();
         for (const row of rows) {
-            const documentId = String(row["document_id"] ?? "");
-            const text = String(row["text"] ?? "");
+            const documentId = readRowString(row, "document_id");
+            const text = readRowString(row, "text");
             const embedding = row[CHUNK_EMBEDDING_COLUMN];
             if (!Array.isArray(embedding) || embedding.length === 0) {
                 continue;
@@ -59,9 +60,9 @@ export async function restorePreservedChunkEmbeddings(query: SqlQuery, preserved
     const rows = await query(`SELECT ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")}, ${quoteIdentifier("text")} FROM ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} WHERE ${quoteIdentifier(CHUNK_EMBEDDING_COLUMN)} IS NULL`);
     const toRestore: StoredChunkEmbedding[] = [];
     for (const row of rows) {
-        const documentId = String(row["document_id"] ?? "");
-        const chunkIndex = Number(row["chunk_index"] ?? 0);
-        const text = String(row["text"] ?? "");
+        const documentId = readRowString(row, "document_id");
+        const chunkIndex = readRowNumber(row, "chunk_index");
+        const text = readRowString(row, "text");
         const embedding = preserved.get(preservationKey(documentId, text));
         if (embedding !== undefined) {
             toRestore.push({ document_id: documentId, chunk_index: chunkIndex, embedding });
@@ -76,9 +77,9 @@ export async function fetchChunkTextsForEmbedding(query: SqlQuery): Promise<Chun
     await ensureChunkEmbeddingColumn(query);
     const rows = await query(`SELECT ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")}, ${quoteIdentifier("text")} FROM ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} WHERE ${quoteIdentifier(CHUNK_EMBEDDING_COLUMN)} IS NULL ORDER BY ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")}`);
     return rows.map((row) => ({
-        document_id: String(row["document_id"] ?? ""),
-        chunk_index: Number(row["chunk_index"] ?? 0),
-        text: String(row["text"] ?? ""),
+        document_id: readRowString(row, "document_id"),
+        chunk_index: readRowNumber(row, "chunk_index"),
+        text: readRowString(row, "text"),
     }));
 }
 export async function storeChunkEmbeddings(query: SqlQuery, items: StoredChunkEmbedding[]): Promise<void> {
@@ -86,8 +87,8 @@ export async function storeChunkEmbeddings(query: SqlQuery, items: StoredChunkEm
         return;
     }
     await ensureChunkEmbeddingColumn(query);
-    for (let offset = 0; offset < items.length; offset += STORE_BATCH_SIZE) {
-        const batch = items.slice(offset, offset + STORE_BATCH_SIZE);
+    for (let offset = 0; offset < items.length; offset += CHUNK_EMBEDDING_STORE_BATCH_SIZE) {
+        const batch = items.slice(offset, offset + CHUNK_EMBEDDING_STORE_BATCH_SIZE);
         const values = batch
             .map((item) => `(${quoteString(item.document_id)}, ${String(item.chunk_index)}, ${formatEmbeddingLiteral(item.embedding)})`)
             .join(", ");

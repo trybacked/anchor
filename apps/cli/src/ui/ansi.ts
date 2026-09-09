@@ -13,6 +13,7 @@ export const ANSI = {
     brightWhite: `${ESC}97m`,
 } as const;
 export function stripAnsi(text: string): string {
+    // eslint-disable-next-line no-control-regex -- stripping terminal escape sequences
     return text.replace(/\u001B\[[0-9;]*m/g, "");
 }
 export function wrap(code: string, text: string): string {

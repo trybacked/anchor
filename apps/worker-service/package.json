@@ -1,0 +1,23 @@
+{
+  "name": "@backed/worker-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ephemeral pipeline HTTP API — documents in, model.yaml out",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@backed/core": "workspace:*",
+    "@backed/runner": "workspace:*",
+    "@backed/semantic": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}

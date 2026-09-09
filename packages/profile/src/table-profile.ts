@@ -3,10 +3,9 @@ import type { ColumnProfile, DetectedPattern, TableProfile, TopValue } from "@ba
 import { quoteIdentifier } from "@backed/ingest";
 import type { Dataset, SqlQuery } from "@backed/ingest";
 import {
-    DATE_TYPE_PATTERN,
-    FRACTIONAL_TYPE_PATTERN,
-    FULL_PATTERN_MATCH_RATIO,
-    VARCHAR_TYPE_PREFIX,
+    isNativeDateColumnType,
+    isNativeFractionalColumnType,
+    isStringColumnType,
 } from "./constants.js";
 import { detectPatterns } from "./patterns.js";
 import { toCount, toNullableString } from "./sql-row.js";
@@ -85,13 +84,13 @@ async function detectColumnPatterns(
     column: string,
     sqlType: string,
 ): Promise<DetectedPattern[]> {
-    if (DATE_TYPE_PATTERN.test(sqlType)) {
-        return [{ kind: "date", matchRatio: FULL_PATTERN_MATCH_RATIO }];
+    if (isNativeDateColumnType(sqlType)) {
+        return [{ kind: "date", matchRatio: 1 }];
     }
-    if (FRACTIONAL_TYPE_PATTERN.test(sqlType)) {
-        return [{ kind: "amount", matchRatio: FULL_PATTERN_MATCH_RATIO }];
+    if (isNativeFractionalColumnType(sqlType)) {
+        return [{ kind: "amount", matchRatio: 1 }];
     }
-    if (!sqlType.startsWith(VARCHAR_TYPE_PREFIX)) {
+    if (!isStringColumnType(sqlType)) {
         return [];
     }
     const rows = await query(`SELECT ${column}::VARCHAR AS value

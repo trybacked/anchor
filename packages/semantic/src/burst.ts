@@ -1,9 +1,24 @@
 import { Output, generateText } from "ai";
 import type { LanguageModel } from "ai";
 import type { z } from "zod";
+import {
+    BURST_RETRY_DELAYS_MS,
+    MAX_BURST_ATTEMPTS,
+    RAW_FALLBACK_DEFAULT_MAX_OUTPUT_TOKENS,
+    RAW_FALLBACK_MAX_OUTPUT_TOKENS,
+    STRICT_JSON_SUFFIX,
+} from "./constants.js";
 import { SEMANTIC_MODEL_ENV } from "./env.js";
-import { BURST_RETRY_DELAYS_MS, MAX_BURST_ATTEMPTS, RAW_FALLBACK_DEFAULT_MAX_OUTPUT_TOKENS, RAW_FALLBACK_MAX_OUTPUT_TOKENS, } from "./constants.js";
-import { cacheKey, loadCachedOutput, saveCachedOutput } from "./llm-cache.js";
+import {
+    cacheKey,
+    loadCachedOutput,
+    saveCachedOutput,
+    type BurstUsage,
+    type LlmCacheContext,
+} from "./llm-cache.js";
+
+export type { BurstUsage };
+
 export interface BurstRequest<TSchema extends z.ZodTypeAny> {
     model: LanguageModel;
     system: string;
@@ -12,24 +27,21 @@ export interface BurstRequest<TSchema extends z.ZodTypeAny> {
     schemaName: string;
     timeoutMs?: number;
     onWaiting?: (message: string) => void;
-    cacheDir?: string;
-    modelId?: string;
+    llmCache?: LlmCacheContext;
 }
-export interface BurstUsage {
-    inputTokens: number;
-    outputTokens: number;
-    costUsd: number | null;
-}
+
 export interface BurstResult<TOutput> {
     output: TOutput;
     usage: BurstUsage;
     fromCache?: boolean;
 }
+
 export const EMPTY_BURST_USAGE: BurstUsage = {
     inputTokens: 0,
     outputTokens: 0,
     costUsd: null,
 };
+
 export function sumBurstUsage(...usages: BurstUsage[]): BurstUsage {
     const costs = usages
         .map((usage) => usage.costUsd)
@@ -40,6 +52,19 @@ export function sumBurstUsage(...usages: BurstUsage[]): BurstUsage {
         costUsd: costs.length > 0 ? costs.reduce((total, cost) => total + cost, 0) : null,
     };
 }
+
+type BurstAttemptStrategy = "structured" | "structured_strict" | "raw_json";
+
+function resolveAttemptStrategy(attempt: number): BurstAttemptStrategy {
+    if (attempt === MAX_BURST_ATTEMPTS - 1 && attempt > 0) {
+        return "raw_json";
+    }
+    if (attempt > 0) {
+        return "structured_strict";
+    }
+    return "structured";
+}
+
 function isRetryableBurstError(error: unknown): boolean {
     if (!(error instanceof Error)) {
         return false;
@@ -58,6 +83,7 @@ function isRetryableBurstError(error: unknown): boolean {
         message.includes("gateway request failed") ||
         message.includes("invalid error response format"));
 }
+
 function extractGatewayCostUsd(providerMetadata: unknown): number | null {
     if (providerMetadata === null || typeof providerMetadata !== "object") {
         return null;
@@ -70,11 +96,21 @@ function extractGatewayCostUsd(providerMetadata: unknown): number | null {
     const parsed = typeof cost === "string" ? Number.parseFloat(cost) : cost;
     return typeof parsed === "number" && Number.isFinite(parsed) ? parsed : null;
 }
+
+function toBurstUsage(result: Awaited<ReturnType<typeof generateText>>): BurstUsage {
+    return {
+        inputTokens: result.usage.inputTokens ?? 0,
+        outputTokens: result.usage.outputTokens ?? 0,
+        costUsd: extractGatewayCostUsd(result.finalStep.providerMetadata),
+    };
+}
+
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
 }
+
 /**
  * Tolerant JSON recovery for models without native structured output.
  * Many cheap models (e.g. DeepSeek) return nearly-JSON: markdown fences,
@@ -88,12 +124,10 @@ export function extractJsonCandidate(raw: string): string | null {
         return null;
     }
     let text = raw.trim();
-    // strip markdown fences: ```json ... ``` or ``` ... ```
     const fence = text.match(/^```[a-zA-Z]*\s*([\s\S]*?)\s*```$/);
     if (fence?.[1] !== undefined) {
         text = fence[1].trim();
     }
-    // find first '{' or '[' and brace-match to its balanced end
     const start = text.search(/[{[]/);
     if (start === -1) {
         return null;
@@ -137,30 +171,33 @@ export function extractJsonCandidate(raw: string): string | null {
     }
     return null;
 }
+
 function parseWithRecovery<TSchema extends z.ZodTypeAny>(schema: TSchema, rawText: string | undefined): z.infer<TSchema> | undefined {
     if (rawText === undefined) {
         return undefined;
     }
-    // 1) direct parse (strict path — unchanged for well-behaved models)
-    try {
-        return schema.parse(JSON.parse(rawText));
+    const direct = schema.safeParse(JSON.parse(rawText) as unknown);
+    if (direct.success) {
+        return direct.data as z.infer<TSchema>;
     }
-    catch {
-        // fall through to recovery
-    }
-    // 2) tolerant extraction + same schema validation
     const candidate = extractJsonCandidate(rawText);
     if (candidate !== null) {
-        try {
-            return schema.parse(JSON.parse(candidate));
-        }
-        catch {
-            return undefined;
+        const recovered = schema.safeParse(JSON.parse(candidate) as unknown);
+        if (recovered.success) {
+            return recovered.data as z.infer<TSchema>;
         }
     }
     return undefined;
 }
-const STRICT_JSON_SUFFIX = "\n\nIMPORTANT: respond with ONLY the raw JSON object matching the schema. No markdown fences, no prose before or after, no trailing commas. Your entire response must be valid JSON.";
+
+async function serializeBurstSchemaJson(schema: z.ZodTypeAny): Promise<string> {
+    const { zodToJsonSchema } = await import("zod-to-json-schema");
+    return JSON.stringify(zodToJsonSchema(schema as z.ZodType, {
+        target: "openApi3",
+        $refStrategy: "none",
+    }));
+}
+
 /**
  * Raw fallback for models whose generateText structured-output mode fails
  * hard (e.g. DeepSeek emitting schema-mismatched objects that throw inside
@@ -169,15 +206,13 @@ const STRICT_JSON_SUFFIX = "\n\nIMPORTANT: respond with ONLY the raw JSON object
  * is embedded in the prompt, and the response is parsed + Zod-validated
  * locally with tolerant extraction.
  */
-async function runRawAttempt<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>): Promise<BurstResult<z.infer<TSchema>>> {
+async function runRawAttempt<TSchema extends z.ZodTypeAny>(
+    request: BurstRequest<TSchema>,
+    schemaJson: string,
+): Promise<BurstResult<z.infer<TSchema>>> {
     request.onWaiting?.(`Waiting for LLM (${request.schemaName}, raw JSON)...`);
-    const { zodToJsonSchema } = await import("zod-to-json-schema");
-    const jsonSchema = JSON.stringify(zodToJsonSchema(request.schema, {
-        target: "openApi3",
-        $refStrategy: "none",
-    }));
     const maxOutputTokens = RAW_FALLBACK_MAX_OUTPUT_TOKENS[request.schemaName] ?? RAW_FALLBACK_DEFAULT_MAX_OUTPUT_TOKENS;
-    const system = `${request.system}\n\nRespond with one minimal JSON object that validates against this schema. No markdown fences, no prose, no repetition, no extra fields:\n${jsonSchema}`;
+    const system = `${request.system}\n\nRespond with one minimal JSON object that validates against this schema. No markdown fences, no prose, no repetition, no extra fields:\n${schemaJson}`;
     const result = await generateText({
         model: request.model,
         system,
@@ -193,28 +228,19 @@ async function runRawAttempt<TSchema extends z.ZodTypeAny>(request: BurstRequest
     }
     return {
         output: recovered,
-        usage: {
-            inputTokens: result.usage.inputTokens ?? 0,
-            outputTokens: result.usage.outputTokens ?? 0,
-            costUsd: extractGatewayCostUsd(result.finalStep.providerMetadata),
-        },
+        usage: toBurstUsage(result),
     };
 }
-async function serializeBurstSchemaJson<TSchema extends z.ZodTypeAny>(schema: TSchema): Promise<string> {
-    const { zodToJsonSchema } = await import("zod-to-json-schema");
-    return JSON.stringify(zodToJsonSchema(schema, {
-        target: "openApi3",
-        $refStrategy: "none",
-    }));
-}
 
-async function resolveBurstCacheKey<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>): Promise<string | undefined> {
-    if (request.cacheDir === undefined || request.modelId === undefined) {
+function resolveBurstCacheKey(
+    request: BurstRequest<z.ZodTypeAny>,
+    schemaJson: string,
+): string | undefined {
+    if (request.llmCache === undefined) {
         return undefined;
     }
-    const schemaJson = await serializeBurstSchemaJson(request.schema);
     return cacheKey({
-        modelId: request.modelId,
+        modelId: request.llmCache.modelId,
         system: request.system,
         prompt: request.prompt,
         schemaName: request.schemaName,
@@ -222,24 +248,34 @@ async function resolveBurstCacheKey<TSchema extends z.ZodTypeAny>(request: Burst
     });
 }
 
-async function readValidatedBurstCache<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>, key: string): Promise<BurstResult<z.infer<TSchema>> | undefined> {
-    const hit = await loadCachedOutput(request.cacheDir!, key);
+async function readValidatedBurstCache<TSchema extends z.ZodTypeAny>(
+    request: BurstRequest<TSchema>,
+    key: string,
+): Promise<BurstResult<z.infer<TSchema>> | undefined> {
+    const llmCache = request.llmCache;
+    if (llmCache === undefined) {
+        return undefined;
+    }
+    const hit = await loadCachedOutput(llmCache.cacheDir, key);
     if (hit === undefined) {
         return undefined;
     }
-    try {
-        return {
-            output: request.schema.parse(hit.output),
-            usage: hit.usage,
-            fromCache: true,
-        };
-    }
-    catch {
+    const parsed = request.schema.safeParse(hit.output);
+    if (!parsed.success) {
         return undefined;
     }
+    return {
+        output: parsed.data as z.infer<TSchema>,
+        usage: hit.usage,
+        fromCache: true,
+    };
 }
 
-async function runAttempt<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>, onWaiting?: (message: string) => void, forceStrictJson = false): Promise<BurstResult<z.infer<TSchema>>> {
+async function runStructuredAttempt<TSchema extends z.ZodTypeAny>(
+    request: BurstRequest<TSchema>,
+    onWaiting: ((message: string) => void) | undefined,
+    forceStrictJson: boolean,
+): Promise<BurstResult<z.infer<TSchema>>> {
     onWaiting?.(`Waiting for LLM (${request.schemaName})...`);
     const prompt = forceStrictJson ? request.prompt + STRICT_JSON_SUFFIX : request.prompt;
     const result = await generateText({
@@ -251,35 +287,44 @@ async function runAttempt<TSchema extends z.ZodTypeAny>(request: BurstRequest<TS
         maxRetries: 0,
         ...(request.timeoutMs !== undefined ? { timeout: { totalMs: request.timeoutMs } } : {}),
     });
-    // structured-output path (native or SDK-injected schema)
     if (result.output !== undefined) {
         return {
             output: result.output as z.infer<TSchema>,
-            usage: {
-                inputTokens: result.usage.inputTokens ?? 0,
-                outputTokens: result.usage.outputTokens ?? 0,
-                costUsd: extractGatewayCostUsd(result.finalStep.providerMetadata),
-            },
+            usage: toBurstUsage(result),
         };
     }
-    // recovery path: model produced text that failed schema validation —
-    // try tolerant extraction before giving up (cheap models often emit
-    // valid JSON wrapped in fences or prose).
     const recovered = parseWithRecovery(request.schema, result.text);
     if (recovered !== undefined) {
         return {
             output: recovered,
-            usage: {
-                inputTokens: result.usage.inputTokens ?? 0,
-                outputTokens: result.usage.outputTokens ?? 0,
-                costUsd: extractGatewayCostUsd(result.finalStep.providerMetadata),
-            },
+            usage: toBurstUsage(result),
         };
     }
     throw new Error(`No output generated for "${request.schemaName}"`);
 }
+
+async function executeBurstAttempt<TSchema extends z.ZodTypeAny>(
+    request: BurstRequest<TSchema>,
+    strategy: BurstAttemptStrategy,
+    schemaJson: string,
+): Promise<BurstResult<z.infer<TSchema>>> {
+    switch (strategy) {
+        case "raw_json":
+            return runRawAttempt(request, schemaJson);
+        case "structured_strict":
+            return runStructuredAttempt(request, request.onWaiting, true);
+        case "structured":
+            return runStructuredAttempt(request, request.onWaiting, false);
+        default: {
+            const _exhaustive: never = strategy;
+            return _exhaustive;
+        }
+    }
+}
+
 export async function runBurst<TSchema extends z.ZodTypeAny>(request: BurstRequest<TSchema>): Promise<BurstResult<z.infer<TSchema>>> {
-    const cacheKeyValue = await resolveBurstCacheKey(request);
+    const schemaJson = await serializeBurstSchemaJson(request.schema);
+    const cacheKeyValue = resolveBurstCacheKey(request, schemaJson);
     if (cacheKeyValue !== undefined) {
         const cached = await readValidatedBurstCache(request, cacheKeyValue);
         if (cached !== undefined) {
@@ -292,18 +337,12 @@ export async function runBurst<TSchema extends z.ZodTypeAny>(request: BurstReque
         if (delayMs > 0) {
             await sleep(delayMs);
         }
+        const strategy = resolveAttemptStrategy(attempt);
         try {
-            // attempt 0: clean prompt (native structured output path);
-            // attempt 1: same path with strict-JSON forcing appended;
-            // final attempt: raw fallback — schema in prompt, local parsing
-            // and Zod validation (rescues models whose structured-output
-            // mode fails hard, e.g. DeepSeek).
-            const isRawFallback = attempt === MAX_BURST_ATTEMPTS - 1 && attempt > 0;
-            const result = isRawFallback
-                ? await runRawAttempt(request)
-                : await runAttempt(request, request.onWaiting, attempt > 0);
-            if (!isRawFallback && cacheKeyValue !== undefined && request.cacheDir !== undefined) {
-                await saveCachedOutput(request.cacheDir, cacheKeyValue, result.output, result.usage);
+            const result = await executeBurstAttempt(request, strategy, schemaJson);
+            const llmCache = request.llmCache;
+            if (strategy !== "raw_json" && cacheKeyValue !== undefined && llmCache !== undefined) {
+                await saveCachedOutput(llmCache.cacheDir, cacheKeyValue, result.output, result.usage);
             }
             return result;
         }

@@ -1,14 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
-export interface PdfLine {
-    page: number;
-    line: number;
-    text: string;
-}
-export async function extractPdfLines(absolutePath: string): Promise<PdfLine[]> {
+import type { LineRow } from "./line-table.js";
+
+export async function extractPdfLines(absolutePath: string): Promise<LineRow[]> {
     const data = new Uint8Array(await readFile(absolutePath));
     const document = await getDocument({ data, useSystemFonts: true }).promise;
-    const rows: PdfLine[] = [];
+    const rows: LineRow[] = [];
     for (let pageNum = 1; pageNum <= document.numPages; pageNum++) {
         const page = await document.getPage(pageNum);
         const content = await page.getTextContent();

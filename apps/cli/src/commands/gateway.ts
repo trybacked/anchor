@@ -1,6 +1,6 @@
 import { AI_GATEWAY_API_KEY_ENV } from "@backed/semantic";
 import { confirm, password } from "@inquirer/prompts";
-import { commandErrorMessage, rejectUnexpectedArg, rejectUnknownFlag, requireFlagValue, } from "./arg-parse.js";
+import { commandErrorMessage, rejectUnexpectedArg, rejectUnknownFlag, requireFlagValue, wantsHeadlessCommand, } from "../args.js";
 import { COMMANDS, FLAGS, formatCliCommand, GATEWAY_DOCS_URL, isHelpFlag, } from "../config.js";
 import { findWorkspaceRoot, workspaceEnvPath } from "../env.js";
 import { envVariableIsSet, upsertEnvVariable } from "../gateway-env.js";
@@ -60,7 +60,7 @@ async function resolveApiKey(providedKey: string | undefined, envPath: string, t
         }
         return trimmed;
     }
-    if (!process.stdin.isTTY) {
+    if (wantsHeadlessCommand()) {
         throw new Error(`Interactive prompt unavailable. Pass --key or set ${AI_GATEWAY_API_KEY_ENV} in the environment.`);
     }
     if (envVariableIsSet(envPath, AI_GATEWAY_API_KEY_ENV)) {

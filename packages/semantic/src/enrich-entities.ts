@@ -6,7 +6,8 @@ import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage, type BurstUsage } from "./b
 import { mapWithConcurrency } from "./concurrency.js";
 import { ENTITY_ENRICHMENT_BATCH_SIZE, ENTITY_ENRICHMENT_CONCURRENCY, ENTITY_ENRICHMENT_MAX_CONTEXT_SNIPPETS, ENTITY_ENRICHMENT_MAX_SNIPPET_CHARS, ENTITY_ENRICHMENT_MAX_SUMMARY_CHARS, } from "./constants.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
-import { burstCacheFields, type LlmCacheContext } from "./llm-cache.js";
+import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
+import { LLM_SCHEMA_NAMES } from "./constants.js";
 import { entityIdFromName } from "./extract-document-mentions.js";
 import type { EntityRecord, RawDocumentMention } from "./extract-document-mentions.js";
 export { ENTITY_ENRICHMENT_BATCH_SIZE, ENTITY_ENRICHMENT_CONCURRENCY } from "./constants.js";
@@ -144,9 +145,9 @@ export async function enrichEntities(options: EnrichEntitiesOptions): Promise<En
             system,
             prompt: buildEnrichmentPrompt(batch, options.mentions),
             schema,
-            schemaName: "entity_enrichment",
+            schemaName: LLM_SCHEMA_NAMES.entityEnrichment,
             timeoutMs: resolveSemanticRequestTimeoutMs(),
-            ...burstCacheFields(options.llmCache),
+            ...withLlmCache(options.llmCache),
         });
         completed += 1;
         options.onBatchProgress?.({ completed, total: batches.length });

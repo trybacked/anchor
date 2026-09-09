@@ -1,6 +1,6 @@
 import type { EntityRowRequest, RowReader } from "@backed/core";
 import { buildDuckDbFilterClause } from "./duckdb-filters.js";
-import { documentIdsInClause, quoteIdentifier, quoteString, sqlOrderDirection, sqlWhereClause, } from "./sql.js";
+import { quoteIdentifier, quoteString, sqlOrderDirection, sqlWhereClause, } from "./sql.js";
 import type { SqlQuery } from "./types.js";
 export function createRowReader(query: SqlQuery): RowReader {
     return async (request: EntityRowRequest) => {

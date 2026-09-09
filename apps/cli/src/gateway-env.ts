@@ -15,17 +15,19 @@ export function upsertEnvVariable(envPath: string, key: string, value: string): 
     const hadTrailingNewline = raw.endsWith("\n");
     const lines = raw.length === 0 ? [] : raw.split("\n");
     let found = false;
-    const nextLines = lines.map((line) => {
+    const nextLines: string[] = [];
+    for (const line of lines) {
         const match = line.match(ENV_LINE_PATTERN);
         if (match?.[2] === key) {
             found = true;
             const exportPrefix = match[1] ?? "";
-            return `${exportPrefix}${key}=${formatEnvValue(value)}`;
+            nextLines.push(`${exportPrefix}${key}=${formatEnvValue(value)}`);
+            continue;
         }
-        return line;
-    });
+        nextLines.push(line);
+    }
     if (!found) {
-        if (nextLines.length > 0 && nextLines[nextLines.length - 1] !== "") {
+        if (nextLines.length > 0 && nextLines.at(-1) !== "") {
             nextLines.push("");
         }
         nextLines.push(`${key}=${formatEnvValue(value)}`);

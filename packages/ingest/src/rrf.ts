@@ -1,3 +1,5 @@
+import { readRowNumber, readRowString } from "./duckdb-row.js";
+
 interface RankedItemInput {
     id: string;
     payload: Record<string, unknown>;
@@ -52,5 +54,5 @@ export function reciprocalRankFusion(lists: RankedListInput[]): Array<{
         .sort((left, right) => right.score - left.score);
 }
 export function chunkKey(row: Record<string, unknown>): string {
-    return `${String(row["document_id"] ?? "")}:${String(row["chunk_index"] ?? "")}`;
+    return `${readRowString(row, "document_id")}:${String(readRowNumber(row, "chunk_index"))}`;
 }

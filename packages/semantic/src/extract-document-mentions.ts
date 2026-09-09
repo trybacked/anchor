@@ -44,7 +44,7 @@ function suffixPattern(conventions: NameConvention): RegExp | null {
         return null;
     }
     const alternatives = conventions.suffixes
-        .map((suffix) => [...suffix.replace(/[^\p{L}\p{N}]/gu, "")]
+        .map((suffix) => Array.from(suffix.replace(/[^\p{L}\p{N}]/gu, ""))
         .map((character) => `${escapeForRegex(character)}\\.?\\s*`)
         .join(""))
         .join("|");
@@ -77,7 +77,7 @@ function extractNamesFromText(text: string, conventions: NameConvention): Array<
         normalizedValue: string;
     }> = [];
     for (const match of text.matchAll(pattern)) {
-        const words = text.slice(0, match.index ?? 0).trim().split(/\s+/);
+        const words = text.slice(0, match.index).trim().split(/\s+/);
         const nameWords: string[] = [];
         for (let index = words.length - 1; index >= 0 && nameWords.length < MENTION_MAX_NAME_WORDS; index -= 1) {
             const word = words[index];

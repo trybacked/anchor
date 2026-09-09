@@ -104,7 +104,7 @@ function collectQuantities(row: DocumentLineRow, pattern: RegExp, candidates: Fa
         if (raw === undefined || rawText.length === 0) {
             continue;
         }
-        const factType = classifyQuantity(row.text, (match.index ?? 0) + rawText.length, candidates);
+        const factType = classifyQuantity(row.text, match.index + rawText.length, candidates);
         if (factType === null) {
             continue;
         }

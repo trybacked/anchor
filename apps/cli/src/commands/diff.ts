@@ -3,7 +3,7 @@ import { diffRuns, formatDiff } from "@backed/diff";
 import type { RunSnapshot } from "@backed/diff";
 import { findWorkspaceRoot } from "../env.js";
 import { diffInsufficientRuns } from "../messages.js";
-import { getUi, initUi } from "../ui/index.js";
+import { initUi } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
 function loadSnapshot(root: string, runId: string): RunSnapshot {
     const profile = readRunArtifact(root, runId, "profile", ProfileReportSchema);
@@ -21,7 +21,7 @@ function loadSnapshot(root: string, runId: string): RunSnapshot {
         },
     };
 }
-export const diffCommand: CommandHandler = async () => {
+export const diffCommand: CommandHandler = () => {
     const ui = initUi();
     const root = findWorkspaceRoot(process.cwd());
     const runIds = listRunIds(root).filter((runId) => hasRunArtifact(root, runId, "profile"));

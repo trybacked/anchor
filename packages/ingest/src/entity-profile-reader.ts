@@ -1,6 +1,7 @@
 import { DEFAULT_PROFILE_DOCUMENT_LIMIT, DEFAULT_PROFILE_FACT_LIMIT, DEFAULT_PROFILE_MATCH_LIMIT, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, MAX_PROFILE_MATCH_LIMIT, MAX_PROFILE_ROW_LIMIT, } from "@backed/core";
 import type { EntityProfileReader, EntityProfileRequest, EntityProfileResult, } from "@backed/core";
 import { DOCUMENT_TYPE_TABLE_PREFIX } from "./document-type-tables.js";
+import { readRowString } from "./duckdb-row.js";
 import { quoteIdentifier, quoteString } from "./sql.js";
 import type { SqlQuery } from "./types.js";
 function clamp(value: number | undefined, fallback: number, max: number): number {
@@ -14,7 +15,7 @@ async function listDocumentTypeTables(query: SqlQuery): Promise<string[]> {
      WHERE table_name LIKE ${quoteString(`${DOCUMENT_TYPE_TABLE_PREFIX}%`)}
      ORDER BY table_name`);
     return rows
-        .map((row) => String(row["table_name"] ?? ""))
+        .map((row) => readRowString(row, "table_name"))
         .filter((name) => name.startsWith(DOCUMENT_TYPE_TABLE_PREFIX));
 }
 function buildDocumentUnion(tables: string[]): string | null {
@@ -52,8 +53,8 @@ async function readAttributedIdentifiers(query: SqlQuery, entityId: string): Pro
      ORDER BY mention_type, value`);
     const grouped: Record<string, string[]> = {};
     for (const row of rows) {
-        const type = String(row["mention_type"] ?? "");
-        const value = String(row["value"] ?? "");
+        const type = readRowString(row, "mention_type");
+        const value = readRowString(row, "value");
         if (type.length === 0 || value.length === 0) {
             continue;
         }
@@ -105,7 +106,7 @@ export function createEntityProfileReader(query: SqlQuery): EntityProfileReader 
         const documentLimit = clamp(request.documentLimit, DEFAULT_PROFILE_DOCUMENT_LIMIT, MAX_PROFILE_ROW_LIMIT);
         const profiles = await findProfiles(query, request.name, matchLimit);
         return Promise.all(profiles.map(async (profile) => {
-            const entityId = String(profile["entity_id"] ?? "");
+            const entityId = readRowString(profile, "entity_id");
             const [facts, documents, attributedIdentifiers] = await Promise.all([
                 readFacts(query, entityId, factLimit),
                 readDocuments(query, entityId, documentUnion ?? null, documentLimit),

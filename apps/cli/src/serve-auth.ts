@@ -4,7 +4,7 @@ import { readBackedCredentials } from "./auth/credentials.js";
 import { resolveBackedApiUrl, BACKED_API_PATHS } from "./auth/config.js";
 import { verifyAccessToken } from "./auth/device-flow.js";
 import { COMMANDS, formatCliCommand } from "./config.js";
-import type { ServeUsageRecorder } from "@backed/mcp";
+import type { McpSurfaceOperation, ServeUsageRecorder } from "@backed/mcp";
 
 export const BACKED_TELEMETRY_ENV = "BACKED_TELEMETRY";
 
@@ -59,7 +59,7 @@ async function buildTelemetryRecorder(credentials: BackedCredentials): Promise<S
         mode: "telemetry",
         userEmail: credentials.user.email,
         usageRecorder: {
-            record: async (operation: string) => {
+            record: async (operation: McpSurfaceOperation) => {
                 await client.recordMcpUsage(credentials.accessToken, operation);
             },
         },

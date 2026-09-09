@@ -1,5 +1,11 @@
 import { backedCredentialsPath, readBackedCredentials, runDeviceLogin, resolveBackedApiUrl, tokenResponseToCredentials, verifyAccessToken, writeBackedCredentials, } from "../auth/index.js";
-import { commandErrorMessage, rejectUnexpectedArg, rejectUnknownFlag, requireFlagValue, } from "./arg-parse.js";
+import {
+    commandErrorMessage,
+    rejectUnexpectedArg,
+    rejectUnknownFlag,
+    requireFlagValue,
+    wantsHeadlessCommand,
+} from "../args.js";
 import { COMMANDS, FLAGS, formatCliCommand, isHelpFlag } from "../config.js";
 import { getUi, initUi } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
@@ -115,8 +121,8 @@ export const loginCommand: CommandHandler = async (args) => {
             ui.detail(`Credentials saved to ${ui.path(credentialsPath)}`);
             return;
         }
-        if (!process.stdin.isTTY) {
-            throw new Error("Interactive login requires a terminal. Use --token for non-interactive auth.");
+        if (wantsHeadlessCommand()) {
+            throw new Error(`Interactive login requires a terminal. Use ${FLAGS.TOKEN} for non-interactive auth.`);
         }
         ui.step("Starting Backed device authorization…");
         let pollSpinner: {

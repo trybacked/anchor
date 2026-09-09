@@ -82,7 +82,7 @@ export function createTaskProgress(initialLabel: string, total?: number): Progre
     const render = (): void => {
         const frame = paint(ANSI.brand, SPINNER_FRAMES[frameIndex % SPINNER_FRAMES.length] ?? "⠋");
         frameIndex += 1;
-        const columns = process.stderr.columns ?? 80;
+        const columns = process.stderr.columns > 0 ? process.stderr.columns : 80;
         const eta = resolvedTotal > 0
             ? estimateRemainingSeconds(completed, resolvedTotal, startedAtMs)
             : null;

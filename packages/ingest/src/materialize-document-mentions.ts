@@ -1,4 +1,5 @@
 import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_LINES_TABLE, DOCUMENT_MENTIONS_TABLE, } from "@backed/core";
+import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { dropTableIfExists, quoteIdentifier, quoteString, sqlNullableNumber, sqlNullableString, } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";
 export interface MaterializedMentionInput {
@@ -102,10 +103,10 @@ export async function fetchAllDocumentLines(query: SqlQuery): Promise<Array<{
 }>> {
     const rows = await query(`SELECT document_id, page, line, text FROM ${quoteIdentifier(DOCUMENT_LINES_TABLE)} ORDER BY document_id, page, line`);
     return rows.map((row) => ({
-        document_id: String(row["document_id"] ?? ""),
-        page: Number(row["page"] ?? 0),
-        line: Number(row["line"] ?? 0),
-        text: String(row["text"] ?? ""),
+        document_id: readRowString(row, "document_id"),
+        page: readRowNumber(row, "page"),
+        line: readRowNumber(row, "line"),
+        text: readRowString(row, "text"),
     }));
 }
 export async function materializeDocumentMentions(query: SqlQuery, input: MaterializeDocumentMentionsInput): Promise<MaterializeDocumentMentionsResult> {

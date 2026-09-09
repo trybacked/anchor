@@ -86,14 +86,26 @@ export const ENTITY_ENRICHMENT_MAX_SNIPPET_CHARS = 200;
 export const ENTITY_ENRICHMENT_MAX_SUMMARY_CHARS = 240;
 export const MAX_BURST_ATTEMPTS = 3;
 export const BURST_RETRY_DELAYS_MS = [0, 750, 2000] as const;
+export const LLM_CACHE_KEY_HEX_LENGTH = 16;
+export const LLM_CACHE_FILE_SUFFIX = ".json";
+export const LLM_SCHEMA_NAMES = {
+    columnClassification: "column_classification",
+    ontologyProposal: "ontology_proposal",
+    documentExtraction: "document_extraction",
+    documentEnrichment: "document_enrichment",
+    entityEnrichment: "entity_enrichment",
+    domainVocabulary: "domain_vocabulary",
+} as const;
+export type LlmSchemaName = (typeof LLM_SCHEMA_NAMES)[keyof typeof LLM_SCHEMA_NAMES];
+export const STRICT_JSON_SUFFIX = "\n\nIMPORTANT: respond with ONLY the raw JSON object matching the schema. No markdown fences, no prose before or after, no trailing commas. Your entire response must be valid JSON.";
 export const COLUMN_CLASSIFICATION_CONCURRENCY = 4;
 export const RAW_FALLBACK_MAX_OUTPUT_TOKENS: Record<string, number> = {
-    document_extraction: 8192,
-    document_enrichment: 2048,
-    entity_enrichment: 2048,
-    column_classification: 4096,
-    domain_vocabulary: 8192,
-    ontology_proposal: 6144,
+    [LLM_SCHEMA_NAMES.documentExtraction]: 8192,
+    [LLM_SCHEMA_NAMES.documentEnrichment]: 2048,
+    [LLM_SCHEMA_NAMES.entityEnrichment]: 2048,
+    [LLM_SCHEMA_NAMES.columnClassification]: 4096,
+    [LLM_SCHEMA_NAMES.domainVocabulary]: 8192,
+    [LLM_SCHEMA_NAMES.ontologyProposal]: 6144,
 };
 export const RAW_FALLBACK_DEFAULT_MAX_OUTPUT_TOKENS = 4096;
 export const DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE = 0.85;

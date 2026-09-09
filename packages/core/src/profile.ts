@@ -1,4 +1,8 @@
 import { z } from "zod";
+
+/** DuckDB / SQL types that store fractional numeric values (shared by ingest CSV probe and profile). */
+export const NATIVE_FRACTIONAL_TYPE_PATTERN = /^(DOUBLE|FLOAT|DECIMAL)/;
+
 export const PROFILE_TOP_VALUES_LIMIT = 10;
 export const PROFILE_SAMPLE_SIZE = 200;
 export const PROFILE_PATTERN_SAMPLE_SIZE = PROFILE_SAMPLE_SIZE;
@@ -27,6 +31,8 @@ export const TopValueSchema = z.object({
     value: z.string(),
     count: z.number().int().nonnegative(),
 });
+export type ForeignKeyCandidate = z.infer<typeof ForeignKeyCandidateSchema>;
+export const EMPTY_FOREIGN_KEY_CANDIDATES: ForeignKeyCandidate[] = [];
 export const ColumnProfileSchema = z.object({
     name: z.string().min(1),
     sqlType: z.string().min(1),
@@ -37,8 +43,11 @@ export const ColumnProfileSchema = z.object({
     max: z.string().nullable(),
     topValues: z.array(TopValueSchema).max(PROFILE_TOP_VALUES_LIMIT),
     patterns: z.array(DetectedPatternSchema),
-    foreignKeyCandidates: z.array(ForeignKeyCandidateSchema).default([]),
-});
+    foreignKeyCandidates: z.array(ForeignKeyCandidateSchema).optional(),
+}).transform((column) => ({
+    ...column,
+    foreignKeyCandidates: column.foreignKeyCandidates ?? EMPTY_FOREIGN_KEY_CANDIDATES,
+}));
 export const TableProfileSchema = z.object({
     table: z.string().min(1),
     sourceFile: z.string().min(1),
@@ -48,7 +57,6 @@ export const TableProfileSchema = z.object({
 export const ProfileReportSchema = z.array(TableProfileSchema);
 export type DetectedPatternKind = z.infer<typeof DetectedPatternKindSchema>;
 export type DetectedPattern = z.infer<typeof DetectedPatternSchema>;
-export type ForeignKeyCandidate = z.infer<typeof ForeignKeyCandidateSchema>;
 export type TopValue = z.infer<typeof TopValueSchema>;
 export type ColumnProfile = z.infer<typeof ColumnProfileSchema>;
 export type TableProfile = z.infer<typeof TableProfileSchema>;

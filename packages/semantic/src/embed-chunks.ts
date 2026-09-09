@@ -46,7 +46,7 @@ export async function embedTexts(model: EmbeddingModel, texts: string[], onProgr
         for (const embedding of result.embeddings) {
             embeddings.push([...embedding]);
         }
-        tokens += result.usage.tokens ?? 0;
+        tokens += result.usage.tokens;
     }
     return { embeddings, usage: { tokens } };
 }

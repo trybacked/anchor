@@ -1,8 +1,9 @@
-export class PdfNoExtractableTextError extends Error {
+export class EmptyLineDocumentError extends Error {
     readonly relativePath: string;
+
     constructor(relativePath: string) {
-        super(`PDF has no extractable text: ${relativePath}`);
-        this.name = "PdfNoExtractableTextError";
+        super(`No extractable text: ${relativePath}`);
+        this.name = "EmptyLineDocumentError";
         this.relativePath = relativePath;
     }
 }

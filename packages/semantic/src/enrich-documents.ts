@@ -6,7 +6,8 @@ import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage, type BurstUsage } from "./b
 import { mapWithConcurrency } from "./concurrency.js";
 import { BOILERPLATE_DOCUMENT_RATIO, BOILERPLATE_MIN_DOCUMENTS, DOCUMENT_ENRICHMENT_BATCH_SIZE, DOCUMENT_ENRICHMENT_CONCURRENCY, DOCUMENT_ENRICHMENT_MAX_SAMPLE_CHARS, DOCUMENT_ENRICHMENT_MAX_SUMMARY_CHARS, DOCUMENT_ENRICHMENT_MAX_TOPICS, DOCUMENT_ENRICHMENT_SAMPLE_LINE_LIMIT, } from "./constants.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
-import { burstCacheFields, type LlmCacheContext } from "./llm-cache.js";
+import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
+import { LLM_SCHEMA_NAMES } from "./constants.js";
 import type { DocumentLineRow } from "./extract-document-mentions.js";
 export { BOILERPLATE_DOCUMENT_RATIO, BOILERPLATE_MIN_DOCUMENTS, DOCUMENT_ENRICHMENT_BATCH_SIZE, DOCUMENT_ENRICHMENT_CONCURRENCY, } from "./constants.js";
 function buildEnrichmentSchema(vocabulary: DomainVocabulary) {
@@ -163,9 +164,9 @@ export async function enrichDocuments(options: EnrichDocumentsOptions): Promise<
             system,
             prompt: buildDocumentEnrichmentPrompt(batch),
             schema,
-            schemaName: "document_enrichment",
+            schemaName: LLM_SCHEMA_NAMES.documentEnrichment,
             timeoutMs: resolveSemanticRequestTimeoutMs(),
-            ...burstCacheFields(options.llmCache),
+            ...withLlmCache(options.llmCache),
         });
         completed += 1;
         options.onBatchProgress?.({ completed, total: batches.length });
@@ -173,10 +174,7 @@ export async function enrichDocuments(options: EnrichDocumentsOptions): Promise<
     });
     const enriched = new Map<string, EnrichedDocument>();
     for (const result of results) {
-        const output = result.output as {
-            documents: EnrichedDocument[];
-        };
-        for (const document of output.documents) {
+        for (const document of result.output.documents) {
             enriched.set(document.documentId, document);
         }
     }

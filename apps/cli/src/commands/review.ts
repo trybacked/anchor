@@ -2,6 +2,7 @@ import { DocumentCatalogSchema, ProposalSchema, applyReview, hasRunArtifact, lis
 import { resolveReviewConfidenceThreshold } from "@backed/semantic";
 import type { DocumentCatalog, EvidenceTable, Proposal, Review, ReviewAnswer } from "@backed/core";
 import { input, select } from "@inquirer/prompts";
+import { wantsHeadlessCommand } from "../args.js";
 import { findWorkspaceRoot } from "../env.js";
 import { MESSAGES, reviewNextSteps } from "../messages.js";
 import { createPromptTheme, getUi, initUi } from "../ui/index.js";
@@ -84,9 +85,6 @@ function applyDocumentTypeRenamesFromReview(root: string, proposal: Proposal, re
             continue;
         }
         const newName = answer.newName;
-        if (newName === undefined) {
-            continue;
-        }
         hints = hints.map((hint) => hint.documentType === documentTypeId
             ? { ...hint, documentTypeLabel: newName }
             : hint);
@@ -107,6 +105,10 @@ export const reviewCommand: CommandHandler = async () => {
         return;
     }
     const proposal = readRunArtifact(root, runId, "proposal", ProposalSchema);
+    if (wantsHeadlessCommand()) {
+        ui.log(`Review pending: ${String(proposal.questions.length)} question(s) for run ${runId}`);
+        return;
+    }
     ui.heading("Review proposal");
     ui.step(`${String(proposal.questions.length)} question(s) · run ${ui.accent(runId)}`);
     if (proposal.doubts.length > 0) {

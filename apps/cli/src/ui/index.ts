@@ -1,6 +1,4 @@
 import { createUi, type Ui } from "./format.js";
-import { printHelp } from "./help.js";
-import { createPromptTheme } from "./prompts.js";
 export { renderLogo } from "./logo.js";
 export { LOGO_ART_LINES } from "./logo-art.js";
 export type { ProgressHandle, ProgressUpdate, Ui } from "./format.js";

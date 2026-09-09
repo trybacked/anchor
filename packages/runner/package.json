@@ -1,0 +1,30 @@
+{
+  "name": "@backed/runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless Anchor pipeline orchestration and ephemeral tenant runtime",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@backed/core": "workspace:*",
+    "@backed/diff": "workspace:*",
+    "@backed/ingest": "workspace:*",
+    "@backed/profile": "workspace:*",
+    "@backed/semantic": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}

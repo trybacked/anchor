@@ -3,7 +3,7 @@ export async function mapWithConcurrency<TItem, TResult>(items: TItem[], concurr
         return [];
     }
     const limit = Math.max(1, concurrency);
-    const results: TResult[] = new Array(items.length);
+    const results: Array<TResult | undefined> = Array.from({ length: items.length });
     let nextIndex = 0;
     async function runWorker(): Promise<void> {
         for (;;) {
@@ -21,5 +21,10 @@ export async function mapWithConcurrency<TItem, TResult>(items: TItem[], concurr
     }
     const workers = Array.from({ length: Math.min(limit, items.length) }, () => runWorker());
     await Promise.all(workers);
-    return results;
+    return results.map((result, index) => {
+        if (result === undefined) {
+            throw new Error(`missing concurrency result at index ${String(index)}`);
+        }
+        return result;
+    });
 }

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "../../src/constants.js";
 import { applyReview, collectVerdicts } from "../../src/review.js";
-import type { Entity, Proposal, Relation, Rule } from "../../src/model.js";
-import type { Review, ReviewQuestion } from "../../src/proposal.js";
+import type { Entity, Relation, Rule } from "../../src/model.js";
+import type { Proposal } from "../../src/proposal.js";
+import type { Review } from "../../src/review.js";
+import type { ReviewQuestion } from "../../src/review-questions.js";
 const baseProvenance = {
     table: "customers",
     evidence: "test evidence",

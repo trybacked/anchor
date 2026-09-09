@@ -1,8 +1,11 @@
 import path from "node:path";
 import { z } from "zod";
 import { DocumentTypeHintConfigSchema } from "./document-type-hints.js";
+import type { DocumentTypeHintConfig } from "./document-type-hints.js";
 import { DomainVocabularySchema } from "./domain.js";
 export const DEFAULT_SOURCES_DIR = "./sources";
+export const EMPTY_DOCUMENT_TYPE_HINTS: DocumentTypeHintConfig[] = [];
+export const DocumentTypeHintsSchema = z.array(DocumentTypeHintConfigSchema);
 export const BACKED_DIR_NAME = ".backed";
 export const CONFIG_FILE_NAME = "config.yaml";
 export const RUNS_DIR_NAME = "runs";
@@ -21,12 +24,22 @@ export const RUN_ARTIFACTS = {
     diff: "diff.json",
 } as const;
 export type RunArtifactName = keyof typeof RUN_ARTIFACTS;
-export const WorkspaceConfigSchema = z.object({
+const WorkspaceConfigInputSchema = z.object({
     sourcesDir: z.string().min(1),
-    documentTypeHints: z.array(DocumentTypeHintConfigSchema).default([]),
+    documentTypeHints: z.array(DocumentTypeHintConfigSchema).optional(),
     domain: DomainVocabularySchema.partial().optional(),
 });
+export const WorkspaceConfigSchema = WorkspaceConfigInputSchema.transform((config) => ({
+    sourcesDir: config.sourcesDir,
+    documentTypeHints: config.documentTypeHints ?? EMPTY_DOCUMENT_TYPE_HINTS,
+    domain: config.domain,
+}));
 export type WorkspaceConfig = z.infer<typeof WorkspaceConfigSchema>;
+export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {
+    sourcesDir: DEFAULT_SOURCES_DIR,
+    documentTypeHints: EMPTY_DOCUMENT_TYPE_HINTS,
+    domain: undefined,
+};
 export interface WorkspacePaths {
     root: string;
     backedDir: string;

@@ -2,18 +2,18 @@ import { readFile } from "node:fs/promises";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { createWorker } from "tesseract.js";
 import type { Worker } from "tesseract.js";
-import { isOcrEnabled } from "./env.js";
+import { DEFAULT_OCR_MAX_PAGES } from "./constants.js";
+import { BACKED_OCR_LANG_ENV, BACKED_OCR_MAX_PAGES_ENV, isOcrEnabled } from "./env.js";
 import { linesFromPlainText } from "./line-table.js";
+import type { LineRow } from "./line-table.js";
 import { isPopplerAvailable, renderPdfPagePng } from "./pdf-poppler.js";
-import type { PdfLine } from "./pdf.js";
-const DEFAULT_OCR_MAX_PAGES = 30;
 let workerPromise: Promise<Worker> | null = null;
 function ocrLanguages(): string {
-    const configured = process.env["BACKED_OCR_LANG"]?.trim();
+    const configured = process.env[BACKED_OCR_LANG_ENV]?.trim();
     return configured !== undefined && configured.length > 0 ? configured : "eng";
 }
 function ocrMaxPages(): number {
-    const raw = process.env["BACKED_OCR_MAX_PAGES"];
+    const raw = process.env[BACKED_OCR_MAX_PAGES_ENV];
     if (raw === undefined || raw.trim() === "") {
         return DEFAULT_OCR_MAX_PAGES;
     }
@@ -43,10 +43,11 @@ export async function terminateOcrWorker(): Promise<void> {
     await worker.terminate();
     workerPromise = null;
 }
-function linesFromOcrText(pageNum: number, text: string): PdfLine[] {
+function linesFromOcrText(pageNum: number, text: string): LineRow[] {
     return linesFromPlainText(text, pageNum);
 }
-export async function ocrPdfLines(absolutePath: string): Promise<PdfLine[]> {
+
+export async function ocrPdfLines(absolutePath: string): Promise<LineRow[]> {
     if (!isOcrEnabled()) {
         return [];
     }
@@ -57,7 +58,7 @@ export async function ocrPdfLines(absolutePath: string): Promise<PdfLine[]> {
     const data = new Uint8Array(await readFile(absolutePath));
     const document = await getDocument({ data, useSystemFonts: true }).promise;
     const maxPages = Math.min(document.numPages, ocrMaxPages());
-    const rows: PdfLine[] = [];
+    const rows: LineRow[] = [];
     for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
         const pngBuffer = await renderPdfPagePng(absolutePath, pageNum);
         if (pngBuffer === null) {

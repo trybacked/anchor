@@ -26,6 +26,7 @@
     "@backed/ingest": "workspace:*",
     "@backed/mcp": "workspace:*",
     "@backed/profile": "workspace:*",
+    "@backed/runner": "workspace:*",
     "@backed/semantic": "workspace:*",
     "zod": "^3.24.1"
   },

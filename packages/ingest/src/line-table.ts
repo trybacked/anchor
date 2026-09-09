@@ -1,11 +1,13 @@
+import { LINE_INSERT_BATCH_SIZE } from "./constants.js";
 import { quoteIdentifier, quoteString } from "./sql.js";
 import type { SqlQuery } from "./types.js";
+
 export interface LineRow {
     page: number;
     line: number;
     text: string;
 }
-export const LINE_INSERT_BATCH_SIZE = 200;
+
 export async function registerLineTable(query: SqlQuery, tableName: string, rows: LineRow[]): Promise<void> {
     await query(`CREATE TABLE ${quoteIdentifier(tableName)} (page INTEGER, line INTEGER, text VARCHAR)`);
     for (let offset = 0; offset < rows.length; offset += LINE_INSERT_BATCH_SIZE) {

@@ -3,7 +3,8 @@ import { DocumentCatalogSchema, EMPTY_DOMAIN_VOCABULARY } from "@backed/core";
 import { z } from "zod";
 import { runBurst, sumBurstUsage } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
-import { burstCacheFields, type LlmCacheContext } from "./llm-cache.js";
+import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
+import { LLM_SCHEMA_NAMES } from "./constants.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { DOCUMENT_EXTRACTION_BATCH_SIZE, DOCUMENT_EXTRACTION_CONCURRENCY, DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE, } from "./constants.js";
 import { hashDocumentSample } from "./document-sample-fingerprint.js";
@@ -181,9 +182,9 @@ async function extractDocumentBatchWithLlmOnce(samples: DocumentExtractionSample
         system: DOCUMENT_EXTRACTION_SYSTEM_PROMPT,
         prompt: documentBatchExtractionPrompt(items),
         schema,
-        schemaName: "document_extraction",
+        schemaName: LLM_SCHEMA_NAMES.documentExtraction,
         timeoutMs: options.timeoutMs,
-        ...burstCacheFields(options.llmCache),
+        ...withLlmCache(options.llmCache),
     });
     if (samples.length === 1) {
         const sample = samples[0];

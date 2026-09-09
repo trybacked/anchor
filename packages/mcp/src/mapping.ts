@@ -132,7 +132,9 @@ export async function searchModel(model: SemanticModel, rawQuery: string, option
         return substringMatches;
     }
     try {
-        const semanticMatches = await options.semanticSearch(trimmedQuery);
+        const semanticMatches = (await options.semanticSearch(trimmedQuery)).map((match) =>
+            validateModelPayload(SearchMatchSchema, match),
+        );
         return mergeSearchMatches(semanticMatches, substringMatches);
     }
     catch {

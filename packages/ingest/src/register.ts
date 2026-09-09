@@ -1,20 +1,27 @@
 import { detectEncoding, sniffCsvDialect } from "./csv-dialect.js";
 import { extractDocxLines } from "./docx.js";
 import { isOcrEnabled } from "./env.js";
-import { PdfNoExtractableTextError } from "./errors.js";
+import { EmptyLineDocumentError } from "./errors.js";
 import { registerLineTable } from "./line-table.js";
+import type { LineRow } from "./line-table.js";
 import { ocrPdfLines } from "./pdf-ocr.js";
 import { isPopplerAvailable } from "./pdf-poppler.js";
 import { extractPdfLines } from "./pdf.js";
-import { quoteIdentifier, quoteString } from "./sql.js";
 import type { SourceFile } from "./scan.js";
+import { quoteIdentifier, quoteString } from "./sql.js";
 import { extractTextFileLines } from "./text.js";
 import type { Dataset, IngestWarning, SqlQuery } from "./types.js";
+
 export interface Registration {
     dataset: Dataset;
     warnings: IngestWarning[];
 }
-export async function registerSource(query: SqlQuery, source: SourceFile, tableName: string): Promise<Registration> {
+
+export async function registerSource(
+    query: SqlQuery,
+    source: SourceFile,
+    tableName: string,
+): Promise<Registration> {
     switch (source.format) {
         case "csv":
             return registerCsv(query, source, tableName);
@@ -36,7 +43,12 @@ export async function registerSource(query: SqlQuery, source: SourceFile, tableN
         }
     }
 }
-async function registerCsv(query: SqlQuery, source: SourceFile, tableName: string): Promise<Registration> {
+
+async function registerCsv(
+    query: SqlQuery,
+    source: SourceFile,
+    tableName: string,
+): Promise<Registration> {
     const warnings: IngestWarning[] = [];
     const encoding = await detectEncoding(source.absolutePath);
     if (encoding === "latin-1") {
@@ -68,8 +80,16 @@ async function registerCsv(query: SqlQuery, source: SourceFile, tableName: strin
         warnings,
     };
 }
-async function registerWithReader(query: SqlQuery, source: SourceFile, tableName: string, readerFunction: "read_xlsx" | "read_parquet" | "read_json_auto"): Promise<Registration> {
-    await query(`CREATE VIEW ${quoteIdentifier(tableName)} AS FROM ${readerFunction}(${quoteString(source.absolutePath)})`);
+
+async function registerWithReader(
+    query: SqlQuery,
+    source: SourceFile,
+    tableName: string,
+    readerFunction: "read_xlsx" | "read_parquet" | "read_json_auto",
+): Promise<Registration> {
+    await query(
+        `CREATE VIEW ${quoteIdentifier(tableName)} AS FROM ${readerFunction}(${quoteString(source.absolutePath)})`,
+    );
     return {
         dataset: {
             tableName,
@@ -79,9 +99,16 @@ async function registerWithReader(query: SqlQuery, source: SourceFile, tableName
         warnings: [],
     };
 }
-async function registerLineDocument(query: SqlQuery, source: SourceFile, tableName: string, rows: Awaited<ReturnType<typeof extractPdfLines>>, extraWarnings: IngestWarning[] = []): Promise<Registration> {
+
+async function registerLineDocument(
+    query: SqlQuery,
+    source: SourceFile,
+    tableName: string,
+    rows: LineRow[],
+    extraWarnings: IngestWarning[] = [],
+): Promise<Registration> {
     if (rows.length === 0) {
-        throw new PdfNoExtractableTextError(source.relativePath);
+        throw new EmptyLineDocumentError(source.relativePath);
     }
     await registerLineTable(query, tableName, rows);
     return {
@@ -93,6 +120,7 @@ async function registerLineDocument(query: SqlQuery, source: SourceFile, tableNa
         warnings: extraWarnings,
     };
 }
+
 async function registerPdf(query: SqlQuery, source: SourceFile, tableName: string): Promise<Registration> {
     let rows = await extractPdfLines(source.absolutePath);
     const warnings: IngestWarning[] = [];
@@ -104,8 +132,7 @@ async function registerPdf(query: SqlQuery, source: SourceFile, tableName: strin
                 file: source.relativePath,
                 message: "Scanned PDF: text extracted with OCR",
             });
-        }
-        else if (isOcrEnabled() && !(await isPopplerAvailable())) {
+        } else if (isOcrEnabled() && !(await isPopplerAvailable())) {
             warnings.push({
                 kind: "pdf_ocr_skipped",
                 file: source.relativePath,
@@ -115,6 +142,7 @@ async function registerPdf(query: SqlQuery, source: SourceFile, tableName: strin
     }
     return registerLineDocument(query, source, tableName, rows, warnings);
 }
+
 async function registerText(query: SqlQuery, source: SourceFile, tableName: string): Promise<Registration> {
     const warnings: IngestWarning[] = [];
     const encoding = await detectEncoding(source.absolutePath);
@@ -124,10 +152,12 @@ async function registerText(query: SqlQuery, source: SourceFile, tableName: stri
     const rows = await extractTextFileLines(source.absolutePath);
     return registerLineDocument(query, source, tableName, rows, warnings);
 }
+
 async function registerDocx(query: SqlQuery, source: SourceFile, tableName: string): Promise<Registration> {
     const rows = await extractDocxLines(source.absolutePath);
     return registerLineDocument(query, source, tableName, rows);
 }
+
 function nonUtf8EncodingWarning(relativePath: string): IngestWarning {
     return {
         kind: "non_utf8_encoding",

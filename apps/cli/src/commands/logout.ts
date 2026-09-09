@@ -2,7 +2,7 @@ import { clearBackedCredentials, readBackedCredentials } from "../auth/index.js"
 import { COMMANDS, formatCliCommand, isHelpFlag } from "../config.js";
 import { getUi, initUi } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
-export const logoutCommand: CommandHandler = async (args) => {
+export const logoutCommand: CommandHandler = (args) => {
     initUi();
     const ui = getUi();
     if (args.some(isHelpFlag)) {

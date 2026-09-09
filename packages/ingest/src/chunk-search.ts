@@ -1,5 +1,10 @@
 import type { ChunkSearchMode, ChunkSearchRequest, ChunkSearcher, QueryEmbedder } from "@backed/core";
-import { DEFAULT_CHUNK_SEARCH_MIN_SCORE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE, } from "@backed/core";
+import { DEFAULT_CHUNK_SEARCH_MIN_SCORE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE } from "@backed/core";
+import {
+    CHUNK_SEARCH_OVERSAMPLE_FACTOR,
+    KEYWORD_MIN_TOKEN_LENGTH,
+    KEYWORD_STOPWORDS,
+} from "./constants.js";
 import { chunkKey, reciprocalRankFusion } from "./rrf.js";
 import { chunkEmbeddingColumnRef, documentChunksHaveEmbeddings, formatEmbeddingLiteral, } from "./chunk-embeddings.js";
 import { documentIdsInClause, quoteIdentifier, quoteString } from "./sql.js";
@@ -7,9 +12,6 @@ import type { SqlQuery } from "./types.js";
 export interface ChunkSearcherOptions {
     embedQuery?: QueryEmbedder;
 }
-const CHUNK_SEARCH_OVERSAMPLE_FACTOR = 3;
-const KEYWORD_MIN_TOKEN_LENGTH = 3;
-const KEYWORD_STOPWORDS = new Set(["the", "and", "for", "del", "della", "che", "con", "per"]);
 const CHUNK_RESULT_COLUMNS = [
     "document_id",
     "chunk_index",

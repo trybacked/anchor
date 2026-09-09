@@ -1,19 +1,22 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { SemanticModel } from "@backed/core";
-import { z } from "zod";
-import { MCP_SURFACE_TOOLS, SERVER_NAME, SERVER_VERSION, TOOL_NAMES } from "./constants.js";
-import { entityNotFoundMessage } from "./errors.js";
-import { getDefinition, getEntity, listEntities, listRelations, searchModel, } from "./mapping.js";
+import type { McpSurfaceTool } from "./constants.js";
+import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";
+import { MCP_TOOL_DEFINITIONS, type ToolContext } from "./tools.js";
+
 export interface ServeUsageRecorder {
-    record(operation: McpSurfaceOperation): Promise<void>;
+    record(operation: McpSurfaceTool): Promise<void>;
 }
-export type McpSurfaceOperation = (typeof MCP_SURFACE_TOOLS)[number];
+
+export type McpSurfaceOperation = McpSurfaceTool;
+
 export interface ModelMcpServerOptions {
     usageRecorder?: ServeUsageRecorder;
     searchModelOptions?: SearchModelOptions;
 }
+
 function jsonContent(data: unknown): {
     content: {
         type: "text";
@@ -22,6 +25,7 @@ function jsonContent(data: unknown): {
 } {
     return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
+
 function errorContent(text: string): {
     isError: true;
     content: {
@@ -34,7 +38,16 @@ function errorContent(text: string): {
         content: [{ type: "text", text }],
     };
 }
-async function withUsage<T>(operation: McpSurfaceOperation, usageRecorder: ServeUsageRecorder | undefined, handler: () => T | Promise<T>): Promise<T> {
+
+function isToolErrorResult(result: unknown): result is { error: string } {
+    return typeof result === "object" && result !== null && "error" in result && typeof result.error === "string";
+}
+
+async function withUsage<T>(
+    operation: McpSurfaceTool,
+    usageRecorder: ServeUsageRecorder | undefined,
+    handler: () => T | Promise<T>,
+): Promise<T> {
     if (usageRecorder !== undefined) {
         void usageRecorder.record(operation).catch(() => {
             // Metering must not block or fail local MCP tools.
@@ -42,55 +55,43 @@ async function withUsage<T>(operation: McpSurfaceOperation, usageRecorder: Serve
     }
     return handler();
 }
+
 export function createModelMcpServer(model: SemanticModel, options: ModelMcpServerOptions = {}): McpServer {
     const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
     const usageRecorder = options.usageRecorder;
-    const searchModelOptions = options.searchModelOptions;
-    server.registerTool(TOOL_NAMES.listEntities, {
-        title: "List entities",
-        description: "List semantic model entities (id, name, description, status).",
-    }, async () => withUsage(TOOL_NAMES.listEntities, usageRecorder, () => jsonContent(listEntities(model))));
-    server.registerTool(TOOL_NAMES.getEntity, {
-        title: "Entity detail",
-        description: "Return an entity with properties (semanticType, role, provenance) and entity provenance.",
-        inputSchema: { id: z.string().min(1).describe("Entity id, e.g. 'customer'") },
-    }, async ({ id }) => withUsage(TOOL_NAMES.getEntity, usageRecorder, () => {
-        const detail = getEntity(model, id);
-        if (detail === null) {
-            return errorContent(entityNotFoundMessage(id));
-        }
-        return jsonContent(detail);
-    }));
-    server.registerTool(TOOL_NAMES.listRelations, {
-        title: "List relations",
-        description: "List relations between entities with cardinality and status. Optionally filter by entity id.",
-        inputSchema: {
-            id: z
-                .string()
-                .min(1)
-                .optional()
-                .describe("Optional entity id — returns relations touching this entity"),
-        },
-    }, async ({ id: entityId }) => withUsage(TOOL_NAMES.listRelations, usageRecorder, () => jsonContent(listRelations(model, entityId))));
-    server.registerTool(TOOL_NAMES.searchModel, {
-        title: "Search model",
-        description: "Search entities, properties, relations, and rules. Uses semantic document-chunk vectors when available, with substring fallback.",
-        inputSchema: { query: z.string().min(1).describe("Text to search, e.g. 'cliente'") },
-    }, async ({ query }) => withUsage(TOOL_NAMES.searchModel, usageRecorder, async () => jsonContent(await searchModel(model, query, searchModelOptions))));
-    server.registerTool(TOOL_NAMES.getDefinition, {
-        title: "Get definition",
-        description: "Return a confirmed business definition with provenance, or a structured not-found response.",
-        inputSchema: {
-            term: z.string().min(1).describe("Rule id, name, or phrase, e.g. 'fattura scaduta'"),
-        },
-    }, async ({ term }) => withUsage(TOOL_NAMES.getDefinition, usageRecorder, () => jsonContent(getDefinition(model, term))));
+    const toolContext: ToolContext = {
+        model,
+        ...(options.searchModelOptions !== undefined ? { searchModelOptions: options.searchModelOptions } : {}),
+    };
+
+    for (const tool of MCP_TOOL_DEFINITIONS) {
+        server.registerTool(
+            tool.name,
+            {
+                title: tool.title,
+                description: tool.description,
+                ...(tool.inputSchema !== undefined ? { inputSchema: tool.inputSchema } : {}),
+            },
+            async (args) =>
+                withUsage(tool.name, usageRecorder, async () => {
+                    const result = await tool.handler(toolContext, args);
+                    if (isToolErrorResult(result)) {
+                        return errorContent(result.error);
+                    }
+                    return jsonContent(result);
+                }),
+        );
+    }
+
     return server;
 }
+
 export async function startStdioMcpServer(model: SemanticModel, options: ModelMcpServerOptions = {}): Promise<McpServer> {
     const server = createModelMcpServer(model, options);
     await server.connect(new StdioServerTransport());
     return server;
 }
+
 export async function runStdioMcpServerUntilClose(model: SemanticModel, options: ModelMcpServerOptions = {}): Promise<void> {
     const server = createModelMcpServer(model, options);
     const transport = new StdioServerTransport();

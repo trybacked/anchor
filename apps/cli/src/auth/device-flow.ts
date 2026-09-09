@@ -19,6 +19,7 @@ function openBrowser(url: string): void {
         spawn(command, args, { stdio: "ignore", detached: true }).unref();
     }
     catch {
+        // Opening the browser is best-effort; device flow still works via printed URL.
     }
 }
 export async function runDeviceLogin(options: DeviceFlowOptions): Promise<BackedCredentials> {

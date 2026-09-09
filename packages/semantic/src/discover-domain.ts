@@ -1,9 +1,9 @@
 import { DomainVocabularySchema, EMPTY_DOMAIN_VOCABULARY } from "@backed/core";
 import type { DomainVocabulary } from "@backed/core";
 import type { LanguageModel } from "ai";
-import { EMPTY_BURST_USAGE, runBurst, type BurstUsage } from "./burst.js";
-import { burstCacheFields, type LlmCacheContext } from "./llm-cache.js";
-import { DISCOVERY_DOCUMENT_SAMPLE, DISCOVERY_LINES_PER_DOCUMENT, DISCOVERY_MAX_CHARS, } from "./constants.js";
+import { EMPTY_BURST_USAGE, runBurst, type BurstResult, type BurstUsage } from "./burst.js";
+import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
+import { DISCOVERY_DOCUMENT_SAMPLE, DISCOVERY_LINES_PER_DOCUMENT, DISCOVERY_MAX_CHARS, LLM_SCHEMA_NAMES, } from "./constants.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
 import type { DocumentLineRow } from "./extract-document-mentions.js";
 import { scanNameSuffixes, filterPlausibleSuffixes } from "./scan-name-suffixes.js";
@@ -40,7 +40,11 @@ function sampleCorpusText(rows: DocumentLineRow[]): string {
         ? entries
         : Array.from({ length: DISCOVERY_DOCUMENT_SAMPLE }, (_, index) => {
             const pick = Math.floor((index * entries.length) / DISCOVERY_DOCUMENT_SAMPLE);
-            return entries[pick]!;
+            const entry = entries[pick];
+            if (entry === undefined) {
+                throw new Error(`document sample index ${String(pick)} is out of range`);
+            }
+            return entry;
         });
     return documents
         .map(([documentId, lines]) => [`### ${documentId}`, lines.filter((line) => line.length > 0).join("\n")].join("\n"))
@@ -75,16 +79,16 @@ export async function discoverDomain(options: DiscoverDomainOptions): Promise<Di
         return { vocabulary: EMPTY_DOMAIN_VOCABULARY, usage: EMPTY_BURST_USAGE, degraded: false };
     }
     options.onProgress?.("Profiling corpus vocabulary via LLM...");
-    let result: Awaited<ReturnType<typeof runBurst>>;
+    let result: BurstResult<DomainVocabulary>;
     try {
         result = await runBurst({
             model: options.model,
             system: DISCOVER_DOMAIN_SYSTEM_PROMPT,
             prompt: `Corpus excerpts:\n\n${sample}`,
             schema: DomainVocabularySchema,
-            schemaName: "domain_vocabulary",
+            schemaName: LLM_SCHEMA_NAMES.domainVocabulary,
             timeoutMs: resolveSemanticRequestTimeoutMs(),
-            ...burstCacheFields(options.llmCache),
+            ...withLlmCache(options.llmCache),
             ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
         });
     }

@@ -1,491 +1,53 @@
 import { existsSync } from "node:fs";
-import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
-import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, DocumentCatalogSchema, DomainVocabularySchema, ProfileReportSchema, createRunId, listRunIds, mergeVocabulary, patchWorkspaceConfig, readModelYaml, readRunArtifact, readWorkspaceConfig, workspacePaths, writeRunArtifact, } from "@backed/core";
-import type { DocumentCatalog, DocumentTypeHintConfig, DomainVocabulary, ProfileReport, Proposal, SemanticModel, WorkspaceConfig, } from "@backed/core";
-import { affectedTablesFromProfileDiff, filterProfileToTables, } from "@backed/diff";
-import type { IngestSession } from "@backed/ingest";
-import { applyDocumentTopics, chunkDocumentLines, fetchAllDocumentLines, fetchChunkTextsForEmbedding, fetchCorpusSampleLines, fetchDocumentHeaderSamples, ingestFolder, materializeDocumentMentions, materializeDocumentTables, materializeEntityProfiles, materializeFacts, storeChunkEmbeddings, } from "@backed/ingest";
-import { profileTables } from "@backed/profile";
-import { MissingApiKeyError, buildDocumentTopicSamples, buildEntityIndex, compressProfile, discoverDomain, embedTexts, EMPTY_BURST_USAGE, enrichDocuments, enrichEntities, ensureCurrencyFactTypes, extractDocumentCatalog, extractFactsFromLines, extractMentionsFromLines, mergeCorpusNameSuffixes, mergeIncrementalProposal, proposeModel, resolveLanguageModelId, resolveSemanticModels, splitTablesByKind, sumBurstUsage, toMaterializedMentions, } from "@backed/semantic";
-import type { BurstUsage, DocumentCatalogCacheEntry, LlmCacheContext, SemanticModels } from "@backed/semantic";
+import { runAnchorPipeline, MissingSemanticModelsError } from "@backed/runner";
+import { commandErrorMessage, parseModelArgs } from "../args.js";
 import { findWorkspaceRoot } from "../env.js";
-import { CORPUS_SAMPLE_LINES_PER_TABLE, COMMANDS, FLAGS, formatCliCommand, isOptionArg, MODEL_FILE_LABEL, MS_PER_SECOND, PROPOSAL_ONTOLOGY_PREFIX, } from "../config.js";
-import { MESSAGES } from "../messages.js";
-import { createAiProgressReporter, getUi, initUi } from "../ui/index.js";
-import type { Ui } from "../ui/index.js";
+import { createCliPipelineProgress, printPipelineSummary } from "../runner-progress.js";
+import { initUi } from "../ui/index.js";
 import type { CommandHandler } from "../types.js";
-interface DocumentStageResult {
-    documentCatalog: DocumentCatalog;
-    vocabulary: DomainVocabulary;
-    extractionUsage: BurstUsage;
-    extractionMs: number;
-    embedMs: number;
-}
-interface IncrementalScope {
-    profileForInference: ProfileReport;
-    incrementalTables: Set<string> | null;
-    existingModel: SemanticModel | null;
-}
-interface StageTimings {
-    ingestMs: number;
-    documentsMs: number;
-    extractionMs: number;
-    embedMs: number;
-    profileMs: number;
-    proposalMs: number;
-}
-const PIPELINE_DATASET_TABLES = new Set<string>([
-    DOCUMENT_ENTITIES_TABLE,
-    DOCUMENT_MENTIONS_TABLE,
-    DOCUMENT_FACTS_TABLE,
-    ENTITY_PROFILES_TABLE,
-]);
-async function prepareLlmCache(root: string, forceFull: boolean): Promise<LlmCacheContext> {
-    const { llmCacheDir } = workspacePaths(root);
-    if (forceFull && existsSync(llmCacheDir)) {
-        await rm(llmCacheDir, { recursive: true, force: true });
-    }
-    await mkdir(llmCacheDir, { recursive: true });
-    return {
-        cacheDir: llmCacheDir,
-        modelId: resolveLanguageModelId(),
-    };
-}
-function resolveSourcesDir(root: string, positional: string | undefined): string {
-    if (positional) {
-        patchWorkspaceConfig(root, { sourcesDir: positional });
-        return positional;
-    }
-    return readWorkspaceConfig(root).sourcesDir;
-}
-function formatDurationMs(ms: number): string {
-    return `${String(Math.round(ms / MS_PER_SECOND))}s`;
-}
-async function resolveModelsOrExit(ui: Ui): Promise<SemanticModels | null> {
-    try {
-        return resolveSemanticModels();
-    }
-    catch (error) {
-        if (error instanceof MissingApiKeyError) {
-            ui.writeError(error.message);
-            process.exitCode = 1;
-            return null;
-        }
-        throw error;
-    }
-}
-async function embedDocumentChunks(session: IngestSession, models: SemanticModels, chunked: Awaited<ReturnType<typeof chunkDocumentLines>>): Promise<number> {
-    const ui = getUi();
-    const chunkTexts = await fetchChunkTextsForEmbedding(session.query);
-    if (chunkTexts.length === 0) {
-        if (chunked.embeddingsRestored > 0) {
-            ui.writeSuccess(`Semantic search ready (${String(chunked.embeddingsRestored)} vectors preserved)`);
-        }
-        return 0;
-    }
-    const embedStarted = Date.now();
-    const embedProgress = createAiProgressReporter((message) => {
-        ui.detail(message);
-    });
-    const embedded = await embedTexts(models.embedding, chunkTexts.map((row) => row.text), undefined, ({ completed, total }) => {
-        embedProgress.track("Embedding document chunks", completed, total);
-    });
-    embedProgress.end();
-    await storeChunkEmbeddings(session.query, chunkTexts.map((row, index) => ({
-        document_id: row.document_id,
-        chunk_index: row.chunk_index,
-        embedding: embedded.embeddings[index] ?? [],
-    })));
-    ui.writeSuccess(`Semantic search ready (${String(chunkTexts.length)} vectors)`);
-    return Date.now() - embedStarted;
-}
-function printStageTimings(timings: StageTimings, skippedEmbed: boolean): void {
-    const ui = getUi();
-    const parts: string[] = [
-        `${ui.label("Ingest")} ${formatDurationMs(timings.ingestMs)}`,
-        skippedEmbed
-            ? `${ui.label("Documents")} ${formatDurationMs(timings.documentsMs)} ${ui.dim(`(extraction ${formatDurationMs(timings.extractionMs)}, embed skipped)`)}`
-            : `${ui.label("Documents")} ${formatDurationMs(timings.documentsMs)} ${ui.dim(`(extraction ${formatDurationMs(timings.extractionMs)}, embed ${formatDurationMs(timings.embedMs)})`)}`,
-        `${ui.label("Profile")} ${formatDurationMs(timings.profileMs)}`,
-        `${ui.label("Proposal")} ${formatDurationMs(timings.proposalMs)}`,
-    ];
-    ui.blank();
-    ui.log(parts.join(` ${ui.dim("·")} `));
-}
-function printProposalSummary(proposal: Proposal): void {
-    const ui = getUi();
-    ui.blank();
-    ui.writeSuccess(`${String(proposal.entities.length)} entities, ${String(proposal.relations.length)} relations`);
-    if (proposal.doubts.length > 0) {
-        ui.log(`  ${ui.label("Doubts")}  ${String(proposal.doubts.length)} open`);
-    }
-    if (proposal.usage) {
-        const cost = proposal.usage.costUsd !== null ? ` ${ui.dim(`(~$${proposal.usage.costUsd.toFixed(4)})`)}` : "";
-        ui.log(`  ${ui.label("LLM")}     ${String(proposal.usage.inputTokens)} in / ${String(proposal.usage.outputTokens)} out${cost}`);
-    }
-    ui.step(`${String(proposal.questions.length)} review question(s) — run ${ui.command(formatCliCommand(COMMANDS.REVIEW))}`);
-}
-async function resolveVocabulary(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], configured: WorkspaceConfig["domain"], onProgress: (message: string) => void, previousRunId: string | undefined, forceFull: boolean, llmCache: LlmCacheContext): Promise<{
-    vocabulary: DomainVocabulary;
-    usage: BurstUsage;
-}> {
-    if (!forceFull && previousRunId !== undefined) {
-        try {
-            const cached = readRunArtifact(root, previousRunId, "vocabulary", DomainVocabularySchema);
-            const vocabulary = mergeVocabulary(cached, configured);
-            onProgress("Reusing vocabulary from previous run...");
-            const ui = getUi();
-            ui.log(`  ${ui.label("Domain")}  ${vocabulary.entityLabel} · ${String(vocabulary.documentTopics.length)} topic(s), ${String(vocabulary.factTypes.length)} quantity type(s), ${String(vocabulary.identifierFormats.length)} identifier format(s) ${ui.dim("(cached)")}`);
-            return { vocabulary, usage: EMPTY_BURST_USAGE };
-        }
-        catch {
-            // fall through to discovery
-        }
-    }
-    const sampleLines = await fetchCorpusSampleLines(session.query, lineDocuments.map((table) => table.table), CORPUS_SAMPLE_LINES_PER_TABLE);
-    const discovered = await discoverDomain({
-        model: models.language,
-        lines: sampleLines,
-        onProgress,
-        llmCache,
-    });
-    const vocabulary = mergeVocabulary(discovered.vocabulary, configured);
-    writeRunArtifact(root, runId, "vocabulary", vocabulary);
-    const ui = getUi();
-    if (discovered.degraded) {
-        ui.writeWarn("Domain vocabulary degraded to defaults — fact/identifier tagging may be reduced until the next successful run.");
-    }
-    ui.log(`  ${ui.label("Domain")}  ${vocabulary.entityLabel} · ${String(vocabulary.documentTopics.length)} topic(s), ${String(vocabulary.factTypes.length)} quantity type(s), ${String(vocabulary.identifierFormats.length)} identifier format(s)${discovered.degraded ? ui.dim(" (degraded)") : ""}`);
-    return { vocabulary, usage: discovered.usage };
-}
-function loadDocumentCatalogCache(root: string, previousRunId: string | undefined, forceFull: boolean): Map<string, DocumentCatalogCacheEntry> | undefined {
-    if (forceFull || previousRunId === undefined) {
-        return undefined;
-    }
-    try {
-        const catalog = readRunArtifact(root, previousRunId, "documents", DocumentCatalogSchema);
-        const cache = new Map<string, DocumentCatalogCacheEntry>();
-        for (const entry of catalog.documents) {
-            if (entry.headerFingerprint === undefined) {
-                continue;
-            }
-            cache.set(entry.sourceTable, {
-                entry,
-                headerFingerprint: entry.headerFingerprint,
-            });
-        }
-        return cache.size > 0 ? cache : undefined;
-    }
-    catch {
-        return undefined;
-    }
-}
-async function runDocumentStage(session: IngestSession, models: SemanticModels, runId: string, root: string, lineDocuments: ReturnType<typeof splitTablesByKind>["lineDocuments"], workspaceConfig: WorkspaceConfig, skipEmbed: boolean, previousRunId: string | undefined, forceFull: boolean, llmCache: LlmCacheContext): Promise<DocumentStageResult> {
-    const ui = getUi();
-    ui.step(`Documents (${String(lineDocuments.length)} file(s)) — classifying and indexing…`);
-    const extractionStarted = Date.now();
-    const headerSamples = await fetchDocumentHeaderSamples(session.query, lineDocuments.map((table) => ({
-        sourceTable: table.table,
-        pageCount: table.rowCount,
-    })));
-    const catalogCache = loadDocumentCatalogCache(root, previousRunId, forceFull);
-    const vocabularyProgress = createAiProgressReporter((message) => {
-        ui.detail(message);
-    });
-    const aiProgress = createAiProgressReporter((message) => {
-        ui.detail(message);
-    });
-    const vocabularyPromise = resolveVocabulary(session, models, runId, root, lineDocuments, workspaceConfig.domain, (message) => {
-        vocabularyProgress.detail(message);
-    }, previousRunId, forceFull, llmCache);
-    const extractedPromise = extractDocumentCatalog({
-        runId,
-        models,
-        samples: headerSamples,
-        documentTypeHints: workspaceConfig.documentTypeHints,
-        vocabulary: vocabularyPromise.then((result) => result.vocabulary),
-        llmCache,
-        ...(catalogCache !== undefined ? { catalogCache } : {}),
-        onProgress: (message) => {
-            aiProgress.detail(message);
-        },
-        onLlmProgress: ({ completed, total }) => {
-            aiProgress.track("Classifying documents (LLM)", completed, total);
-        },
-    });
-    let [{ vocabulary, usage: vocabularyUsage }, extracted] = await Promise.all([
-        vocabularyPromise,
-        extractedPromise,
-    ]);
-    vocabularyProgress.end();
-    aiProgress.end();
-    writeRunArtifact(root, runId, "vocabulary", vocabulary);
-    const extractionMs = Date.now() - extractionStarted;
-    const sourceFileByTable = new Map(session.datasets.map((dataset) => [dataset.tableName, dataset.sourceFile]));
-    const materialized = await materializeDocumentTables(session.query, extracted.catalog, sourceFileByTable);
-    session.datasets = session.datasets.filter((dataset) => !materialized.datasetsRemoved.includes(dataset.tableName));
-    session.datasets.push(...materialized.datasetsAdded);
-    const lineRows = await fetchAllDocumentLines(session.query);
-    vocabulary = mergeCorpusNameSuffixes(vocabulary, lineRows);
-    vocabulary = ensureCurrencyFactTypes(vocabulary, lineRows);
-    writeRunArtifact(root, runId, "vocabulary", vocabulary);
-    const topicsProgress = createAiProgressReporter((message) => {
-        ui.detail(message);
-    });
-    const enrichedDocuments = await enrichDocuments({
-        model: models.language,
-        documents: materialized.catalog.documents,
-        sampleByDocument: buildDocumentTopicSamples(lineRows),
-        vocabulary,
-        llmCache,
-        onProgress: (message) => {
-            topicsProgress.detail(message);
-        },
-        onBatchProgress: ({ completed, total }) => {
-            topicsProgress.track("Tagging documents (LLM)", completed, total);
-        },
-    });
-    topicsProgress.end();
-    const tableByDocumentType = new Map(materialized.catalog.documentTypes.map((type) => [type.id, type.tableName]));
-    await applyDocumentTopics(session.query, enrichedDocuments.documents.flatMap((document) => {
-        const tableName = tableByDocumentType.get(document.documentType);
-        return tableName === undefined
-            ? []
-            : [
-                {
-                    documentId: document.sourceTable,
-                    tableName,
-                    topics: document.topics,
-                    summary: document.summary,
-                },
-            ];
-    }));
-    const documentCatalog = {
-        ...materialized.catalog,
-        documents: enrichedDocuments.documents,
-    };
-    const rawMentions = extractMentionsFromLines(lineRows, vocabulary);
-    let entityIndex = buildEntityIndex(rawMentions);
-    let enrichUsage: BurstUsage = EMPTY_BURST_USAGE;
-    if (entityIndex.size > 0) {
-        const enrichProgress = createAiProgressReporter((message) => {
-            ui.detail(message);
-        });
-        const enriched = await enrichEntities({
-            model: models.language,
-            entities: entityIndex,
-            mentions: rawMentions,
-            vocabulary,
-            llmCache,
-            onProgress: (message) => {
-                enrichProgress.detail(message);
-            },
-        });
-        entityIndex = enriched.entities;
-        enrichUsage = enriched.usage;
-        enrichProgress.end();
-    }
-    const materializedMentions = await materializeDocumentMentions(session.query, {
-        mentions: toMaterializedMentions(rawMentions, entityIndex),
-        entities: [...entityIndex.values()],
-    });
-    session.datasets = session.datasets.filter((dataset) => !PIPELINE_DATASET_TABLES.has(dataset.tableName));
-    session.datasets.push(...materializedMentions.datasetsAdded);
-    const materializedFacts = await materializeFacts(session.query, extractFactsFromLines(lineRows, rawMentions, vocabulary));
-    session.datasets.push(...materializedFacts.datasetsAdded);
-    const materializedProfiles = await materializeEntityProfiles(session.query, {
-        factTypes: vocabulary.factTypes,
-    });
-    session.datasets.push(...materializedProfiles.datasetsAdded);
-    const identifierCount = rawMentions.filter((mention) => mention.mentionType !== ENTITY_MENTION_TYPE).length;
-    if (materializedMentions.mentionCount > 0 || materializedFacts.factCount > 0) {
-        ui.log(`  ${ui.label("Mentions")}  ${String(materializedMentions.entityCount)} ${vocabulary.entityLabel}(s), ${String(identifierCount)} identifier(s), ${String(materializedFacts.factCount)} fact(s)`);
-        ui.log(`  ${ui.label("Rollup")}   ${String(materializedProfiles.profileCount)} profile(s)`);
-    }
-    const documentsPath = writeRunArtifact(root, runId, "documents", documentCatalog);
-    ui.writeSuccess(`Document types → ${ui.path(documentsPath)}`);
-    ui.log(`  ${ui.label("Types")}  ${documentCatalog.documentTypes.map((type) => type.name).join(", ")}`);
-    const chunked = await chunkDocumentLines(session.query);
-    session.datasets = session.datasets.filter((dataset) => dataset.tableName !== chunked.dataset.tableName);
-    session.datasets.push(chunked.dataset);
-    if (chunked.embeddingsRestored > 0) {
-        ui.log(`  ${ui.label("Index")}  ${String(chunked.chunkCount)} segments (${String(chunked.embeddingsRestored)} embeddings preserved)`);
-    }
-    else {
-        ui.log(`  ${ui.label("Index")}  ${String(chunked.chunkCount)} text segments`);
-    }
-    let embedMs = 0;
-    if (!skipEmbed) {
-        embedMs = await embedDocumentChunks(session, models, chunked);
-    }
-    else {
-        ui.writeWarn("Embeddings skipped (--no-embed, keyword search only)");
-    }
-    return {
-        documentCatalog,
-        vocabulary,
-        extractionUsage: sumBurstUsage(vocabularyUsage, extracted.usage, enrichedDocuments.usage, enrichUsage),
-        extractionMs,
-        embedMs,
-    };
-}
-function resolveIncrementalScope(root: string, profile: ProfileReport, previousRunId: string | undefined, forceFull: boolean, hasDocuments: boolean): IncrementalScope {
-    if (forceFull || hasDocuments || previousRunId === undefined) {
-        return {
-            profileForInference: profile,
-            incrementalTables: null,
-            existingModel: null,
-        };
-    }
-    try {
-        const existingModel = readModelYaml(root);
-        const previousProfile = readRunArtifact(root, previousRunId, "profile", ProfileReportSchema);
-        const incrementalTables = affectedTablesFromProfileDiff(previousProfile, profile);
-        if (incrementalTables.size === 0) {
-            return {
-                profileForInference: profile,
-                incrementalTables: null,
-                existingModel: null,
-            };
-        }
-        return {
-            profileForInference: filterProfileToTables(profile, incrementalTables),
-            incrementalTables,
-            existingModel,
-        };
-    }
-    catch {
-        return {
-            profileForInference: profile,
-            incrementalTables: null,
-            existingModel: null,
-        };
-    }
-}
-function logInferenceScope(incrementalScope: IncrementalScope, hasDocumentCatalog: boolean): void {
-    const ui = getUi();
-    const { incrementalTables, existingModel } = incrementalScope;
-    if (incrementalTables !== null && existingModel !== null) {
-        ui.step(`Incremental inference on ${String(incrementalTables.size)} changed table(s): ${[...incrementalTables].join(", ")}`);
-        ui.detail(`Carrying forward ${String(existingModel.entities.filter((entity) => entity.status !== "proposed").length)} reviewed element(s) from ${MODEL_FILE_LABEL}`);
-        return;
-    }
-    if (hasDocumentCatalog) {
-        ui.step("Building semantic model from documents…");
-        return;
-    }
-    ui.step("Building semantic model…");
-}
+
 export const modelCommand: CommandHandler = async (args) => {
     const ui = initUi();
     const root = findWorkspaceRoot(process.cwd());
-    const forceFull = args.includes(FLAGS.FULL);
-    const skipEmbed = args.includes(FLAGS.NO_EMBED);
-    const positional = args.find((arg) => !isOptionArg(arg));
-    const sourcesDir = resolveSourcesDir(root, positional);
-    const absoluteSources = path.resolve(root, sourcesDir);
-    if (!existsSync(absoluteSources)) {
-        ui.writeError(`Sources folder not found: ${absoluteSources}`);
+    let parsed;
+    try {
+        parsed = parseModelArgs(args);
+    }
+    catch (error) {
+        ui.writeError(commandErrorMessage(error));
         process.exitCode = 1;
         return;
     }
-    const runId = createRunId();
-    const previousRunIds = listRunIds(root);
-    const previousRunId = previousRunIds.at(-1);
-    ui.heading("Model run");
-    ui.step(`${ui.accent(runId)} · reading ${ui.path(sourcesDir)}`);
-    const paths = workspacePaths(root);
-    const workspaceConfig = readWorkspaceConfig(root);
-    const timings: StageTimings = {
-        ingestMs: 0,
-        documentsMs: 0,
-        extractionMs: 0,
-        embedMs: 0,
-        profileMs: 0,
-        proposalMs: 0,
-    };
-    const ingestStarted = Date.now();
-    const session = await ingestFolder(absoluteSources, { databasePath: paths.dataPath });
-    timings.ingestMs = Date.now() - ingestStarted;
-    try {
-        if (session.datasets.length === 0) {
-            ui.writeError(`No readable tables found in "${sourcesDir}".`);
+    if (parsed.help) {
+        ui.log("Usage: backed model [sources-dir] [--full] [--no-embed]");
+        return;
+    }
+    if (parsed.sourcesDir !== undefined) {
+        const absoluteSources = path.resolve(root, parsed.sourcesDir);
+        if (!existsSync(absoluteSources)) {
+            ui.writeError(`Sources folder not found: ${absoluteSources}`);
             process.exitCode = 1;
             return;
         }
-        ui.log(`  ${ui.label("Tables")}  ${session.datasets.map((dataset) => dataset.tableName).join(", ")}`);
-        ui.writeSuccess(`Data snapshot → ${ui.path(paths.dataPath)}`);
-        for (const warning of session.warnings) {
-            ui.writeWarn(`[${warning.file}] ${warning.message}`);
-        }
-        const models = await resolveModelsOrExit(ui);
-        if (models === null) {
+    }
+    try {
+        const result = await runAnchorPipeline({
+            workspaceDir: root,
+            ...(parsed.sourcesDir !== undefined ? { sourcesDir: parsed.sourcesDir } : {}),
+            forceFull: parsed.forceFull,
+            skipEmbed: parsed.skipEmbed,
+            progress: createCliPipelineProgress(ui),
+        });
+        printPipelineSummary(ui, result, parsed.skipEmbed);
+    }
+    catch (error) {
+        if (error instanceof MissingSemanticModelsError) {
+            ui.writeError(error.message);
+            process.exitCode = 1;
             return;
         }
-        const llmCache = await prepareLlmCache(root, forceFull);
-        const profileStarted = Date.now();
-        let profile = await profileTables(session);
-        timings.profileMs += Date.now() - profileStarted;
-        const { lineDocuments } = splitTablesByKind(compressProfile(profile));
-        const hasLineDocuments = lineDocuments.length > 0;
-        let documentCatalog: DocumentCatalog | undefined;
-        let vocabulary: DomainVocabulary | undefined;
-        let extractionUsage: BurstUsage | undefined;
-        if (hasLineDocuments && workspaceConfig.documentTypeHints.length === 0) {
-            ui.writeWarn(MESSAGES.noDocumentTypeHints);
-        }
-        if (hasLineDocuments) {
-            const documentsStarted = Date.now();
-            const documentStage = await runDocumentStage(session, models, runId, root, lineDocuments, workspaceConfig, skipEmbed, previousRunId, forceFull, llmCache);
-            timings.documentsMs = Date.now() - documentsStarted;
-            timings.extractionMs = documentStage.extractionMs;
-            timings.embedMs = documentStage.embedMs;
-            documentCatalog = documentStage.documentCatalog;
-            vocabulary = documentStage.vocabulary;
-            extractionUsage = documentStage.extractionUsage;
-            const reprofileStarted = Date.now();
-            profile = await profileTables(session);
-            timings.profileMs += Date.now() - reprofileStarted;
-        }
-        const profilePath = writeRunArtifact(root, runId, "profile", profile);
-        ui.writeSuccess(`Profile → ${ui.path(profilePath)}`);
-        const incrementalScope = resolveIncrementalScope(root, profile, previousRunId, forceFull, hasLineDocuments);
-        logInferenceScope(incrementalScope, documentCatalog !== undefined);
-        const proposalStarted = Date.now();
-        const proposalProgress = createAiProgressReporter((message) => {
-            ui.detail(message);
-        });
-        const freshProposal = await proposeModel({
-            profile: incrementalScope.profileForInference,
-            runId,
-            models,
-            llmCache,
-            ...(documentCatalog !== undefined ? { documentCatalog } : {}),
-            ...(vocabulary !== undefined ? { vocabulary } : {}),
-            ...(extractionUsage !== undefined ? { extractionUsage } : {}),
-            onProgress: (message) => {
-                if (message.startsWith(PROPOSAL_ONTOLOGY_PREFIX)) {
-                    proposalProgress.indeterminate(message);
-                    return;
-                }
-                proposalProgress.detail(message);
-            },
-            onBatchProgress: ({ completed, total }) => {
-                proposalProgress.track("Column classification (LLM)", completed, total);
-            },
-        });
-        proposalProgress.end();
-        timings.proposalMs = Date.now() - proposalStarted;
-        const proposal: Proposal = incrementalScope.incrementalTables !== null && incrementalScope.existingModel !== null
-            ? mergeIncrementalProposal(freshProposal, incrementalScope.existingModel, incrementalScope.incrementalTables, profile)
-            : freshProposal;
-        const proposalPath = writeRunArtifact(root, runId, "proposal", proposal);
-        ui.writeSuccess(`Proposal → ${ui.path(proposalPath)}`);
-        printProposalSummary(proposal);
-        printStageTimings(timings, skipEmbed);
-    }
-    finally {
-        session.close();
+        ui.writeError(commandErrorMessage(error));
+        process.exitCode = 1;
     }
 };

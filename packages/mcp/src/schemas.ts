@@ -31,12 +31,9 @@ export const RelationSummarySchema = z.object({
     cardinality: z.enum(["one_to_one", "one_to_many", "many_to_many"]),
     status: ElementStatusSchema,
 });
-export const SearchMatchSchema = z.object({
-    kind: z.enum(["entity", "property", "relation", "rule"]),
-    id: z.string(),
-    name: z.string(),
-    snippet: z.string(),
-});
+import { ModelSearchMatchSchema } from "@backed/core";
+
+export const SearchMatchSchema = ModelSearchMatchSchema;
 export const DefinitionFoundSchema = z.object({
     found: z.literal(true),
     id: z.string(),

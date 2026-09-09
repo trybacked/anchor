@@ -56,7 +56,7 @@ export function resolveSemanticModels(env: Record<string, string | undefined> = 
     const languageModelId = resolveLanguageModelId(env);
     return {
         language: gateway(languageModelId),
-        embedding: gateway.textEmbeddingModel(env[EMBEDDING_MODEL_ENV] ?? DEFAULT_EMBEDDING_MODEL),
+        embedding: gateway.embeddingModel(env[EMBEDDING_MODEL_ENV] ?? DEFAULT_EMBEDDING_MODEL),
     };
 }
 export class InvalidReviewThresholdError extends Error {

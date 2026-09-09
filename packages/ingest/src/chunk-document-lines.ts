@@ -1,5 +1,6 @@
 import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE, DOCUMENT_LINES_TABLE, } from "@backed/core";
 import { capturePreservedChunkEmbeddings, restorePreservedChunkEmbeddings, } from "./chunk-embeddings.js";
+import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { dropTableIfExists, quoteIdentifier, quoteString } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";
 export interface DocumentLineRow {
@@ -21,22 +22,26 @@ export interface ChunkDocumentLinesOptions {
 }
 async function listDocumentIds(query: SqlQuery): Promise<string[]> {
     const rows = await query(`SELECT DISTINCT document_id FROM ${quoteIdentifier(DOCUMENT_LINES_TABLE)} ORDER BY document_id`);
-    return rows.map((row) => String(row["document_id"] ?? ""));
+    return rows.map((row) => readRowString(row, "document_id"));
 }
 async function fetchDocumentLines(query: SqlQuery, documentId: string): Promise<DocumentLineRow[]> {
     const rows = await query(`SELECT document_id, page, line, text FROM ${quoteIdentifier(DOCUMENT_LINES_TABLE)} WHERE document_id = ${quoteString(documentId)} ORDER BY page, line`);
     return rows.map((row) => ({
-        document_id: String(row["document_id"] ?? ""),
-        page: Number(row["page"] ?? 0),
-        line: Number(row["line"] ?? 0),
-        text: String(row["text"] ?? ""),
+        document_id: readRowString(row, "document_id"),
+        page: readRowNumber(row, "page"),
+        line: readRowNumber(row, "line"),
+        text: readRowString(row, "text"),
     }));
 }
 function overlapLineCount(lines: DocumentLineRow[], overlapChars: number): number {
     let total = 0;
     let count = 0;
     for (let index = lines.length - 1; index >= 0; index -= 1) {
-        total += lines[index]!.text.length + 1;
+        const line = lines[index];
+        if (line === undefined) {
+            break;
+        }
+        total += line.text.length + 1;
         count += 1;
         if (total >= overlapChars) {
             break;
@@ -48,7 +53,11 @@ export function chunkDocumentLineRows(lines: DocumentLineRow[], chunkSize: numbe
     if (lines.length === 0) {
         return [];
     }
-    const documentId = lines[0]!.document_id;
+    const firstLine = lines[0];
+    if (firstLine === undefined) {
+        return [];
+    }
+    const documentId = firstLine.document_id;
     const chunks: DocumentChunkRow[] = [];
     let buffer: DocumentLineRow[] = [];
     let bufferLength = 0;
@@ -60,11 +69,16 @@ export function chunkDocumentLineRows(lines: DocumentLineRow[], chunkSize: numbe
         if (text.length === 0) {
             return;
         }
+        const pageStart = buffer[0]?.page;
+        const pageEnd = buffer.at(-1)?.page;
+        if (pageStart === undefined || pageEnd === undefined) {
+            return;
+        }
         chunks.push({
             document_id: documentId,
             chunk_index: chunks.length,
-            page_start: buffer[0]!.page,
-            page_end: buffer[buffer.length - 1]!.page,
+            page_start: pageStart,
+            page_end: pageEnd,
             text,
         });
     };

@@ -1,11 +1,8 @@
 import { DEFAULT_CHUNK_SEARCH_LIMIT } from "@backed/core";
-import type { ChunkSearcher, DocumentCatalog, Entity, SemanticModel } from "@backed/core";
-export interface ModelSearchHit {
-    kind: "entity" | "property" | "relation" | "rule";
-    id: string;
-    name: string;
-    snippet: string;
-}
+import { readRowString } from "./duckdb-row.js";
+import type { ChunkSearcher, DocumentCatalog, Entity, ModelSearchMatch, SemanticModel } from "@backed/core";
+
+export type ModelSearchHit = ModelSearchMatch;
 function slugifyDocumentTypeId(id: string): string {
     return id
         .toLowerCase()
@@ -57,8 +54,8 @@ export async function searchModelViaDocumentChunks(model: SemanticModel, chunkSe
     const hits: ModelSearchHit[] = [];
     const seen = new Set<string>();
     for (const row of chunkRows) {
-        const documentId = String(row["document_id"] ?? "");
-        const chunkText = String(row["text"] ?? "");
+        const documentId = readRowString(row, "document_id");
+        const chunkText = readRowString(row, "text");
         if (documentId.length === 0 || chunkText.length === 0) {
             continue;
         }

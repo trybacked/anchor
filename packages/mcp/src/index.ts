@@ -5,5 +5,7 @@ export type { EntitySummary, EntityDetail, RelationSummary, SearchMatch, Definit
 export { EntitySummarySchema, EntityDetailSchema, RelationSummarySchema, SearchMatchSchema, DefinitionResultSchema, } from "./schemas.js";
 export { createModelMcpServer, runStdioMcpServerUntilClose, startStdioMcpServer, } from "./server.js";
 export type { ModelMcpServerOptions, McpSurfaceOperation, ServeUsageRecorder, } from "./server.js";
-export { MCP_SURFACE_TOOLS, TOOL_NAMES, SERVER_NAME, SERVER_VERSION } from "./constants.js";
+export { MCP_SURFACE_TOOLS, TOOL_NAMES, SERVER_NAME, SERVER_VERSION, type McpSurfaceTool } from "./constants.js";
+export { MCP_TOOL_DEFINITIONS } from "./tools.js";
+export type { ToolContext, ToolDefinition } from "./tools.js";
 export { entityNotFoundMessage } from "./errors.js";

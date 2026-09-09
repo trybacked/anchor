@@ -26,8 +26,10 @@ function buildRequest(cacheDir: string) {
         prompt: "user prompt",
         schema: TestSchema,
         schemaName: "test_schema",
-        cacheDir,
-        modelId: "test/model",
+        llmCache: {
+            cacheDir,
+            modelId: "test/model",
+        },
     };
 }
 

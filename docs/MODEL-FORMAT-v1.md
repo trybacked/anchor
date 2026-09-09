@@ -104,7 +104,7 @@ Five deterministic operations on a validated model — no LLM in the query path.
 ```bash
 # TypeScript / Node
 pnpm build
-node -e "import { readFileSync } from 'fs'; import { parseModelYaml } from './packages/core/dist/artifacts.js'; parseModelYaml(readFileSync('model.yaml','utf8'));"
+node -e "import { readFileSync } from 'fs'; import { parseModelYaml } from './packages/core/dist/model-yaml.js'; parseModelYaml(readFileSync('model.yaml','utf8'));"
 ```
 
 Any JSON Schema validator can validate the parsed YAML object against `schema/anchor-schema-v1.json`.
@@ -118,3 +118,15 @@ The Gerace municipal corpus golden model lives at:
 `packages/core/tests/golden/gerace/model.yaml`
 
 with structural expectations in `manifest.json`. CI runs `golden/gerace.test.ts` to guard extraction regressions.
+
+---
+
+## Hosted ephemeral pipeline
+
+When served through `apps/worker-service`, the same `model.yaml` format is the only document-derived artifact that persists per tenant.
+
+Documents are processed and deleted. Only the semantic model, content hashes, and a deletion log persist.
+
+Re-submitting unchanged files costs nothing: content hashes skip them.
+
+Every run's deletion is recorded in an append-only, auditable log.

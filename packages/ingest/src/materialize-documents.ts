@@ -1,15 +1,27 @@
 import { DOCUMENT_LINES_TABLE, documentTypeTableName } from "@backed/core";
 import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeSummary } from "@backed/core";
+import {
+    CORPUS_SAMPLE_LINE_LIMIT,
+    DOCUMENT_HEADER_LINE_LIMIT,
+    DOCUMENT_TYPE_SAMPLE_TABLE_LIMIT,
+} from "./constants.js";
+import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { dropTableIfExists, quoteIdentifier, quoteString, sqlNullableString } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";
-export const DOCUMENT_HEADER_LINE_LIMIT = 20;
-const DOCUMENT_TYPE_SAMPLE_TABLE_LIMIT = 3;
-export async function fetchDocumentHeaderText(query: SqlQuery, tableName: string, lineLimit = DOCUMENT_HEADER_LINE_LIMIT): Promise<string[]> {
+
+export async function fetchDocumentHeaderText(
+    query: SqlQuery,
+    tableName: string,
+    lineLimit = DOCUMENT_HEADER_LINE_LIMIT,
+): Promise<string[]> {
     const rows = await query(`SELECT text FROM ${quoteIdentifier(tableName)} WHERE page = 1 ORDER BY line LIMIT ${String(lineLimit)}`);
-    return rows.map((row) => String(row["text"] ?? ""));
+    return rows.map((row) => readRowString(row, "text"));
 }
-export const CORPUS_SAMPLE_LINE_LIMIT = 60;
-export async function fetchCorpusSampleLines(query: SqlQuery, tableNames: string[], lineLimit = CORPUS_SAMPLE_LINE_LIMIT): Promise<Array<{
+export async function fetchCorpusSampleLines(
+    query: SqlQuery,
+    tableNames: string[],
+    lineLimit = CORPUS_SAMPLE_LINE_LIMIT,
+): Promise<Array<{
     document_id: string;
     page: number;
     line: number;
@@ -27,9 +39,9 @@ export async function fetchCorpusSampleLines(query: SqlQuery, tableNames: string
         for (const row of rows) {
             sample.push({
                 document_id: tableName,
-                page: Number(row["page"] ?? 0),
-                line: Number(row["line"] ?? 0),
-                text: String(row["text"] ?? ""),
+                page: readRowNumber(row, "page"),
+                line: readRowNumber(row, "line"),
+                text: readRowString(row, "text"),
             });
         }
     }

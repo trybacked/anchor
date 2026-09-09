@@ -1,13 +1,17 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-export interface CachedBurstUsage {
+import { LLM_CACHE_FILE_SUFFIX, LLM_CACHE_KEY_HEX_LENGTH } from "./constants.js";
+
+export interface BurstUsage {
     inputTokens: number;
     outputTokens: number;
     costUsd: number | null;
 }
 
-const CACHE_KEY_PATTERN = /^[0-9a-f]{16}$/;
+export type CachedBurstUsage = BurstUsage;
+
+const CACHE_KEY_PATTERN = new RegExp(`^[0-9a-f]{${String(LLM_CACHE_KEY_HEX_LENGTH)}}$`);
 
 export interface CacheKeyInput {
     modelId: string;
@@ -19,7 +23,7 @@ export interface CacheKeyInput {
 
 export interface CachedLlmPayload {
     output: unknown;
-    usage: CachedBurstUsage;
+    usage: BurstUsage;
 }
 
 export interface LlmCacheContext {
@@ -27,17 +31,11 @@ export interface LlmCacheContext {
     modelId: string;
 }
 
-export function burstCacheFields(context: LlmCacheContext | undefined): {
-    cacheDir?: string;
-    modelId?: string;
-} {
+export function withLlmCache(context: LlmCacheContext | undefined): { llmCache: LlmCacheContext } | Record<string, never> {
     if (context === undefined) {
         return {};
     }
-    return {
-        cacheDir: context.cacheDir,
-        modelId: context.modelId,
-    };
+    return { llmCache: context };
 }
 
 export function cacheKey(input: CacheKeyInput): string {
@@ -48,7 +46,7 @@ export function cacheKey(input: CacheKeyInput): string {
         input.schemaName,
         input.schemaJson,
     ].join("\0");
-    return createHash("sha256").update(payload).digest("hex").slice(0, 16);
+    return createHash("sha256").update(payload).digest("hex").slice(0, LLM_CACHE_KEY_HEX_LENGTH);
 }
 
 function isValidCacheKey(key: string): boolean {
@@ -59,7 +57,7 @@ function cacheFilePath(cacheDir: string, key: string): string | undefined {
     if (!isValidCacheKey(key)) {
         return undefined;
     }
-    return join(cacheDir, `${key}.json`);
+    return join(cacheDir, `${key}${LLM_CACHE_FILE_SUFFIX}`);
 }
 
 function parseCachedPayload(raw: string): CachedLlmPayload | undefined {
@@ -114,7 +112,7 @@ export async function loadCachedOutput(cacheDir: string, key: string): Promise<C
     }
 }
 
-export async function saveCachedOutput(cacheDir: string, key: string, output: unknown, usage: CachedBurstUsage): Promise<void> {
+export async function saveCachedOutput(cacheDir: string, key: string, output: unknown, usage: BurstUsage): Promise<void> {
     const filePath = cacheFilePath(cacheDir, key);
     if (filePath === undefined) {
         throw new Error(`Invalid LLM cache key: ${key}`);

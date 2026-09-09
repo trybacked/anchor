@@ -40,6 +40,8 @@ export async function extractRarArchive(absolutePath: string, targetDir: string)
         targetPath: targetDir,
     });
     const extracted = extractor.extract();
-    for (const _file of extracted.files) {
+    const extractedFiles = [...extracted.files];
+    if (extractedFiles.length === 0) {
+        throw new Error(`RAR archive contained no files: ${absolutePath}`);
     }
 }

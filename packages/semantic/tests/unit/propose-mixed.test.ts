@@ -3,7 +3,8 @@ import type { DocumentCatalog, ProfileReport } from "@backed/core";
 import { documentTypeTableName } from "@backed/core";
 import { runBurst } from "../../src/burst.js";
 import { proposeModel } from "../../src/propose.js";
-vi.mock("../../src/burst.js", () => ({
+vi.mock("../../src/burst.js", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("../../src/burst.js")>()),
     runBurst: vi.fn(),
 }));
 const mockedRunBurst = vi.mocked(runBurst);

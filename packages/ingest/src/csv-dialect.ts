@@ -1,9 +1,12 @@
+import { NATIVE_FRACTIONAL_TYPE_PATTERN } from "@backed/core";
 import { open } from "node:fs/promises";
+import {
+    ENCODING_PROBE_MAX_BYTES,
+    UTF8_TAIL_TRIM_BYTES,
+} from "./constants.js";
+import { readRowString } from "./duckdb-row.js";
 import { quoteString } from "./sql.js";
 import type { CsvDialect, CsvEncoding, SqlQuery } from "./types.js";
-const ENCODING_PROBE_MAX_BYTES = 1024 * 1024;
-const UTF8_TAIL_TRIM_BYTES = 4;
-const FRACTIONAL_TYPE_PATTERN = /^(DOUBLE|FLOAT|DECIMAL)/;
 export interface SniffedCsv {
     dialect: CsvDialect;
     readCsvClause: string;
@@ -77,12 +80,12 @@ async function sniffCsv(query: SqlQuery, filePath: string, encoding: CsvEncoding
     const columns = Array.isArray(row["Columns"]) ? row["Columns"] : [];
     const fractionalColumnCount = columns.filter((column: unknown) => typeof column === "object" &&
         column !== null &&
-        FRACTIONAL_TYPE_PATTERN.test(String((column as {
+        NATIVE_FRACTIONAL_TYPE_PATTERN.test(String((column as {
             type?: unknown;
         }).type))).length;
     return {
-        delimiter: String(row["Delimiter"]),
+        delimiter: readRowString(row, "Delimiter"),
         fractionalColumnCount,
-        readCsvClause: String(row["Prompt"]).replace(/;\s*$/, ""),
+        readCsvClause: readRowString(row, "Prompt").replace(/;\s*$/, ""),
     };
 }

@@ -1,17 +1,12 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { spawn } from "node:child_process";
 import { createServer, type Server } from "node:http";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { tokenResponseToCredentials } from "../../src/auth/api-client.js";
 import { writeBackedCredentials } from "../../src/auth/credentials.js";
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
-const CLI_PATH = join(REPO_ROOT, "apps/cli/dist/cli.js");
-const FIXTURE_ROOT = join(REPO_ROOT, "fixtures/pmi-minimal");
+import { CLI_PATH, NODE_EXECUTABLE, PMI_MINIMAL_FIXTURE } from "../helpers/paths.js";
+import { createTempWorkspace, removeTempWorkspace } from "../helpers/temp-workspace.js";
 let authServer: Server;
 let authBaseUrl: string;
 let credentialsPath: string;
@@ -159,7 +154,7 @@ function parseToolJson(result: Awaited<ReturnType<Client["callTool"]>>): unknown
 }
 async function withMcpClient<T>(env: NodeJS.ProcessEnv, cwd: string, run: (client: Client) => Promise<T>): Promise<T> {
     const transport = new StdioClientTransport({
-        command: "node",
+        command: NODE_EXECUTABLE,
         args: [CLI_PATH, "serve"],
         cwd,
         env,
@@ -173,29 +168,9 @@ async function withMcpClient<T>(env: NodeJS.ProcessEnv, cwd: string, run: (clien
         await client.close();
     }
 }
-function runServeAndCapture(cwd: string, env: NodeJS.ProcessEnv, timeoutMs = 3000): Promise<{
-    exitCode: number | null;
-    stderr: string;
-}> {
-    return new Promise((resolve) => {
-        const child = spawn("node", [CLI_PATH, "serve"], { cwd, env });
-        let stderr = "";
-        child.stderr.setEncoding("utf8");
-        child.stderr.on("data", (chunk: string) => {
-            stderr += chunk;
-        });
-        const timer = setTimeout(() => {
-            child.kill("SIGTERM");
-        }, timeoutMs);
-        child.on("exit", (exitCode) => {
-            clearTimeout(timer);
-            resolve({ exitCode, stderr });
-        });
-    });
-}
 describe("backed serve e2e", () => {
     beforeAll(async () => {
-        tempDir = await mkdtemp(join(tmpdir(), "backed-serve-e2e-"));
+        tempDir = await createTempWorkspace("backed-serve-e2e-");
         credentialsPath = join(tempDir, "credentials.json");
         authBaseUrl = await startAuthApi();
         await loginViaDeviceFlow(authBaseUrl, credentialsPath);
@@ -204,7 +179,7 @@ describe("backed serve e2e", () => {
         await new Promise<void>((resolve) => {
             authServer.close(() => resolve());
         });
-        await rm(tempDir, { recursive: true, force: true });
+        await removeTempWorkspace(tempDir);
         delete process.env["BACKED_CREDENTIALS_PATH"];
         delete process.env["BACKED_API_URL"];
     });
@@ -214,7 +189,7 @@ describe("backed serve e2e", () => {
             BACKED_API_URL: authBaseUrl,
             BACKED_CREDENTIALS_PATH: credentialsPath,
         };
-        await withMcpClient(env, FIXTURE_ROOT, async (client) => {
+        await withMcpClient(env, PMI_MINIMAL_FIXTURE, async (client) => {
             const entities = parseToolJson(await client.callTool({ name: "list_entities", arguments: {} }));
             expect(entities).toEqual(expect.arrayContaining([
                 expect.objectContaining({ id: "cliente", status: "confirmed" }),
@@ -249,7 +224,7 @@ describe("backed serve e2e", () => {
             BACKED_API_URL: authBaseUrl,
             BACKED_CREDENTIALS_PATH: missingCredentialsPath,
             BACKED_TELEMETRY: "0",
-        }, FIXTURE_ROOT, async (client) => {
+        }, PMI_MINIMAL_FIXTURE, async (client) => {
             const entities = parseToolJson(await client.callTool({ name: "list_entities", arguments: {} }));
             expect(entities).toEqual(expect.arrayContaining([
                 expect.objectContaining({ id: "cliente" }),

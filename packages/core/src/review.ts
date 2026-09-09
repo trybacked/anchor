@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, MODEL_FORMAT_VERSION } from "./constants.js";
 import type { Entity, Relation, Rule, SemanticModel } from "./model.js";
-import type { Proposal, ReviewQuestion, ReviewQuestionKind } from "./proposal.js";
+import type { Proposal } from "./proposal.js";
+import type { ReviewQuestion, ReviewQuestionKind } from "./review-questions.js";
 export const ReviewDecisionSchema = z.enum(["yes", "no", "rename"]);
 export const ReviewAnswerSchema = z
     .object({

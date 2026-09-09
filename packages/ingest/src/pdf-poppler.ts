@@ -1,8 +1,11 @@
+import { BACKED_OCR_DPI_ENV } from "./env.js";
 import { execFile, spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { DEFAULT_OCR_DPI, MIN_OCR_DPI, OCR_TEMP_DIR_PREFIX } from "./constants.js";
+
 const execFileAsync = promisify(execFile);
 function runPdftoppm(args: string[]): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -19,12 +22,9 @@ function runPdftoppm(args: string[]): Promise<void> {
         });
     });
 }
-const DEFAULT_OCR_DPI = 150;
-const OCR_TEMP_DIR_PREFIX = "backed-pdf-ocr-";
-const MIN_OCR_DPI = 72;
 let popplerAvailable: boolean | null = null;
 function ocrDpi(): number {
-    const raw = process.env["BACKED_OCR_DPI"];
+    const raw = process.env[BACKED_OCR_DPI_ENV];
     if (raw === undefined || raw.trim() === "") {
         return DEFAULT_OCR_DPI;
     }

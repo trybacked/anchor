@@ -1,8 +1,7 @@
 import { readModelYaml } from "@backed/core";
-import { MCP_SURFACE_TOOLS, runStdioMcpServerUntilClose } from "@backed/mcp";
+import { MCP_SURFACE_TOOLS, runStdioMcpServerUntilClose, SERVER_NAME } from "@backed/mcp";
 import { findWorkspaceRoot } from "../env.js";
 import { createServeSearchModelOptions } from "../serve-model-search.js";
-import { MCP_SERVER_NAME } from "../config.js";
 import { BACKED_TELEMETRY_ENV, resolveServeContext, ServeAuthError } from "../serve-auth.js";
 import { getUi, initUi } from "../ui/index.js";
 import { ANSI, wrap } from "../ui/ansi.js";
@@ -31,12 +30,12 @@ export const serveCommand: CommandHandler = async () => {
         }
         throw error;
     }
-    writeServeStderr(`MCP server "${MCP_SERVER_NAME}" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`, "brand");
+    writeServeStderr(`MCP server "${SERVER_NAME}" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`, "brand");
     if (serveContext.mode === "telemetry" && serveContext.userEmail !== undefined) {
         writeServeStderr(`Telemetry on · signed in as ${serveContext.userEmail}`);
     }
     else {
-        writeServeStderr(`Local mode · no telemetry (set ${BACKED_TELEMETRY_ENV}=1 after ${"backed login"} to opt in)`);
+        writeServeStderr(`Local mode · no telemetry (set ${BACKED_TELEMETRY_ENV}=1 after backed login to opt in)`);
     }
     writeServeStderr(`Tools: ${MCP_SURFACE_TOOLS.join(", ")} · Ctrl+C to exit`);
     writeServeStderr(SERVE_PRIVACY_NOTE);

@@ -1,7 +1,7 @@
 import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { registerSource } from "./register.js";
-import { PdfNoExtractableTextError } from "./errors.js";
+import { EmptyLineDocumentError } from "./errors.js";
 import { beginPdfIngestNoiseFilter, endPdfIngestNoiseFilter } from "./pdf-ingest-noise.js";
 import { terminateOcrWorker } from "./pdf-ocr.js";
 import { scanFolder } from "./scan.js";
@@ -19,7 +19,8 @@ export { createEntityProfileReader } from "./entity-profile-reader.js";
 export type { ChunkSearcherOptions } from "./chunk-search.js";
 export { ensureChunkEmbeddingColumn, fetchChunkTextsForEmbedding, storeChunkEmbeddings, documentChunksHaveEmbeddings, capturePreservedChunkEmbeddings, restorePreservedChunkEmbeddings, formatEmbeddingLiteral, chunkEmbeddingColumnRef, } from "./chunk-embeddings.js";
 export type { StoredChunkEmbedding, ChunkTextRow } from "./chunk-embeddings.js";
-export { DOCUMENT_HEADER_LINE_LIMIT, CORPUS_SAMPLE_LINE_LIMIT, applyDocumentTopics, fetchCorpusSampleLines, fetchDocumentHeaderText, fetchDocumentHeaderSamples, materializeDocumentTables, } from "./materialize-documents.js";
+export { DOCUMENT_HEADER_LINE_LIMIT, CORPUS_SAMPLE_LINE_LIMIT } from "./constants.js";
+export { applyDocumentTopics, fetchCorpusSampleLines, fetchDocumentHeaderText, fetchDocumentHeaderSamples, materializeDocumentTables, } from "./materialize-documents.js";
 export type { DocumentTopicUpdate } from "./materialize-documents.js";
 export { fetchAllDocumentLines, materializeDocumentMentions, } from "./materialize-document-mentions.js";
 export type { MaterializedMentionInput, MaterializedEntityInput, MaterializeDocumentMentionsInput, MaterializeDocumentMentionsResult, } from "./materialize-document-mentions.js";
@@ -67,11 +68,14 @@ export async function ingestFolder(folderPath: string, options: IngestFolderOpti
                 warnings.push(...registration.warnings);
             }
             catch (error) {
-                if (error instanceof PdfNoExtractableTextError) {
+                if (error instanceof EmptyLineDocumentError) {
                     warnings.push({
-                        kind: "pdf_no_extractable_text",
+                        kind: source.format === "pdf" ? "pdf_no_extractable_text" : "unreadable_file",
                         file: source.relativePath,
-                        message: "PDF has no extractable text after native parse and OCR (empty or OCR disabled)",
+                        message:
+                            source.format === "pdf"
+                                ? "PDF has no extractable text after native parse and OCR (empty or OCR disabled)"
+                                : `No extractable text: ${error.message}`,
                     });
                     continue;
                 }

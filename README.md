@@ -355,17 +355,39 @@ pnpm test
 pnpm cli --help
 ```
 
-Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `apps/cli`.
+Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `@backed/runner` → `apps/cli` / `apps/worker-service`.
 
 CI (GitHub Actions) runs build, schema drift check, and tests including the **Gerace golden** `model.yaml` fixture.
 
 ---
 
+## Hosted ephemeral pipeline (`apps/worker-service`)
+
+Documents are processed and deleted. Only the semantic model, content hashes, and a deletion log persist.
+
+Re-submitting unchanged files costs nothing: content hashes skip them.
+
+Every run's deletion is recorded in an append-only, auditable log.
+
+```bash
+export WORKER_SERVICE_AUTH_TOKEN=dev-token
+pnpm --filter @backed/worker-service start
+```
+
+API surface:
+
+- `POST /v1/tenants/:tenantId/runs` — multipart upload → `{ runId }`
+- `GET /v1/tenants/:tenantId/runs/:runId` — `{ status, stats?, deletionEntry?, failureMessage? }` (`failureMessage` when `status` is `failed`)
+- `GET /v1/tenants/:tenantId/model` — current `model.yaml` (+ `ETag`)
+- `GET|POST /v1/tenants/:tenantId/review` — remote review flow
+
+---
+
 ## Scope
 
-**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · authenticated MCP export (5 operations) · incremental re-inference · document corpus typing.
+**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · authenticated MCP export (5 operations) · incremental re-inference · document corpus typing · ephemeral worker API.
 
-**Out (v1):** Hosted cloud · SDK · registry · billing · dashboard · writeback.
+**Out (v1):** Multi-tenant UI · SDK · registry · billing · dashboard · writeback.
 
 **Not Anchor:** ETL · warehouse · ERP · chatbot · connector marketplace.
 

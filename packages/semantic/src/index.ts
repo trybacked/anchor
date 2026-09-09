@@ -9,8 +9,10 @@ export { selectReviewQuestions, capReviewQuestions, reviewBudgetDoubts } from ".
 export type { CappedReviewQuestions } from "./questions.js";
 export { EMPTY_BURST_USAGE, runBurst, sumBurstUsage } from "./burst.js";
 export type { BurstRequest, BurstUsage, BurstResult } from "./burst.js";
-export { cacheKey, loadCachedOutput, saveCachedOutput, burstCacheFields } from "./llm-cache.js";
-export type { CacheKeyInput, CachedLlmPayload, CachedBurstUsage, LlmCacheContext } from "./llm-cache.js";
+export { cacheKey, loadCachedOutput, saveCachedOutput, withLlmCache } from "./llm-cache.js";
+export type { CacheKeyInput, CachedBurstUsage, CachedLlmPayload, LlmCacheContext } from "./llm-cache.js";
+export { LLM_CACHE_KEY_HEX_LENGTH, LLM_CACHE_FILE_SUFFIX, LLM_SCHEMA_NAMES, STRICT_JSON_SUFFIX } from "./constants.js";
+export type { LlmSchemaName } from "./constants.js";
 export { proposeModel } from "./propose.js";
 export type { ProposeModelOptions } from "./propose.js";
 export { mergeIncrementalProposal } from "./merge-proposal.js";
