@@ -1,139 +1,130 @@
 import type { ChunkSearchMode, ChunkSearchRequest, ChunkSearcher, QueryEmbedder } from "@backed/core";
-import { DOCUMENT_CHUNKS_TABLE } from "@backed/core";
-
-import { documentChunksHaveEmbeddings } from "./chunk-embeddings.js";
-import { quoteIdentifier, quoteString } from "./sql.js";
+import { DEFAULT_CHUNK_SEARCH_MIN_SCORE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE } from "@backed/core";
+import {
+    CHUNK_SEARCH_OVERSAMPLE_FACTOR,
+    KEYWORD_MIN_TOKEN_LENGTH,
+    KEYWORD_STOPWORDS,
+} from "./constants.js";
+import { chunkKey, reciprocalRankFusion } from "./rrf.js";
+import { chunkEmbeddingColumnRef, documentChunksHaveEmbeddings, formatEmbeddingLiteral, } from "./chunk-embeddings.js";
+import { documentIdsInClause, quoteIdentifier, quoteString } from "./sql.js";
 import type { SqlQuery } from "./types.js";
-
 export interface ChunkSearcherOptions {
-  embedQuery?: QueryEmbedder;
+    embedQuery?: QueryEmbedder;
 }
-
-function chunkKey(row: Record<string, unknown>): string {
-  return `${String(row["document_id"] ?? "")}:${String(row["chunk_index"] ?? "")}`;
+const CHUNK_RESULT_COLUMNS = [
+    "document_id",
+    "chunk_index",
+    "page_start",
+    "page_end",
+    "text",
+] as const;
+function keywordTokens(query: string): string[] {
+    return query
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((token) => token.length >= KEYWORD_MIN_TOKEN_LENGTH && !KEYWORD_STOPWORDS.has(token));
 }
-
 function buildScopeConditions(request: ChunkSearchRequest): string[] {
-  const conditions: string[] = [];
-
-  if (request.documentId !== undefined) {
-    conditions.push(
-      `${quoteIdentifier("document_id")} = ${quoteString(request.documentId)}`,
-    );
-  }
-
-  if (request.sourceTable !== undefined) {
-    conditions.push(
-      `${quoteIdentifier("document_id")} IN (SELECT ${quoteIdentifier("document_id")} FROM ${quoteIdentifier(request.sourceTable)})`,
-    );
-  }
-
-  return conditions;
-}
-
-function formatEmbeddingLiteral(values: number[]): string {
-  return `[${values.map((value) => String(value)).join(", ")}]::FLOAT[${String(values.length)}]`;
-}
-
-async function keywordSearch(
-  query: SqlQuery,
-  request: ChunkSearchRequest,
-): Promise<Record<string, unknown>[]> {
-  const conditions = [
-    `contains(lower(${quoteIdentifier("text")}), lower(${quoteString(request.query)}))`,
-    ...buildScopeConditions(request),
-  ];
-
-  const sql = `SELECT ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")}, ${quoteIdentifier("page_start")}, ${quoteIdentifier("page_end")}, ${quoteIdentifier("text")}, CAST(NULL AS DOUBLE) AS score FROM ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} WHERE ${conditions.join(" AND ")} ORDER BY ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")} LIMIT ${String(request.limit)}`;
-  return query(sql);
-}
-
-async function semanticSearch(
-  query: SqlQuery,
-  request: ChunkSearchRequest,
-  queryEmbedding: number[],
-): Promise<Record<string, unknown>[]> {
-  const conditions = [
-    `${quoteIdentifier("embedding")} IS NOT NULL`,
-    ...buildScopeConditions(request),
-  ];
-
-  const vectorLiteral = formatEmbeddingLiteral(queryEmbedding);
-  const sql = `SELECT ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")}, ${quoteIdentifier("page_start")}, ${quoteIdentifier("page_end")}, ${quoteIdentifier("text")}, array_cosine_similarity(${quoteIdentifier("embedding")}, ${vectorLiteral}) AS score FROM ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} WHERE ${conditions.join(" AND ")} ORDER BY score DESC, ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")} LIMIT ${String(request.limit)}`;
-  return query(sql);
-}
-
-function resolveSearchMode(
-  requested: ChunkSearchMode | undefined,
-  embeddingsAvailable: boolean,
-): ChunkSearchMode {
-  if (requested !== undefined) {
-    return requested;
-  }
-  return embeddingsAvailable ? "hybrid" : "keyword";
-}
-
-function mergeHybridResults(
-  semanticRows: Record<string, unknown>[],
-  keywordRows: Record<string, unknown>[],
-  limit: number,
-): Record<string, unknown>[] {
-  const merged = new Map<string, Record<string, unknown>>();
-
-  for (const row of semanticRows) {
-    merged.set(chunkKey(row), { ...row, match: "semantic" });
-  }
-
-  for (const row of keywordRows) {
-    const key = chunkKey(row);
-    if (!merged.has(key)) {
-      merged.set(key, { ...row, score: 1, match: "keyword" });
+    const conditions: string[] = [];
+    if (request.documentId !== undefined) {
+        conditions.push(`${quoteIdentifier("document_id")} = ${quoteString(request.documentId)}`);
     }
-  }
-
-  return [...merged.values()].slice(0, limit);
+    if (request.documentIds !== undefined && request.documentIds.length > 0) {
+        conditions.push(documentIdsInClause(request.documentIds));
+    }
+    if (request.sourceTable !== undefined) {
+        conditions.push(`${quoteIdentifier("document_id")} IN (SELECT ${quoteIdentifier("document_id")} FROM ${quoteIdentifier(request.sourceTable)})`);
+    }
+    return conditions;
 }
-
-export function createChunkSearcher(
-  query: SqlQuery,
-  options: ChunkSearcherOptions = {},
-): ChunkSearcher {
-  return async (request: ChunkSearchRequest) => {
-    const embeddingsAvailable = await documentChunksHaveEmbeddings(query);
-    const mode = resolveSearchMode(request.mode, embeddingsAvailable);
-
-    if (mode === "keyword") {
-      return keywordSearch(query, request);
+function selectChunkColumns(scoreExpression: string): string {
+    const columns = CHUNK_RESULT_COLUMNS.map((column) => quoteIdentifier(column)).join(", ");
+    return `${columns}, ${scoreExpression}`;
+}
+function searchCandidateLimit(limit: number): string {
+    return String(limit * CHUNK_SEARCH_OVERSAMPLE_FACTOR);
+}
+async function keywordSearch(query: SqlQuery, request: ChunkSearchRequest): Promise<Record<string, unknown>[]> {
+    const tokens = keywordTokens(request.query);
+    const textCondition = tokens.length > 1
+        ? `(${tokens.map((token) => `contains(lower(${quoteIdentifier("text")}), ${quoteString(token)})`).join(" OR ")})`
+        : `contains(lower(${quoteIdentifier("text")}), lower(${quoteString(request.query)}))`;
+    const conditions = [textCondition, ...buildScopeConditions(request)];
+    const sql = `SELECT ${selectChunkColumns("CAST(NULL AS DOUBLE) AS score")} FROM ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} WHERE ${conditions.join(" AND ")} ORDER BY ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")} LIMIT ${searchCandidateLimit(request.limit)}`;
+    return query(sql);
+}
+async function semanticSearch(query: SqlQuery, request: ChunkSearchRequest, queryEmbedding: number[]): Promise<Record<string, unknown>[]> {
+    const minScore = request.minScore ?? DEFAULT_CHUNK_SEARCH_MIN_SCORE;
+    const conditions = [
+        `${quoteIdentifier("embedding")} IS NOT NULL`,
+        ...buildScopeConditions(request),
+    ];
+    let vectorLiteral: string;
+    try {
+        vectorLiteral = formatEmbeddingLiteral(queryEmbedding, DEFAULT_EMBEDDING_DIMENSION);
     }
-
-    if (!options.embedQuery) {
-      if (embeddingsAvailable) {
-        throw new Error(
-          "Semantic chunk search requires an embedding model. Set AI_GATEWAY_API_KEY and run backed model to embed chunks.",
-        );
-      }
-      return keywordSearch(query, request);
+    catch {
+        throw new Error(`Query embedding dimension ${String(queryEmbedding.length)} does not match expected ${String(DEFAULT_EMBEDDING_DIMENSION)}. Re-run "backed model" with the configured embedding model.`);
     }
-
-    if (!embeddingsAvailable) {
-      if (mode === "semantic") {
-        throw new Error(
-          'No chunk embeddings in the snapshot. Re-run "backed model" on a document corpus to generate them.',
-        );
-      }
-      return keywordSearch(query, request);
+    const scoreExpression = `array_cosine_similarity(${chunkEmbeddingColumnRef()}, ${vectorLiteral}) AS score`;
+    const sql = `SELECT ${selectChunkColumns(scoreExpression)} FROM ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} WHERE ${conditions.join(" AND ")} ORDER BY score DESC, ${quoteIdentifier("document_id")}, ${quoteIdentifier("chunk_index")} LIMIT ${searchCandidateLimit(request.limit)}`;
+    const rows = await query(sql);
+    return rows.filter((row) => {
+        const score = Number(row["score"] ?? 0);
+        return Number.isFinite(score) && score >= minScore;
+    }).slice(0, request.limit);
+}
+function resolveSearchMode(requested: ChunkSearchMode | undefined, embeddingsAvailable: boolean): ChunkSearchMode {
+    if (requested !== undefined) {
+        return requested;
     }
-
-    const queryEmbedding = await options.embedQuery(request.query);
-
-    if (mode === "semantic") {
-      return semanticSearch(query, request, queryEmbedding);
-    }
-
-    const [semanticRows, keywordRows] = await Promise.all([
-      semanticSearch(query, request, queryEmbedding),
-      keywordSearch(query, request),
+    return embeddingsAvailable ? "semantic" : "keyword";
+}
+function mergeHybridResults(semanticRows: Record<string, unknown>[], keywordRows: Record<string, unknown>[], limit: number): Record<string, unknown>[] {
+    const fused = reciprocalRankFusion([
+        {
+            source: "semantic",
+            items: semanticRows.map((row) => ({ id: chunkKey(row), payload: row })),
+        },
+        {
+            source: "keyword",
+            items: keywordRows.map((row) => ({ id: chunkKey(row), payload: row })),
+        },
     ]);
-    return mergeHybridResults(semanticRows, keywordRows, request.limit);
-  };
+    return fused.slice(0, limit).map((item) => ({
+        ...item.payload,
+        score: item.score,
+        match: "rrf",
+    }));
+}
+export function createChunkSearcher(query: SqlQuery, options: ChunkSearcherOptions = {}): ChunkSearcher {
+    return async (request: ChunkSearchRequest) => {
+        const embeddingsAvailable = await documentChunksHaveEmbeddings(query);
+        const mode = resolveSearchMode(request.mode, embeddingsAvailable);
+        if (mode === "keyword") {
+            return keywordSearch(query, request);
+        }
+        if (!options.embedQuery) {
+            if (embeddingsAvailable) {
+                throw new Error("Semantic chunk search requires an embedding model. Set AI_GATEWAY_API_KEY and run backed model to embed chunks.");
+            }
+            return keywordSearch(query, request);
+        }
+        if (!embeddingsAvailable) {
+            if (mode === "semantic") {
+                throw new Error('No chunk embeddings in the snapshot. Re-run "backed model" on a document corpus to generate them.');
+            }
+            return keywordSearch(query, request);
+        }
+        const queryEmbedding = await options.embedQuery(request.query);
+        if (mode === "semantic") {
+            return semanticSearch(query, request, queryEmbedding);
+        }
+        const [semanticRows, keywordRows] = await Promise.all([
+            semanticSearch(query, request, queryEmbedding),
+            keywordSearch(query, request),
+        ]);
+        return mergeHybridResults(semanticRows, keywordRows, request.limit);
+    };
 }

@@ -1,0 +1,534 @@
+openapi: 3.1.0
+info:
+  title: Backed Worker Service API
+  version: 1.0.0
+  description: |
+    Ephemeral pipeline HTTP API. Upload documents per tenant, receive model.yaml.
+    Raw corpus is never retained after a run completes.
+servers:
+  - url: http://127.0.0.1:8790
+    description: Local worker-service
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy and data root is writable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Data root is not writable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /openapi.yaml:
+    get:
+      summary: OpenAPI specification
+      security: []
+      responses:
+        "200":
+          description: This document
+          content:
+            application/yaml:
+              schema:
+                type: string
+  /v1/tenants/{tenantId}/runs:
+    post:
+      summary: Submit a pipeline run
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "202":
+          description: Run accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitRunResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/tenants/{tenantId}/runs/{runId}:
+    get:
+      summary: Get run status
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Run status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunStatusResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/RunNotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/tenants/{tenantId}/model:
+    get:
+      summary: Get current model.yaml
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: If-None-Match
+          in: header
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Model YAML
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/yaml:
+              schema:
+                type: string
+        "304":
+          description: Not modified
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/ModelNotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/tenants/{tenantId}/review:
+    get:
+      summary: Get review questions
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Review questions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewQuestionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/ReviewNotAvailable"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    post:
+      summary: Submit review answers
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewSubmitRequest"
+      responses:
+        "200":
+          description: Review applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewSubmitResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/ReviewNotAvailable"
+        "409":
+          $ref: "#/components/responses/StaleReview"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/tenants/{tenantId}/audit/deletions:
+    get:
+      summary: Paginated deletion audit log
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        "200":
+          description: Deletion log page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedDeletionsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/tenants/{tenantId}/audit/ledger:
+    get:
+      summary: Content-hash ledger
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Hash list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerAuditResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    TenantId:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[a-z0-9_-]{1,64}$"
+        example: demo
+    RunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    HealthResponse:
+      type: object
+      required: [ok, service, version, dataRootWritable]
+      properties:
+        ok:
+          type: boolean
+          description: True when the data root volume is writable
+        service:
+          type: string
+          example: backed-worker-service
+        version:
+          type: string
+          example: "0.1.0"
+        dataRootWritable:
+          type: boolean
+    SubmitRunResponse:
+      type: object
+      required: [runId]
+      properties:
+        runId:
+          type: string
+          format: uuid
+    RunStatus:
+      type: string
+      enum: [running, done, failed]
+    PipelineStats:
+      type: object
+      required:
+        - ingestMs
+        - documentsMs
+        - extractionMs
+        - embedMs
+        - profileMs
+        - proposalMs
+        - llmUsage
+        - skippedLlm
+      properties:
+        ingestMs:
+          type: integer
+        documentsMs:
+          type: integer
+        extractionMs:
+          type: integer
+        embedMs:
+          type: integer
+        profileMs:
+          type: integer
+        proposalMs:
+          type: integer
+        llmUsage:
+          type: object
+          properties:
+            inputTokens:
+              type: integer
+            outputTokens:
+              type: integer
+            costUsd:
+              type: ["number", "null"]
+        skippedLlm:
+          type: boolean
+    DeletionLogEntry:
+      type: object
+      required: [runId, tenantId, deletedAt, filesDeleted, bytesDeleted]
+      properties:
+        runId:
+          type: string
+        tenantId:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time
+        filesDeleted:
+          type: integer
+          minimum: 0
+        bytesDeleted:
+          type: integer
+          minimum: 0
+    RunStatusResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/RunStatus"
+        stats:
+          $ref: "#/components/schemas/PipelineStats"
+        deletionEntry:
+          $ref: "#/components/schemas/DeletionLogEntry"
+        failureMessage:
+          type: string
+    ReviewQuestion:
+      type: object
+      required: [id, kind, targetId, question, impact, uncertainty, risk, evidence]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [entity, relation, rule]
+        targetId:
+          type: string
+        question:
+          type: string
+        impact:
+          type: number
+        uncertainty:
+          type: number
+        risk:
+          type: number
+        evidence:
+          type: object
+    ReviewQuestionsResponse:
+      type: object
+      required: [runId, questions]
+      properties:
+        runId:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewQuestion"
+    ReviewAnswer:
+      type: object
+      required: [questionId, decision]
+      properties:
+        questionId:
+          type: string
+        decision:
+          type: string
+          enum: [yes, no, rename]
+        newName:
+          type: string
+    ReviewSubmitRequest:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewAnswer"
+    ReviewSubmitResponse:
+      type: object
+      required: [updated, staleAnswerCount]
+      properties:
+        updated:
+          type: boolean
+        staleAnswerCount:
+          type: integer
+    PaginatedDeletionsResponse:
+      type: object
+      required: [entries, total, offset, limit, hasMore]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeletionLogEntry"
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+        hasMore:
+          type: boolean
+    LedgerAuditResponse:
+      type: object
+      required: [hashes]
+      properties:
+        hashes:
+          type: array
+          items:
+            type: string
+    RunCompletedWebhookPayload:
+      type: object
+      description: Outbound webhook POST (partner-configured URL, not served by this API)
+      required: [event, tenantId, runId, status, skipped]
+      properties:
+        event:
+          type: string
+          const: run.completed
+        tenantId:
+          type: string
+        runId:
+          type: string
+        status:
+          type: string
+          enum: [done, failed]
+        skipped:
+          type: boolean
+        deletionEntry:
+          $ref: "#/components/schemas/DeletionLogEntry"
+        modelEtag:
+          type: string
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        maxFiles:
+          type: integer
+        maxBytes:
+          type: integer
+        staleAnswerCount:
+          type: integer
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            error: unauthorized
+    Forbidden:
+      description: Partner cannot access tenant
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            error: forbidden
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            error: rate_limit_exceeded
+    PayloadTooLarge:
+      description: Upload too large
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ModelNotFound:
+      description: No model yet
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            error: model_not_found
+    RunNotFound:
+      description: Unknown run
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            error: run_not_found
+    ReviewNotAvailable:
+      description: No proposal to review
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            error: review_not_available
+    StaleReview:
+      description: Answers reference outdated questions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            error: stale_review_answers
+            staleAnswerCount: 2

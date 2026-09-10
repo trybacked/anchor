@@ -1,29 +1,34 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { workspacePaths } from "@backed/core";
+import { WORKSPACE_ENV_FILE } from "./config.js";
 
-/** Walk up from cwd until `.backed/config.yaml` is found (or stop at filesystem root). */
-export function findWorkspaceRoot(startDir: string = process.cwd()): string {
-  let directory = resolve(startDir);
-  while (true) {
-    if (existsSync(join(directory, ".backed", "config.yaml"))) {
-      return directory;
-    }
-    const parent = dirname(directory);
-    if (parent === directory) {
-      return resolve(startDir);
-    }
-    directory = parent;
-  }
+export function workspaceEnvPath(root: string): string {
+    return join(root, WORKSPACE_ENV_FILE);
 }
 
-/** Load `.env` from the Anchor workspace root when present. */
+export function findWorkspaceRoot(startDir: string = process.cwd()): string {
+    let directory = resolve(startDir);
+    for (;;) {
+        if (existsSync(workspacePaths(directory).configPath)) {
+            return directory;
+        }
+        const parent = dirname(directory);
+        if (parent === directory) {
+            return resolve(startDir);
+        }
+        directory = parent;
+    }
+}
+
 export function loadWorkspaceDotEnv(startDir: string = process.cwd()): string {
-  const root = findWorkspaceRoot(startDir);
-  const envPath = join(root, ".env");
-  try {
-    process.loadEnvFile(envPath);
-  } catch {
-    // Missing .env is fine — shell-provided variables still apply.
-  }
-  return root;
+    const root = findWorkspaceRoot(startDir);
+    const envPath = workspaceEnvPath(root);
+    try {
+        process.loadEnvFile(envPath);
+    }
+    catch {
+        // Workspace .env is optional.
+    }
+    return root;
 }

@@ -1,10 +1,9 @@
-/** PDF parsed successfully but contains no machine-readable text (e.g. scanned image). */
-export class PdfNoExtractableTextError extends Error {
-  readonly relativePath: string;
+export class EmptyLineDocumentError extends Error {
+    readonly relativePath: string;
 
-  constructor(relativePath: string) {
-    super(`PDF has no extractable text: ${relativePath}`);
-    this.name = "PdfNoExtractableTextError";
-    this.relativePath = relativePath;
-  }
+    constructor(relativePath: string) {
+        super(`No extractable text: ${relativePath}`);
+        this.name = "EmptyLineDocumentError";
+        this.relativePath = relativePath;
+    }
 }

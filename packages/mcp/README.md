@@ -1,16 +1,23 @@
 # @backed/mcp
 
-Local MCP server: client AI agents query the confirmed ontology (`model.yaml`).
+Local MCP server exposing the Anchor semantic model as five deterministic, Zod-validated operations.
 
-**Responsibilities:**
+## MCP surface
 
-- Pure, testable mapping over `SemanticModel`: `listEntities`, `getEntity` (with linked relations and rules), `listRelations`, `searchModel`.
-- `queryEntityRows(model, reader, input, dependencies?)` — validates entity id, filter columns, and row limit. Optional `text` routes to chunk search (documents) or substring search on text columns (structured data). Pass `chunkSearcher` in dependencies for document text search.
-- `traverseRelationRows(model, reader, input)` — follow a confirmed relation from a join key value (forward or reverse). Used by the `traverse_relation` MCP tool.
-- `searchDocumentChunks(model, searcher, input)` — internal chunk search helper (used by `queryEntityRows`).
-- `createModelMcpServer(model, options?)` — `McpServer` with tools `list_entities`, `get_entity`, `list_relations`, `search_model`, `query_entity`, `traverse_relation` (when `options.rowReader` is set). Pass `options.chunkSearcher` to enable document text search inside `query_entity`.
-- `startStdioMcpServer(model, options?)` — stdio transport startup (used by `backed serve`).
+| Tool | Purpose |
+|---|---|
+| `list_entities` | Entity summaries: id, name, description, status |
+| `get_entity` | Entity detail with properties (semanticType, role, provenance) |
+| `list_relations` | Relations with cardinality and status; optional `id` filter |
+| `search_model` | Semantic document-chunk search when DuckDB vectors are available, merged with case-insensitive substring match |
+| `get_definition` | Confirmed business rule with provenance, or structured not-found |
 
-**Data access:** `backed model` persists ingested tables to `.backed/data.duckdb`. `backed serve` opens that snapshot read-only. Agents use `query_entity` for row lookup and `traverse_relation` to navigate linked objects. No raw SQL.
+No LLM inference occurs in the MCP path. `search_model` may embed the query locally when chunk vectors exist in `.backed/data.duckdb`. Data is read from `model.yaml` and the local DuckDB snapshot.
 
-**Does not contain:** pipeline, ingest SQL, LLM.
+## Usage
+
+Started by `backed serve` (local by default). Set `BACKED_TELEMETRY=1` after `backed login` to opt in to background usage metering — failures never block tool calls.
+
+```typescript
+import { createModelMcpServer, runStdioMcpServerUntilClose } from "@backed/mcp";
+```

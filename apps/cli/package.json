@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@backed/core": "workspace:*",
@@ -25,10 +26,13 @@
     "@backed/ingest": "workspace:*",
     "@backed/mcp": "workspace:*",
     "@backed/profile": "workspace:*",
+    "@backed/runner": "workspace:*",
     "@backed/semantic": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "ai": "^7.0.85"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "ai": "^7.0.85",
+    "vitest": "^3.0.5"
   }
 }

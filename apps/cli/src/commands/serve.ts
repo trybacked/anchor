@@ -1,81 +1,47 @@
-import { existsSync } from "node:fs";
-
-import { readModelYaml, workspacePaths } from "@backed/core";
-import type { ChunkSearcher, RowReader } from "@backed/core";
-import { createChunkSearcher, createRowReader, openDataSession } from "@backed/ingest";
-import { startStdioMcpServer } from "@backed/mcp";
-import { embedQuery, resolveSemanticModels } from "@backed/semantic";
-
+import { readModelYaml } from "@backed/core";
+import { MCP_SURFACE_TOOLS, runStdioMcpServerUntilClose, SERVER_NAME } from "@backed/mcp";
 import { findWorkspaceRoot } from "../env.js";
-import { initUi } from "../ui/index.js";
+import { createServeSearchModelOptions } from "../serve-model-search.js";
+import { BACKED_TELEMETRY_ENV, resolveServeContext, ServeAuthError } from "../serve-auth.js";
+import { getUi, initUi } from "../ui/index.js";
 import { ANSI, wrap } from "../ui/ansi.js";
 import type { CommandHandler } from "../types.js";
 
-function stderrLine(text: string): void {
-  console.error(wrap(ANSI.dim, text));
-}
+const SERVE_PRIVACY_NOTE = "Model data stays local — MCP reads model.yaml and DuckDB on this machine only.";
 
-function stderrAccent(text: string): void {
-  console.error(wrap(ANSI.brand, text));
+function writeServeStderr(text: string, style: "dim" | "brand" = "dim"): void {
+    console.error(wrap(style === "brand" ? ANSI.brand : ANSI.dim, text));
 }
 
 export const serveCommand: CommandHandler = async () => {
-  initUi();
-  const root = findWorkspaceRoot(process.cwd());
-  const paths = workspacePaths(root);
-  const model = readModelYaml(root);
-
-  let rowReader: RowReader | undefined;
-  let chunkSearcher: ChunkSearcher | undefined;
-  let dataSession: { close: () => void } | undefined;
-
-  if (existsSync(paths.dataPath)) {
-    const session = await openDataSession(paths.dataPath);
-    dataSession = session;
-    rowReader = createRowReader(session.query);
-
-    let embedQueryFn: ((text: string) => Promise<number[]>) | undefined;
+    initUi();
+    const ui = getUi();
+    const root = findWorkspaceRoot(process.cwd());
+    const model = readModelYaml(root);
+    let serveContext;
     try {
-      const models = resolveSemanticModels();
-      embedQueryFn = (text: string) => embedQuery(models.embedding, text);
-    } catch {
-      embedQueryFn = undefined;
+        serveContext = await resolveServeContext();
     }
-
-    chunkSearcher = createChunkSearcher(session.query, {
-      ...(embedQueryFn !== undefined ? { embedQuery: embedQueryFn } : {}),
+    catch (error) {
+        if (error instanceof ServeAuthError) {
+            ui.writeError(error.message);
+            process.exitCode = 1;
+            return;
+        }
+        throw error;
+    }
+    writeServeStderr(`MCP server "${SERVER_NAME}" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`, "brand");
+    if (serveContext.mode === "telemetry" && serveContext.userEmail !== undefined) {
+        writeServeStderr(`Telemetry on · signed in as ${serveContext.userEmail}`);
+    }
+    else {
+        writeServeStderr(`Local mode · no telemetry (set ${BACKED_TELEMETRY_ENV}=1 after backed login to opt in)`);
+    }
+    writeServeStderr(`Tools: ${MCP_SURFACE_TOOLS.join(", ")} · Ctrl+C to exit`);
+    writeServeStderr(SERVE_PRIVACY_NOTE);
+    const searchModelOptions = await createServeSearchModelOptions(root, model);
+    await runStdioMcpServerUntilClose(model, {
+        ...(serveContext.usageRecorder !== undefined ? { usageRecorder: serveContext.usageRecorder } : {}),
+        ...(searchModelOptions !== undefined ? { searchModelOptions } : {}),
     });
-    stderrLine(`Data snapshot loaded: ${paths.dataPath}`);
-  } else {
-    stderrLine(
-      'No data snapshot (.backed/data.duckdb). Data tools disabled until you run "backed model".',
-    );
-  }
-
-  const tools = [
-    "list_entities",
-    "get_entity",
-    "list_relations",
-    "search_model",
-    ...(rowReader ? ["query_entity", "traverse_relation"] : []),
-  ];
-
-  stderrAccent(
-    `MCP server "backed-model" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`,
-  );
-  stderrLine(`Tools: ${tools.join(", ")} · Ctrl+C to exit`);
-
-  const serverOptions: { rowReader?: RowReader; chunkSearcher?: ChunkSearcher } = {};
-  if (rowReader) {
-    serverOptions.rowReader = rowReader;
-  }
-  if (chunkSearcher) {
-    serverOptions.chunkSearcher = chunkSearcher;
-  }
-
-  try {
-    await startStdioMcpServer(model, serverOptions);
-  } finally {
-    dataSession?.close();
-  }
 };

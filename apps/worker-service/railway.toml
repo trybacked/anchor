@@ -1,0 +1,12 @@
+# Railway service config (monorepo: set Root Directory to repository root).
+# Dockerfile path: apps/worker-service/Dockerfile
+# Mount a persistent volume at /data (WORKER_SERVICE_DATA_ROOT).
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "apps/worker-service/Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"

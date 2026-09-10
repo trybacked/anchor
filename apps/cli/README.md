@@ -29,7 +29,11 @@ At inference time only `config.yaml` rules apply — no built-in document types.
 
 ### `backed model`
 
-Stages: ingest → document extraction (if PDFs/TXT) → chunk/embed → profile → semantic proposal.
+Stages: ingest → document extraction (if PDFs/TXT) → mentions/facts → chunk/embed → profile → semantic proposal.
+
+Document corpora run deterministic mention and fact extraction (`ensureCurrencyFactTypes` → `extractMentionsFromLines` → `extractFactsFromLines` → `materializeFacts`) before profiling. Facts live in `.backed/data.duckdb`; they are not backfilled from older snapshots.
+
+**After upgrading fact extraction**, re-run `backed model` on existing workspaces so `document_facts` and entity rollups reflect the improved parser.
 
 Requires `AI_GATEWAY_API_KEY` in workspace `.env`. Writes `.backed/data.duckdb` and `.backed/runs/<id>/`.
 

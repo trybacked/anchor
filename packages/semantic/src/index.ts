@@ -1,67 +1,39 @@
-/** Agentic LLM bursts: semantic inference from compressed profiles */
-
 export const PACKAGE_NAME = "@backed/semantic" as const;
-
 export { COMPRESSED_TOP_VALUES_LIMIT, compressProfile } from "./compress.js";
 export type { CompressedColumn, CompressedTable } from "./compress.js";
-
-export {
-  AI_GATEWAY_API_KEY_ENV,
-  SEMANTIC_MODEL_ENV,
-  CHEAP_MODEL_ENV,
-  FRONTIER_MODEL_ENV,
-  EMBEDDING_MODEL_ENV,
-  REVIEW_CONFIDENCE_THRESHOLD_ENV,
-  DEFAULT_SEMANTIC_MODEL,
-  DEFAULT_CHEAP_MODEL,
-  DEFAULT_FRONTIER_MODEL,
-  DEFAULT_EMBEDDING_MODEL,
-  DEFAULT_REQUEST_TIMEOUT_MS,
-  DEFAULT_CLASSIFICATION_BATCH_SIZE,
-  REQUEST_TIMEOUT_MS_ENV,
-  CLASSIFICATION_BATCH_SIZE_ENV,
-  MissingApiKeyError,
-  InvalidReviewThresholdError,
-  InvalidRequestTimeoutError,
-  InvalidClassificationBatchSizeError,
-  resolveSemanticModels,
-  resolveReviewConfidenceThreshold,
-  resolveSemanticRequestTimeoutMs,
-  resolveClassificationBatchSize,
-} from "./env.js";
+export { AI_GATEWAY_API_KEY_ENV, SEMANTIC_MODEL_ENV, CHEAP_MODEL_ENV, FRONTIER_MODEL_ENV, EMBEDDING_MODEL_ENV, REVIEW_CONFIDENCE_THRESHOLD_ENV, DEFAULT_SEMANTIC_MODEL, DEFAULT_CHEAP_MODEL, DEFAULT_FRONTIER_MODEL, DEFAULT_EMBEDDING_MODEL, DEFAULT_REQUEST_TIMEOUT_MS, DEFAULT_CLASSIFICATION_BATCH_SIZE, REQUEST_TIMEOUT_MS_ENV, CLASSIFICATION_BATCH_SIZE_ENV, MissingApiKeyError, InvalidReviewThresholdError, InvalidRequestTimeoutError, InvalidClassificationBatchSizeError, resolveSemanticModels, resolveLanguageModelId, resolveReviewConfidenceThreshold, resolveSemanticRequestTimeoutMs, resolveClassificationBatchSize, } from "./env.js";
 export type { SemanticModels } from "./env.js";
-
 export { ColumnClassificationOutputSchema, OntologyOutputSchema } from "./llm-output.js";
 export type { ColumnClassificationOutput, OntologyOutput } from "./llm-output.js";
-
 export { selectReviewQuestions, capReviewQuestions, reviewBudgetDoubts } from "./questions.js";
 export type { CappedReviewQuestions } from "./questions.js";
-
-export { runBurst } from "./burst.js";
+export { EMPTY_BURST_USAGE, runBurst, sumBurstUsage } from "./burst.js";
 export type { BurstRequest, BurstUsage, BurstResult } from "./burst.js";
-
+export { cacheKey, loadCachedOutput, saveCachedOutput, withLlmCache } from "./llm-cache.js";
+export type { CacheKeyInput, CachedBurstUsage, CachedLlmPayload, LlmCacheContext } from "./llm-cache.js";
+export { LLM_CACHE_KEY_HEX_LENGTH, LLM_CACHE_FILE_SUFFIX, LLM_SCHEMA_NAMES, STRICT_JSON_SUFFIX } from "./constants.js";
+export type { LlmSchemaName } from "./constants.js";
 export { proposeModel } from "./propose.js";
 export type { ProposeModelOptions } from "./propose.js";
 export { mergeIncrementalProposal } from "./merge-proposal.js";
-
-export { extractDocumentCatalog, SingleDocumentExtractionSchema, DocumentExtractionOutputSchema, DOCUMENT_EXTRACTION_BATCH_SIZE } from "./extract-document-catalog.js";
+export { extractDocumentCatalog, SingleDocumentExtractionSchema, DocumentExtractionOutputSchema, DOCUMENT_EXTRACTION_BATCH_SIZE, } from "./extract-document-catalog.js";
 export { inferDocumentTypeHint } from "./document-type-hints.js";
 export type { DocumentTypeHint } from "./document-type-hints.js";
-export type { DocumentExtractionSample, DocumentLlmProgress, ExtractDocumentCatalogOptions } from "./extract-document-catalog.js";
-
+export type { DocumentExtractionSample, DocumentLlmProgress, ExtractDocumentCatalogOptions, DocumentCatalogCacheEntry, } from "./extract-document-catalog.js";
+export { hashDocumentSample } from "./document-sample-fingerprint.js";
 export { embedTexts, embedQuery, EMBEDDING_BATCH_SIZE } from "./embed-chunks.js";
 export type { EmbedTextsUsage, EmbedTextsResult, EmbedBatchProgress } from "./embed-chunks.js";
-
-export {
-  buildDocumentCorpusEntities,
-  buildDocumentCorpusRelations,
-  classifyTypedDocumentTables,
-  DOCUMENT_TEXT_ENTITY_ID,
-  DOCUMENT_CHUNK_ENTITY_ID,
-} from "./document-ontology.js";
-
-export {
-  isLineDocumentTable,
-  isDocumentCorpus,
-  splitTablesByKind,
-} from "./line-document.js";
+export { buildDocumentCorpusEntities, buildDocumentCorpusRelations, classifyTypedDocumentTables, classifyMentionTables, entityIdFor, profileEntityIdFor, materializedEntityIds, DOCUMENT_TEXT_ENTITY_ID, DOCUMENT_CHUNK_ENTITY_ID, DOCUMENT_MENTION_ENTITY_ID, DOCUMENT_FACT_ENTITY_ID, } from "./document-ontology.js";
+export { ensureCurrencyFactTypes } from "./ensure-currency-facts.js";
+export { buildFallbackDomainVocabulary, discoverDomain, mergeCorpusNameSuffixes, DISCOVERY_DOCUMENT_SAMPLE, } from "./discover-domain.js";
+export { scanNameSuffixes, filterPlausibleSuffixes } from "./scan-name-suffixes.js";
+export type { DiscoverDomainOptions, DiscoverDomainResult } from "./discover-domain.js";
+export { extractMentionsFromLine, extractMentionsFromLines, buildEntityIndex, buildLineContextMap, toMaterializedMentions, entityIdFromName, normalizeEntityName, } from "./extract-document-mentions.js";
+export type { RawDocumentMention, DocumentLineRow, EntityRecord, MaterializedMentionRow, } from "./extract-document-mentions.js";
+export { enrichEntities } from "./enrich-entities.js";
+export type { EnrichEntitiesOptions, EnrichEntitiesResult } from "./enrich-entities.js";
+export { enrichDocuments, buildDocumentEnrichmentPrompt, buildDocumentTopicSample, buildDocumentTopicSamples, findBoilerplateLines, DOCUMENT_ENRICHMENT_BATCH_SIZE, DOCUMENT_ENRICHMENT_CONCURRENCY, } from "./enrich-documents.js";
+export type { DocumentEnrichmentInput, EnrichDocumentsOptions, EnrichDocumentsResult, } from "./enrich-documents.js";
+export { extractFactsFromLine, extractFactsFromLines, FACT_LINE_WINDOW, } from "./extract-facts.js";
+export type { RawFact } from "./extract-facts.js";
+export { isLineDocumentTable, isDocumentCorpus, splitTablesByKind, } from "./line-document.js";

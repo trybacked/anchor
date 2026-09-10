@@ -52,6 +52,9 @@ importers:
       '@backed/profile':
         specifier: workspace:*
         version: link:../../packages/profile
+      '@backed/runner':
+        specifier: workspace:*
+        version: link:../../packages/runner
       '@backed/semantic':
         specifier: workspace:*
         version: link:../../packages/semantic
@@ -62,18 +65,34 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.30.0
+        version: 1.30.0(zod@3.25.76)
       ai:
         specifier: ^7.0.85
         version: 7.0.92(zod@3.25.76)
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.1)(yaml@2.9.0)
 
-  apps/review:
+  apps/worker-service:
     dependencies:
       '@backed/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@backed/runner':
+        specifier: workspace:*
+        version: link:../../packages/runner
       '@backed/semantic':
         specifier: workspace:*
         version: link:../../packages/semantic
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.1)(yaml@2.9.0)
 
   packages/core:
     dependencies:
@@ -83,6 +102,10 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+    devDependencies:
+      zod-to-json-schema:
+        specifier: ^3.24.0
+        version: 3.25.2(zod@3.25.76)
 
   packages/diff:
     dependencies:
@@ -142,6 +165,31 @@ importers:
         specifier: workspace:*
         version: link:../ingest
 
+  packages/runner:
+    dependencies:
+      '@backed/core':
+        specifier: workspace:*
+        version: link:../core
+      '@backed/diff':
+        specifier: workspace:*
+        version: link:../diff
+      '@backed/ingest':
+        specifier: workspace:*
+        version: link:../ingest
+      '@backed/profile':
+        specifier: workspace:*
+        version: link:../profile
+      '@backed/semantic':
+        specifier: workspace:*
+        version: link:../semantic
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.1)(yaml@2.9.0)
+
   packages/semantic:
     dependencies:
       '@ai-sdk/gateway':
@@ -156,6 +204,9 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+      zod-to-json-schema:
+        specifier: ^3.24.0
+        version: 3.25.2(zod@3.25.76)
 
 packages:
 

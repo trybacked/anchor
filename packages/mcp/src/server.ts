@@ -1,203 +1,111 @@
-/**
- * Local MCP server (stdio transport) exposing the confirmed ontology to AI
- * agents. Pattern adapted from the previous repo's local-server: McpServer +
- * registerTool; here the tools query model.yaml instead of HTTP bindings.
- */
-
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { ChunkSearcher, RowReader, SemanticModel } from "@backed/core";
-import { MAX_ROW_LIMIT } from "@backed/core";
-import { z } from "zod";
+import type { SemanticModel } from "@backed/core";
+import type { McpSurfaceTool } from "./constants.js";
+import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
+import type { SearchModelOptions } from "./mapping.js";
+import { MCP_TOOL_DEFINITIONS, type ToolContext } from "./tools.js";
 
-import { queryEntityErrorMessage, queryEntityRows } from "./data.js";
-import { getEntity, listEntities, listRelations, searchModel } from "./mapping.js";
-import { traverseRelationErrorMessage, traverseRelationRows } from "./traverse.js";
+export interface ServeUsageRecorder {
+    record(operation: McpSurfaceTool): Promise<void>;
+}
 
-const SERVER_NAME = "backed-model";
-const SERVER_VERSION = "0.1.0";
-
-const rowFilterSchema = z.object({
-  column: z.string().min(1).describe("Source column name from the entity properties"),
-  op: z.enum(["=", "!=", ">", ">=", "<", "<="]).describe("Comparison operator"),
-  value: z.union([z.string(), z.number()]).describe("Value to compare against"),
-});
+export type McpSurfaceOperation = McpSurfaceTool;
 
 export interface ModelMcpServerOptions {
-  rowReader?: RowReader | undefined;
-  chunkSearcher?: ChunkSearcher | undefined;
+    usageRecorder?: ServeUsageRecorder;
+    searchModelOptions?: SearchModelOptions;
 }
 
-function jsonContent(data: unknown): { content: { type: "text"; text: string }[] } {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+function jsonContent(data: unknown): {
+    content: {
+        type: "text";
+        text: string;
+    }[];
+} {
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
 
-export function createModelMcpServer(
-  model: SemanticModel,
-  options: ModelMcpServerOptions = {},
-): McpServer {
-  const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
+function errorContent(text: string): {
+    isError: true;
+    content: {
+        type: "text";
+        text: string;
+    }[];
+} {
+    return {
+        isError: true,
+        content: [{ type: "text", text }],
+    };
+}
 
-  server.registerTool(
-    "list_entities",
-    {
-      title: "List entities",
-      description:
-        "List semantic model entities (id, name, source table, status, confidence).",
-    },
-    () => jsonContent(listEntities(model)),
-  );
+function isToolErrorResult(result: unknown): result is { error: string } {
+    return typeof result === "object" && result !== null && "error" in result && typeof result.error === "string";
+}
 
-  server.registerTool(
-    "get_entity",
-    {
-      title: "Entity detail",
-      description:
-        "Return an entity with its properties (columns, semantic types), relations, and rules that apply to it.",
-      inputSchema: { id: z.string().min(1).describe("Entity id, e.g. 'customer'") },
-    },
-    ({ id }) => {
-      const detail = getEntity(model, id);
-      if (!detail) {
-        return {
-          isError: true,
-          content: [
+async function withUsage<T>(
+    operation: McpSurfaceTool,
+    usageRecorder: ServeUsageRecorder | undefined,
+    handler: () => T | Promise<T>,
+): Promise<T> {
+    if (usageRecorder !== undefined) {
+        void usageRecorder.record(operation).catch(() => {
+            // Metering must not block or fail local MCP tools.
+        });
+    }
+    return handler();
+}
+
+export function createModelMcpServer(model: SemanticModel, options: ModelMcpServerOptions = {}): McpServer {
+    const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
+    const usageRecorder = options.usageRecorder;
+    const toolContext: ToolContext = {
+        model,
+        ...(options.searchModelOptions !== undefined ? { searchModelOptions: options.searchModelOptions } : {}),
+    };
+
+    for (const tool of MCP_TOOL_DEFINITIONS) {
+        server.registerTool(
+            tool.name,
             {
-              type: "text" as const,
-              text: `Entity "${id}" not found. Use list_entities for available ids.`,
+                title: tool.title,
+                description: tool.description,
+                ...(tool.inputSchema !== undefined ? { inputSchema: tool.inputSchema } : {}),
             },
-          ],
-        };
-      }
-      return jsonContent(detail);
-    },
-  );
+            async (args) =>
+                withUsage(tool.name, usageRecorder, async () => {
+                    const result = await tool.handler(toolContext, args);
+                    if (isToolErrorResult(result)) {
+                        return errorContent(result.error);
+                    }
+                    return jsonContent(result);
+                }),
+        );
+    }
 
-  server.registerTool(
-    "list_relations",
-    {
-      title: "List relations",
-      description:
-        "List relations between entities with anchor columns, cardinality, and confidence.",
-    },
-    () => jsonContent(listRelations(model)),
-  );
-
-  server.registerTool(
-    "search_model",
-    {
-      title: "Search model",
-      description:
-        "Search by text across entities, properties, relations, and business definitions in the model.",
-      inputSchema: { query: z.string().min(1).describe("Text to search, e.g. 'vat number'") },
-    },
-    ({ query }) => jsonContent(searchModel(model, query)),
-  );
-
-  if (options.rowReader) {
-    const rowReader = options.rowReader;
-    const chunkSearcher = options.chunkSearcher;
-    server.registerTool(
-      "query_entity",
-      {
-        title: "Query entity",
-        description:
-          "Fetch rows for an entity. Use filters for structured columns (from get_entity). Use text for free-text search — document types and document_chunk search PDF body (keyword/semantic hybrid); other entities search text columns. Read-only; no raw SQL.",
-        inputSchema: {
-          id: z.string().min(1).describe("Entity id, e.g. 'invoice' or 'determination'"),
-          filters: z
-            .array(rowFilterSchema)
-            .optional()
-            .describe("Structured column filters (AND-combined)"),
-          text: z
-            .string()
-            .min(1)
-            .optional()
-            .describe("Free-text search within this entity's data"),
-          textMode: z
-            .enum(["keyword", "semantic", "hybrid"])
-            .optional()
-            .describe("Document text search mode. Default: hybrid when embeddings exist"),
-          documentId: z
-            .string()
-            .min(1)
-            .optional()
-            .describe("Limit document search to one ingested file id"),
-          orderBy: z
-            .string()
-            .min(1)
-            .optional()
-            .describe("Source column name to sort by"),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(MAX_ROW_LIMIT)
-            .optional()
-            .describe(`Max rows to return (default 25, max ${String(MAX_ROW_LIMIT)})`),
-        },
-      },
-      async (input) => {
-        const dependencies = chunkSearcher !== undefined ? { chunkSearcher } : {};
-        const result = await queryEntityRows(model, rowReader, input, dependencies);
-        if (!result.ok) {
-          return {
-            isError: true,
-            content: [{ type: "text" as const, text: queryEntityErrorMessage(result.error) }],
-          };
-        }
-        return jsonContent(result.rows);
-      },
-    );
-
-    server.registerTool(
-      "traverse_relation",
-      {
-        title: "Traverse relation",
-        description:
-          "Follow a relation from a known join key value to linked entity rows. Pattern: get_entity → query_entity to read a key → traverse_relation with that value and a relation id from get_entity. Forward (default) returns rows of the to entity; reverse returns rows of the from entity. Read-only.",
-        inputSchema: {
-          relationId: z
-            .string()
-            .min(1)
-            .describe("Relation id from get_entity or list_relations, e.g. 'determination-has-text'"),
-          value: z
-            .union([z.string(), z.number()])
-            .describe("Join key value from a prior query_entity result"),
-          direction: z
-            .enum(["forward", "reverse"])
-            .optional()
-            .describe("Traversal direction. Default: forward (from → to entity)"),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(MAX_ROW_LIMIT)
-            .optional()
-            .describe(`Max rows to return (default 25, max ${String(MAX_ROW_LIMIT)})`),
-        },
-      },
-      async (input) => {
-        const result = await traverseRelationRows(model, rowReader, input);
-        if (!result.ok) {
-          return {
-            isError: true,
-            content: [{ type: "text" as const, text: traverseRelationErrorMessage(result.error) }],
-          };
-        }
-        return jsonContent(result.rows);
-      },
-    );
-  }
-
-  return server;
+    return server;
 }
 
-export async function startStdioMcpServer(
-  model: SemanticModel,
-  options: ModelMcpServerOptions = {},
-): Promise<McpServer> {
-  const server = createModelMcpServer(model, options);
-  await server.connect(new StdioServerTransport());
-  return server;
+export async function startStdioMcpServer(model: SemanticModel, options: ModelMcpServerOptions = {}): Promise<McpServer> {
+    const server = createModelMcpServer(model, options);
+    await server.connect(new StdioServerTransport());
+    return server;
+}
+
+export async function runStdioMcpServerUntilClose(model: SemanticModel, options: ModelMcpServerOptions = {}): Promise<void> {
+    const server = createModelMcpServer(model, options);
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    await new Promise<void>((resolve) => {
+        const previousOnClose = transport.onclose;
+        transport.onclose = () => {
+            previousOnClose?.();
+            resolve();
+        };
+        const shutdown = (): void => {
+            void server.close();
+        };
+        process.once("SIGINT", shutdown);
+        process.once("SIGTERM", shutdown);
+    });
 }

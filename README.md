@@ -32,6 +32,8 @@ Anchor does not move data or replace systems. It builds the **ontology layer** a
 | **`model.yaml`** | Protocol artifact (the output) |
 | **`backed`** | CLI command (reference implementation) |
 
+**Protocol artifacts:** [`schema/anchor-schema-v1.json`](./schema/anchor-schema-v1.json) (JSON Schema) · [`docs/MODEL-FORMAT-v1.md`](./docs/MODEL-FORMAT-v1.md) (format spec)
+
 ---
 
 ## Why
@@ -61,11 +63,41 @@ model.yaml        Anchor model (committable)
 
 **Profile** produces reproducible statistical evidence per column: null rates, distinct counts, patterns, candidate keys. Cross-column value overlap surfaces deterministic foreign-key candidates. No LLM participates.
 
-**Semantic inference** runs schema-constrained LLM bursts on compressed profiles (never raw rows). Column classification and ontology use `SEMANTIC_MODEL`; ambiguous document headers use the same model. **Mixed folders** merge structured-table inference with deterministic document entities in one proposal.
+**Semantic inference** runs schema-constrained LLM bursts on compressed profiles (never raw rows). Column classification and ontology use **`SEMANTIC_MODEL`** (default **`zai/glm-5.3-flash`**); ambiguous document headers use the same model. If domain vocabulary discovery fails, the pipeline **degrades gracefully** (deterministic extraction continues with minimal defaults). **Mixed folders** merge structured-table inference with deterministic document entities in one proposal.
 
-**Review** presents risk-ranked questions for elements below **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`). Answers: Yes · No · Rename.
+**Review** presents risk-ranked questions for elements below **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`). Answers: Yes · No · Rename. Elements at or above the threshold that were not asked become **`confirmed`** in `model.yaml`; only explicit **No** answers are omitted.
 
-**Consumption** via MCP: **`query_entity`** (filters or semantic **`text`** on document chunks) and **`traverse_relation`**.
+**Consumption** via MCP: five deterministic operations on `model.yaml` — see [MCP surface](#mcp-surface) and [Serve and telemetry](#serve-and-telemetry).
+
+---
+
+## MCP surface
+
+`backed serve` exposes the semantic model over MCP stdio. Every response is structured JSON, Zod-validated, with **no LLM** in the path.
+
+| Operation | Input | Returns |
+|---|---|---|
+| `list_entities()` | — | id, name, description, status |
+| `get_entity(id)` | entity id | properties (semanticType, role, provenance), entity provenance |
+| `list_relations(id?)` | optional entity id | relations with cardinality and status |
+| `search_model(query)` | text | semantic document-chunk search when DuckDB vectors exist, plus substring matches on entities, properties, relations, rules |
+| `get_definition(term)` | term | confirmed rule (substring match), or structured not-found |
+
+Data is read from local `model.yaml` only. DuckDB snapshots are used by `backed model`, not by `serve`.
+
+---
+
+## Serve and telemetry
+
+`backed serve` runs **locally by default** — no login, no network, no gateway. MCP reads `model.yaml` (and DuckDB for semantic search when available) on this machine only.
+
+Optional usage telemetry is **opt-in**:
+
+1. Run `backed login` once
+2. Set `BACKED_TELEMETRY=1` in `.env`
+3. Run `backed serve`
+
+When enabled, the CLI verifies the gateway at startup and posts **only the operation name** (e.g. `list_entities`) in the background on each tool call. Metering failures are silent and never block local tools. **Model data never leaves the machine.**
 
 ---
 
@@ -120,9 +152,14 @@ backed model --full       # re-infer everything
 |---|---|---|---|
 | Ingest | Always | No | `.backed/data.duckdb` |
 | Documents | PDF/TXT/DOCX | Ambiguous files only | `documents.json` |
+| Mentions + facts | Documents | No | `document_mentions`, `document_facts`, `entity_profiles` in DuckDB |
 | Chunk + embed | Documents | Embeddings only | vectors in DuckDB |
 | Profile | Always | No | `profile.json` |
 | Proposal | Always | Structured tables | `proposal.json` |
+
+LLM responses are cached on disk in `.backed/cache/llm/`, keyed by model + prompt + schema. The cache only reduces cost and latency — it never changes validated outputs. Delete the folder or run `backed model --full` to re-infer from scratch.
+
+Fact extraction is deterministic and runs during `backed model`. Upgrading `@backed/semantic` does not mutate an existing snapshot — **re-run `backed model`** on workspaces that already have document corpora when fact parsing improves.
 
 **PDF-only folders:** `doc_*` tables get deterministic ontology (no column-classification LLM). **Mixed folders:** CSV gets LLM ontology; documents stay deterministic.
 
@@ -134,7 +171,7 @@ Confirms or rejects proposals → writes **`model.yaml`**.
 
 ### 4. Serve (`backed serve`)
 
-MCP stdio for agents (`list_entities`, `query_entity`, `traverse_relation`).
+Authenticated MCP stdio — five deterministic operations on `model.yaml` (see [MCP surface](#mcp-surface)).
 
 ### 5. Data changes
 
@@ -148,7 +185,7 @@ backed model && backed diff
 backed init && backed model && backed review && backed serve
 ```
 
-Agent pattern: `list_entities` → `get_entity` → `query_entity` → `traverse_relation`.
+Agent pattern: `list_entities` → `get_entity` → `search_model` / `get_definition`.
 
 ---
 
@@ -166,7 +203,6 @@ A typical organization: **4–15 entities**, **5–20 relations**, a handful of 
 | Property | `entities[].properties` | Source column |
 | Relation | `relations` | Column pair (`fromColumn` → `toColumn`) |
 | Rule | `rules` | Entity (+ optional column) |
-| Action | `actions` | Reserved for writeback (empty in v1) |
 
 Property semantic types: `text` · `number` · `amount` · `date` · `boolean` · `identifier` · `email` · `vat_number` · `fiscal_code` · `category`
 
@@ -178,11 +214,11 @@ Every element carries **`confidence`** (0–1), **`provenance`** (table, optiona
 
 | Status | Meaning |
 |---|---|
-| `proposed` | Inferred, not explicitly reviewed |
-| `confirmed` | Accepted (Yes) |
+| `proposed` | Inferred, not explicitly reviewed (below threshold or unanswered question) |
+| `confirmed` | Accepted (Yes) or auto-confirmed when confidence ≥ review threshold and no question was asked |
 | `renamed` | Accepted with corrected label (Rename) |
 
-Rejected elements (No) are omitted. Below confidence threshold 0.7, elements become doubts or review questions — never silent facts.
+Rejected elements (No) are omitted. Elements at or above **`REVIEW_CONFIDENCE_THRESHOLD`** that were not asked in review are written as **`confirmed`**. Below confidence threshold 0.7, elements become doubts or review questions — never silent facts.
 
 ### Example
 
@@ -231,8 +267,6 @@ rules:
     column: status
     status: proposed
     confidence: 0.7
-
-actions: []
 ```
 
 ### Run artifacts
@@ -278,7 +312,8 @@ All files are schema-validated on read and write.
 | `backed model [folder]` | Full pipeline: ingest → documents (if any) → profile → proposal. Incremental when `model.yaml` exists; `--full` re-infers everything. |
 | `backed review` | Interactive review → writes `model.yaml` |
 | `backed diff` | Compare last two runs |
-| `backed serve` | MCP stdio server (`query_entity`, `traverse_relation` when snapshot exists) |
+| `backed login` | Sign in to Backed (optional — required only for telemetry) |
+| `backed serve` | Local MCP stdio server (5 operations on `model.yaml`) |
 
 See [Operational workflow](#operational-workflow) for the step-by-step guide.
 
@@ -301,7 +336,7 @@ Create `.env` in your **workspace root** (the folder containing `.backed/`, or a
 ```bash
 AI_GATEWAY_API_KEY=...                          # required
 REVIEW_CONFIDENCE_THRESHOLD=0.95                # optional — review when confidence is below this
-# SEMANTIC_MODEL=anthropic/claude-sonnet-4.5
+# SEMANTIC_MODEL=zai/glm-5.3-flash
 # SEMANTIC_EMBEDDING_MODEL=openai/text-embedding-3-small
 ```
 
@@ -315,18 +350,91 @@ Licensed under [Apache-2.0](./LICENSE).
 
 ```bash
 pnpm install && pnpm build
+pnpm generate:schema   # refresh schema/anchor-schema-v1.json after Zod changes
+pnpm test
 pnpm cli --help
 ```
 
-Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `apps/cli`.
+Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `@backed/runner` → `apps/cli` / `apps/worker-service`.
+
+CI (GitHub Actions) runs build, schema drift check, and tests including the **Gerace golden** `model.yaml` fixture.
+
+---
+
+## Hosted ephemeral pipeline (`apps/worker-service`)
+
+Each tenant workspace is split into ephemeral processing and durable persistence:
+
+```
+tenants/<tenantId>/
+├── work/      ← uploaded bytes + pipeline scratch (GC'd every run)
+└── persist/   ← model.yaml, ledger.json, deletion-log.jsonl, proposal.json, review.json
+```
+
+Documents and raw corpus **never** persist — only the semantic model, content hashes, review artifacts, and a deletion log.
+
+Re-submitting unchanged files costs nothing: content hashes skip them.
+
+Every run's deletion is recorded in an append-only, auditable log.
+
+```bash
+export WORKER_SERVICE_AUTH_TOKEN=dev-token
+pnpm --filter @backed/worker-service start
+```
+
+### Docker / Railway
+
+Build from the repository root (slim image, CSV/JSON/XLSX):
+
+```bash
+docker build -f apps/worker-service/Dockerfile -t backed-worker-service .
+docker run --rm -p 8790:8790 \
+  -e WORKER_SERVICE_AUTH_TOKEN=dev-token \
+  -e AI_GATEWAY_API_KEY="$AI_GATEWAY_API_KEY" \
+  -v backed-worker-data:/data \
+  backed-worker-service
+```
+
+PDF page rendering / OCR path (`poppler-utils`):
+
+```bash
+docker build -f apps/worker-service/Dockerfile --build-arg IMAGE_VARIANT=full -t backed-worker-service:full .
+```
+
+Railway: use `apps/worker-service/railway.toml`, Dockerfile path `apps/worker-service/Dockerfile`, and **mount a persistent volume at `/data`**. Copy `apps/worker-service/.env.example` for required variables.
+
+Post-deploy smoke test:
+
+```bash
+export WORKER_SERVICE_URL=https://your-service.example
+export WORKER_SERVICE_AUTH_TOKEN=...
+apps/worker-service/scripts/smoke.sh
+```
+
+Structured logs (JSON lines on stdout): `run.started`, `gc.completed`, `run.completed`, `run.failed` with `tenantId`, `runId`, `partnerId`, `durationMs`, `filesDeleted`, `skipped`.
+
+`GET /health` returns `{ ok, service, version, dataRootWritable }` — `ok` is false when the volume is missing or read-only (HTTP 503).
+
+**Alerting hints:** failed run rate spikes; `gc.completed` with `bytesDeleted: 0` on runs that uploaded files; `dataRootWritable: false`; disk usage on the `/data` volume.
+
+API surface:
+
+- `GET /openapi.yaml` — OpenAPI 3.1 spec (no auth)
+- `POST /v1/tenants/:tenantId/runs` — multipart upload → `{ runId }`
+- `GET /v1/tenants/:tenantId/runs/:runId` — `{ status, stats?, deletionEntry?, failureMessage? }` (`failureMessage` when `status` is `failed`)
+- `GET /v1/tenants/:tenantId/model` — current `model.yaml` (+ `ETag`)
+- `GET|POST /v1/tenants/:tenantId/review` — remote review flow
+- `GET /v1/tenants/:tenantId/audit/deletions?since=&until=&offset=&limit=` — paginated deletion log (no document content)
+- `GET /v1/tenants/:tenantId/audit/ledger` — content-hash list from `ledger.json`
+- `run.completed` webhook — signed POST on terminal runs (partner config via `WORKER_SERVICE_PARTNERS_JSON`)
 
 ---
 
 ## Scope
 
-**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · MCP export · incremental re-inference · ontology-guided data query (`query_entity`, structured + text search) · document corpus typing · semantic document search (embedded chunks, via `query_entity`).
+**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · authenticated MCP export (5 operations) · incremental re-inference · document corpus typing · ephemeral worker API.
 
-**Out (v1):** Hosted cloud · SDK · registry · billing · dashboard · writeback.
+**Out (v1):** Multi-tenant UI · SDK · registry · billing · dashboard · writeback.
 
 **Not Anchor:** ETL · warehouse · ERP · chatbot · connector marketplace.
 
