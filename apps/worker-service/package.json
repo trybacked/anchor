@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Ephemeral pipeline HTTP API — documents in, model.yaml out",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp openapi.yaml dist/openapi.yaml",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",

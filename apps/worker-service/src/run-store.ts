@@ -6,6 +6,7 @@ export type RunStatus = "running" | "done" | "failed";
 export interface StoredRun {
     runId: string;
     tenantId: string;
+    partnerId?: string;
     status: RunStatus;
     startedAt: string;
     finishedAt?: string;
@@ -15,7 +16,7 @@ export interface StoredRun {
 }
 
 export interface RunStore {
-    create(tenantId: string, runId: string): StoredRun;
+    create(tenantId: string, runId: string, partnerId?: string): StoredRun;
     get(tenantId: string, runId: string): StoredRun | undefined;
     complete(tenantId: string, runId: string, stats: PipelineStats, deletionEntry: DeletionLogEntry): StoredRun | undefined;
     fail(tenantId: string, runId: string, failureMessage: string, deletionEntry?: DeletionLogEntry): StoredRun | undefined;
@@ -53,12 +54,13 @@ export class MemoryRunStore implements RunStore {
         return `${tenantId}:${runId}`;
     }
 
-    create(tenantId: string, runId: string): StoredRun {
+    create(tenantId: string, runId: string, partnerId?: string): StoredRun {
         const record: StoredRun = {
             runId,
             tenantId,
             status: "running",
             startedAt: new Date().toISOString(),
+            ...(partnerId !== undefined ? { partnerId } : {}),
         };
         this.runs.set(this.key(tenantId, runId), record);
         return record;

@@ -25,14 +25,14 @@ describe("partner auth", () => {
     });
 
     it("accepts partner tokens from config", () => {
-        const auth = resolveAuthContext("lexroom-secret", createConfig({
+        const auth = resolveAuthContext("partner-a-secret", createConfig({
             partners: [{
-                partnerId: "lexroom",
-                token: "lexroom-secret",
-                tenantIdPattern: "^lexroom-",
+                partnerId: "partner-a",
+                token: "partner-a-secret",
+                tenantIdPattern: "^partner-a-",
             }],
         }));
-        expect(auth?.partnerId).toBe("lexroom");
+        expect(auth?.partnerId).toBe("partner-a");
     });
 
     it("rejects unknown tokens", () => {
@@ -43,18 +43,18 @@ describe("partner auth", () => {
         const config = createConfig({
             authToken: "",
             partners: [{
-                partnerId: "lexroom",
-                token: "lexroom-secret",
-                tenantIdPattern: "^lexroom-",
+                partnerId: "partner-a",
+                token: "partner-a-secret",
+                tenantIdPattern: "^partner-a-",
             }],
         });
-        const auth = resolveAuthContext("lexroom-secret", config);
+        const auth = resolveAuthContext("partner-a-secret", config);
         expect(auth).not.toBeNull();
         expect(() => {
             assertTenantAccess(auth!, "acme", config);
         }).toThrow(TenantAccessDeniedError);
         expect(() => {
-            assertTenantAccess(auth!, "lexroom-client-1", config);
+            assertTenantAccess(auth!, "partner-a-client-1", config);
         }).not.toThrow();
     });
 });

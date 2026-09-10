@@ -25,14 +25,23 @@ import {
     ReviewNotFoundError,
     StaleReviewError,
 } from "./review-store.js";
+import {
+    computeRunDurationMs,
+    logRunCompleted,
+    logRunFailed,
+    logRunStarted,
+} from "./metrics.js";
+import { notifyRunCompletedWebhook } from "./webhook.js";
 
 export interface WorkerServiceDeps {
     config: WorkerServiceConfig;
     runStore: RunStore;
+    webhookFetch?: typeof fetch;
 }
 
 export async function handleSubmitRun(
     tenantId: string,
+    partnerId: string,
     request: IncomingMessage,
     response: ServerResponse,
     deps: WorkerServiceDeps,
@@ -55,7 +64,13 @@ export async function handleSubmitRun(
         return;
     }
     const runId = randomUUID();
-    deps.runStore.create(tenantId, runId);
+    deps.runStore.create(tenantId, runId, partnerId);
+    logRunStarted({
+        tenantId,
+        runId,
+        partnerId,
+        fileCount: parsed.files.length,
+    });
     sendJson(response, 202, { runId });
     void runTenantPipeline({
         dataRoot: deps.config.dataRoot,
@@ -67,15 +82,54 @@ export async function handleSubmitRun(
         })),
         skipEmbed: deps.config.skipEmbed,
     }).then((result) => {
-        deps.runStore.complete(tenantId, runId, result.stats, result.deletionEntry);
-    }).catch((error: unknown) => {
-        const deletionEntry = error instanceof TenantPipelineError ? error.deletionEntry : undefined;
-        deps.runStore.fail(
+        const record = deps.runStore.complete(tenantId, runId, result.stats, result.deletionEntry);
+        logRunCompleted({
             tenantId,
             runId,
-            error instanceof Error ? error.message : String(error),
-            deletionEntry,
-        );
+            partnerId,
+            durationMs: computeRunDurationMs(
+                record?.startedAt ?? new Date().toISOString(),
+                record?.finishedAt,
+            ),
+            skipped: result.skipped,
+            deletionEntry: result.deletionEntry,
+        });
+        void notifyRunCompletedWebhook({
+            config: deps.config,
+            partnerId,
+            tenantId,
+            runId,
+            status: "done",
+            skipped: result.skipped,
+            deletionEntry: result.deletionEntry,
+            ...(deps.webhookFetch !== undefined ? { fetchImpl: deps.webhookFetch } : {}),
+        });
+    }).catch((error: unknown) => {
+        const deletionEntry = error instanceof TenantPipelineError ? error.deletionEntry : undefined;
+        const failureMessage = error instanceof Error ? error.message : String(error);
+        const existing = deps.runStore.get(tenantId, runId);
+        const record = deps.runStore.fail(tenantId, runId, failureMessage, deletionEntry);
+        logRunFailed({
+            tenantId,
+            runId,
+            partnerId,
+            durationMs: computeRunDurationMs(
+                record?.startedAt ?? existing?.startedAt ?? new Date().toISOString(),
+                record?.finishedAt,
+            ),
+            failureMessage,
+            ...(deletionEntry !== undefined ? { deletionEntry } : {}),
+        });
+        void notifyRunCompletedWebhook({
+            config: deps.config,
+            partnerId,
+            tenantId,
+            runId,
+            status: "failed",
+            skipped: false,
+            ...(deletionEntry !== undefined ? { deletionEntry } : {}),
+            ...(deps.webhookFetch !== undefined ? { fetchImpl: deps.webhookFetch } : {}),
+        });
     });
 }
 

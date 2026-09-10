@@ -6,9 +6,11 @@ import {
     type WorkerServiceDeps,
 } from "./handlers.js";
 import { assertTenantAccess, resolveAuthContext, TenantAccessDeniedError } from "./auth.js";
-import { parseBearerToken, sendApiError, sendJson } from "./http.js";
+import { parseBearerToken, sendApiError, sendJson, sendYaml } from "./http.js";
 import { dispatchTenantRoute } from "./router.js";
 import { RateLimiter } from "./rate-limit.js";
+import { buildHealthResponse } from "./metrics.js";
+import { loadOpenApiSpec } from "./openapi.js";
 import { FileRunStore } from "./run-store-fs.js";
 import type { RunStore } from "./run-store.js";
 
@@ -80,7 +82,12 @@ async function handleRequest(
 ): Promise<void> {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
     if (request.method === "GET" && url.pathname === "/health") {
-        sendJson(response, 200, { ok: true, service: SERVICE_NAME });
+        const health = buildHealthResponse(SERVICE_NAME, deps.config.dataRoot);
+        sendJson(response, health.ok ? 200 : 503, health);
+        return;
+    }
+    if (request.method === "GET" && url.pathname === "/openapi.yaml") {
+        sendYaml(response, 200, loadOpenApiSpec());
         return;
     }
     const auth = assertAuth(request, deps.config, response);
@@ -111,6 +118,7 @@ async function handleRequest(
         request.method,
         route.remainder,
         route.tenantId,
+        auth,
         request,
         response,
         deps,

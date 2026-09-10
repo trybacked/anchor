@@ -23,10 +23,16 @@ export const ENV = {
     SKIP_EMBED: "WORKER_SERVICE_SKIP_EMBED",
 } as const;
 
+export interface PartnerWebhooksConfig {
+    runCompleted?: string;
+}
+
 export interface PartnerConfig {
     partnerId: string;
     token: string;
     tenantIdPattern?: string;
+    webhooks?: PartnerWebhooksConfig;
+    webhookSecret?: string;
 }
 
 export interface WorkerServiceConfig {
@@ -86,17 +92,39 @@ function parsePartnersJson(raw: string | undefined): PartnerConfig[] {
         const partnerId = record["partnerId"];
         const token = record["token"];
         const tenantIdPattern = record["tenantIdPattern"];
+        const webhookSecret = record["webhookSecret"];
+        const webhooksRaw = record["webhooks"];
         if (typeof partnerId !== "string" || partnerId.length === 0) {
             throw new Error(`${ENV.PARTNERS_JSON} entries require partnerId`);
         }
         if (typeof token !== "string" || token.length === 0) {
             throw new Error(`${ENV.PARTNERS_JSON} entries require token`);
         }
+        let webhooks: PartnerWebhooksConfig | undefined;
+        if (webhooksRaw !== undefined) {
+            if (webhooksRaw === null || typeof webhooksRaw !== "object") {
+                throw new Error(`${ENV.PARTNERS_JSON} webhooks must be an object`);
+            }
+            const webhooksRecord = webhooksRaw as Record<string, unknown>;
+            const runCompleted = webhooksRecord["runCompleted"];
+            if (runCompleted !== undefined && typeof runCompleted !== "string") {
+                throw new Error(`${ENV.PARTNERS_JSON} webhooks.runCompleted must be a string`);
+            }
+            webhooks = {
+                ...(typeof runCompleted === "string" && runCompleted.length > 0
+                    ? { runCompleted }
+                    : {}),
+            };
+        }
         return {
             partnerId,
             token,
             ...(typeof tenantIdPattern === "string" && tenantIdPattern.length > 0
                 ? { tenantIdPattern }
+                : {}),
+            ...(webhooks !== undefined ? { webhooks } : {}),
+            ...(typeof webhookSecret === "string" && webhookSecret.length > 0
+                ? { webhookSecret }
                 : {}),
         };
     });

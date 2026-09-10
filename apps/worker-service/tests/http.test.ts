@@ -185,15 +185,15 @@ describe("worker-service HTTP contract", () => {
                 ...createTestConfig(dataRoot),
                 authToken: "",
                 partners: [{
-                    partnerId: "lexroom",
-                    token: "lexroom-secret",
-                    tenantIdPattern: "^lexroom-",
+                    partnerId: "partner-a",
+                    token: "partner-a-secret",
+                    tenantIdPattern: "^partner-a-",
                 }],
             },
             runStore: new MemoryRunStore(),
         });
         const response = await fetch(`${service.url}/v1/tenants/acme/model`, {
-            headers: authHeaders("lexroom-secret"),
+            headers: authHeaders("partner-a-secret"),
         });
         await service.close();
         expect(response.status).toBe(403);

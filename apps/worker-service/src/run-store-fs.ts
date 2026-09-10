@@ -8,6 +8,7 @@ import type { RunStore, StoredRun } from "./run-store.js";
 const StoredRunSchema = z.object({
     runId: z.string().min(1),
     tenantId: z.string().min(1),
+    partnerId: z.string().min(1).optional(),
     status: z.enum(["running", "done", "failed"]),
     startedAt: z.string().datetime(),
     finishedAt: z.string().datetime().optional(),
@@ -22,6 +23,7 @@ function parseStoredRun(raw: string): StoredRun | undefined {
         return {
             runId: parsed.runId,
             tenantId: parsed.tenantId,
+            ...(parsed.partnerId !== undefined ? { partnerId: parsed.partnerId } : {}),
             status: parsed.status,
             startedAt: parsed.startedAt,
             ...(parsed.finishedAt !== undefined ? { finishedAt: parsed.finishedAt } : {}),
@@ -63,12 +65,13 @@ export class FileRunStore implements RunStore {
         writeFileSync(filePath, `${JSON.stringify(record)}\n`, "utf8");
     }
 
-    create(tenantId: string, runId: string): StoredRun {
+    create(tenantId: string, runId: string, partnerId?: string): StoredRun {
         const record: StoredRun = {
             runId,
             tenantId,
             status: "running",
             startedAt: new Date().toISOString(),
+            ...(partnerId !== undefined ? { partnerId } : {}),
         };
         this.writeRunSync(record);
         return record;

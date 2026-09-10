@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import type { AuthContext } from "./auth.js";
 import type { WorkerServiceDeps } from "./handlers.js";
 import {
     handleGetAuditDeletions,
@@ -12,6 +13,7 @@ import {
 
 type RouteHandler = (
     tenantId: string,
+    auth: AuthContext,
     request: IncomingMessage,
     response: ServerResponse,
     deps: WorkerServiceDeps,
@@ -28,41 +30,41 @@ const TENANT_ROUTES: TenantRoute[] = [
     {
         method: "POST",
         path: "runs",
-        handler: (tenantId, request, response, deps) => handleSubmitRun(tenantId, request, response, deps),
+        handler: (tenantId, auth, request, response, deps) => handleSubmitRun(tenantId, auth.partnerId, request, response, deps),
     },
     {
         method: "GET",
         path: "model",
-        handler: (tenantId, _request, response, deps) => handleGetModel(tenantId, response, deps),
+        handler: (tenantId, _auth, _request, response, deps) => handleGetModel(tenantId, response, deps),
     },
     {
         method: "GET",
         path: "review",
-        handler: (tenantId, _request, response, deps) => {
+        handler: (tenantId, _auth, _request, response, deps) => {
             handleGetReview(tenantId, response, deps);
         },
     },
     {
         method: "POST",
         path: "review",
-        handler: (tenantId, request, response, deps) => handlePostReview(tenantId, request, response, deps),
+        handler: (tenantId, _auth, request, response, deps) => handlePostReview(tenantId, request, response, deps),
     },
     {
         method: "GET",
         path: /^runs\/([^/]+)$/,
-        handler: (tenantId, _request, response, deps, params) => {
+        handler: (tenantId, _auth, _request, response, deps, params) => {
             handleGetRunStatus(tenantId, decodeURIComponent(params.runId ?? ""), response, deps);
         },
     },
     {
         method: "GET",
         path: "audit/deletions",
-        handler: (tenantId, request, response, deps) => handleGetAuditDeletions(tenantId, request, response, deps),
+        handler: (tenantId, _auth, request, response, deps) => handleGetAuditDeletions(tenantId, request, response, deps),
     },
     {
         method: "GET",
         path: "audit/ledger",
-        handler: (tenantId, _request, response, deps) => handleGetAuditLedger(tenantId, response, deps),
+        handler: (tenantId, _auth, _request, response, deps) => handleGetAuditLedger(tenantId, response, deps),
     },
 ];
 
@@ -70,6 +72,7 @@ export async function dispatchTenantRoute(
     method: string | undefined,
     remainder: string,
     tenantId: string,
+    auth: AuthContext,
     request: IncomingMessage,
     response: ServerResponse,
     deps: WorkerServiceDeps,
@@ -85,14 +88,14 @@ export async function dispatchTenantRoute(
             if (remainder !== route.path) {
                 continue;
             }
-            await route.handler(tenantId, request, response, deps, {});
+            await route.handler(tenantId, auth, request, response, deps, {});
             return true;
         }
         const match = route.path.exec(remainder);
         if (match === null) {
             continue;
         }
-        await route.handler(tenantId, request, response, deps, { runId: match[1] ?? "" });
+        await route.handler(tenantId, auth, request, response, deps, { runId: match[1] ?? "" });
         return true;
     }
     return false;

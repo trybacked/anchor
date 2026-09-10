@@ -382,14 +382,51 @@ export WORKER_SERVICE_AUTH_TOKEN=dev-token
 pnpm --filter @backed/worker-service start
 ```
 
+### Docker / Railway
+
+Build from the repository root (slim image, CSV/JSON/XLSX):
+
+```bash
+docker build -f apps/worker-service/Dockerfile -t backed-worker-service .
+docker run --rm -p 8790:8790 \
+  -e WORKER_SERVICE_AUTH_TOKEN=dev-token \
+  -e AI_GATEWAY_API_KEY="$AI_GATEWAY_API_KEY" \
+  -v backed-worker-data:/data \
+  backed-worker-service
+```
+
+PDF page rendering / OCR path (`poppler-utils`):
+
+```bash
+docker build -f apps/worker-service/Dockerfile --build-arg IMAGE_VARIANT=full -t backed-worker-service:full .
+```
+
+Railway: use `apps/worker-service/railway.toml`, Dockerfile path `apps/worker-service/Dockerfile`, and **mount a persistent volume at `/data`**. Copy `apps/worker-service/.env.example` for required variables.
+
+Post-deploy smoke test:
+
+```bash
+export WORKER_SERVICE_URL=https://your-service.example
+export WORKER_SERVICE_AUTH_TOKEN=...
+apps/worker-service/scripts/smoke.sh
+```
+
+Structured logs (JSON lines on stdout): `run.started`, `gc.completed`, `run.completed`, `run.failed` with `tenantId`, `runId`, `partnerId`, `durationMs`, `filesDeleted`, `skipped`.
+
+`GET /health` returns `{ ok, service, version, dataRootWritable }` — `ok` is false when the volume is missing or read-only (HTTP 503).
+
+**Alerting hints:** failed run rate spikes; `gc.completed` with `bytesDeleted: 0` on runs that uploaded files; `dataRootWritable: false`; disk usage on the `/data` volume.
+
 API surface:
 
+- `GET /openapi.yaml` — OpenAPI 3.1 spec (no auth)
 - `POST /v1/tenants/:tenantId/runs` — multipart upload → `{ runId }`
 - `GET /v1/tenants/:tenantId/runs/:runId` — `{ status, stats?, deletionEntry?, failureMessage? }` (`failureMessage` when `status` is `failed`)
 - `GET /v1/tenants/:tenantId/model` — current `model.yaml` (+ `ETag`)
 - `GET|POST /v1/tenants/:tenantId/review` — remote review flow
 - `GET /v1/tenants/:tenantId/audit/deletions?since=&until=&offset=&limit=` — paginated deletion log (no document content)
 - `GET /v1/tenants/:tenantId/audit/ledger` — content-hash list from `ledger.json`
+- `run.completed` webhook — signed POST on terminal runs (partner config via `WORKER_SERVICE_PARTNERS_JSON`)
 
 ---
 
