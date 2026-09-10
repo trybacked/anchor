@@ -2,7 +2,7 @@ import type { DocumentCatalog } from "@backed/core";
 import type { CompressedTable } from "./compress.js";
 import type { DocumentTypeHint } from "./document-type-hints.js";
 import type { DocumentExtractionSample } from "./extract-document-catalog.js";
-import type { ColumnClassificationOutput } from "./llm-output.js";
+import type { ColumnClassificationOutput, OntologyEntitiesOutput } from "./llm-output.js";
 const SHARED_RULES = `Rules you must follow:
 - The input is a statistical profile of tables from a small business. No raw rows are available.
 - All human-readable output (names, labels, descriptions, definitions, questions) MUST be in English.
@@ -23,15 +23,6 @@ Propose:
 - "doubts": everything you cannot decide from the evidence. Declare doubts explicitly instead of inventing.
 Every entity, relation and rule needs an honest "confidence" (0..1) and an English "evidence" sentence citing the statistics that support it.
 ${SHARED_RULES}`;
-const TYPED_DOCUMENT_HEADER_COLUMNS = [
-    "document_id",
-    "source_file",
-    "protocol_number",
-    "published_date",
-    "subject",
-    "issuing_office",
-    "page_count",
-] as const;
 export function columnClassificationPrompt(tables: CompressedTable[]): string {
     return `Statistical profile of the tables (JSON):
 
@@ -39,7 +30,11 @@ ${JSON.stringify(tables, null, 2)}
 
 Classify every column of every table.`;
 }
-export function ontologyPrompt(tables: CompressedTable[], classification: ColumnClassificationOutput, documentCatalog?: DocumentCatalog): string {
+function ontologyContextSections(
+    tables: CompressedTable[],
+    classification: ColumnClassificationOutput,
+    documentCatalog?: DocumentCatalog,
+): string[] {
     const sections = [
         `Statistical profile of the tables (JSON):
 
@@ -54,17 +49,45 @@ ${JSON.stringify(classification, null, 2)}`,
             name: type.name,
             tableName: type.tableName,
             documentCount: type.documentCount,
-            headerColumns: [...TYPED_DOCUMENT_HEADER_COLUMNS],
         }));
         sections.push(`Materialized document types (JSON):
 
 ${JSON.stringify(documentTypeSummary, null, 2)}
 
-Document entities for doc_* tables, document_lines, and document_chunks are already built deterministically.
-Do NOT propose entities for those tables. You may propose relations between structured entities and document types when column evidence supports it (e.g. a structured protocol column linked to document protocol_number).`);
+Document entities for doc_* tables, document_lines, and document_chunks are already built deterministically from the materialized schema.
+Do NOT propose entities for those tables. You may propose relations between structured entities and document types when column evidence supports it.`);
     }
-    sections.push("Propose the semantic model (entities, relations, rules) and declare your doubts.");
-    return sections.join("\n\n");
+    return sections;
+}
+export function ontologyPrompt(tables: CompressedTable[], classification: ColumnClassificationOutput, documentCatalog?: DocumentCatalog): string {
+    return [
+        ...ontologyContextSections(tables, classification, documentCatalog),
+        "Propose the semantic model (entities, relations, rules) and declare your doubts.",
+    ].join("\n\n");
+}
+export function ontologyEntitiesPrompt(
+    tables: CompressedTable[],
+    classification: ColumnClassificationOutput,
+    documentCatalog?: DocumentCatalog,
+): string {
+    return [
+        ...ontologyContextSections(tables, classification, documentCatalog),
+        "Propose business entities only. Do NOT propose relations or rules in this step. Declare your doubts.",
+    ].join("\n\n");
+}
+export function ontologyRelationsPrompt(
+    tables: CompressedTable[],
+    classification: ColumnClassificationOutput,
+    entities: OntologyEntitiesOutput["entities"],
+    documentCatalog?: DocumentCatalog,
+): string {
+    return [
+        ...ontologyContextSections(tables, classification, documentCatalog),
+        `Accepted entities from the previous step (JSON):
+
+${JSON.stringify(entities, null, 2)}`,
+        "Propose relations and rules that connect only the accepted entities. Declare your doubts.",
+    ].join("\n\n");
 }
 export const DOCUMENT_EXTRACTION_SYSTEM_PROMPT = `You classify documents from an exported PDF/OCR corpus.
 The input is page-1 header lines extracted from PDF/OCR (columns page, line, text in the source system).
@@ -72,18 +95,15 @@ The input is page-1 header lines extracted from PDF/OCR (columns page, line, tex
 For each document infer:
 - documentType: stable English slug naming the kind of document this is, or "unknown"
 - documentTypeLabel: the same kind as a singular English business name
-- protocolNumber: registry, protocol, or reference number if visible, else null
-- publishedDate: ISO date YYYY-MM-DD if visible, else null
-- subject: short subject/title in English if inferable, else null
-- issuingOffice: issuing body/office if visible, else null
+- fields: array of { key, value } pairs for header metadata you can support with evidence. Keys must be stable English snake_case slugs (e.g. reference_number, effective_date). Use null values sparingly; omit unsupported concepts instead of guessing.
 - confidence: 0..1 for the overall classification
 
 Rules:
 - When a typeHint is provided, confirm it from header text or override with evidence.
 - Prefer header text over filename hints.
 - Prefer "unknown" with low confidence over inventing fields.
-- All labels and subjects in English.
-- Never invent protocol numbers or dates not supported by the header text.
+- All labels and field keys in English.
+- Never invent values not supported by the header text.
 - When multiple documents are provided, return one result per input document with the matching sourceTable.`;
 export function documentExtractionPrompt(sample: DocumentExtractionSample, typeHint: DocumentTypeHint | null): string {
     return documentBatchExtractionPrompt([{ sample, typeHint }]);
@@ -108,8 +128,8 @@ export function documentBatchExtractionPrompt(items: Array<{
             : {}),
     }));
     const intro = documents.length === 1
-        ? "Classify this document and extract standard header fields."
-        : `Classify each of the ${String(documents.length)} documents and extract standard header fields.`;
+        ? "Classify this document and extract header fields supported by the text."
+        : `Classify each of the ${String(documents.length)} documents and extract header fields supported by the text.`;
     return [
         intro,
         "",

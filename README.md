@@ -276,7 +276,7 @@ Each pipeline run stores intermediate artifacts under `.backed/runs/<run-id>/`:
 | File | Contents |
 |---|---|
 | `profile.json` | Statistical evidence per table/column |
-| `documents.json` | Document catalog (types, protocol, dates) when line-documents were ingested |
+| `documents.json` | Document catalog (types, protocol, dates) when line-documents were ingested; canonical `documentType` per `sourceTable` is preserved across runs |
 | `proposal.json` | LLM proposal + doubts + review questions |
 | `review.json` | Human answers |
 | `model.yaml` | Final model (workspace root) |
@@ -357,7 +357,7 @@ pnpm cli --help
 
 Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `@backed/runner` → `apps/cli` / `apps/worker-service`.
 
-CI (GitHub Actions) runs build, schema drift check, and tests including the **Gerace golden** `model.yaml` fixture.
+CI (GitHub Actions) runs build, schema drift check, and tests including the **Gerace golden** `model.yaml` fixture and a **three-run incremental session** (`packages/runner/tests/golden/gerace-incremental.test.ts`: cold → warm → +1 file on `fixtures/gerace-albo`, with deterministic LLM mocks).
 
 ---
 
@@ -368,10 +368,10 @@ Each tenant workspace is split into ephemeral processing and durable persistence
 ```
 tenants/<tenantId>/
 ├── work/      ← uploaded bytes + pipeline scratch (GC'd every run)
-└── persist/   ← model.yaml, ledger.json, deletion-log.jsonl, proposal.json, review.json
+└── persist/   ← model.yaml, ledger.json, deletion-log.jsonl, proposal.json, review.json, vocabulary.json, documents.json, profile.json
 ```
 
-Documents and raw corpus **never** persist — only the semantic model, content hashes, review artifacts, and a deletion log.
+Documents and raw corpus **never** persist — only derived artifacts: the semantic model, domain vocabulary, document catalog metadata, profile snapshot, content hashes, review artifacts, and a deletion log.
 
 Re-submitting unchanged files costs nothing: content hashes skip them.
 

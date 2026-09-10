@@ -1,6 +1,8 @@
 import {
     DocumentCatalogSchema,
     DomainVocabularySchema,
+    enrichmentFieldValues,
+    hasEnrichmentFieldValues,
     mergeVocabulary,
     readRunArtifact,
     writeRunArtifact,
@@ -8,7 +10,7 @@ import {
 import type { DocumentCatalog, DomainVocabulary, WorkspaceConfig } from "@backed/core";
 import type { IngestSession } from "@backed/ingest";
 import {
-    applyDocumentTopics,
+    applyDocumentFields,
     chunkDocumentLines,
     fetchAllDocumentLines,
     fetchChunkTextsForEmbedding,
@@ -36,9 +38,15 @@ import {
     sumBurstUsage,
     toMaterializedMentions,
 } from "@backed/semantic";
+import { buildDocumentTypeRegistry } from "../tenant-persist-cache.js";
 import type { BurstUsage, CompressedTable, DocumentCatalogCacheEntry, LlmCacheContext, SemanticModels } from "@backed/semantic";
 import { CORPUS_SAMPLE_LINES_PER_TABLE } from "../config.js";
 import type { PipelineProgressReporter } from "../progress.js";
+import {
+    filterLineRowsByDocumentIds,
+    mergeEnrichedDocuments,
+    resolveNewDocumentSourceTables,
+} from "./document-incremental.js";
 import { PIPELINE_DATASET_TABLES } from "./setup.js";
 
 export interface DocumentStageResult {
@@ -88,7 +96,14 @@ async function resolveVocabulary(
     previousRunId: string | undefined,
     forceFull: boolean,
     llmCache: LlmCacheContext,
+    persistedVocabulary: DomainVocabulary | undefined,
 ): Promise<{ vocabulary: DomainVocabulary; usage: BurstUsage }> {
+    if (!forceFull && persistedVocabulary !== undefined) {
+        const vocabulary = mergeVocabulary(persistedVocabulary, configured);
+        progress.detail("Reusing vocabulary from tenant cache...");
+        progress.step(`Domain vocabulary reused (${vocabulary.entityLabel})`);
+        return { vocabulary, usage: EMPTY_BURST_USAGE };
+    }
     if (!forceFull && previousRunId !== undefined) {
         try {
             const cached = readRunArtifact(root, previousRunId, "vocabulary", DomainVocabularySchema);
@@ -119,27 +134,38 @@ async function resolveVocabulary(
     return { vocabulary, usage: discovered.usage };
 }
 
+function catalogToCache(catalog: DocumentCatalog): Map<string, DocumentCatalogCacheEntry> | undefined {
+    const cache = new Map<string, DocumentCatalogCacheEntry>();
+    for (const entry of catalog.documents) {
+        if (entry.headerFingerprint === undefined) {
+            continue;
+        }
+        cache.set(entry.sourceTable, {
+            entry,
+            headerFingerprint: entry.headerFingerprint,
+        });
+    }
+    return cache.size > 0 ? cache : undefined;
+}
+
 function loadDocumentCatalogCache(
     root: string,
     previousRunId: string | undefined,
     forceFull: boolean,
+    persistedDocumentCatalog: DocumentCatalog | undefined,
 ): Map<string, DocumentCatalogCacheEntry> | undefined {
-    if (forceFull || previousRunId === undefined) {
+    if (forceFull) {
+        return undefined;
+    }
+    if (persistedDocumentCatalog !== undefined) {
+        return catalogToCache(persistedDocumentCatalog);
+    }
+    if (previousRunId === undefined) {
         return undefined;
     }
     try {
         const catalog = readRunArtifact(root, previousRunId, "documents", DocumentCatalogSchema);
-        const cache = new Map<string, DocumentCatalogCacheEntry>();
-        for (const entry of catalog.documents) {
-            if (entry.headerFingerprint === undefined) {
-                continue;
-            }
-            cache.set(entry.sourceTable, {
-                entry,
-                headerFingerprint: entry.headerFingerprint,
-            });
-        }
-        return cache.size > 0 ? cache : undefined;
+        return catalogToCache(catalog);
     }
     catch {
         return undefined;
@@ -158,6 +184,9 @@ export async function runDocumentStage(
     forceFull: boolean,
     llmCache: LlmCacheContext,
     progress: PipelineProgressReporter,
+    persistedVocabulary: DomainVocabulary | undefined,
+    persistedDocumentCatalog: DocumentCatalog | undefined,
+    unknownSourceFiles: string[] | undefined,
 ): Promise<DocumentStageResult> {
     progress.step(`Documents (${String(lineDocuments.length)} file(s))`);
     const extractionStarted = Date.now();
@@ -165,7 +194,10 @@ export async function runDocumentStage(
         sourceTable: table.table,
         pageCount: table.rowCount,
     })));
-    const catalogCache = loadDocumentCatalogCache(root, previousRunId, forceFull);
+    const catalogCache = loadDocumentCatalogCache(root, previousRunId, forceFull, persistedDocumentCatalog);
+    const typeRegistry = forceFull || persistedDocumentCatalog === undefined
+        ? undefined
+        : buildDocumentTypeRegistry(persistedDocumentCatalog);
     const vocabularyPromise = resolveVocabulary(
         session,
         models,
@@ -177,6 +209,7 @@ export async function runDocumentStage(
         previousRunId,
         forceFull,
         llmCache,
+        persistedVocabulary,
     );
     const extractedPromise = extractDocumentCatalog({
         runId,
@@ -186,6 +219,7 @@ export async function runDocumentStage(
         vocabulary: vocabularyPromise.then((result) => result.vocabulary),
         llmCache,
         ...(catalogCache !== undefined ? { catalogCache } : {}),
+        ...(typeRegistry !== undefined ? { typeRegistry } : {}),
         onProgress: (message) => {
             progress.detail(message);
         },
@@ -208,38 +242,54 @@ export async function runDocumentStage(
     vocabulary = mergeCorpusNameSuffixes(vocabulary, lineRows);
     vocabulary = ensureCurrencyFactTypes(vocabulary, lineRows);
     writeRunArtifact(root, runId, "vocabulary", vocabulary);
-    const enrichedDocuments = await enrichDocuments({
-        model: models.language,
-        documents: materialized.catalog.documents,
-        sampleByDocument: buildDocumentTopicSamples(lineRows),
-        vocabulary,
-        llmCache,
-        onProgress: (message) => {
-            progress.detail(message);
-        },
-        onBatchProgress: ({ completed, total }) => {
-            progress.track?.("Tagging documents (LLM)", completed, total);
-        },
-    });
+    const newDocumentSourceTables = resolveNewDocumentSourceTables(
+        materialized.catalog.documents,
+        unknownSourceFiles,
+        persistedDocumentCatalog,
+    );
+    const documentsToEnrich = materialized.catalog.documents.filter((document) => newDocumentSourceTables.has(document.sourceTable));
+    let enrichUsage: BurstUsage = EMPTY_BURST_USAGE;
+    let enrichedDocumentEntries = materialized.catalog.documents;
+    if (documentsToEnrich.length > 0) {
+        const enrichedDocuments = await enrichDocuments({
+            model: models.language,
+            documents: documentsToEnrich,
+            sampleByDocument: buildDocumentTopicSamples(lineRows),
+            vocabulary,
+            llmCache,
+            onProgress: (message) => {
+                progress.detail(message);
+            },
+            onBatchProgress: ({ completed, total }) => {
+                progress.track?.("Tagging documents (LLM)", completed, total);
+            },
+        });
+        enrichUsage = enrichedDocuments.usage;
+        enrichedDocumentEntries = mergeEnrichedDocuments(materialized.catalog.documents, enrichedDocuments.documents);
+    }
+    else if (unknownSourceFiles !== undefined && unknownSourceFiles.length > 0) {
+        progress.detail("Reusing document enrichment from tenant cache");
+    }
     const tableByDocumentType = new Map(materialized.catalog.documentTypes.map((type) => [type.id, type.tableName]));
-    await applyDocumentTopics(session.query, enrichedDocuments.documents.flatMap((document) => {
+    await applyDocumentFields(session.query, enrichedDocumentEntries.flatMap((document) => {
         const tableName = tableByDocumentType.get(document.documentType);
-        return tableName === undefined
+        const fields = enrichmentFieldValues(document);
+        return tableName === undefined || !hasEnrichmentFieldValues(fields)
             ? []
             : [{
                 documentId: document.sourceTable,
                 tableName,
-                topics: document.topics,
-                summary: document.summary,
+                fields,
             }];
     }));
     const documentCatalog = {
         ...materialized.catalog,
-        documents: enrichedDocuments.documents,
+        documents: enrichedDocumentEntries,
     };
-    const rawMentions = extractMentionsFromLines(lineRows, vocabulary);
+    const incrementalLineRows = filterLineRowsByDocumentIds(lineRows, newDocumentSourceTables);
+    const rawMentions = extractMentionsFromLines(incrementalLineRows, vocabulary);
     let entityIndex = buildEntityIndex(rawMentions);
-    let enrichUsage: BurstUsage = EMPTY_BURST_USAGE;
+    let entityEnrichUsage: BurstUsage = EMPTY_BURST_USAGE;
     if (entityIndex.size > 0) {
         const enriched = await enrichEntities({
             model: models.language,
@@ -252,7 +302,10 @@ export async function runDocumentStage(
             },
         });
         entityIndex = enriched.entities;
-        enrichUsage = enriched.usage;
+        entityEnrichUsage = enriched.usage;
+    }
+    else if (unknownSourceFiles !== undefined && unknownSourceFiles.length > 0) {
+        progress.detail("Skipping entity enrichment — no new document mentions");
     }
     const materializedMentions = await materializeDocumentMentions(session.query, {
         mentions: toMaterializedMentions(rawMentions, entityIndex),
@@ -280,7 +333,7 @@ export async function runDocumentStage(
     return {
         documentCatalog,
         vocabulary,
-        extractionUsage: sumBurstUsage(vocabularyUsage, extracted.usage, enrichedDocuments.usage, enrichUsage),
+        extractionUsage: sumBurstUsage(vocabularyUsage, extracted.usage, enrichUsage, entityEnrichUsage),
         extractionMs,
         embedMs,
     };

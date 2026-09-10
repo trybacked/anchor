@@ -2,29 +2,53 @@ import { DOCUMENT_CHUNKS_TABLE, DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, D
 import type { ColumnProfile, DocumentCatalog, DomainVocabulary, Entity, ProfileReport, Property, Relation, } from "@backed/core";
 import { ONTOLOGY_ENTITY_CONFIDENCE, ONTOLOGY_HIGH_CONFIDENCE, ONTOLOGY_PROFILE_CONFIDENCE, } from "./constants.js";
 import type { ColumnClassificationOutput } from "./llm-output.js";
+import {
+    documentTypeEntityId,
+    documentTypeStableKey,
+    documentTypeStableKeyEvidence,
+} from "./document-type-identity.js";
 import { slugify, titleize } from "./string-utils.js";
+
+const NUMERIC_SQL_TYPES = /int|double|float|decimal|numeric|real|bigint|hugeint/i;
+const DATE_SQL_TYPES = /date|timestamp|time/i;
 interface MaterializedColumn {
     column: string;
     label: string;
     semanticType: "identifier" | "text" | "number" | "date";
     role: "primary_key" | "foreign_key" | "attribute";
 }
-const TYPED_DOCUMENT_COLUMNS: MaterializedColumn[] = [
-    { column: "document_id", label: "Document ID", semanticType: "identifier", role: "primary_key" },
-    { column: "source_file", label: "Source file", semanticType: "text", role: "attribute" },
-    {
-        column: "protocol_number",
-        label: "Registry number",
-        semanticType: "identifier",
-        role: "attribute",
-    },
-    { column: "published_date", label: "Published date", semanticType: "date", role: "attribute" },
-    { column: "subject", label: "Subject", semanticType: "text", role: "attribute" },
-    { column: "issuing_office", label: "Issuing office", semanticType: "text", role: "attribute" },
-    { column: "topics", label: "Topics", semanticType: "text", role: "attribute" },
-    { column: "summary", label: "Summary", semanticType: "text", role: "attribute" },
-    { column: "page_count", label: "Page count", semanticType: "number", role: "attribute" },
-];
+function inferColumnSemanticType(column: ColumnProfile): MaterializedColumn["semanticType"] {
+    if (DATE_SQL_TYPES.test(column.sqlType)) {
+        return "date";
+    }
+    if (NUMERIC_SQL_TYPES.test(column.sqlType)) {
+        return "number";
+    }
+    return column.name.endsWith("_id") ? "identifier" : "text";
+}
+
+function inferColumnRole(columnName: string): MaterializedColumn["role"] {
+    if (columnName === "document_id") {
+        return "primary_key";
+    }
+    if (columnName.endsWith("_id")) {
+        return "foreign_key";
+    }
+    return "attribute";
+}
+
+function deriveDocumentTypeColumns(profile: ProfileReport, tableName: string): MaterializedColumn[] {
+    const table = profile.find((entry) => entry.table === tableName);
+    if (table === undefined) {
+        return [];
+    }
+    return table.columns.map((column) => ({
+        column: column.name,
+        label: titleize(column.name),
+        semanticType: inferColumnSemanticType(column),
+        role: inferColumnRole(column.name),
+    }));
+}
 const DOCUMENT_LINES_COLUMNS: MaterializedColumn[] = [
     { column: "document_id", label: "Document ID", semanticType: "identifier", role: "foreign_key" },
     { column: "page", label: "Page number", semanticType: "number", role: "attribute" },
@@ -112,16 +136,8 @@ export function materializedEntityIds(vocabulary: DomainVocabulary): string[] {
         profileEntityIdFor(vocabulary),
     ];
 }
-const NUMERIC_SQL_TYPES = /int|double|float|decimal|numeric|real|bigint|hugeint/i;
-const DATE_SQL_TYPES = /date|timestamp|time/i;
 function inferSemanticType(column: ColumnProfile): MaterializedColumn["semanticType"] {
-    if (DATE_SQL_TYPES.test(column.sqlType)) {
-        return "date";
-    }
-    if (NUMERIC_SQL_TYPES.test(column.sqlType)) {
-        return "number";
-    }
-    return column.name.endsWith("_id") ? "identifier" : "text";
+    return inferColumnSemanticType(column);
 }
 function labelRollupColumn(name: string, vocabulary: DomainVocabulary): string {
     const parts = /^(total|max|min|avg)_(.+)$/.exec(name);
@@ -257,12 +273,12 @@ function mentionEntitySpecs(profile: ProfileReport, vocabulary: DomainVocabulary
         },
     ];
 }
-export function classifyTypedDocumentTables(catalog: DocumentCatalog): ColumnClassificationOutput {
+export function classifyTypedDocumentTables(catalog: DocumentCatalog, profile: ProfileReport): ColumnClassificationOutput {
     return {
         tables: [
             ...catalog.documentTypes.map((type) => ({
                 table: type.tableName,
-                columns: TYPED_DOCUMENT_COLUMNS.map((column) => ({
+                columns: deriveDocumentTypeColumns(profile, type.tableName).map((column) => ({
                     ...column,
                     confidence: type.confidence,
                 })),
@@ -278,10 +294,17 @@ export function classifyTypedDocumentTables(catalog: DocumentCatalog): ColumnCla
         ],
     };
 }
-function buildTypedEntity(type: DocumentCatalog["documentTypes"][number], profile: ProfileReport): Entity {
+function buildTypedEntity(
+    type: DocumentCatalog["documentTypes"][number],
+    profile: ProfileReport,
+    catalog: DocumentCatalog,
+): Entity {
     const table = profile.find((entry) => entry.table === type.tableName);
+    const stableKey = documentTypeStableKey(type.id);
+    const entityId = documentTypeEntityId(type.id);
+    const detail = `${String(type.documentCount)} documents classified as "${type.name}" from header extraction (examples: ${type.sampleSourceTables.join(", ")})`;
     return {
-        id: slugify(type.id),
+        id: entityId,
         name: type.name,
         description: `${type.name} documents extracted from source files`,
         sourceTable: type.tableName,
@@ -289,11 +312,13 @@ function buildTypedEntity(type: DocumentCatalog["documentTypes"][number], profil
         confidence: type.confidence,
         provenance: {
             table: type.tableName,
-            evidence: `${String(type.documentCount)} documents classified as "${type.name}" from header extraction (examples: ${type.sampleSourceTables.join(", ")})`,
+            evidence: documentTypeStableKeyEvidence(stableKey, detail),
         },
-        properties: TYPED_DOCUMENT_COLUMNS.map((columnDef) => {
+        properties: deriveDocumentTypeColumns(profile, type.tableName).map((columnDef) => {
             const column = table?.columns.find((entry) => entry.name === columnDef.column);
-            const nullable = column?.nullCount ? column.nullCount > 0 : columnDef.column !== "document_id";
+            const nullable = columnDef.column === "document_id"
+                ? false
+                : (column?.nullCount ? column.nullCount > 0 : true);
             const evidenceText = column
                 ? `${columnDef.label} column (${column.sqlType}) on ${String(type.documentCount)} rows`
                 : `${columnDef.label} on materialized document type table`;
@@ -371,7 +396,7 @@ export function buildMentionRelations(catalog: DocumentCatalog, entities: Entity
         return [];
     }
     const relations: Relation[] = catalog.documentTypes.flatMap((type) => {
-        const typeId = slugify(type.id);
+        const typeId = documentTypeEntityId(type.id);
         const specs: RelationSpec[] = [
             {
                 id: `${typeId}_has_mentions`,
@@ -466,7 +491,7 @@ export function buildDocumentCorpusEntities(catalog: DocumentCatalog, profile: P
     const lineTable = profile.find((entry) => entry.table === DOCUMENT_LINES_TABLE);
     const chunkTable = profile.find((entry) => entry.table === DOCUMENT_CHUNKS_TABLE);
     return [
-        ...catalog.documentTypes.map((type) => buildTypedEntity(type, profile)),
+        ...catalog.documentTypes.map((type) => buildTypedEntity(type, profile, catalog)),
         buildTableEntity(DOCUMENT_TEXT_ENTITY_ID, "Document Text", "Line-level text content for all documents in the corpus", DOCUMENT_LINES_TABLE, DOCUMENT_LINES_COLUMNS, `Unified line table with ${String(lineTable?.rowCount ?? 0)} rows across the document corpus`, profile),
         buildTableEntity(DOCUMENT_CHUNK_ENTITY_ID, "Document Chunk", "Searchable text segments from documents, split for semantic retrieval", DOCUMENT_CHUNKS_TABLE, DOCUMENT_CHUNK_COLUMNS, `Chunk table with ${String(chunkTable?.rowCount ?? 0)} searchable segments across the document corpus`, profile),
         ...buildMentionEntities(profile, vocabulary),
@@ -479,7 +504,7 @@ export function buildDocumentCorpusRelations(catalog: DocumentCatalog, entities:
         return [];
     }
     const typeRelations = catalog.documentTypes.flatMap((type) => {
-        const typeId = slugify(type.id);
+        const typeId = documentTypeEntityId(type.id);
         return [
             toRelation({
                 id: `${typeId}_has_text`,

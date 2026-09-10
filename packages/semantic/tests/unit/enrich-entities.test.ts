@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { runBurst } from "../../src/burst.js";
 import { enrichEntities } from "../../src/enrich-entities.js";
 import type { EntityRecord, RawDocumentMention } from "../../src/extract-document-mentions.js";
-import { ENGLISH_INVOICE_VOCABULARY, ITALIAN_PROCUREMENT_VOCABULARY, } from "../fixtures/vocabulary.js";
+import { ENGLISH_INVOICE_VOCABULARY, PROCUREMENT_VOCABULARY, } from "../fixtures/vocabulary.js";
 vi.mock("../../src/burst.js", async (importOriginal) => ({
     ...(await importOriginal<typeof import("../../src/burst.js")>()),
     runBurst: vi.fn(),
@@ -60,7 +60,7 @@ describe("enrichEntities", () => {
             model: {} as never,
             entities,
             mentions: [],
-            vocabulary: ITALIAN_PROCUREMENT_VOCABULARY,
+            vocabulary: PROCUREMENT_VOCABULARY,
         });
         expect(result.entities).toBe(entities);
         expect(result.usage.inputTokens).toBe(0);
@@ -87,7 +87,7 @@ describe("enrichEntities", () => {
             model: {} as never,
             entities: new Map([["edil_vincent_srl", entity("edil_vincent_srl", "EDIL VINCENT SRL")]]),
             mentions: [],
-            vocabulary: ITALIAN_PROCUREMENT_VOCABULARY,
+            vocabulary: PROCUREMENT_VOCABULARY,
         });
         expect(result.entities.get("edil_vincent_srl")).toMatchObject({
             sector: "edilizia",
@@ -98,7 +98,7 @@ describe("enrichEntities", () => {
         expect(result.usage.inputTokens).toBe(80);
     });
     it("puts the entity's name, counts, and context snippets in the prompt", async () => {
-        const request = await enrichWith(ITALIAN_PROCUREMENT_VOCABULARY);
+        const request = await enrichWith(PROCUREMENT_VOCABULARY);
         expect(request.prompt).toContain("entityId: edil_vincent_srl");
         expect(request.prompt).toContain("name: EDIL VINCENT SRL");
         expect(request.prompt).toContain("mentions: 3 across 2 document(s)");
@@ -107,7 +107,7 @@ describe("enrichEntities", () => {
 });
 describe("entity enrichment label space", () => {
     it("builds the schema from the corpus's own sectors and roles", async () => {
-        const request = await enrichWith(ITALIAN_PROCUREMENT_VOCABULARY);
+        const request = await enrichWith(PROCUREMENT_VOCABULARY);
         const parsed = request.schema.parse({
             entities: [
                 {

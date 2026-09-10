@@ -6,6 +6,10 @@ export interface DocumentTypeHint {
     confidence: number;
     evidence: string;
 }
+export interface DocumentTypeRegistryEntry {
+    documentType: string;
+    documentTypeLabel: string;
+}
 function hintFromConfig(config: DocumentTypeHintConfig): DocumentTypeHint {
     return {
         documentType: config.documentType,

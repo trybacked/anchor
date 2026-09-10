@@ -1,5 +1,6 @@
 export const PACKAGE_NAME = "@backed/core" as const;
 export { MODEL_FORMAT_VERSION, LOW_CONFIDENCE_THRESHOLD, DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, MAX_REVIEW_QUESTIONS, } from "./constants.js";
+export { DOC_TYPE_TABLE_PREFIX, DOC_TYPE_UNKNOWN_SLUG } from "./tables.js";
 export { NATIVE_FRACTIONAL_TYPE_PATTERN, PROFILE_TOP_VALUES_LIMIT, PROFILE_PATTERN_SAMPLE_SIZE, PROFILE_PATTERN_MATCH_THRESHOLD, PROFILE_FK_OVERLAP_THRESHOLD, PROFILE_FK_SAMPLE_SIZE, PROFILE_FK_CANDIDATES_PER_COLUMN, EMPTY_FOREIGN_KEY_CANDIDATES, ForeignKeyCandidateSchema, DetectedPatternKindSchema, DetectedPatternSchema, TopValueSchema, ColumnProfileSchema, TableProfileSchema, ProfileReportSchema, } from "./profile.js";
 export type { DetectedPatternKind, DetectedPattern, ForeignKeyCandidate, TopValue, ColumnProfile, TableProfile, ProfileReport, } from "./profile.js";
 export { ConfidenceSchema, ProvenanceSchema, SemanticTypeSchema, PropertyRoleSchema, ElementStatusSchema, PropertySchema, EntitySchema, CardinalitySchema, RelationSchema, RuleSchema, ModelMetadataSchema, SemanticModelSchema, } from "./model.js";
@@ -30,6 +31,9 @@ export { DEFAULT_ENTITY_SEARCH_LIMIT, MAX_ENTITY_SEARCH_LIMIT, DEFAULT_ENTITY_SE
 export type { EntitySearchMode, EntitySearchRequest, EntitySearcher, } from "./entity-search.js";
 export { DocumentFieldSchema, DocumentCatalogEntrySchema, DocumentTypeSummarySchema, DocumentCatalogSchema, DOCUMENT_LINES_TABLE, documentTypeTableName, } from "./document-catalog.js";
 export type { DocumentField, DocumentCatalogEntry, DocumentTypeSummary, DocumentCatalog, } from "./document-catalog.js";
+export { DOCUMENT_INFRASTRUCTURE_COLUMNS, DOCUMENT_ENRICHMENT_FIELD_TOPICS, DOCUMENT_ENRICHMENT_FIELD_SUMMARY, normalizeDocumentFieldKey, documentField, fieldsFromRecord, collectDocumentFieldKeys, getDocumentFieldValue, mergeDocumentFields, isDocumentInfrastructureColumn, enrichmentFieldValues, hasEnrichmentFieldValues, longestDocumentFieldValue, } from "./document-fields.js";
+export type { DocumentInfrastructureColumn } from "./document-fields.js";
+export { normalizeComparableLine } from "./text-normalize.js";
 export { DOCUMENT_CHUNKS_TABLE, DEFAULT_CHUNK_SIZE, MAX_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SEARCH_LIMIT, MAX_CHUNK_SEARCH_LIMIT, DEFAULT_CHUNK_SEARCH_MIN_SCORE, DEFAULT_EMBEDDING_DIMENSION, } from "./document-chunk.js";
 export type { ChunkSearchRequest, ChunkSearcher, ChunkSearchMode, QueryEmbedder } from "./document-chunk.js";
 export { DOCUMENT_MENTIONS_TABLE, DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, ENTITY_PROFILES_TABLE, ENTITY_MENTION_TYPE, MENTION_CONTEXT_MAX_CHARS, MENTION_CONTEXT_LINE_RADIUS, } from "./document-mentions.js";

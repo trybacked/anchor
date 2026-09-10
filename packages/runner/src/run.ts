@@ -23,6 +23,7 @@ import { MS_PER_SECOND, PROPOSAL_ONTOLOGY_PREFIX } from "./config.js";
 import { runDocumentStage } from "./pipeline/document-stage.js";
 import { resolveIncrementalScope } from "./pipeline/incremental.js";
 import { prepareLlmCache, resolveModels, resolveSourcesDir } from "./pipeline/setup.js";
+import { resolveCatalogForInference } from "./tenant-persist-cache.js";
 import { noopProgressReporter } from "./progress.js";
 import type { PipelineStageTimings, RunAnchorPipelineOptions, RunAnchorPipelineResult } from "./types.js";
 
@@ -89,6 +90,9 @@ export async function runAnchorPipeline(options: RunAnchorPipelineOptions): Prom
                 forceFull,
                 llmCache,
                 progress,
+                options.persistedArtifacts?.vocabulary,
+                options.persistedArtifacts?.documentCatalog,
+                options.incrementalContext?.unknownSourceFiles,
             );
             timings.documentsMs = Date.now() - documentsStarted;
             timings.extractionMs = documentStage.extractionMs;
@@ -102,14 +106,38 @@ export async function runAnchorPipeline(options: RunAnchorPipelineOptions): Prom
         }
         const profilePath = writeRunArtifact(root, runId, "profile", profile);
         progress.success(`Profile → ${profilePath}`);
-        const incrementalScope = resolveIncrementalScope(root, profile, previousRunId, forceFull, hasLineDocuments);
+        const catalogForInference = resolveCatalogForInference(
+            documentCatalog,
+            options.persistedArtifacts?.documentCatalog,
+        );
+        const incrementalScope = options.incrementalContext !== undefined
+            ? resolveIncrementalScope(
+                root,
+                profile,
+                previousRunId,
+                forceFull,
+                options.incrementalContext.previousProfile,
+                options.incrementalContext.existingModel,
+                options.incrementalContext.unknownSourceFiles,
+                catalogForInference,
+            )
+            : resolveIncrementalScope(
+                root,
+                profile,
+                previousRunId,
+                forceFull,
+                options.persistedArtifacts?.profile,
+                undefined,
+                undefined,
+                catalogForInference,
+            );
         const proposalStarted = Date.now();
         const freshProposal = await proposeModel({
             profile: incrementalScope.profileForInference,
             runId,
             models,
             llmCache,
-            ...(documentCatalog !== undefined ? { documentCatalog } : {}),
+            ...(catalogForInference !== undefined ? { documentCatalog: catalogForInference } : {}),
             ...(vocabulary !== undefined ? { vocabulary } : {}),
             ...(extractionUsage !== undefined ? { extractionUsage } : {}),
             onProgress: (message) => {

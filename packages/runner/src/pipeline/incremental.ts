@@ -3,8 +3,9 @@ import {
     readModelYaml,
     readRunArtifact,
 } from "@backed/core";
-import type { ProfileReport, SemanticModel } from "@backed/core";
+import type { DocumentCatalog, ProfileReport, SemanticModel } from "@backed/core";
 import { affectedTablesFromProfileDiff, filterProfileToTables } from "@backed/diff";
+import { resolveTenantAffectedTables } from "../tenant-affected-tables.js";
 
 export interface IncrementalScope {
     profileForInference: ProfileReport;
@@ -17,25 +18,33 @@ export function resolveIncrementalScope(
     profile: ProfileReport,
     previousRunId: string | undefined,
     forceFull: boolean,
-    hasDocuments: boolean,
+    previousProfile?: ProfileReport,
+    existingModelOverride?: SemanticModel,
+    unknownSourceFiles?: string[],
+    documentCatalog?: DocumentCatalog,
 ): IncrementalScope {
-    if (forceFull || hasDocuments || previousRunId === undefined) {
-        return {
-            profileForInference: profile,
-            incrementalTables: null,
-            existingModel: null,
-        };
+    const fullScope: IncrementalScope = {
+        profileForInference: profile,
+        incrementalTables: null,
+        existingModel: null,
+    };
+    if (forceFull) {
+        return fullScope;
     }
     try {
-        const existingModel = readModelYaml(root);
-        const previousProfile = readRunArtifact(root, previousRunId, "profile", ProfileReportSchema);
-        const incrementalTables = affectedTablesFromProfileDiff(previousProfile, profile);
+        const existingModel = existingModelOverride ?? readModelYaml(root);
+        let baselineProfile = previousProfile;
+        if (baselineProfile === undefined && previousRunId !== undefined) {
+            baselineProfile = readRunArtifact(root, previousRunId, "profile", ProfileReportSchema);
+        }
+        if (baselineProfile === undefined) {
+            return fullScope;
+        }
+        const incrementalTables = unknownSourceFiles !== undefined && unknownSourceFiles.length > 0
+            ? resolveTenantAffectedTables(profile, unknownSourceFiles, documentCatalog)
+            : affectedTablesFromProfileDiff(baselineProfile, profile);
         if (incrementalTables.size === 0) {
-            return {
-                profileForInference: profile,
-                incrementalTables: null,
-                existingModel: null,
-            };
+            return fullScope;
         }
         return {
             profileForInference: filterProfileToTables(profile, incrementalTables),
@@ -44,10 +53,6 @@ export function resolveIncrementalScope(
         };
     }
     catch {
-        return {
-            profileForInference: profile,
-            incrementalTables: null,
-            existingModel: null,
-        };
+        return fullScope;
     }
 }

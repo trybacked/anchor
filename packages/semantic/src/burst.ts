@@ -78,6 +78,8 @@ function isRetryableBurstError(error: unknown): boolean {
         message.includes("failed to parse") ||
         message.includes("validation failed") ||
         message.includes("unexpected token") ||
+        message.includes("unterminated string") ||
+        message.includes("unexpected end of json") ||
         message.includes("timeout") ||
         message.includes("timed out") ||
         message.includes("gateway request failed") ||
@@ -172,17 +174,49 @@ export function extractJsonCandidate(raw: string): string | null {
     return null;
 }
 
+function parseJsonText(rawText: string): unknown {
+    try {
+        return JSON.parse(rawText) as unknown;
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error(String(error));
+    }
+}
+
 function parseWithRecovery<TSchema extends z.ZodTypeAny>(schema: TSchema, rawText: string | undefined): z.infer<TSchema> | undefined {
     if (rawText === undefined) {
         return undefined;
     }
-    const direct = schema.safeParse(JSON.parse(rawText) as unknown);
+    let parsed: unknown;
+    try {
+        parsed = parseJsonText(rawText);
+    }
+    catch (error) {
+        if (isRetryableBurstError(error)) {
+            throw error;
+        }
+        return undefined;
+    }
+    const direct = schema.safeParse(parsed);
     if (direct.success) {
         return direct.data as z.infer<TSchema>;
     }
     const candidate = extractJsonCandidate(rawText);
     if (candidate !== null) {
-        const recovered = schema.safeParse(JSON.parse(candidate) as unknown);
+        let recoveredParsed: unknown;
+        try {
+            recoveredParsed = parseJsonText(candidate);
+        }
+        catch (error) {
+            if (isRetryableBurstError(error)) {
+                throw error;
+            }
+            return undefined;
+        }
+        const recovered = schema.safeParse(recoveredParsed);
         if (recovered.success) {
             return recovered.data as z.infer<TSchema>;
         }
@@ -222,9 +256,18 @@ async function runRawAttempt<TSchema extends z.ZodTypeAny>(
         maxOutputTokens,
         ...(request.timeoutMs !== undefined ? { timeout: { totalMs: request.timeoutMs } } : {}),
     });
-    const recovered = parseWithRecovery(request.schema, result.text);
+    let recovered: z.infer<TSchema> | undefined;
+    try {
+        recovered = parseWithRecovery(request.schema, result.text);
+    }
+    catch (error) {
+        if (isRetryableBurstError(error)) {
+            throw error;
+        }
+        recovered = undefined;
+    }
     if (recovered === undefined) {
-        throw new Error(`Raw JSON fallback failed to produce schema-valid output for "${request.schemaName}"`);
+        throw new Error(`Unexpected end of JSON input in raw fallback for "${request.schemaName}"`);
     }
     return {
         output: recovered,

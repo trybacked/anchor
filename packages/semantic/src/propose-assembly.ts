@@ -21,6 +21,7 @@ import {
     buildDocumentCorpusRelations,
     materializedEntityIds,
 } from "./document-ontology.js";
+import { documentTypeEntityId } from "./document-type-identity.js";
 import { slugify } from "./string-utils.js";
 import { buildLineDocumentEntities, isDocumentCorpus } from "./line-document.js";
 import type { TableRouting } from "./table-routing.js";
@@ -235,7 +236,7 @@ export function lowConfidenceDoubts(assembly: AssemblyResult, questionTargets: S
 export function documentEntityIds(catalog: DocumentCatalog, vocabulary: DomainVocabulary): Set<string> {
     const ids = new Set<string>(materializedEntityIds(vocabulary));
     for (const type of catalog.documentTypes) {
-        ids.add(slugify(type.id));
+        ids.add(documentTypeEntityId(type.id));
     }
     return ids;
 }

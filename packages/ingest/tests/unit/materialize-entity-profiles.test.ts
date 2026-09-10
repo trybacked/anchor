@@ -243,7 +243,7 @@ describe("createEntityProfileReader", () => {
         expect(entry?.profile["name"]).toBe("EDIL VINCENT SRL");
         expect(entry?.facts).toHaveLength(4);
         expect(entry?.documents).toHaveLength(2);
-        expect(entry?.documents[0]?.["subject"]).toBeTypeOf("string");
+        expect(entry?.documents[0]?.["document_id"]).toBeTypeOf("string");
     });
     it("matches on a name fragment regardless of case", async () => {
         const reader = createEntityProfileReader(session.query);

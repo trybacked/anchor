@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildLineContextMap, extractMentionsFromLine, extractMentionsFromLines, } from "../../src/extract-document-mentions.js";
-import { ITALIAN_PROCUREMENT_VOCABULARY } from "../fixtures/vocabulary.js";
+import { PROCUREMENT_VOCABULARY } from "../fixtures/vocabulary.js";
 describe("mention context", () => {
     it("captures surrounding lines in mention context", () => {
         const rows = [
@@ -13,7 +13,7 @@ describe("mention context", () => {
             },
             { document_id: "doc_1", page: 1, line: 10, text: "per importo di € 50.000" },
         ];
-        const mentions = extractMentionsFromLines(rows, ITALIAN_PROCUREMENT_VOCABULARY);
+        const mentions = extractMentionsFromLines(rows, PROCUREMENT_VOCABULARY);
         expect(mentions).toHaveLength(1);
         expect(mentions[0]?.context).toContain("EDIL VINCENT SRL");
         expect(mentions[0]?.context).toContain("Riga precedente");
@@ -33,11 +33,11 @@ describe("mention context", () => {
         expect(context?.length).toBeLessThanOrEqual(120);
     });
     it("falls back to the current line when no context is passed", () => {
-        const mentions = extractMentionsFromLine({ document_id: "doc_1", page: 1, line: 1, text: "EDIL VINCENT SRL aggiudicataria" }, ITALIAN_PROCUREMENT_VOCABULARY);
+        const mentions = extractMentionsFromLine({ document_id: "doc_1", page: 1, line: 1, text: "EDIL VINCENT SRL aggiudicataria" }, PROCUREMENT_VOCABULARY);
         expect(mentions[0]?.context).toBe("EDIL VINCENT SRL aggiudicataria");
     });
     it("uses the context passed explicitly by the caller", () => {
-        const mentions = extractMentionsFromLine({ document_id: "doc_1", page: 1, line: 1, text: "EDIL VINCENT SRL aggiudicataria" }, ITALIAN_PROCUREMENT_VOCABULARY, "contesto esplicito");
+        const mentions = extractMentionsFromLine({ document_id: "doc_1", page: 1, line: 1, text: "EDIL VINCENT SRL aggiudicataria" }, PROCUREMENT_VOCABULARY, "contesto esplicito");
         expect(mentions[0]?.context).toBe("contesto esplicito");
     });
 });

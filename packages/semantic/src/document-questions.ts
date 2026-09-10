@@ -1,6 +1,6 @@
 import type { DocumentCatalog, Entity, EvidenceTable, ReviewQuestion } from "@backed/core";
 import type { CompressedTable } from "./compress.js";
-import { slugify } from "./string-utils.js";
+import { documentTypeEntityId } from "./document-type-identity.js";
 function findTable(tables: CompressedTable[], name: string): CompressedTable | undefined {
     return tables.find((table) => table.table === name);
 }
@@ -11,7 +11,7 @@ export function selectDocumentTypeReviewQuestions(catalog: DocumentCatalog, enti
         if (type.confidence >= reviewConfidenceThreshold) {
             continue;
         }
-        const entityId = slugify(type.id);
+        const entityId = documentTypeEntityId(type.id);
         const entity = entityById.get(entityId);
         const uncertainty = 1 - type.confidence;
         const impact = 2 + type.documentCount;

@@ -42,19 +42,17 @@ const mixedProfile: ProfileReport = [
     tableProfile(noticeTable, [
         "document_id",
         "source_file",
-        "protocol_number",
-        "published_date",
-        "subject",
-        "issuing_office",
+        "reference_number",
+        "effective_date",
+        "title",
         "page_count",
     ]),
     tableProfile(determinationTable, [
         "document_id",
         "source_file",
-        "protocol_number",
-        "published_date",
-        "subject",
-        "issuing_office",
+        "reference_number",
+        "effective_date",
+        "title",
         "page_count",
     ]),
     tableProfile("document_lines", ["document_id", "page", "line", "text"]),
@@ -92,6 +90,7 @@ const mixedDocumentCatalog: DocumentCatalog = {
             sourceTable: "notice_alpha",
             documentType: "notice",
             documentTypeLabel: "Notice",
+            fields: {},
             confidence: 0.9,
             pageCount: 1,
         },
@@ -99,6 +98,7 @@ const mixedDocumentCatalog: DocumentCatalog = {
             sourceTable: "notice_beta",
             documentType: "notice",
             documentTypeLabel: "Notice",
+            fields: {},
             confidence: 0.9,
             pageCount: 1,
         },
@@ -106,6 +106,7 @@ const mixedDocumentCatalog: DocumentCatalog = {
             sourceTable: "determination_one",
             documentType: "determination",
             documentTypeLabel: "Determination",
+            fields: {},
             confidence: 0.9,
             pageCount: 1,
         },
@@ -113,6 +114,7 @@ const mixedDocumentCatalog: DocumentCatalog = {
             sourceTable: "determination_two",
             documentType: "determination",
             documentTypeLabel: "Determination",
+            fields: {},
             confidence: 0.9,
             pageCount: 1,
         },
@@ -235,7 +237,7 @@ describe("proposeModel mixed folder", () => {
         expect(proposal.entities.some((entity) => entity.sourceTable === "invoices")).toBe(true);
         expect(proposal.entities.some((entity) => entity.sourceTable === noticeTable)).toBe(true);
         expect(proposal.entities.some((entity) => entity.sourceTable === determinationTable)).toBe(true);
-        expect(proposal.entities.some((entity) => entity.sourceTable === noticeTable && entity.id === "notice")).toBe(true);
+        expect(proposal.entities.some((entity) => entity.sourceTable === noticeTable && entity.id.startsWith("dtype_"))).toBe(true);
         expect(proposal.doubts.some((doubt) => doubt.topic.includes("entity notice") && doubt.reason.includes("duplicate document entity"))).toBe(true);
         const classificationCalls = mockedRunBurst.mock.calls.filter(([request]) => request.schemaName.startsWith("column_classification"));
         expect(classificationCalls).toHaveLength(1);

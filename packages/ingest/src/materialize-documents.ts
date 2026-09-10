@@ -1,10 +1,7 @@
-import { DOCUMENT_LINES_TABLE, documentTypeTableName } from "@backed/core";
+import { collectDocumentFieldKeys, DOCUMENT_INFRASTRUCTURE_COLUMNS, documentTypeTableName } from "@backed/core";
 import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeSummary } from "@backed/core";
-import {
-    CORPUS_SAMPLE_LINE_LIMIT,
-    DOCUMENT_HEADER_LINE_LIMIT,
-    DOCUMENT_TYPE_SAMPLE_TABLE_LIMIT,
-} from "./constants.js";
+import { DOCUMENT_LINES_TABLE } from "@backed/core";
+import { DOCUMENT_HEADER_LINE_LIMIT, DOCUMENT_TYPE_SAMPLE_TABLE_LIMIT, CORPUS_SAMPLE_LINE_LIMIT, } from "./constants.js";
 import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { dropTableIfExists, quoteIdentifier, quoteString, sqlNullableString } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";
@@ -106,63 +103,40 @@ async function createDocumentLinesTable(query: SqlQuery, sourceTables: string[])
     const unions = sourceTables.map((tableName) => `SELECT ${quoteString(tableName)} AS document_id, page, line, text FROM ${quoteIdentifier(tableName)}`);
     await query(`CREATE TABLE ${quoteIdentifier(DOCUMENT_LINES_TABLE)} AS ${unions.join(" UNION ALL ")}`);
 }
-async function createTypedDocumentTable(query: SqlQuery, tableName: string, documents: DocumentCatalogEntry[]): Promise<void> {
+
+function infrastructureColumnDefinitions(): string[] {
+    return [
+        "document_id VARCHAR NOT NULL",
+        "source_file VARCHAR",
+        "page_count INTEGER NOT NULL",
+    ];
+}
+
+async function createTypedDocumentTable(
+    query: SqlQuery,
+    tableName: string,
+    documents: DocumentCatalogEntry[],
+): Promise<void> {
     await dropTableIfExists(query, tableName);
-    await query(`CREATE TABLE ${quoteIdentifier(tableName)} (
-      document_id VARCHAR NOT NULL,
-      source_file VARCHAR,
-      protocol_number VARCHAR,
-      published_date VARCHAR,
-      subject VARCHAR,
-      issuing_office VARCHAR,
-      topics VARCHAR,
-      summary VARCHAR,
-      page_count INTEGER NOT NULL
-    )`);
+    const fieldKeys = collectDocumentFieldKeys(documents);
+    const columnDefinitions = [
+        ...infrastructureColumnDefinitions(),
+        ...fieldKeys.map((key) => `${quoteIdentifier(key)} VARCHAR`),
+    ];
+    await query(`CREATE TABLE ${quoteIdentifier(tableName)} (${columnDefinitions.join(", ")})`);
     for (const document of documents) {
-        const protocol = sqlNullableString(document.protocolNumber?.value ?? null);
-        const publishedDate = sqlNullableString(document.publishedDate?.value ?? null);
-        const subject = sqlNullableString(document.subject?.value ?? null);
-        const issuingOffice = sqlNullableString(document.issuingOffice?.value ?? null);
-        const sourceFile = sqlNullableString(document.sourceFile ?? null);
-        const topics = sqlNullableString(document.topics?.join(", ") ?? null);
-        const summary = sqlNullableString(document.summary ?? null);
-        await query(`INSERT INTO ${quoteIdentifier(tableName)} (
-        document_id, source_file, protocol_number, published_date, subject, issuing_office,
-        topics, summary, page_count
-      ) VALUES (
-        ${quoteString(document.sourceTable)},
-        ${sourceFile},
-        ${protocol},
-        ${publishedDate},
-        ${subject},
-        ${issuingOffice},
-        ${topics},
-        ${summary},
-        ${String(document.pageCount)}
-      )`);
+        const columns = [...DOCUMENT_INFRASTRUCTURE_COLUMNS, ...fieldKeys];
+        const values = [
+            quoteString(document.sourceTable),
+            sqlNullableString(document.sourceFile ?? null),
+            String(document.pageCount),
+            ...fieldKeys.map((key) => sqlNullableString(document.fields[key]?.value ?? null)),
+        ];
+        await query(`INSERT INTO ${quoteIdentifier(tableName)} (${columns.map((column) => quoteIdentifier(column)).join(", ")})
+      VALUES (${values.join(", ")})`);
     }
 }
-export interface DocumentTopicUpdate {
-    documentId: string;
-    tableName: string;
-    topics: string[] | undefined;
-    summary: string | undefined;
-}
-export async function applyDocumentTopics(query: SqlQuery, updates: DocumentTopicUpdate[]): Promise<number> {
-    let updated = 0;
-    for (const update of updates) {
-        if (update.topics === undefined && update.summary === undefined) {
-            continue;
-        }
-        await query(`UPDATE ${quoteIdentifier(update.tableName)}
-       SET topics = ${sqlNullableString(update.topics?.join(", ") ?? null)},
-           summary = ${sqlNullableString(update.summary ?? null)}
-       WHERE document_id = ${quoteString(update.documentId)}`);
-        updated += 1;
-    }
-    return updated;
-}
+
 export async function materializeDocumentTables(query: SqlQuery, catalog: Omit<DocumentCatalog, "documentTypes">, sourceFileByTable: Map<string, string>): Promise<MaterializeDocumentsResult> {
     const documents = catalog.documents.map((document) => ({
         ...document,

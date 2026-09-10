@@ -113,7 +113,16 @@ describe("runTenantPipeline", () => {
             skipEmbed: true,
         });
         const persistDir = join(root, "tenants", tenantId, "persist");
-        const allowed = new Set(["model.yaml", "ledger.json", "deletion-log.jsonl", "proposal.json", "review.json"]);
+        const allowed = new Set([
+            "model.yaml",
+            "ledger.json",
+            "deletion-log.jsonl",
+            "proposal.json",
+            "review.json",
+            "vocabulary.json",
+            "documents.json",
+            "profile.json",
+        ]);
         for (const fileName of await readdir(persistDir)) {
             expect(allowed.has(fileName)).toBe(true);
             const content = await readFile(join(persistDir, fileName), "utf8");

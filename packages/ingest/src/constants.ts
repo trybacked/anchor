@@ -37,7 +37,7 @@ export const OCR_STDERR_DRAIN_MS = 400;
 
 export const CHUNK_SEARCH_OVERSAMPLE_FACTOR = 3;
 export const KEYWORD_MIN_TOKEN_LENGTH = 3;
-export const KEYWORD_STOPWORDS = new Set(["the", "and", "for", "del", "della", "che", "con", "per"]);
+export const KEYWORD_STOPWORDS = new Set(["the", "and", "for", "with", "from", "that", "this"]);
 
 export const PDF_INGEST_NOISE_PATTERN =
     /Image too small to scale|Line cannot be recognized|(?:Warning:\s*)?TT:\s*undefined function/i;
