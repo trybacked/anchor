@@ -1,5 +1,5 @@
 export { runAnchorPipeline, formatPipelineDuration } from "./run.js";
-export { runTenantPipeline } from "./run-tenant.js";
+export { runTenantPipeline, TenantPipelineError } from "./run-tenant.js";
 export type {
     RunAnchorPipelineOptions,
     RunAnchorPipelineResult,

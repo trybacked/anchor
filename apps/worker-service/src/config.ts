@@ -15,6 +15,7 @@ export const ENV = {
     PORT: "WORKER_SERVICE_PORT",
     DATA_ROOT: "WORKER_SERVICE_DATA_ROOT",
     AUTH_TOKEN: "WORKER_SERVICE_AUTH_TOKEN",
+    PARTNERS_JSON: "WORKER_SERVICE_PARTNERS_JSON",
     MAX_UPLOAD_BYTES: "WORKER_SERVICE_MAX_UPLOAD_BYTES",
     MAX_UPLOAD_FILES: "WORKER_SERVICE_MAX_UPLOAD_FILES",
     RATE_LIMIT_WINDOW_MS: "WORKER_SERVICE_RATE_LIMIT_WINDOW_MS",
@@ -22,11 +23,18 @@ export const ENV = {
     SKIP_EMBED: "WORKER_SERVICE_SKIP_EMBED",
 } as const;
 
+export interface PartnerConfig {
+    partnerId: string;
+    token: string;
+    tenantIdPattern?: string;
+}
+
 export interface WorkerServiceConfig {
     host: string;
     port: number;
     dataRoot: string;
     authToken: string;
+    partners: PartnerConfig[];
     maxUploadBytes: number;
     maxUploadFiles: number;
     rateLimitWindowMs: number;
@@ -62,16 +70,50 @@ function readBoolean(raw: string | undefined, fallback: boolean): boolean {
     }
 }
 
+function parsePartnersJson(raw: string | undefined): PartnerConfig[] {
+    if (raw === undefined || raw.trim().length === 0) {
+        return [];
+    }
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+        throw new Error(`${ENV.PARTNERS_JSON} must be a JSON array`);
+    }
+    return parsed.map((entry) => {
+        if (entry === null || typeof entry !== "object") {
+            throw new Error(`${ENV.PARTNERS_JSON} entries must be objects`);
+        }
+        const record = entry as Record<string, unknown>;
+        const partnerId = record["partnerId"];
+        const token = record["token"];
+        const tenantIdPattern = record["tenantIdPattern"];
+        if (typeof partnerId !== "string" || partnerId.length === 0) {
+            throw new Error(`${ENV.PARTNERS_JSON} entries require partnerId`);
+        }
+        if (typeof token !== "string" || token.length === 0) {
+            throw new Error(`${ENV.PARTNERS_JSON} entries require token`);
+        }
+        return {
+            partnerId,
+            token,
+            ...(typeof tenantIdPattern === "string" && tenantIdPattern.length > 0
+                ? { tenantIdPattern }
+                : {}),
+        };
+    });
+}
+
 export function loadWorkerServiceConfig(env: Record<string, string | undefined> = process.env): WorkerServiceConfig {
-    const authToken = env[ENV.AUTH_TOKEN]?.trim();
-    if (authToken === undefined || authToken.length === 0) {
-        throw new Error(`Missing ${ENV.AUTH_TOKEN}`);
+    const authToken = env[ENV.AUTH_TOKEN]?.trim() ?? "";
+    const partners = parsePartnersJson(env[ENV.PARTNERS_JSON]);
+    if (authToken.length === 0 && partners.length === 0) {
+        throw new Error(`Missing ${ENV.AUTH_TOKEN} or ${ENV.PARTNERS_JSON}`);
     }
     return {
         host: env[ENV.HOST]?.trim() || DEFAULT_HOST,
         port: readPositiveInt(env[ENV.PORT], DEFAULT_PORT),
         dataRoot: env[ENV.DATA_ROOT]?.trim() || DEFAULT_DATA_ROOT,
         authToken,
+        partners,
         maxUploadBytes: readPositiveInt(env[ENV.MAX_UPLOAD_BYTES], DEFAULT_MAX_UPLOAD_BYTES),
         maxUploadFiles: readPositiveInt(env[ENV.MAX_UPLOAD_FILES], DEFAULT_MAX_UPLOAD_FILES),
         rateLimitWindowMs: readPositiveInt(env[ENV.RATE_LIMIT_WINDOW_MS], DEFAULT_RATE_LIMIT_WINDOW_MS),

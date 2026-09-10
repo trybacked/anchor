@@ -7,12 +7,18 @@ import {
     hashContent,
     resolveTenantWorkspace,
     runTenantPipeline,
+    TenantPipelineError,
 } from "@backed/runner";
 import { ReviewSubmitSchema } from "./api-types.js";
 import type { WorkerServiceConfig } from "./config.js";
 import { PayloadTooLargeError, readRequestBody, sendApiError, sendJson, sendYaml } from "./http.js";
 import { parseMultipartFormData } from "./multipart.js";
 import { toRunStatusResponse, type RunStore } from "./run-store.js";
+import {
+    parseDeletionLogQuery,
+    queryDeletionLog,
+    readLedgerAudit,
+} from "./audit-export.js";
 import {
     applyTenantReview,
     loadTenantProposal,
@@ -63,7 +69,13 @@ export async function handleSubmitRun(
     }).then((result) => {
         deps.runStore.complete(tenantId, runId, result.stats, result.deletionEntry);
     }).catch((error: unknown) => {
-        deps.runStore.fail(tenantId, runId, error instanceof Error ? error.message : String(error));
+        const deletionEntry = error instanceof TenantPipelineError ? error.deletionEntry : undefined;
+        deps.runStore.fail(
+            tenantId,
+            runId,
+            error instanceof Error ? error.message : String(error),
+            deletionEntry,
+        );
     });
 }
 
@@ -153,6 +165,35 @@ export async function handlePostReview(
         }
         throw error;
     }
+}
+
+export async function handleGetAuditDeletions(
+    tenantId: string,
+    request: IncomingMessage,
+    response: ServerResponse,
+    deps: WorkerServiceDeps,
+): Promise<void> {
+    const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    const parsed = parseDeletionLogQuery(url.searchParams);
+    if (!parsed.ok) {
+        sendApiError(response, 400, {
+            error: parsed.error === "invalid_date" ? "invalid_audit_date" : "invalid_audit_pagination",
+        });
+        return;
+    }
+    const workspace = resolveTenantWorkspace(deps.config.dataRoot, tenantId);
+    const result = await queryDeletionLog(workspace.paths.deletionLogPath, parsed.query);
+    sendJson(response, 200, result);
+}
+
+export async function handleGetAuditLedger(
+    tenantId: string,
+    response: ServerResponse,
+    deps: WorkerServiceDeps,
+): Promise<void> {
+    const workspace = resolveTenantWorkspace(deps.config.dataRoot, tenantId);
+    const result = await readLedgerAudit(workspace.paths.ledgerPath);
+    sendJson(response, 200, result);
 }
 
 export function extractTenantRoute(pathname: string): { tenantId: string; remainder: string } | null {

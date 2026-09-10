@@ -1,6 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { WorkerServiceDeps } from "./handlers.js";
 import {
+    handleGetAuditDeletions,
+    handleGetAuditLedger,
     handleGetModel,
     handleGetReview,
     handleGetRunStatus,
@@ -51,6 +53,16 @@ const TENANT_ROUTES: TenantRoute[] = [
         handler: (tenantId, _request, response, deps, params) => {
             handleGetRunStatus(tenantId, decodeURIComponent(params.runId ?? ""), response, deps);
         },
+    },
+    {
+        method: "GET",
+        path: "audit/deletions",
+        handler: (tenantId, request, response, deps) => handleGetAuditDeletions(tenantId, request, response, deps),
+    },
+    {
+        method: "GET",
+        path: "audit/ledger",
+        handler: (tenantId, _request, response, deps) => handleGetAuditLedger(tenantId, response, deps),
     },
 ];
 

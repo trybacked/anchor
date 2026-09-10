@@ -5,6 +5,7 @@ import type { RunStatus } from "./run-store.js";
 
 export type ApiErrorResponse =
     | { error: "unauthorized" }
+    | { error: "forbidden" }
     | { error: "rate_limit_exceeded" }
     | { error: "invalid_multipart" }
     | { error: "no_files_uploaded" }
@@ -17,6 +18,8 @@ export type ApiErrorResponse =
     | { error: "invalid_review_payload" }
     | { error: "stale_review_answers"; staleAnswerCount: number }
     | { error: "invalid_tenant_id" }
+    | { error: "invalid_audit_date" }
+    | { error: "invalid_audit_pagination" }
     | { error: "not_found" }
     | { error: "internal_error"; message: string };
 

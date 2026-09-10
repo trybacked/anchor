@@ -14,6 +14,13 @@ export interface StoredRun {
     failureMessage?: string;
 }
 
+export interface RunStore {
+    create(tenantId: string, runId: string): StoredRun;
+    get(tenantId: string, runId: string): StoredRun | undefined;
+    complete(tenantId: string, runId: string, stats: PipelineStats, deletionEntry: DeletionLogEntry): StoredRun | undefined;
+    fail(tenantId: string, runId: string, failureMessage: string, deletionEntry?: DeletionLogEntry): StoredRun | undefined;
+}
+
 export function toRunStatusResponse(record: StoredRun): RunStatusResponse {
     const shared = {
         ...(record.stats !== undefined ? { stats: record.stats } : {}),
@@ -39,7 +46,7 @@ export function toRunStatusResponse(record: StoredRun): RunStatusResponse {
     }
 }
 
-export class RunStore {
+export class MemoryRunStore implements RunStore {
     private readonly runs = new Map<string, StoredRun>();
 
     private key(tenantId: string, runId: string): string {

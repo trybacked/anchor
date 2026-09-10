@@ -22,7 +22,7 @@ vi.mock("@backed/runner", async (importOriginal) => {
 import { runTenantPipeline } from "@backed/runner";
 import type { RunStatusResponse } from "../src/api-types.js";
 import { DEFAULT_HOST, type WorkerServiceConfig } from "../src/config.js";
-import { RunStore } from "../src/run-store.js";
+import { MemoryRunStore } from "../src/run-store.js";
 import { startWorkerService } from "../src/server.js";
 
 const mockedRunTenantPipeline = vi.mocked(runTenantPipeline);
@@ -33,6 +33,7 @@ function createTestConfig(dataRoot: string, overrides: Partial<WorkerServiceConf
         port: 0,
         dataRoot,
         authToken: "test-token",
+        partners: [],
         maxUploadBytes: DEFAULT_MAX_UPLOAD_BYTES,
         maxUploadFiles: DEFAULT_MAX_UPLOAD_FILES,
         rateLimitWindowMs: DEFAULT_RATE_LIMIT_WINDOW_MS,
@@ -73,7 +74,7 @@ describe("worker-service integration", () => {
                 bytesDeleted: 128,
             },
         });
-        const runStore = new RunStore();
+        const runStore = new MemoryRunStore();
         const service = await startWorkerService({
             config: createTestConfig(dataRoot),
             runStore,

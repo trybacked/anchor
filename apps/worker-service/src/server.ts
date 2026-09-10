@@ -5,10 +5,12 @@ import {
     PayloadTooLargeError,
     type WorkerServiceDeps,
 } from "./handlers.js";
+import { assertTenantAccess, resolveAuthContext, TenantAccessDeniedError } from "./auth.js";
 import { parseBearerToken, sendApiError, sendJson } from "./http.js";
 import { dispatchTenantRoute } from "./router.js";
 import { RateLimiter } from "./rate-limit.js";
-import { RunStore } from "./run-store.js";
+import { FileRunStore } from "./run-store-fs.js";
+import type { RunStore } from "./run-store.js";
 
 export interface WorkerServiceOptions {
     config: WorkerServiceConfig;
@@ -20,13 +22,22 @@ function unauthorized(response: ServerResponse): void {
     sendApiError(response, 401, { error: "unauthorized" });
 }
 
-function assertAuth(request: IncomingMessage, config: WorkerServiceConfig, response: ServerResponse): boolean {
+function forbidden(response: ServerResponse): void {
+    sendApiError(response, 403, { error: "forbidden" });
+}
+
+function assertAuth(request: IncomingMessage, config: WorkerServiceConfig, response: ServerResponse): ReturnType<typeof resolveAuthContext> {
     const token = parseBearerToken(request.headers.authorization);
-    if (token === null || token !== config.authToken) {
+    if (token === null) {
         unauthorized(response);
-        return false;
+        return null;
     }
-    return true;
+    const auth = resolveAuthContext(token, config);
+    if (auth === null) {
+        unauthorized(response);
+        return null;
+    }
+    return auth;
 }
 
 function assertRateLimit(tenantId: string, limiter: RateLimiter, response: ServerResponse): boolean {
@@ -38,7 +49,7 @@ function assertRateLimit(tenantId: string, limiter: RateLimiter, response: Serve
 }
 
 export function createWorkerService(options: WorkerServiceOptions) {
-    const runStore = options.runStore ?? new RunStore();
+    const runStore = options.runStore ?? new FileRunStore(options.config.dataRoot);
     const rateLimiter = options.rateLimiter ?? new RateLimiter({
         windowMs: options.config.rateLimitWindowMs,
         maxRequests: options.config.rateLimitMaxRequests,
@@ -72,7 +83,8 @@ async function handleRequest(
         sendJson(response, 200, { ok: true, service: SERVICE_NAME });
         return;
     }
-    if (!assertAuth(request, deps.config, response)) {
+    const auth = assertAuth(request, deps.config, response);
+    if (auth === null) {
         return;
     }
     const route = extractTenantRoute(url.pathname);
@@ -81,6 +93,16 @@ async function handleRequest(
             error: url.pathname.startsWith("/v1/tenants/") ? "invalid_tenant_id" : "not_found",
         });
         return;
+    }
+    try {
+        assertTenantAccess(auth, route.tenantId, deps.config);
+    }
+    catch (error) {
+        if (error instanceof TenantAccessDeniedError) {
+            forbidden(response);
+            return;
+        }
+        throw error;
     }
     if (!assertRateLimit(route.tenantId, rateLimiter, response)) {
         return;

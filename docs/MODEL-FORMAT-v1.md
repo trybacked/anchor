@@ -123,10 +123,26 @@ with structural expectations in `manifest.json`. CI runs `golden/gerace.test.ts`
 
 ## Hosted ephemeral pipeline
 
-When served through `apps/worker-service`, the same `model.yaml` format is the only document-derived artifact that persists per tenant.
+When served through `apps/worker-service`, each tenant gets an isolated workspace:
 
-Documents are processed and deleted. Only the semantic model, content hashes, and a deletion log persist.
+```
+tenants/<tenantId>/
+├── work/      ← ephemeral — all uploaded bytes and pipeline scratch data
+└── persist/   ← durable — semantic artifacts only (see below)
+```
 
-Re-submitting unchanged files costs nothing: content hashes skip them.
+**`persist/` contains only these five files:**
 
-Every run's deletion is recorded in an append-only, auditable log.
+| File | Purpose |
+|---|---|
+| `model.yaml` | Committable semantic model |
+| `ledger.json` | SHA-256 content hashes (incremental skip) |
+| `deletion-log.jsonl` | Append-only GC proof per run |
+| `proposal.json` | Latest inference proposal (review input) |
+| `review.json` | Human review answers |
+
+Documents, raw corpus, DuckDB snapshots, embeddings, and run scratch data **never** persist. They live under `work/` during processing and are deleted when the run finishes (success or failure).
+
+Re-submitting unchanged files costs nothing: content hashes in `ledger.json` skip them.
+
+Every run's deletion is recorded in `deletion-log.jsonl` with `{ runId, tenantId, deletedAt, filesDeleted, bytesDeleted }` — auditable via the worker-service audit API.

@@ -30,11 +30,11 @@ vi.mock("../src/review-store.js", async (importOriginal) => {
     };
 });
 
-import { runTenantPipeline } from "@backed/runner";
+import { runTenantPipeline, TenantPipelineError } from "@backed/runner";
 import type { RunStatusResponse } from "../src/api-types.js";
 import { DEFAULT_HOST, type WorkerServiceConfig } from "../src/config.js";
 import { applyTenantReview, loadTenantProposal } from "../src/review-store.js";
-import { RunStore } from "../src/run-store.js";
+import { MemoryRunStore } from "../src/run-store.js";
 import { startWorkerService } from "../src/server.js";
 
 const mockedRunTenantPipeline = vi.mocked(runTenantPipeline);
@@ -47,6 +47,7 @@ function createTestConfig(dataRoot: string): WorkerServiceConfig {
         port: 0,
         dataRoot,
         authToken: "test-token",
+        partners: [],
         maxUploadBytes: DEFAULT_MAX_UPLOAD_BYTES,
         maxUploadFiles: DEFAULT_MAX_UPLOAD_FILES,
         rateLimitWindowMs: DEFAULT_RATE_LIMIT_WINDOW_MS,
@@ -92,7 +93,7 @@ describe("worker-service HTTP contract", () => {
         mockedLoadTenantProposal.mockReturnValue(null);
         const service = await startWorkerService({
             config: createTestConfig(dataRoot),
-            runStore: new RunStore(),
+            runStore: new MemoryRunStore(),
         });
         baseUrl = service.url;
         close = service.close;
@@ -116,7 +117,7 @@ describe("worker-service HTTP contract", () => {
     });
 
     it("surfaces failureMessage on failed runs", async () => {
-        const runStore = new RunStore();
+        const runStore = new MemoryRunStore();
         const service = await startWorkerService({
             config: createTestConfig(dataRoot),
             runStore,
@@ -131,6 +132,71 @@ describe("worker-service HTTP contract", () => {
         const payload = (await response.json()) as RunStatusResponse;
         expect(payload.status).toBe("failed");
         expect(payload.failureMessage).toBe("pipeline exploded");
+    });
+
+    it("surfaces deletionEntry when async pipeline fails", async () => {
+        mockedRunTenantPipeline.mockRejectedValueOnce(new TenantPipelineError("pipeline exploded", {
+            runId: "failed-run",
+            tenantId: "demo",
+            deletedAt: new Date().toISOString(),
+            filesDeleted: 3,
+            bytesDeleted: 128,
+        }));
+        const runStore = new MemoryRunStore();
+        const service = await startWorkerService({
+            config: createTestConfig(dataRoot),
+            runStore,
+        });
+        const boundary = "----backed-fail";
+        const body = [
+            `--${boundary}`,
+            'Content-Disposition: form-data; name="file"; filename="bad.csv"',
+            "",
+            "id\n1",
+            `--${boundary}--`,
+            "",
+        ].join("\r\n");
+        const submit = await fetch(`${service.url}/v1/tenants/demo/runs`, {
+            method: "POST",
+            headers: {
+                ...authHeaders(),
+                "Content-Type": `multipart/form-data; boundary=${boundary}`,
+            },
+            body,
+        });
+        expect(submit.status).toBe(202);
+        const { runId } = (await submit.json()) as { runId: string };
+        await new Promise((resolve) => {
+            setTimeout(resolve, 30);
+        });
+        const response = await fetch(`${service.url}/v1/tenants/demo/runs/${runId}`, {
+            headers: authHeaders(),
+        });
+        await service.close();
+        const payload = (await response.json()) as RunStatusResponse;
+        expect(payload.status).toBe("failed");
+        expect(payload.failureMessage).toBe("pipeline exploded");
+        expect(payload.deletionEntry?.filesDeleted).toBe(3);
+    });
+
+    it("returns 403 when partner token accesses a foreign tenant", async () => {
+        const service = await startWorkerService({
+            config: {
+                ...createTestConfig(dataRoot),
+                authToken: "",
+                partners: [{
+                    partnerId: "lexroom",
+                    token: "lexroom-secret",
+                    tenantIdPattern: "^lexroom-",
+                }],
+            },
+            runStore: new MemoryRunStore(),
+        });
+        const response = await fetch(`${service.url}/v1/tenants/acme/model`, {
+            headers: authHeaders("lexroom-secret"),
+        });
+        await service.close();
+        expect(response.status).toBe(403);
     });
 
     it("returns skipped stats when re-submitting known files", async () => {

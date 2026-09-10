@@ -363,7 +363,15 @@ CI (GitHub Actions) runs build, schema drift check, and tests including the **Ge
 
 ## Hosted ephemeral pipeline (`apps/worker-service`)
 
-Documents are processed and deleted. Only the semantic model, content hashes, and a deletion log persist.
+Each tenant workspace is split into ephemeral processing and durable persistence:
+
+```
+tenants/<tenantId>/
+├── work/      ← uploaded bytes + pipeline scratch (GC'd every run)
+└── persist/   ← model.yaml, ledger.json, deletion-log.jsonl, proposal.json, review.json
+```
+
+Documents and raw corpus **never** persist — only the semantic model, content hashes, review artifacts, and a deletion log.
 
 Re-submitting unchanged files costs nothing: content hashes skip them.
 
@@ -380,6 +388,8 @@ API surface:
 - `GET /v1/tenants/:tenantId/runs/:runId` — `{ status, stats?, deletionEntry?, failureMessage? }` (`failureMessage` when `status` is `failed`)
 - `GET /v1/tenants/:tenantId/model` — current `model.yaml` (+ `ETag`)
 - `GET|POST /v1/tenants/:tenantId/review` — remote review flow
+- `GET /v1/tenants/:tenantId/audit/deletions?since=&until=&offset=&limit=` — paginated deletion log (no document content)
+- `GET /v1/tenants/:tenantId/audit/ledger` — content-hash list from `ledger.json`
 
 ---
 

@@ -55,7 +55,7 @@ vi.mock("@backed/semantic", async (importOriginal) => {
 
 import type { RunStatusResponse } from "../src/api-types.js";
 import { DEFAULT_HOST, type WorkerServiceConfig } from "../src/config.js";
-import { RunStore } from "../src/run-store.js";
+import { MemoryRunStore } from "../src/run-store.js";
 import { startWorkerService } from "../src/server.js";
 
 function createTestConfig(dataRoot: string): WorkerServiceConfig {
@@ -64,6 +64,7 @@ function createTestConfig(dataRoot: string): WorkerServiceConfig {
         port: 0,
         dataRoot,
         authToken: "test-token",
+        partners: [],
         maxUploadBytes: DEFAULT_MAX_UPLOAD_BYTES,
         maxUploadFiles: DEFAULT_MAX_UPLOAD_FILES,
         rateLimitWindowMs: DEFAULT_RATE_LIMIT_WINDOW_MS,
@@ -98,7 +99,7 @@ describe("worker-service tenant pipeline e2e", () => {
 
     beforeEach(async () => {
         dataRoot = await mkdtemp(join(tmpdir(), "worker-e2e-"));
-        const runStore = new RunStore();
+        const runStore = new MemoryRunStore();
         const service = await startWorkerService({
             config: createTestConfig(dataRoot),
             runStore,
