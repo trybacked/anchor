@@ -12,7 +12,9 @@ export const DEFAULT_DATA_ROOT = "./worker-data";
 
 export const ENV = {
     HOST: "WORKER_SERVICE_HOST",
-    PORT: "WORKER_SERVICE_PORT",
+    /** Railway injects PORT; WORKER_SERVICE_PORT overrides when set explicitly. */
+    LISTEN_PORT: "PORT",
+    WORKER_SERVICE_PORT: "WORKER_SERVICE_PORT",
     DATA_ROOT: "WORKER_SERVICE_DATA_ROOT",
     AUTH_TOKEN: "WORKER_SERVICE_AUTH_TOKEN",
     PARTNERS_JSON: "WORKER_SERVICE_PARTNERS_JSON",
@@ -162,7 +164,7 @@ export function loadWorkerServiceConfig(env: Record<string, string | undefined> 
     }
     return {
         host: env[ENV.HOST]?.trim() || DEFAULT_HOST,
-        port: readPositiveInt(env[ENV.PORT], DEFAULT_PORT),
+        port: readPositiveInt(env[ENV.WORKER_SERVICE_PORT] ?? env[ENV.LISTEN_PORT], DEFAULT_PORT),
         dataRoot: env[ENV.DATA_ROOT]?.trim() || DEFAULT_DATA_ROOT,
         authToken,
         partners,
