@@ -45,7 +45,8 @@ RUN mkdir -p /data && chown node:node /data
 COPY --from=builder --chown=node:node /out /app
 USER node
 EXPOSE 8790
-VOLUME ["/data"]
+# Persistent storage: mount a Railway Volume at /data (WORKER_SERVICE_DATA_ROOT).
+# Do not use Dockerfile VOLUME — Railway rejects it at build time.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:8790/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "dist/index.js"]
