@@ -16,12 +16,19 @@ export const ENV = {
     DATA_ROOT: "WORKER_SERVICE_DATA_ROOT",
     AUTH_TOKEN: "WORKER_SERVICE_AUTH_TOKEN",
     PARTNERS_JSON: "WORKER_SERVICE_PARTNERS_JSON",
+    CONTROL_PLANE_URL: "CONTROL_PLANE_URL",
+    WORKER_INTERNAL_SECRET: "WORKER_INTERNAL_SECRET",
     MAX_UPLOAD_BYTES: "WORKER_SERVICE_MAX_UPLOAD_BYTES",
     MAX_UPLOAD_FILES: "WORKER_SERVICE_MAX_UPLOAD_FILES",
     RATE_LIMIT_WINDOW_MS: "WORKER_SERVICE_RATE_LIMIT_WINDOW_MS",
     RATE_LIMIT_MAX_REQUESTS: "WORKER_SERVICE_RATE_LIMIT_MAX_REQUESTS",
     SKIP_EMBED: "WORKER_SERVICE_SKIP_EMBED",
 } as const;
+
+export interface ControlPlaneConfig {
+    url: string;
+    internalSecret: string;
+}
 
 export interface PartnerWebhooksConfig {
     runCompleted?: string;
@@ -41,6 +48,7 @@ export interface WorkerServiceConfig {
     dataRoot: string;
     authToken: string;
     partners: PartnerConfig[];
+    controlPlane?: ControlPlaneConfig;
     maxUploadBytes: number;
     maxUploadFiles: number;
     rateLimitWindowMs: number;
@@ -130,11 +138,27 @@ function parsePartnersJson(raw: string | undefined): PartnerConfig[] {
     });
 }
 
+function parseControlPlaneConfig(env: Record<string, string | undefined>): ControlPlaneConfig | undefined {
+    const url = env[ENV.CONTROL_PLANE_URL]?.trim() ?? "";
+    const internalSecret = env[ENV.WORKER_INTERNAL_SECRET]?.trim() ?? "";
+    if (url.length === 0 && internalSecret.length === 0) {
+        return undefined;
+    }
+    if (url.length === 0 || internalSecret.length === 0) {
+        throw new Error(`${ENV.CONTROL_PLANE_URL} and ${ENV.WORKER_INTERNAL_SECRET} must both be set`);
+    }
+    return { url, internalSecret };
+}
+
 export function loadWorkerServiceConfig(env: Record<string, string | undefined> = process.env): WorkerServiceConfig {
     const authToken = env[ENV.AUTH_TOKEN]?.trim() ?? "";
     const partners = parsePartnersJson(env[ENV.PARTNERS_JSON]);
-    if (authToken.length === 0 && partners.length === 0) {
-        throw new Error(`Missing ${ENV.AUTH_TOKEN} or ${ENV.PARTNERS_JSON}`);
+    const controlPlane = parseControlPlaneConfig(env);
+    const hasEnvAuth = authToken.length > 0 || partners.length > 0;
+    if (!hasEnvAuth && controlPlane === undefined) {
+        throw new Error(
+            `Missing auth config: set ${ENV.AUTH_TOKEN}, ${ENV.PARTNERS_JSON}, or ${ENV.CONTROL_PLANE_URL} + ${ENV.WORKER_INTERNAL_SECRET}`,
+        );
     }
     return {
         host: env[ENV.HOST]?.trim() || DEFAULT_HOST,
@@ -142,6 +166,7 @@ export function loadWorkerServiceConfig(env: Record<string, string | undefined> 
         dataRoot: env[ENV.DATA_ROOT]?.trim() || DEFAULT_DATA_ROOT,
         authToken,
         partners,
+        ...(controlPlane !== undefined ? { controlPlane } : {}),
         maxUploadBytes: readPositiveInt(env[ENV.MAX_UPLOAD_BYTES], DEFAULT_MAX_UPLOAD_BYTES),
         maxUploadFiles: readPositiveInt(env[ENV.MAX_UPLOAD_FILES], DEFAULT_MAX_UPLOAD_FILES),
         rateLimitWindowMs: readPositiveInt(env[ENV.RATE_LIMIT_WINDOW_MS], DEFAULT_RATE_LIMIT_WINDOW_MS),

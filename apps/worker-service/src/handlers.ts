@@ -31,11 +31,13 @@ import {
     logRunFailed,
     logRunStarted,
 } from "./metrics.js";
+import type { PartnerRegistry } from "./partner-registry.js";
 import { notifyRunCompletedWebhook } from "./webhook.js";
 
 export interface WorkerServiceDeps {
     config: WorkerServiceConfig;
     runStore: RunStore;
+    partnerRegistry: PartnerRegistry;
     webhookFetch?: typeof fetch;
 }
 
@@ -96,6 +98,7 @@ export async function handleSubmitRun(
         });
         void notifyRunCompletedWebhook({
             config: deps.config,
+            partnerRegistry: deps.partnerRegistry,
             partnerId,
             tenantId,
             runId,
@@ -122,6 +125,7 @@ export async function handleSubmitRun(
         });
         void notifyRunCompletedWebhook({
             config: deps.config,
+            partnerRegistry: deps.partnerRegistry,
             partnerId,
             tenantId,
             runId,

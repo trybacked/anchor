@@ -5,7 +5,8 @@ import {
     PayloadTooLargeError,
     type WorkerServiceDeps,
 } from "./handlers.js";
-import { assertTenantAccess, resolveAuthContext, TenantAccessDeniedError } from "./auth.js";
+import { assertTenantAccess, TenantAccessDeniedError } from "./auth.js";
+import { createPartnerRegistry, type PartnerRegistry } from "./partner-registry.js";
 import { parseBearerToken, sendApiError, sendJson, sendYaml } from "./http.js";
 import { dispatchTenantRoute } from "./router.js";
 import { RateLimiter } from "./rate-limit.js";
@@ -18,6 +19,7 @@ export interface WorkerServiceOptions {
     config: WorkerServiceConfig;
     runStore?: RunStore;
     rateLimiter?: RateLimiter;
+    partnerRegistry?: PartnerRegistry;
 }
 
 function unauthorized(response: ServerResponse): void {
@@ -28,13 +30,17 @@ function forbidden(response: ServerResponse): void {
     sendApiError(response, 403, { error: "forbidden" });
 }
 
-function assertAuth(request: IncomingMessage, config: WorkerServiceConfig, response: ServerResponse): ReturnType<typeof resolveAuthContext> {
+async function assertAuth(
+    request: IncomingMessage,
+    registry: PartnerRegistry,
+    response: ServerResponse,
+): Promise<{ partnerId: string } | null> {
     const token = parseBearerToken(request.headers.authorization);
     if (token === null) {
         unauthorized(response);
         return null;
     }
-    const auth = resolveAuthContext(token, config);
+    const auth = await registry.resolveToken(token);
     if (auth === null) {
         unauthorized(response);
         return null;
@@ -56,9 +62,11 @@ export function createWorkerService(options: WorkerServiceOptions) {
         windowMs: options.config.rateLimitWindowMs,
         maxRequests: options.config.rateLimitMaxRequests,
     });
+    const partnerRegistry = options.partnerRegistry ?? createPartnerRegistry({ config: options.config });
     const deps: WorkerServiceDeps = {
         config: options.config,
         runStore,
+        partnerRegistry,
     };
     return createServer((request, response) => {
         void handleRequest(request, response, deps, rateLimiter).catch((error: unknown) => {
@@ -90,7 +98,7 @@ async function handleRequest(
         sendYaml(response, 200, loadOpenApiSpec());
         return;
     }
-    const auth = assertAuth(request, deps.config, response);
+    const auth = await assertAuth(request, deps.partnerRegistry, response);
     if (auth === null) {
         return;
     }
@@ -102,7 +110,7 @@ async function handleRequest(
         return;
     }
     try {
-        assertTenantAccess(auth, route.tenantId, deps.config);
+        assertTenantAccess(auth, route.tenantId, deps.partnerRegistry);
     }
     catch (error) {
         if (error instanceof TenantAccessDeniedError) {
