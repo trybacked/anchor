@@ -164,7 +164,7 @@ export function loadWorkerServiceConfig(env: Record<string, string | undefined> 
     }
     return {
         host: env[ENV.HOST]?.trim() || DEFAULT_HOST,
-        port: readPositiveInt(env[ENV.WORKER_SERVICE_PORT] ?? env[ENV.LISTEN_PORT], DEFAULT_PORT),
+        port: readPositiveInt(env[ENV.LISTEN_PORT] ?? env[ENV.WORKER_SERVICE_PORT], DEFAULT_PORT),
         dataRoot: env[ENV.DATA_ROOT]?.trim() || DEFAULT_DATA_ROOT,
         authToken,
         partners,
