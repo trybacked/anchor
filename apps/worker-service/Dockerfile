@@ -25,7 +25,8 @@ COPY packages/semantic/package.json packages/semantic/
 RUN pnpm install --frozen-lockfile
 COPY apps/worker-service apps/worker-service
 COPY packages packages
-RUN pnpm --filter @backed/worker-service build
+# Build worker-service and all workspace dependencies (core → runner → worker).
+RUN pnpm --filter @backed/worker-service... build
 RUN pnpm --filter @backed/worker-service deploy --prod /out
 RUN rm -rf /out/src /out/tests /out/tsconfig.json /out/vitest.config.ts /out/.turbo
 
