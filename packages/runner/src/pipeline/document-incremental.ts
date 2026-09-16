@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { DocumentCatalog, DocumentCatalogEntry } from "@backed/core";
+import type { DocumentCatalog, DocumentCatalogEntry } from "@trybacked/core";
 import type { DocumentLineRow } from "@backed/semantic";
 
 export function normalizeSourceBasename(sourceRef: string): string {

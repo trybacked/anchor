@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import type { WorkspaceConfig } from "@backed/core";
-import { DEFAULT_SOURCES_DIR, readWorkspaceConfig, workspacePaths, writeWorkspaceConfig, } from "@backed/core";
+import type { WorkspaceConfig } from "@trybacked/core";
+import { DEFAULT_SOURCES_DIR, readWorkspaceConfig, workspacePaths, writeWorkspaceConfig, } from "@trybacked/core";
 import { input } from "@inquirer/prompts";
 import { commandErrorMessage, parseInitArgs, wantsHeadlessInit } from "../args.js";
 import { promptDocumentTypeHints, summarizeDocumentTypeHints, } from "../document-type-hint-guide.js";

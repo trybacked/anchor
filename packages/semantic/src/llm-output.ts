@@ -1,4 +1,4 @@
-import { CardinalitySchema, ConfidenceSchema, PropertyRoleSchema, SemanticTypeSchema } from "@backed/core";
+import { CardinalitySchema, ConfidenceSchema, PropertyRoleSchema, SemanticTypeSchema } from "@trybacked/core";
 import { z } from "zod";
 export const ColumnClassificationOutputSchema = z.object({
     tables: z.array(z.object({

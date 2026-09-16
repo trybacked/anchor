@@ -1,4 +1,4 @@
-import type { EntityRowRequest, RowReader } from "@backed/core";
+import type { EntityRowRequest, RowReader } from "@trybacked/core";
 import { buildDuckDbFilterClause } from "./duckdb-filters.js";
 import { quoteIdentifier, quoteString, sqlOrderDirection, sqlWhereClause, } from "./sql.js";
 import type { SqlQuery } from "./types.js";

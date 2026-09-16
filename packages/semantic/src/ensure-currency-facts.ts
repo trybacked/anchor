@@ -1,4 +1,4 @@
-import type { DomainVocabulary, FactType } from "@backed/core";
+import type { DomainVocabulary, FactType } from "@trybacked/core";
 import type { DocumentLineRow } from "./extract-document-mentions.js";
 const CURRENCY_MARKERS = /[€$£]|(?:\bEUR\b|\bUSD\b|\b[Ee]ur[oi]\b)/i;
 const AMOUNT_CUE_PATTERN = /importo|amount|costo|prezzo|contratt|liquidaz|impegno|spesa|pagament|aggiudic|€|\$/i;

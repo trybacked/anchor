@@ -1,4 +1,4 @@
-export const PACKAGE_NAME = "@backed/core" as const;
+export const PACKAGE_NAME = "@trybacked/core" as const;
 export { MODEL_FORMAT_VERSION, LOW_CONFIDENCE_THRESHOLD, DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, } from "./constants.js";
 export { DOC_TYPE_TABLE_PREFIX, DOC_TYPE_UNKNOWN_SLUG } from "./tables.js";
 export { NATIVE_FRACTIONAL_TYPE_PATTERN, PROFILE_TOP_VALUES_LIMIT, PROFILE_PATTERN_SAMPLE_SIZE, PROFILE_PATTERN_MATCH_THRESHOLD, PROFILE_FK_OVERLAP_THRESHOLD, PROFILE_FK_SAMPLE_SIZE, PROFILE_FK_CANDIDATES_PER_COLUMN, EMPTY_FOREIGN_KEY_CANDIDATES, ForeignKeyCandidateSchema, DetectedPatternKindSchema, DetectedPatternSchema, TopValueSchema, ColumnProfileSchema, TableProfileSchema, ProfileReportSchema, } from "./profile.js";

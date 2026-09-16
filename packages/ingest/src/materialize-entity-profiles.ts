@@ -1,5 +1,5 @@
-import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, } from "@backed/core";
-import type { FactType } from "@backed/core";
+import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, } from "@trybacked/core";
+import type { FactType } from "@trybacked/core";
 import { DOCUMENT_TYPE_TABLE_LIKE } from "./document-type-tables.js";
 import { dropTableIfExists, quoteIdentifier, quoteString, sqlColumnSuffix, } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";

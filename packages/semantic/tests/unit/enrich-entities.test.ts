@@ -1,5 +1,5 @@
-import { ENTITY_MENTION_TYPE } from "@backed/core";
-import type { DomainVocabulary } from "@backed/core";
+import { ENTITY_MENTION_TYPE } from "@trybacked/core";
+import type { DomainVocabulary } from "@trybacked/core";
 import { describe, expect, it, vi } from "vitest";
 import { runBurst } from "../../src/burst.js";
 import { enrichEntities } from "../../src/enrich-entities.js";

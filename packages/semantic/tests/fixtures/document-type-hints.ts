@@ -1,4 +1,4 @@
-import type { DocumentTypeHintConfig } from "@backed/core";
+import type { DocumentTypeHintConfig } from "@trybacked/core";
 export const SAMPLE_DOCUMENT_TYPE_HINTS_FIXTURE: DocumentTypeHintConfig[] = [
     {
         match: "determina",

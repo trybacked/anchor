@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DocumentCatalog } from "@backed/core";
+import type { DocumentCatalog } from "@trybacked/core";
 import {
     resolveNewDocumentSourceTables,
 } from "../../src/pipeline/document-incremental.js";

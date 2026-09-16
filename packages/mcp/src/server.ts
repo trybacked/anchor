@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { SemanticModel } from "@backed/core";
+import type { SemanticModel } from "@trybacked/core";
 import type { McpSurfaceTool } from "./constants.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";

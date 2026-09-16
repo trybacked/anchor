@@ -6,8 +6,8 @@ import {
     getDocumentFieldValue,
     longestDocumentFieldValue,
     normalizeComparableLine,
-} from "@backed/core";
-import type { DocumentCatalogEntry, DomainVocabulary } from "@backed/core";
+} from "@trybacked/core";
+import type { DocumentCatalogEntry, DomainVocabulary } from "@trybacked/core";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
 import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage, type BurstUsage } from "./burst.js";

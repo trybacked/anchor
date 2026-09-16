@@ -1,5 +1,5 @@
-import { ENTITY_MENTION_TYPE, parseLocalizedNumber } from "@backed/core";
-import type { DomainVocabulary, FactType, NumberFormat } from "@backed/core";
+import { ENTITY_MENTION_TYPE, parseLocalizedNumber } from "@trybacked/core";
+import type { DomainVocabulary, FactType, NumberFormat } from "@trybacked/core";
 import { entityIdFromName } from "./extract-document-mentions.js";
 import type { DocumentLineRow, RawDocumentMention } from "./extract-document-mentions.js";
 import { FACT_CUE_WINDOW_CHARS, MENTION_ID_MAX_LENGTH } from "./constants.js";

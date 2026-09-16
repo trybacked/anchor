@@ -7,8 +7,8 @@ import {
     readWorkspaceConfig,
     workspacePaths,
     writeRunArtifact,
-} from "@backed/core";
-import type { DocumentCatalog, DomainVocabulary, Proposal } from "@backed/core";
+} from "@trybacked/core";
+import type { DocumentCatalog, DomainVocabulary, Proposal } from "@trybacked/core";
 import { ingestFolder } from "@backed/ingest";
 import { profileTables } from "@backed/profile";
 import {

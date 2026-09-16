@@ -6,8 +6,8 @@ import {
     patchModelElement,
     PatchModelElementSchema,
     serializeModelYaml,
-} from "@backed/core";
-import type { PatchModelElement, SemanticModel } from "@backed/core";
+} from "@trybacked/core";
+import type { PatchModelElement, SemanticModel } from "@trybacked/core";
 import { resolveTenantWorkspace } from "@backed/runner";
 
 export class ModelNotFoundError extends Error {

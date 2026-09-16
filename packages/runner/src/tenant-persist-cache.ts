@@ -12,8 +12,8 @@ import {
     ENTITY_PROFILES_TABLE,
     ProfileReportSchema,
     documentTypeTableName,
-} from "@backed/core";
-import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeSummary, DomainVocabulary, ProfileReport } from "@backed/core";
+} from "@trybacked/core";
+import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeSummary, DomainVocabulary, ProfileReport } from "@trybacked/core";
 import type { DocumentTypeRegistryEntry } from "@backed/semantic";
 import { JSON_PRETTY_INDENT } from "./config.js";
 

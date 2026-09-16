@@ -1,5 +1,5 @@
-import { PROFILE_PATTERN_SAMPLE_SIZE, PROFILE_TOP_VALUES_LIMIT } from "@backed/core";
-import type { ColumnProfile, DetectedPattern, TableProfile, TopValue } from "@backed/core";
+import { PROFILE_PATTERN_SAMPLE_SIZE, PROFILE_TOP_VALUES_LIMIT } from "@trybacked/core";
+import type { ColumnProfile, DetectedPattern, TableProfile, TopValue } from "@trybacked/core";
 import { quoteIdentifier } from "@backed/ingest";
 import type { Dataset, SqlQuery } from "@backed/ingest";
 import {

@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_WORKSPACE_CONFIG, writeWorkspaceConfig } from "@backed/core";
+import { DEFAULT_WORKSPACE_CONFIG, writeWorkspaceConfig } from "@trybacked/core";
 import type * as Semantic from "@backed/semantic";
 
 vi.mock("@backed/semantic", async (importOriginal) => {

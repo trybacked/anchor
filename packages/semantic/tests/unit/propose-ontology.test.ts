@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DocumentCatalog } from "@backed/core";
+import type { DocumentCatalog } from "@trybacked/core";
 import { runBurst } from "../../src/burst.js";
 import { LLM_SCHEMA_NAMES } from "../../src/constants.js";
 import {

@@ -1,5 +1,5 @@
-import { EMPTY_DOMAIN_VOCABULARY, ProposalSchema } from "@backed/core";
-import type { DocumentCatalog, DomainVocabulary, ProfileReport, Proposal } from "@backed/core";
+import { EMPTY_DOMAIN_VOCABULARY, ProposalSchema } from "@trybacked/core";
+import type { DocumentCatalog, DomainVocabulary, ProfileReport, Proposal } from "@trybacked/core";
 import type { BurstUsage } from "./burst.js";
 import type { LlmCacheContext } from "./llm-cache.js";
 import type { SemanticModels } from "./env.js";

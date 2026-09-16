@@ -1,4 +1,4 @@
-import type { DocumentCatalog, Doubt } from "@backed/core";
+import type { DocumentCatalog, Doubt } from "@trybacked/core";
 import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
 import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";

@@ -1,10 +1,17 @@
 {
-  "name": "@backed/anchor",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@trybacked/anchor",
+  "version": "0.1.2",
   "type": "module",
-  "description": "Official TypeScript client for the Anchor worker HTTP API",
+  "description": "Official TypeScript SDK for the Anchor worker HTTP API",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybacked/anchor.git",
+    "directory": "packages/anchor"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,10 +27,11 @@
     "build": "pnpm generate:openapi && tsc -p tsconfig.json",
     "typecheck": "pnpm generate:openapi && tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "prepublishOnly": "pnpm run build && pnpm run test"
   },
   "dependencies": {
-    "@backed/core": "workspace:*",
+    "@trybacked/core": "^0.1.0",
     "openapi-fetch": "^0.14.0"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
-import { ENTITY_MENTION_TYPE } from "@backed/core";
-import type { DomainVocabulary } from "@backed/core";
+import { ENTITY_MENTION_TYPE } from "@trybacked/core";
+import type { DomainVocabulary } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { extractMentionsFromLines } from "../../src/extract-document-mentions.js";
 import { extractFactsFromLine, extractFactsFromLines } from "../../src/extract-facts.js";

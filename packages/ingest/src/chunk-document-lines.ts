@@ -1,4 +1,4 @@
-import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE, DOCUMENT_LINES_TABLE, } from "@backed/core";
+import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE, DOCUMENT_LINES_TABLE, } from "@trybacked/core";
 import { capturePreservedChunkEmbeddings, restorePreservedChunkEmbeddings, } from "./chunk-embeddings.js";
 import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { dropTableIfExists, quoteIdentifier, quoteString } from "./sql.js";

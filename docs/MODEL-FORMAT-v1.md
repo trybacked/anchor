@@ -2,7 +2,7 @@
 
 Normative specification for **`model.yaml`** — the committable semantic model produced by Anchor.
 
-**Machine-readable schema:** [`schema/anchor-schema-v1.json`](../schema/anchor-schema-v1.json) (generated from Zod in `@backed/core`).
+**Machine-readable schema:** [`schema/anchor-schema-v1.json`](../schema/anchor-schema-v1.json) (generated from Zod in `@trybacked/core`).
 
 **Format version:** `metadata.formatVersion` must be `"1"`.
 

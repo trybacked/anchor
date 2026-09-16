@@ -1,4 +1,4 @@
-import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_LINES_TABLE, DOCUMENT_MENTIONS_TABLE, } from "@backed/core";
+import { DOCUMENT_ENTITIES_TABLE, DOCUMENT_LINES_TABLE, DOCUMENT_MENTIONS_TABLE, } from "@trybacked/core";
 import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { dropTableIfExists, quoteIdentifier, quoteString, sqlNullableNumber, sqlNullableString, } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";

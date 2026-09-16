@@ -1,4 +1,4 @@
-import type { DocumentCatalog } from "@backed/core";
+import type { DocumentCatalog } from "@trybacked/core";
 import type { CompressedTable } from "./compress.js";
 import type { DocumentTypeHint } from "./document-type-hints.js";
 import type { DocumentExtractionSample } from "./extract-document-catalog.js";

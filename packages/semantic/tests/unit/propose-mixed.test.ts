@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DocumentCatalog, ProfileReport } from "@backed/core";
-import { documentTypeTableName } from "@backed/core";
+import type { DocumentCatalog, ProfileReport } from "@trybacked/core";
+import { documentTypeTableName } from "@trybacked/core";
 import { runBurst } from "../../src/burst.js";
 import { proposeModel } from "../../src/propose.js";
 vi.mock("../../src/burst.js", async (importOriginal) => ({

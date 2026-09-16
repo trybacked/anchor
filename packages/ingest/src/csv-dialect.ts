@@ -1,4 +1,4 @@
-import { NATIVE_FRACTIONAL_TYPE_PATTERN } from "@backed/core";
+import { NATIVE_FRACTIONAL_TYPE_PATTERN } from "@trybacked/core";
 import { open } from "node:fs/promises";
 import {
     ENCODING_PROBE_MAX_BYTES,

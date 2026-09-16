@@ -1,5 +1,5 @@
-import { DomainVocabularySchema } from "@backed/core";
-import type { DomainVocabulary } from "@backed/core";
+import { DomainVocabularySchema } from "@trybacked/core";
+import type { DomainVocabulary } from "@trybacked/core";
 /** Test fixture: vocabulary as discovered for a public-procurement document corpus. */
 export const PROCUREMENT_VOCABULARY: DomainVocabulary = DomainVocabularySchema.parse({
     language: "it",

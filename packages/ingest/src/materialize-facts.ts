@@ -1,4 +1,4 @@
-import { DOCUMENT_FACTS_TABLE } from "@backed/core";
+import { DOCUMENT_FACTS_TABLE } from "@trybacked/core";
 import { dropTableIfExists, quoteIdentifier, quoteString, sqlNullableNumber, sqlNullableString } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";
 export interface MaterializedFactInput {

@@ -1,4 +1,4 @@
-# @backed/anchor
+# @trybacked/anchor
 
 Official TypeScript SDK for the [Anchor worker HTTP API](https://github.com/trybacked/anchor).
 
@@ -7,19 +7,19 @@ Types are generated from [`apps/worker-service/openapi.yaml`](../../apps/worker-
 ## Install
 
 ```bash
-pnpm add @backed/anchor
+pnpm add @trybacked/anchor
 ```
 
 During monorepo development:
 
 ```bash
-pnpm --filter @backed/anchor build
+pnpm --filter @trybacked/anchor build
 ```
 
 ## Quick start
 
 ```typescript
-import { createAnchorClient } from "@backed/anchor";
+import { createAnchorClient } from "@trybacked/anchor";
 
 const anchor = createAnchorClient({
   baseUrl: "https://anchor.backed.app",
@@ -65,7 +65,7 @@ import {
   verifyWebhookSignature,
   parseRunCompletedWebhook,
   WEBHOOK_SIGNATURE_HEADER,
-} from "@backed/anchor";
+} from "@trybacked/anchor";
 
 const body = await request.text();
 const signature = request.headers.get(WEBHOOK_SIGNATURE_HEADER) ?? "";
@@ -82,7 +82,7 @@ const event = parseRunCompletedWebhook(body);
 When the worker OpenAPI spec changes:
 
 ```bash
-pnpm --filter @backed/anchor generate:openapi
+pnpm --filter @trybacked/anchor generate:openapi
 ```
 
 ## License

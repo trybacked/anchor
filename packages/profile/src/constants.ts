@@ -1,4 +1,4 @@
-import { NATIVE_FRACTIONAL_TYPE_PATTERN } from "@backed/core";
+import { NATIVE_FRACTIONAL_TYPE_PATTERN } from "@trybacked/core";
 
 export { NATIVE_FRACTIONAL_TYPE_PATTERN };
 export const NATIVE_DATE_TYPE_PATTERN = /^(DATE|TIMESTAMP)/;

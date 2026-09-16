@@ -1,5 +1,5 @@
-import { DEFAULT_PROFILE_DOCUMENT_LIMIT, DEFAULT_PROFILE_FACT_LIMIT, DEFAULT_PROFILE_MATCH_LIMIT, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, MAX_PROFILE_MATCH_LIMIT, MAX_PROFILE_ROW_LIMIT, } from "@backed/core";
-import type { EntityProfileReader, EntityProfileRequest, EntityProfileResult, } from "@backed/core";
+import { DEFAULT_PROFILE_DOCUMENT_LIMIT, DEFAULT_PROFILE_FACT_LIMIT, DEFAULT_PROFILE_MATCH_LIMIT, DOCUMENT_FACTS_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_MENTION_TYPE, ENTITY_PROFILES_TABLE, MAX_PROFILE_MATCH_LIMIT, MAX_PROFILE_ROW_LIMIT, } from "@trybacked/core";
+import type { EntityProfileReader, EntityProfileRequest, EntityProfileResult, } from "@trybacked/core";
 import { DOCUMENT_TYPE_TABLE_PREFIX } from "./document-type-tables.js";
 import { readRowString } from "./duckdb-row.js";
 import { quoteIdentifier, quoteString } from "./sql.js";

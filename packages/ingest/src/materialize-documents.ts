@@ -1,6 +1,6 @@
-import { collectDocumentFieldKeys, DOCUMENT_INFRASTRUCTURE_COLUMNS, documentTypeTableName } from "@backed/core";
-import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeSummary } from "@backed/core";
-import { DOCUMENT_LINES_TABLE } from "@backed/core";
+import { collectDocumentFieldKeys, DOCUMENT_INFRASTRUCTURE_COLUMNS, documentTypeTableName } from "@trybacked/core";
+import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeSummary } from "@trybacked/core";
+import { DOCUMENT_LINES_TABLE } from "@trybacked/core";
 import { DOCUMENT_HEADER_LINE_LIMIT, DOCUMENT_TYPE_SAMPLE_TABLE_LIMIT, CORPUS_SAMPLE_LINE_LIMIT, } from "./constants.js";
 import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { dropTableIfExists, quoteIdentifier, quoteString, sqlNullableString } from "./sql.js";

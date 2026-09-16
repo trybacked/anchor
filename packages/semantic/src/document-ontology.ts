@@ -1,5 +1,5 @@
-import { DOCUMENT_CHUNKS_TABLE, DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_LINES_TABLE, DOCUMENT_MENTIONS_TABLE, EMPTY_DOMAIN_VOCABULARY, ENTITY_PROFILES_TABLE, documentTypeTableName, } from "@backed/core";
-import type { ColumnProfile, DocumentCatalog, DomainVocabulary, Entity, ProfileReport, Property, Relation, } from "@backed/core";
+import { DOCUMENT_CHUNKS_TABLE, DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_LINES_TABLE, DOCUMENT_MENTIONS_TABLE, EMPTY_DOMAIN_VOCABULARY, ENTITY_PROFILES_TABLE, documentTypeTableName, } from "@trybacked/core";
+import type { ColumnProfile, DocumentCatalog, DomainVocabulary, Entity, ProfileReport, Property, Relation, } from "@trybacked/core";
 import { ONTOLOGY_ENTITY_CONFIDENCE, ONTOLOGY_HIGH_CONFIDENCE, ONTOLOGY_PROFILE_CONFIDENCE, } from "./constants.js";
 import type { ColumnClassificationOutput } from "./llm-output.js";
 import {

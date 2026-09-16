@@ -12,7 +12,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@backed/core": "workspace:*",
+    "@trybacked/core": "workspace:*",
     "@backed/runner": "workspace:*",
     "@backed/semantic": "workspace:*",
     "zod": "^3.24.1"

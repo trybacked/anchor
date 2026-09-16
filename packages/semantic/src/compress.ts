@@ -1,4 +1,4 @@
-import type { ColumnProfile, ProfileReport, TableProfile } from "@backed/core";
+import type { ColumnProfile, ProfileReport, TableProfile } from "@trybacked/core";
 import { COMPRESSED_TOP_VALUE_MAX_LENGTH, COMPRESSED_TOP_VALUES_LIMIT, } from "./constants.js";
 export { COMPRESSED_TOP_VALUES_LIMIT } from "./constants.js";
 export interface CompressedColumn {

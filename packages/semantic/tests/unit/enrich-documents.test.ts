@@ -1,5 +1,5 @@
-import type { DocumentCatalogEntry } from "@backed/core";
-import { EMPTY_DOMAIN_VOCABULARY } from "@backed/core";
+import type { DocumentCatalogEntry } from "@trybacked/core";
+import { EMPTY_DOMAIN_VOCABULARY } from "@trybacked/core";
 import { describe, expect, it, vi } from "vitest";
 import { runBurst } from "../../src/burst.js";
 import { buildDocumentEnrichmentPrompt, buildDocumentTopicSample, buildDocumentTopicSamples, DOCUMENT_ENRICHMENT_BATCH_SIZE, enrichDocuments, findBoilerplateLines, } from "../../src/enrich-documents.js";

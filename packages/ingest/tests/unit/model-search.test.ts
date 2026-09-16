@@ -1,4 +1,4 @@
-import type { SemanticModel } from "@backed/core";
+import type { SemanticModel } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { searchModelViaDocumentChunks } from "../../src/model-search.js";
 

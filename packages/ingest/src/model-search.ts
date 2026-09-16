@@ -1,6 +1,6 @@
-import { DEFAULT_CHUNK_SEARCH_LIMIT } from "@backed/core";
+import { DEFAULT_CHUNK_SEARCH_LIMIT } from "@trybacked/core";
 import { readRowString } from "./duckdb-row.js";
-import type { ChunkSearcher, DocumentCatalog, Entity, ModelSearchMatch, SemanticModel } from "@backed/core";
+import type { ChunkSearcher, DocumentCatalog, Entity, ModelSearchMatch, SemanticModel } from "@trybacked/core";
 
 export type ModelSearchHit = ModelSearchMatch;
 function slugifyDocumentTypeId(id: string): string {

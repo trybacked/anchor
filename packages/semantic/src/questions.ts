@@ -1,5 +1,5 @@
-import { LOW_CONFIDENCE_THRESHOLD } from "@backed/core";
-import type { Entity, EvidenceTable, Relation, ReviewQuestion, Rule } from "@backed/core";
+import { LOW_CONFIDENCE_THRESHOLD } from "@trybacked/core";
+import type { Entity, EvidenceTable, Relation, ReviewQuestion, Rule } from "@trybacked/core";
 import type { CompressedTable } from "./compress.js";
 
 interface QuestionCandidate {

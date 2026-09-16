@@ -3,7 +3,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { parseModelYaml, type Relation, type SemanticModel } from "@backed/core";
+import { parseModelYaml, type Relation, type SemanticModel } from "@trybacked/core";
 import { handleGeraceBurst } from "./gerace-burst-handler.js";
 import { buildIncrementalTestFile, loadGeraceSourceFiles } from "./gerace-fixture.js";
 

@@ -1,5 +1,5 @@
-import { EMPTY_DOMAIN_VOCABULARY, normalizeComparableLine, normalizeDocumentFieldKey } from "@backed/core";
-import type { DomainVocabulary } from "@backed/core";
+import { EMPTY_DOMAIN_VOCABULARY, normalizeComparableLine, normalizeDocumentFieldKey } from "@trybacked/core";
+import type { DomainVocabulary } from "@trybacked/core";
 import { BOILERPLATE_DOCUMENT_RATIO, BOILERPLATE_MIN_DOCUMENTS, HEADER_ALL_CAPS_MIN_LETTERS, HEADER_OCR_MIN_ALPHANUMERIC_RATIO, } from "./constants.js";
 
 export interface HeaderFieldContext {

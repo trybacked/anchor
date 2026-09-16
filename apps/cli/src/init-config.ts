@@ -1,5 +1,5 @@
-import { DocumentTypeHintsSchema, WorkspaceConfigSchema } from "@backed/core";
-import type { DocumentTypeHintConfig, WorkspaceConfig } from "@backed/core";
+import { DocumentTypeHintsSchema, WorkspaceConfigSchema } from "@trybacked/core";
+import type { DocumentTypeHintConfig, WorkspaceConfig } from "@trybacked/core";
 
 export function parseDocumentTypeHintsJson(raw: string): DocumentTypeHintConfig[] {
     const parsed: unknown = JSON.parse(raw);

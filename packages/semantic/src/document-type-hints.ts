@@ -1,4 +1,4 @@
-import type { DocumentTypeHintConfig } from "@backed/core";
+import type { DocumentTypeHintConfig } from "@trybacked/core";
 export type { DocumentTypeHintConfig };
 export interface DocumentTypeHint {
     documentType: string;

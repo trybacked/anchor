@@ -17,6 +17,6 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@backed/core": "workspace:*"
+    "@trybacked/core": "workspace:*"
   }
 }

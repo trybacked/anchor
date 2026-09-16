@@ -8,7 +8,7 @@ import {
     patchWorkspaceConfig,
     readWorkspaceConfig,
     workspacePaths,
-} from "@backed/core";
+} from "@trybacked/core";
 import {
     MissingApiKeyError,
     resolveLanguageModelId,

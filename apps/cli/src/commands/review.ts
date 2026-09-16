@@ -1,6 +1,6 @@
-import { DocumentCatalogSchema, ProposalSchema, applyReview, hasRunArtifact, listRunIds, patchWorkspaceConfig, readRunArtifact, readWorkspaceConfig, writeModelYaml, writeRunArtifact, } from "@backed/core";
+import { DocumentCatalogSchema, ProposalSchema, applyReview, hasRunArtifact, listRunIds, patchWorkspaceConfig, readRunArtifact, readWorkspaceConfig, writeModelYaml, writeRunArtifact, } from "@trybacked/core";
 import { resolveReviewConfidenceThreshold } from "@backed/semantic";
-import type { DocumentCatalog, EvidenceTable, Proposal, Review, ReviewAnswer } from "@backed/core";
+import type { DocumentCatalog, EvidenceTable, Proposal, Review, ReviewAnswer } from "@trybacked/core";
 import { input, select } from "@inquirer/prompts";
 import { wantsHeadlessCommand } from "../args.js";
 import { findWorkspaceRoot } from "../env.js";

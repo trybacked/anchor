@@ -1,4 +1,4 @@
-# @backed/core
+# @trybacked/core
 
 The center of the system: `model.yaml` schema, run/diff/review types, `.backed/` paths.
 

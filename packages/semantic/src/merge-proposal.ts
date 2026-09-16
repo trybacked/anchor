@@ -1,12 +1,12 @@
-import type { Entity, Proposal, Relation, Rule, SemanticModel } from "@backed/core";
-import { ProposalSchema } from "@backed/core";
+import type { Entity, Proposal, Relation, Rule, SemanticModel } from "@trybacked/core";
+import { ProposalSchema } from "@trybacked/core";
 import {
     isDocumentTypeEntity,
     stableKeyFromEntity,
 } from "./document-type-identity.js";
 import { selectReviewQuestions } from "./questions.js";
 import { compressProfile } from "./compress.js";
-import type { ProfileReport } from "@backed/core";
+import type { ProfileReport } from "@trybacked/core";
 
 function isCarriedForward(entity: Entity, affectedTables: Set<string>): boolean {
     return !affectedTables.has(entity.sourceTable);

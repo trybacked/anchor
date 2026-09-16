@@ -1,5 +1,5 @@
-import type { SemanticModel } from "@backed/core";
-import { readModelYaml } from "@backed/core";
+import type { SemanticModel } from "@trybacked/core";
+import { readModelYaml } from "@trybacked/core";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
