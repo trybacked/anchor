@@ -28,9 +28,22 @@ const anchor = createAnchorClient({
 
 const health = await anchor.health();
 
-const { runId } = await anchor.submitRun("demo", [
-  { filename: "export.csv", content: csvBuffer },
-]);
+const { runId } = await anchor.submitRun(
+  "demo",
+  [{ filename: "export.csv", content: csvBuffer }],
+  {
+    config: {
+      documentTypeHints: [
+        {
+          match: "determinazioni",
+          documentType: "municipal_determination",
+          documentTypeLabel: "Determinazione",
+          confidence: 0.95,
+        },
+      ],
+    },
+  },
+);
 
 const finalStatus = await anchor.waitForRun("demo", runId, {
   intervalMs: 2_000,
@@ -47,7 +60,9 @@ if (!("notModified" in modelResult)) {
 | Method | Worker route |
 |--------|----------------|
 | `health()` | `GET /health` |
-| `submitRun(tenantId, files)` | `POST /v1/tenants/:tenantId/runs` |
+| `submitRun(tenantId, files, options?)` | `POST /v1/tenants/:tenantId/runs` |
+| `getTenantConfig(tenantId)` | `GET /v1/tenants/:tenantId/config` |
+| `updateTenantConfig(tenantId, patch)` | `PATCH /v1/tenants/:tenantId/config` |
 | `getRunStatus(tenantId, runId)` | `GET /v1/tenants/:tenantId/runs/:runId` |
 | `waitForRun(tenantId, runId)` | Poll helper |
 | `getModel(tenantId)` | `GET /v1/tenants/:tenantId/model` |

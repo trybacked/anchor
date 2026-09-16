@@ -23,6 +23,31 @@ describe("buildRunUploadFormData", () => {
         const form = buildRunUploadFormData([{ filename: "demo.csv", content: "a,b\n1,2" }]);
         expect(form.get("file")).toBeInstanceOf(Blob);
     });
+
+    it("serializes optional pipeline config", () => {
+        const form = buildRunUploadFormData([{ filename: "demo.pdf", content: "pdf" }], {
+            documentTypeHints: [
+                {
+                    match: "determinazioni",
+                    documentType: "municipal_determination",
+                    documentTypeLabel: "Determinazione",
+                    confidence: 0.95,
+                },
+            ],
+        });
+        expect(form.get("config")).toBe(
+            JSON.stringify({
+                documentTypeHints: [
+                    {
+                        match: "determinazioni",
+                        documentType: "municipal_determination",
+                        documentTypeLabel: "Determinazione",
+                        confidence: 0.95,
+                    },
+                ],
+            }),
+        );
+    });
 });
 
 describe("webhook helpers", () => {

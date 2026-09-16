@@ -1,6 +1,7 @@
 export { AnchorClient, createAnchorClient, type AnchorClientOptions } from "./client.js";
 export { AnchorClientError } from "./errors.js";
-export { buildRunUploadFormData, type RunUploadInput } from "./upload.js";
+export { buildRunUploadFormData, type RunUploadInput, type SubmitRunConfig } from "./upload.js";
+export type { SubmitRunOptions } from "./client.js";
 export { waitForRun, type WaitForRunOptions } from "./wait-for-run.js";
 export {
     RUN_COMPLETED_WEBHOOK_EVENT,
@@ -27,6 +28,11 @@ export type {
     RunStatus,
     RunStatusResponse,
     SubmitRunResponse,
+    DocumentTypeHint,
+    DocumentTypeHintConfig,
+    TenantPipelineConfig,
+    TenantPipelineConfigPatch,
+    TenantPipelineConfigResponse,
     components,
     paths,
 } from "./types.js";

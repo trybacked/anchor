@@ -56,6 +56,11 @@ paths:
                   items:
                     type: string
                     format: binary
+                config:
+                  type: string
+                  description: >
+                    Optional JSON object with pipeline overrides. Supported keys:
+                    documentTypeHints, domain. Persisted for the tenant when provided.
       responses:
         "202":
           description: Run accepted
@@ -92,6 +97,49 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/RunNotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/tenants/{tenantId}/config:
+    get:
+      summary: Get tenant pipeline config
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Tenant pipeline config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantPipelineConfigResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    patch:
+      summary: Update tenant pipeline config
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantPipelineConfigPatch"
+      responses:
+        "200":
+          description: Updated tenant pipeline config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantPipelineConfigResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "429":
           $ref: "#/components/responses/RateLimited"
   /v1/tenants/{tenantId}/model:
@@ -448,6 +496,47 @@ components:
           $ref: "#/components/schemas/DeletionLogEntry"
         modelEtag:
           type: string
+    DocumentTypeHint:
+      type: object
+      required: [match, documentType, documentTypeLabel, confidence]
+      properties:
+        match:
+          type: string
+        documentType:
+          type: string
+        documentTypeLabel:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    TenantPipelineConfig:
+      type: object
+      required: [documentTypeHints]
+      properties:
+        documentTypeHints:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentTypeHint"
+        domain:
+          type: object
+          additionalProperties: true
+    TenantPipelineConfigResponse:
+      type: object
+      required: [config]
+      properties:
+        config:
+          $ref: "#/components/schemas/TenantPipelineConfig"
+    TenantPipelineConfigPatch:
+      type: object
+      properties:
+        documentTypeHints:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentTypeHint"
+        domain:
+          type: object
+          additionalProperties: true
     ApiError:
       type: object
       required: [error]

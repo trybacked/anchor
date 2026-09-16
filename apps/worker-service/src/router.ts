@@ -10,6 +10,7 @@ import {
     handlePostReview,
     handleSubmitRun,
 } from "./handlers.js";
+import { handleGetTenantConfig, handlePatchTenantConfig } from "./tenant-config-handlers.js";
 
 type RouteHandler = (
     tenantId: string,
@@ -65,6 +66,18 @@ const TENANT_ROUTES: TenantRoute[] = [
         method: "GET",
         path: "audit/ledger",
         handler: (tenantId, _auth, _request, response, deps) => handleGetAuditLedger(tenantId, response, deps),
+    },
+    {
+        method: "GET",
+        path: "config",
+        handler: (tenantId, _auth, _request, response, deps) => {
+            handleGetTenantConfig(tenantId, response, deps);
+        },
+    },
+    {
+        method: "PATCH",
+        path: "config",
+        handler: (tenantId, _auth, request, response, deps) => handlePatchTenantConfig(tenantId, request, response, deps),
     },
 ];
 

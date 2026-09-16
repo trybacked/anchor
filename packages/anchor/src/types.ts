@@ -17,6 +17,12 @@ export type ReviewSubmitResponse = components["schemas"]["ReviewSubmitResponse"]
 export type PaginatedDeletionsResponse = components["schemas"]["PaginatedDeletionsResponse"];
 export type LedgerAuditResponse = components["schemas"]["LedgerAuditResponse"];
 export type RunCompletedWebhookPayload = components["schemas"]["RunCompletedWebhookPayload"];
+export type DocumentTypeHint = components["schemas"]["DocumentTypeHint"];
+export type TenantPipelineConfig = components["schemas"]["TenantPipelineConfig"];
+export type TenantPipelineConfigPatch = components["schemas"]["TenantPipelineConfigPatch"];
+export type TenantPipelineConfigResponse = components["schemas"]["TenantPipelineConfigResponse"];
+
+export type { DocumentTypeHintConfig } from "@trybacked/core";
 
 export interface ListDeletionsQuery {
     since?: string;

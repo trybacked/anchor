@@ -16,6 +16,11 @@ import {
     WorkspaceConfigSchema,
 } from "@trybacked/core";
 import type { Proposal, SemanticModel, WorkspaceConfig } from "@trybacked/core";
+import {
+    resolveTenantPipelineConfig,
+    writeTenantPipelineConfig,
+    type TenantPipelineConfigPatch,
+} from "./tenant-config.js";
 import { resolveReviewConfidenceThreshold } from "@backed/semantic";
 import { JSON_PRETTY_INDENT, SKIPPED_PIPELINE_STATS } from "./config.js";
 import { collectGarbage, type DeletionLogEntry } from "./gc.js";
@@ -49,7 +54,7 @@ export interface RunTenantPipelineOptions {
     tenantId: string;
     runId?: string;
     files: TenantInputFile[];
-    config?: Partial<WorkspaceConfig>;
+    config?: TenantPipelineConfigPatch;
     forceFull?: boolean;
     skipEmbed?: boolean;
     env?: Record<string, string | undefined>;
@@ -184,9 +189,11 @@ export async function runTenantPipeline(options: RunTenantPipelineOptions): Prom
             throw new Error("No new files to process");
         }
         await copySources(workspace.paths.sourcesDir, filesToProcess);
+        const tenantConfig = resolveTenantPipelineConfig(workspace.paths.persistDir, options.config);
+        writeTenantPipelineConfig(workspace.paths.persistDir, tenantConfig);
         const config: WorkspaceConfig = WorkspaceConfigSchema.parse({
             ...DEFAULT_WORKSPACE_CONFIG,
-            ...options.config,
+            ...tenantConfig,
         });
         writeWorkspaceConfig(workspace.paths.workDir, config);
         const persistedArtifacts = options.forceFull

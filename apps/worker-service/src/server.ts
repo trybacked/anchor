@@ -8,6 +8,7 @@ import {
     handleAdminGetRunStatus,
     handleAdminListRuns,
     handleAdminPatchModelElement,
+    handlePostReview,
     handleAdminSubmitRun,
     PayloadTooLargeError,
     type WorkerServiceDeps,
@@ -19,6 +20,7 @@ import { dispatchTenantRoute } from "./router.js";
 import { RateLimiter } from "./rate-limit.js";
 import { buildHealthResponse } from "./metrics.js";
 import { loadOpenApiSpec } from "./openapi.js";
+import { handleGetTenantConfig, handlePatchTenantConfig } from "./tenant-config-handlers.js";
 import { FileRunStore } from "./run-store-fs.js";
 import type { RunStore } from "./run-store.js";
 
@@ -168,6 +170,18 @@ async function handleRequest(
         }
         if (request.method === "GET" && adminTenantRoute.remainder === "review") {
             handleAdminGetReview(adminTenantRoute.tenantId, response, deps);
+            return;
+        }
+        if (request.method === "POST" && adminTenantRoute.remainder === "review") {
+            await handlePostReview(adminTenantRoute.tenantId, request, response, deps);
+            return;
+        }
+        if (request.method === "GET" && adminTenantRoute.remainder === "config") {
+            handleGetTenantConfig(adminTenantRoute.tenantId, response, deps);
+            return;
+        }
+        if (request.method === "PATCH" && adminTenantRoute.remainder === "config") {
+            await handlePatchTenantConfig(adminTenantRoute.tenantId, request, response, deps);
             return;
         }
         if (request.method === "POST" && adminTenantRoute.remainder === "runs") {

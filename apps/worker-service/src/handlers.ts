@@ -40,6 +40,7 @@ import {
 } from "./metrics.js";
 import type { PartnerRegistry } from "./partner-registry.js";
 import { notifyRunCompletedWebhook } from "./webhook.js";
+import { InvalidSubmitRunConfigError, parseSubmitRunConfig } from "./submit-run-config.js";
 
 export interface WorkerServiceDeps {
     config: WorkerServiceConfig;
@@ -72,6 +73,19 @@ export async function handleSubmitRun(
         sendApiError(response, 413, { error: "too_many_files", maxFiles: deps.config.maxUploadFiles });
         return;
     }
+
+    let runConfig;
+    try {
+        runConfig = parseSubmitRunConfig(parsed.fields);
+    }
+    catch (error) {
+        if (error instanceof InvalidSubmitRunConfigError) {
+            sendApiError(response, 400, { error: "invalid_config" });
+            return;
+        }
+        throw error;
+    }
+
     const runId = randomUUID();
     deps.runStore.create(tenantId, runId, partnerId);
     logRunStarted({
@@ -90,6 +104,7 @@ export async function handleSubmitRun(
             content: file.content,
         })),
         skipEmbed: deps.config.skipEmbed,
+        ...(runConfig !== undefined ? { config: runConfig } : {}),
     }).then((result) => {
         const record = deps.runStore.complete(tenantId, runId, result.stats, result.deletionEntry);
         logRunCompleted({

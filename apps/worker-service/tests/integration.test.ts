@@ -123,4 +123,53 @@ describe("worker-service integration", () => {
             skipEmbed: true,
         }));
     });
+
+    it("forwards optional pipeline config from multipart fields", async () => {
+        const boundary = "----backed-config-test";
+        const config = JSON.stringify({
+            documentTypeHints: [
+                {
+                    match: "determinazioni",
+                    documentType: "municipal_determination",
+                    documentTypeLabel: "Determinazione",
+                    confidence: 0.95,
+                },
+            ],
+        });
+        const body = [
+            `--${boundary}`,
+            'Content-Disposition: form-data; name="file"; filename="doc.txt"',
+            "",
+            "hello world",
+            `--${boundary}`,
+            'Content-Disposition: form-data; name="config"',
+            "",
+            config,
+            `--${boundary}--`,
+            "",
+        ].join("\r\n");
+        const submit = await fetch(`${baseUrl}/v1/tenants/demo/runs`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": `multipart/form-data; boundary=${boundary}`,
+            },
+            body,
+        });
+        expect(submit.status).toBe(202);
+        expect(mockedRunTenantPipeline).toHaveBeenCalledWith(
+            expect.objectContaining({
+                config: {
+                    documentTypeHints: [
+                        {
+                            match: "determinazioni",
+                            documentType: "municipal_determination",
+                            documentTypeLabel: "Determinazione",
+                            confidence: 0.95,
+                        },
+                    ],
+                },
+            }),
+        );
+    });
 });

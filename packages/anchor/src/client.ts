@@ -14,8 +14,14 @@ import type {
     ReviewSubmitResponse,
     RunStatusResponse,
     SubmitRunResponse,
+    TenantPipelineConfig,
+    TenantPipelineConfigPatch,
 } from "./types.js";
-import { buildRunUploadFormData, type RunUploadInput } from "./upload.js";
+import { buildRunUploadFormData, type RunUploadInput, type SubmitRunConfig } from "./upload.js";
+
+export interface SubmitRunOptions {
+    config?: SubmitRunConfig;
+}
 import { waitForRun, type WaitForRunOptions } from "./wait-for-run.js";
 
 export interface AnchorClientOptions {
@@ -52,8 +58,12 @@ export class AnchorClient {
         return assertApiSuccess(data, error, response);
     }
 
-    async submitRun(tenantId: string, files: readonly RunUploadInput[]): Promise<SubmitRunResponse> {
-        const body = buildRunUploadFormData(files);
+    async submitRun(
+        tenantId: string,
+        files: readonly RunUploadInput[],
+        options: SubmitRunOptions = {},
+    ): Promise<SubmitRunResponse> {
+        const body = buildRunUploadFormData(files, options.config);
         const { data, error, response } = await this.api.POST("/v1/tenants/{tenantId}/runs", {
             params: { path: { tenantId } },
             // FormData is valid at runtime; OpenAPI types model multipart fields as strings.
@@ -133,6 +143,26 @@ export class AnchorClient {
         });
 
         return assertApiSuccess(data, error, response);
+    }
+
+    async getTenantConfig(tenantId: string): Promise<TenantPipelineConfig> {
+        const { data, error, response } = await this.api.GET("/v1/tenants/{tenantId}/config", {
+            params: { path: { tenantId } },
+        });
+        const payload = assertApiSuccess(data, error, response);
+        return payload.config;
+    }
+
+    async updateTenantConfig(
+        tenantId: string,
+        patch: TenantPipelineConfigPatch,
+    ): Promise<TenantPipelineConfig> {
+        const { data, error, response } = await this.api.PATCH("/v1/tenants/{tenantId}/config", {
+            params: { path: { tenantId } },
+            body: patch,
+        });
+        const payload = assertApiSuccess(data, error, response);
+        return payload.config;
     }
 
     waitForRun(tenantId: string, runId: string, options: WaitForRunOptions = {}): Promise<RunStatusResponse> {

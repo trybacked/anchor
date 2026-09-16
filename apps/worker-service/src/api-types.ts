@@ -8,6 +8,7 @@ export type ApiErrorResponse =
     | { error: "forbidden" }
     | { error: "rate_limit_exceeded" }
     | { error: "invalid_multipart" }
+    | { error: "invalid_config" }
     | { error: "no_files_uploaded" }
     | { error: "too_many_files"; maxFiles: number }
     | { error: "payload_too_large"; maxBytes: number }

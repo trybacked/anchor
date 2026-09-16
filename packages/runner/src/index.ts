@@ -38,3 +38,17 @@ export {
     DEFAULT_RATE_LIMIT_MAX_REQUESTS,
     DEFAULT_RATE_LIMIT_WINDOW_MS,
 } from "./config.js";
+export {
+    readTenantPipelineConfig,
+    writeTenantPipelineConfig,
+    patchTenantPipelineConfig,
+    resolveTenantPipelineConfig,
+    TenantPipelineConfigPatchSchema,
+    TenantPipelineConfigSchema,
+} from "./tenant-config.js";
+export type {
+    DocumentTypeHintConfig,
+    DomainVocabulary,
+    TenantPipelineConfig,
+    TenantPipelineConfigPatch,
+} from "./tenant-config.js";
