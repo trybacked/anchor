@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { DocumentCatalogSchema, hasRunArtifact, listRunIds, readRunArtifact, workspacePaths, type DocumentCatalog, type SemanticModel } from "@backed/core";
+import { DocumentCatalogSchema, hasRunArtifact, listRunIds, readRunArtifact, workspacePaths, type DocumentCatalog, type SemanticModel } from "@trybacked/core";
 import type { SearchMatch } from "@backed/mcp";
 import { createChunkSearcher, documentChunksHaveEmbeddings, openDataSession, searchModelViaDocumentChunks } from "@backed/ingest";
 import { embedQuery, resolveSemanticModels } from "@backed/semantic";

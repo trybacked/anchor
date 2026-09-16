@@ -1,4 +1,4 @@
-import { ReviewAnswerSchema } from "@backed/core";
+import { ReviewAnswerSchema } from "@trybacked/core";
 import type { DeletionLogEntry, PipelineStats } from "@backed/runner";
 import { z } from "zod";
 import type { RunStatus } from "./run-store.js";

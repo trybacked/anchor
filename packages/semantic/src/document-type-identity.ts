@@ -1,5 +1,5 @@
-import type { DocumentCatalog, DocumentCatalogEntry, Entity } from "@backed/core";
-import { DOC_TYPE_TABLE_PREFIX } from "@backed/core";
+import type { DocumentCatalog, DocumentCatalogEntry, Entity } from "@trybacked/core";
+import { DOC_TYPE_TABLE_PREFIX } from "@trybacked/core";
 import { slugify } from "./string-utils.js";
 
 export const DOCUMENT_TYPE_STABLE_KEY_PREFIX = "stable-key:";

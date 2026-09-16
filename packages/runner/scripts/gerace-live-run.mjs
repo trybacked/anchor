@@ -4,7 +4,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseModelYaml } from "@backed/core";
+import { parseModelYaml } from "@trybacked/core";
 import { runTenantPipeline } from "../dist/run-tenant.js";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));

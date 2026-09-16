@@ -1,4 +1,4 @@
-import type { AggregateReader, EntityAggregateRequest } from "@backed/core";
+import type { AggregateReader, EntityAggregateRequest } from "@trybacked/core";
 import { buildDuckDbFilterClause } from "./duckdb-filters.js";
 import { documentIdsInClause, quoteIdentifier, sqlWhereClause } from "./sql.js";
 import type { SqlQuery } from "./types.js";

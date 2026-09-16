@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { DEFAULT_SOURCES_DIR, MODEL_FILE_NAME, RUN_ARTIFACTS } from "@backed/core";
+import { DEFAULT_SOURCES_DIR, MODEL_FILE_NAME, RUN_ARTIFACTS } from "@trybacked/core";
 import {
     DELETION_LOG_FILE_NAME,
     HASH_LEDGER_FILE_NAME,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { DocumentCatalog, Entity } from "@backed/core";
-import { documentTypeTableName } from "@backed/core";
+import type { DocumentCatalog, Entity } from "@trybacked/core";
+import { documentTypeTableName } from "@trybacked/core";
 import { buildDocumentCorpusEntities } from "../../src/document-ontology.js";
 import { hashHeaderContent } from "../../src/document-sample-fingerprint.js";
 import {

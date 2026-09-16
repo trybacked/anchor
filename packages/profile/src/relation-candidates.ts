@@ -2,8 +2,8 @@ import {
     PROFILE_FK_CANDIDATES_PER_COLUMN,
     PROFILE_FK_OVERLAP_THRESHOLD,
     PROFILE_FK_SAMPLE_SIZE,
-} from "@backed/core";
-import type { ColumnProfile, ForeignKeyCandidate, ProfileReport, TableProfile } from "@backed/core";
+} from "@trybacked/core";
+import type { ColumnProfile, ForeignKeyCandidate, ProfileReport, TableProfile } from "@trybacked/core";
 import { quoteIdentifier } from "@backed/ingest";
 import type { SqlQuery } from "@backed/ingest";
 import {

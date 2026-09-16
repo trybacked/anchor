@@ -1,5 +1,5 @@
-import { ModelDiffSchema } from "@backed/core";
-import type { DiffChange, Entity, ModelDiff, ProfileReport, Relation, Rule } from "@backed/core";
+import { ModelDiffSchema } from "@trybacked/core";
+import type { DiffChange, Entity, ModelDiff, ProfileReport, Relation, Rule } from "@trybacked/core";
 import { columnExists, diffProfile } from "./profile-diff.js";
 import { collectAdded, collectAddedRemoved, indexByKey } from "./utils.js";
 

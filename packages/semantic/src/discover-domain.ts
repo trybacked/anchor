@@ -1,5 +1,5 @@
-import { DomainVocabularySchema, EMPTY_DOMAIN_VOCABULARY } from "@backed/core";
-import type { DomainVocabulary } from "@backed/core";
+import { DomainVocabularySchema, EMPTY_DOMAIN_VOCABULARY } from "@trybacked/core";
+import type { DomainVocabulary } from "@trybacked/core";
 import type { LanguageModel } from "ai";
 import { EMPTY_BURST_USAGE, runBurst, type BurstResult, type BurstUsage } from "./burst.js";
 import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";

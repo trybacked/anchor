@@ -1,5 +1,5 @@
-import type { AggregateOp, ObjectQueryReader, TableObjectQueryRequest, } from "@backed/core";
-import { resolveAggregationAlias } from "@backed/core";
+import type { AggregateOp, ObjectQueryReader, TableObjectQueryRequest, } from "@trybacked/core";
+import { resolveAggregationAlias } from "@trybacked/core";
 import { buildDuckDbFilterClause } from "./duckdb-filters.js";
 import { documentIdsInClause, quoteIdentifier, sqlOrderDirection, sqlWhereClause } from "./sql.js";
 import type { SqlQuery } from "./types.js";

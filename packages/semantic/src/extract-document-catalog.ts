@@ -1,5 +1,5 @@
-import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeHintConfig, DomainVocabulary, } from "@backed/core";
-import { DocumentCatalogSchema, EMPTY_DOMAIN_VOCABULARY, fieldsFromRecord, normalizeDocumentFieldKey, } from "@backed/core";
+import type { DocumentCatalog, DocumentCatalogEntry, DocumentTypeHintConfig, DomainVocabulary, } from "@trybacked/core";
+import { DocumentCatalogSchema, EMPTY_DOMAIN_VOCABULARY, fieldsFromRecord, normalizeDocumentFieldKey, } from "@trybacked/core";
 import { z } from "zod";
 import { runBurst, sumBurstUsage } from "./burst.js";
 import type { BurstUsage } from "./burst.js";

@@ -1,4 +1,4 @@
-import type { DiffChange, ProfileReport, TableProfile } from "@backed/core";
+import type { DiffChange, ProfileReport, TableProfile } from "@trybacked/core";
 import { collectAddedRemoved, indexByKey } from "./utils.js";
 
 export const COLUMN_SUBJECT_SEPARATOR = ".";

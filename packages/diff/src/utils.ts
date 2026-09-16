@@ -1,4 +1,4 @@
-import type { DiffChange } from "@backed/core";
+import type { DiffChange } from "@trybacked/core";
 
 export function indexByKey<T>(items: T[], key: (item: T) => string): Map<string, T> {
     return new Map(items.map((item) => [key(item), item]));

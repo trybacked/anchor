@@ -2,8 +2,8 @@ import {
     ProfileReportSchema,
     readModelYaml,
     readRunArtifact,
-} from "@backed/core";
-import type { DocumentCatalog, ProfileReport, SemanticModel } from "@backed/core";
+} from "@trybacked/core";
+import type { DocumentCatalog, ProfileReport, SemanticModel } from "@trybacked/core";
 import { affectedTablesFromProfileDiff, filterProfileToTables } from "@backed/diff";
 import { resolveTenantAffectedTables } from "../tenant-affected-tables.js";
 

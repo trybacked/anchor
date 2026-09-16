@@ -1,21 +1,34 @@
 {
-  "name": "@backed/core",
+  "name": "@trybacked/core",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "model.yaml schema, shared types, run artifacts (.backed/)",
+  "description": "Anchor model.yaml schema, shared types, and run artifacts (.backed/)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybacked/anchor.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
-    "generate:schema": "node scripts/generate-json-schema.mjs"
+    "generate:schema": "node scripts/generate-json-schema.mjs",
+    "prepublishOnly": "pnpm run build && pnpm run test"
   },
   "dependencies": {
     "yaml": "^2.7.0",
@@ -23,5 +36,8 @@
   },
   "devDependencies": {
     "zod-to-json-schema": "^3.24.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

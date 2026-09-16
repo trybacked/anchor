@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { parseModelYaml } from "@backed/core";
+import { parseModelYaml } from "@trybacked/core";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
     assertValidTenantId,
@@ -31,7 +31,7 @@ import {
     ModelNotFoundError,
     patchTenantModelElement,
 } from "./model-store.js";
-import { PatchModelElementSchema } from "@backed/core";
+import { PatchModelElementSchema } from "@trybacked/core";
 import {
     computeRunDurationMs,
     logRunCompleted,

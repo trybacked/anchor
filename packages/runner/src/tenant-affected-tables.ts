@@ -6,8 +6,8 @@ import {
     DOCUMENT_LINES_TABLE,
     DOCUMENT_MENTIONS_TABLE,
     ENTITY_PROFILES_TABLE,
-} from "@backed/core";
-import type { DocumentCatalog, ProfileReport } from "@backed/core";
+} from "@trybacked/core";
+import type { DocumentCatalog, ProfileReport } from "@trybacked/core";
 
 const PIPELINE_INFRA_TABLES = new Set<string>([
     DOCUMENT_LINES_TABLE,

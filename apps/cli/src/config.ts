@@ -2,7 +2,7 @@ import {
     BACKED_DIR_NAME,
     CONFIG_FILE_NAME,
     DATA_FILE_NAME,
-} from "@backed/core";
+} from "@trybacked/core";
 
 export const CLI_NAME = "backed";
 export const CLI_VERSION = "0.1.0";

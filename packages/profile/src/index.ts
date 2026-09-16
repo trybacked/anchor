@@ -1,5 +1,5 @@
-import { ProfileReportSchema } from "@backed/core";
-import type { ProfileReport } from "@backed/core";
+import { ProfileReportSchema } from "@trybacked/core";
+import type { ProfileReport } from "@trybacked/core";
 import type { IngestSession } from "@backed/ingest";
 import { enrichRelationCandidates } from "./relation-candidates.js";
 import { profileDataset } from "./table-profile.js";

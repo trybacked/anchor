@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { documentTypeTableName } from "@backed/core";
-import type { DocumentCatalog } from "@backed/core";
+import { documentTypeTableName } from "@trybacked/core";
+import type { DocumentCatalog } from "@trybacked/core";
 import { mergeDocumentCatalogs, resolveCatalogForInference } from "../../src/tenant-persist-cache.js";
 
 function catalogDocument(

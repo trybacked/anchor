@@ -191,7 +191,7 @@ Agent pattern: `list_entities` → `get_entity` → `search_model` / `get_defini
 
 ## The model
 
-`model.yaml` contains no data. It contains the **model of the data** — portable, committable, schema-validated (`SemanticModelSchema` in `@backed/core`).
+`model.yaml` contains no data. It contains the **model of the data** — portable, committable, schema-validated (`SemanticModelSchema` in `@trybacked/core`).
 
 A typical organization: **4–15 entities**, **5–20 relations**, a handful of rules. Larger models usually signal inference error, not richness.
 
@@ -355,7 +355,7 @@ pnpm test
 pnpm cli --help
 ```
 
-Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `@backed/runner` → `apps/cli` / `apps/worker-service`.
+Monorepo: `@trybacked/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `@backed/runner` → `apps/cli` / `apps/worker-service`.
 
 CI (GitHub Actions) runs build, schema drift check, and tests including the **Gerace golden** `model.yaml` fixture and a **three-run incremental session** (`packages/runner/tests/golden/gerace-incremental.test.ts`: cold → warm → +1 file on `fixtures/gerace-albo`, with deterministic LLM mocks).
 
@@ -419,12 +419,12 @@ Structured logs (JSON lines on stdout): `run.started`, `gc.completed`, `run.comp
 
 ### TypeScript SDK
 
-Official SDK: [`packages/anchor`](./packages/anchor) (`@backed/anchor`).
+Official SDK: [`packages/anchor`](./packages/anchor) (`@trybacked/anchor`).
 
 Types are generated from `apps/worker-service/openapi.yaml` via [openapi-typescript](https://github.com/openapi-ts/openapi-typescript); requests use [openapi-fetch](https://github.com/openapi-ts/openapi-typescript/tree/main/packages/openapi-fetch).
 
 ```typescript
-import { createAnchorClient } from "@backed/anchor";
+import { createAnchorClient } from "@trybacked/anchor";
 
 const anchor = createAnchorClient({
   baseUrl: "https://anchor.backed.app",

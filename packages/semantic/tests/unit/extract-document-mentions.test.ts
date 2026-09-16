@@ -1,4 +1,4 @@
-import { ENTITY_MENTION_TYPE } from "@backed/core";
+import { ENTITY_MENTION_TYPE } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { buildEntityIndex, entityIdFromName, extractMentionsFromLine, extractMentionsFromLines, toMaterializedMentions, } from "../../src/extract-document-mentions.js";
 import { ENGLISH_INVOICE_VOCABULARY, PROCUREMENT_VOCABULARY, } from "../fixtures/vocabulary.js";

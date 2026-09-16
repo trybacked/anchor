@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { workspacePaths } from "@backed/core";
+import { workspacePaths } from "@trybacked/core";
 import { WORKSPACE_ENV_FILE } from "./config.js";
 
 export function workspaceEnvPath(root: string): string {

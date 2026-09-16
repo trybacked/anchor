@@ -1,4 +1,4 @@
-import type { RowFilter } from "@backed/core";
+import type { RowFilter } from "@trybacked/core";
 import { quoteIdentifier, quoteString } from "./sql.js";
 function formatFilterValue(value: string | number): string {
     if (typeof value === "number") {

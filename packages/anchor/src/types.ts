@@ -29,7 +29,7 @@ export type GetModelResult =
     | { notModified: true }
     | {
           notModified?: false;
-          model: import("@backed/core").SemanticModel;
+          model: import("@trybacked/core").SemanticModel;
           etag: string | undefined;
           yaml: string;
       };

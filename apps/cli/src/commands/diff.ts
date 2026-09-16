@@ -1,4 +1,4 @@
-import { ProfileReportSchema, ProposalSchema, hasRunArtifact, listRunIds, readRunArtifact, writeRunArtifact, } from "@backed/core";
+import { ProfileReportSchema, ProposalSchema, hasRunArtifact, listRunIds, readRunArtifact, writeRunArtifact, } from "@trybacked/core";
 import { diffRuns, formatDiff } from "@backed/diff";
 import type { RunSnapshot } from "@backed/diff";
 import { findWorkspaceRoot } from "../env.js";

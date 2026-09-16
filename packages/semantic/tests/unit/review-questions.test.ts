@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { LOW_CONFIDENCE_THRESHOLD } from "@backed/core";
-import type { Entity } from "@backed/core";
+import { LOW_CONFIDENCE_THRESHOLD } from "@trybacked/core";
+import type { Entity } from "@trybacked/core";
 import { selectReviewQuestions } from "../../src/questions.js";
 
 function entity(id: string, confidence: number, sourceTable = id): Entity {

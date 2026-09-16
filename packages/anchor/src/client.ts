@@ -1,4 +1,4 @@
-import { parseModelYaml } from "@backed/core";
+import { parseModelYaml } from "@trybacked/core";
 import createClient from "openapi-fetch";
 import { AnchorClientError, assertApiSuccess } from "./errors.js";
 import type { paths } from "./generated/openapi.js";

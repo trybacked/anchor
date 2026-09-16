@@ -5,8 +5,8 @@ import {
     DOCUMENT_LINES_TABLE,
     DOCUMENT_MENTIONS_TABLE,
     ENTITY_PROFILES_TABLE,
-} from "@backed/core";
-import type { ProfileReport } from "@backed/core";
+} from "@trybacked/core";
+import type { ProfileReport } from "@trybacked/core";
 import { diffProfile, tableFromProfileChange } from "./profile-diff.js";
 
 export const PIPELINE_INFRA_TABLES = new Set<string>([

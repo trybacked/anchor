@@ -18,7 +18,7 @@
     "gerace:live": "node scripts/gerace-live-run.mjs"
   },
   "dependencies": {
-    "@backed/core": "workspace:*",
+    "@trybacked/core": "workspace:*",
     "@backed/diff": "workspace:*",
     "@backed/ingest": "workspace:*",
     "@backed/profile": "workspace:*",

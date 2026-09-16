@@ -1,4 +1,4 @@
-import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "@backed/core";
+import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD } from "@trybacked/core";
 import { createGateway } from "@ai-sdk/gateway";
 import type { EmbeddingModel, LanguageModel } from "ai";
 export const AI_GATEWAY_API_KEY_ENV = "AI_GATEWAY_API_KEY";

@@ -37,9 +37,6 @@ importers:
 
   apps/cli:
     dependencies:
-      '@backed/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@backed/diff':
         specifier: workspace:*
         version: link:../../packages/diff
@@ -61,6 +58,9 @@ importers:
       '@inquirer/prompts':
         specifier: ^7.3.2
         version: 7.10.1(@types/node@22.20.1)
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -77,15 +77,15 @@ importers:
 
   apps/worker-service:
     dependencies:
-      '@backed/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@backed/runner':
         specifier: workspace:*
         version: link:../../packages/runner
       '@backed/semantic':
         specifier: workspace:*
         version: link:../../packages/semantic
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -96,9 +96,9 @@ importers:
 
   packages/anchor:
     dependencies:
-      '@backed/core':
-        specifier: workspace:*
-        version: link:../core
+      '@trybacked/core':
+        specifier: ^0.1.0
+        version: 0.1.0
       openapi-fetch:
         specifier: ^0.14.0
         version: 0.14.1
@@ -122,18 +122,18 @@ importers:
 
   packages/diff:
     dependencies:
-      '@backed/core':
+      '@trybacked/core':
         specifier: workspace:*
         version: link:../core
 
   packages/ingest:
     dependencies:
-      '@backed/core':
-        specifier: workspace:*
-        version: link:../core
       '@duckdb/node-api':
         specifier: 1.5.5-r.4
         version: 1.5.5-r.4
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
       mammoth:
         specifier: ^1.12.2
         version: 1.12.2
@@ -159,30 +159,27 @@ importers:
 
   packages/mcp:
     dependencies:
-      '@backed/core':
-        specifier: workspace:*
-        version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.30.0
         version: 1.30.0(zod@3.25.76)
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
       zod:
         specifier: ^3.24.1
         version: 3.25.76
 
   packages/profile:
     dependencies:
-      '@backed/core':
-        specifier: workspace:*
-        version: link:../core
       '@backed/ingest':
         specifier: workspace:*
         version: link:../ingest
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/runner:
     dependencies:
-      '@backed/core':
-        specifier: workspace:*
-        version: link:../core
       '@backed/diff':
         specifier: workspace:*
         version: link:../diff
@@ -195,6 +192,9 @@ importers:
       '@backed/semantic':
         specifier: workspace:*
         version: link:../semantic
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -208,7 +208,7 @@ importers:
       '@ai-sdk/gateway':
         specifier: ^4.0.69
         version: 4.0.74(zod@3.25.76)
-      '@backed/core':
+      '@trybacked/core':
         specifier: workspace:*
         version: link:../core
       ai:
@@ -879,6 +879,10 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@trybacked/core@0.1.0':
+    resolution: {integrity: sha512-aUdZEcsIywzRehEefiUMN6MeSpGKFrMRQez+5MirpYSirRI6YepNBzE2mEfu+iT7obEeVjv9IhM9jWt6KVjpsw==}
+    engines: {node: '>=22'}
 
   '@turbo/darwin-64@2.10.12':
     resolution: {integrity: sha512-9nKgKoF6ZOUsM+or0OtNf+TTJSfGvDNP7ZFv/ZGWVwOSCkumyctQiTeHwB4UNljHTnC41AqylgbunLDHoccNrA==}
@@ -2695,6 +2699,11 @@ snapshots:
     optional: true
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@trybacked/core@0.1.0':
+    dependencies:
+      yaml: 2.9.0
+      zod: 3.25.76
 
   '@turbo/darwin-64@2.10.12':
     optional: true

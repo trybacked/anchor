@@ -1,5 +1,5 @@
-import { LOW_CONFIDENCE_THRESHOLD } from "@backed/core";
-import type { DocumentCatalog, Entity, EvidenceTable, ReviewQuestion } from "@backed/core";
+import { LOW_CONFIDENCE_THRESHOLD } from "@trybacked/core";
+import type { DocumentCatalog, Entity, EvidenceTable, ReviewQuestion } from "@trybacked/core";
 import type { CompressedTable } from "./compress.js";
 import { documentTypeEntityId } from "./document-type-identity.js";
 function findTable(tables: CompressedTable[], name: string): CompressedTable | undefined {

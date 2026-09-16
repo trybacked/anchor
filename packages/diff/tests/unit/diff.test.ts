@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { affectedTablesFromProfileDiff, filterProfileToTables } from "../../src/affected-tables.js";
 import { diffRuns, type ModelElements, type RunSnapshot } from "../../src/diff-runs.js";
 import { formatDiff } from "../../src/format.js";
-import type { ProfileReport } from "@backed/core";
+import type { ProfileReport } from "@trybacked/core";
 
 const baseProfile: ProfileReport = [
     {

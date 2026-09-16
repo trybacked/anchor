@@ -1,4 +1,4 @@
-import type { DocumentCatalog, DomainVocabulary, ProfileReport, Proposal, SemanticModel, WorkspaceConfig } from "@backed/core";
+import type { DocumentCatalog, DomainVocabulary, ProfileReport, Proposal, SemanticModel, WorkspaceConfig } from "@trybacked/core";
 import type { BurstUsage, SemanticModels } from "@backed/semantic";
 import type { PipelineProgressReporter } from "./progress.js";
 

@@ -1,5 +1,5 @@
-import type { ChunkSearchMode, ChunkSearchRequest, ChunkSearcher, QueryEmbedder } from "@backed/core";
-import { DEFAULT_CHUNK_SEARCH_MIN_SCORE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE } from "@backed/core";
+import type { ChunkSearchMode, ChunkSearchRequest, ChunkSearcher, QueryEmbedder } from "@trybacked/core";
+import { DEFAULT_CHUNK_SEARCH_MIN_SCORE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE } from "@trybacked/core";
 import {
     CHUNK_SEARCH_OVERSAMPLE_FACTOR,
     KEYWORD_MIN_TOKEN_LENGTH,

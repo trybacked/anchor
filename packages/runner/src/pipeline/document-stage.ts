@@ -6,8 +6,8 @@ import {
     mergeVocabulary,
     readRunArtifact,
     writeRunArtifact,
-} from "@backed/core";
-import type { DocumentCatalog, DomainVocabulary, WorkspaceConfig } from "@backed/core";
+} from "@trybacked/core";
+import type { DocumentCatalog, DomainVocabulary, WorkspaceConfig } from "@trybacked/core";
 import type { IngestSession } from "@backed/ingest";
 import {
     applyDocumentFields,

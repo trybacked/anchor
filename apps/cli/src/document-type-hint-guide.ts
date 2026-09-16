@@ -1,4 +1,4 @@
-import type { DocumentTypeHintConfig } from "@backed/core";
+import type { DocumentTypeHintConfig } from "@trybacked/core";
 import { toTableName } from "@backed/ingest";
 import { confirm, input } from "@inquirer/prompts";
 import type { Ui } from "./ui/format.js";

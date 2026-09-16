@@ -1,4 +1,4 @@
-import type { Entity, Rule, SemanticModel } from "@backed/core";
+import type { Entity, Rule, SemanticModel } from "@trybacked/core";
 import { CONFIRMED_STATUS, RULE_MATCH_SCORE } from "./constants.js";
 import { definitionNotFoundMessage, emptyDefinitionTermMessage } from "./errors.js";
 import type { DefinitionResult, EntityDetail, EntitySummary, RelationSummary, SearchMatch, } from "./schemas.js";

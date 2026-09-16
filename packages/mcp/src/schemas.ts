@@ -1,4 +1,4 @@
-import { ElementStatusSchema, ProvenanceSchema, PropertyRoleSchema, SemanticTypeSchema, } from "@backed/core";
+import { ElementStatusSchema, ProvenanceSchema, PropertyRoleSchema, SemanticTypeSchema, } from "@trybacked/core";
 import { z } from "zod";
 export const EntitySummarySchema = z.object({
     id: z.string(),
@@ -31,7 +31,7 @@ export const RelationSummarySchema = z.object({
     cardinality: z.enum(["one_to_one", "one_to_many", "many_to_many"]),
     status: ElementStatusSchema,
 });
-import { ModelSearchMatchSchema } from "@backed/core";
+import { ModelSearchMatchSchema } from "@trybacked/core";
 
 export const SearchMatchSchema = ModelSearchMatchSchema;
 export const DefinitionFoundSchema = z.object({

@@ -1,5 +1,5 @@
-import { DOCUMENT_CHUNKS_TABLE, DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_LINES_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_PROFILES_TABLE, } from "@backed/core";
-import type { DocumentCatalog } from "@backed/core";
+import { DOCUMENT_CHUNKS_TABLE, DOCUMENT_ENTITIES_TABLE, DOCUMENT_FACTS_TABLE, DOCUMENT_LINES_TABLE, DOCUMENT_MENTIONS_TABLE, ENTITY_PROFILES_TABLE, } from "@trybacked/core";
+import type { DocumentCatalog } from "@trybacked/core";
 import type { CompressedTable } from "./compress.js";
 import { partitionStructuredTables, splitTablesByKind } from "./line-document.js";
 export interface TableRouting {

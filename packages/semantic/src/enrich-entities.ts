@@ -1,5 +1,5 @@
-import { ENTITY_MENTION_TYPE, describeTerms } from "@backed/core";
-import type { DomainTerm, DomainVocabulary } from "@backed/core";
+import { ENTITY_MENTION_TYPE, describeTerms } from "@trybacked/core";
+import type { DomainTerm, DomainVocabulary } from "@trybacked/core";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
 import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage, type BurstUsage } from "./burst.js";

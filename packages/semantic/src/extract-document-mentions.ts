@@ -1,5 +1,5 @@
-import { ENTITY_MENTION_TYPE, MENTION_CONTEXT_LINE_RADIUS, MENTION_CONTEXT_MAX_CHARS } from "@backed/core";
-import type { DomainVocabulary, IdentifierFormat, NameConvention } from "@backed/core";
+import { ENTITY_MENTION_TYPE, MENTION_CONTEXT_LINE_RADIUS, MENTION_CONTEXT_MAX_CHARS } from "@trybacked/core";
+import type { DomainVocabulary, IdentifierFormat, NameConvention } from "@trybacked/core";
 import { ENTITY_MENTION_CONFIDENCE, IDENTIFIER_CHARSET_PATTERNS, IDENTIFIER_MENTION_CONFIDENCE, MENTION_ENTITY_ID_MAX_LENGTH, MENTION_ID_MAX_LENGTH, MENTION_MAX_NAME_WORDS, MENTION_MIN_NAME_CHARS, MENTION_MIN_WORD_CHARS, } from "./constants.js";
 import { attributeIdentifierEntityId } from "./mention-attribution.js";
 import { slugify } from "./string-utils.js";

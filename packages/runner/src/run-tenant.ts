@@ -14,8 +14,8 @@ import {
     readRunArtifact,
     serializeModelYaml,
     WorkspaceConfigSchema,
-} from "@backed/core";
-import type { Proposal, SemanticModel, WorkspaceConfig } from "@backed/core";
+} from "@trybacked/core";
+import type { Proposal, SemanticModel, WorkspaceConfig } from "@trybacked/core";
 import { resolveReviewConfidenceThreshold } from "@backed/semantic";
 import { JSON_PRETTY_INDENT, SKIPPED_PIPELINE_STATS } from "./config.js";
 import { collectGarbage, type DeletionLogEntry } from "./gc.js";

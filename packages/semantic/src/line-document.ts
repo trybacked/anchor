@@ -1,4 +1,4 @@
-import type { Entity, ProfileReport } from "@backed/core";
+import type { Entity, ProfileReport } from "@trybacked/core";
 import type { CompressedTable } from "./compress.js";
 import { DOCUMENT_CORPUS_LINE_TABLE_RATIO, DOCUMENT_CORPUS_LINE_TABLE_THRESHOLD, LINE_DOCUMENT_COLUMN_CONFIDENCE, LINE_DOCUMENT_ENTITY_CONFIDENCE, PIPELINE_METADATA_COLUMN_CONFIDENCE, PIPELINE_METADATA_DEFAULT_CONFIDENCE, } from "./constants.js";
 import type { ColumnClassificationOutput } from "./llm-output.js";

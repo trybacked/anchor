@@ -4,8 +4,8 @@ import {
     DOCUMENT_ENTITIES_TABLE,
     DOCUMENT_LINES_TABLE,
     documentTypeTableName,
-} from "@backed/core";
-import type { DocumentCatalog, ProfileReport } from "@backed/core";
+} from "@trybacked/core";
+import type { DocumentCatalog, ProfileReport } from "@trybacked/core";
 import { resolveTenantAffectedTables } from "../../src/tenant-affected-tables.js";
 
 function profileEntry(table: string, sourceFile: string): ProfileReport[number] {

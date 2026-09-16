@@ -1,4 +1,4 @@
-import { DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE } from "@backed/core";
+import { DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE } from "@trybacked/core";
 import { CHUNK_EMBEDDING_STORE_BATCH_SIZE } from "./constants.js";
 import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { quoteIdentifier, quoteString } from "./sql.js";

@@ -1,4 +1,4 @@
-import { LOW_CONFIDENCE_THRESHOLD } from "@backed/core";
+import { LOW_CONFIDENCE_THRESHOLD } from "@trybacked/core";
 import type {
     ColumnProfile,
     DocumentCatalog,
@@ -12,7 +12,7 @@ import type {
     Rule,
     SemanticType,
     TableProfile,
-} from "@backed/core";
+} from "@trybacked/core";
 import type { ColumnClassificationOutput, OntologyOutput } from "./llm-output.js";
 import { selectReviewQuestions } from "./questions.js";
 import { selectDocumentTypeReviewQuestions } from "./document-questions.js";

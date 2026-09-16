@@ -1,5 +1,5 @@
-import { PROFILE_PATTERN_MATCH_THRESHOLD } from "@backed/core";
-import type { DetectedPattern, DetectedPatternKind } from "@backed/core";
+import { PROFILE_PATTERN_MATCH_THRESHOLD } from "@trybacked/core";
+import type { DetectedPattern, DetectedPatternKind } from "@trybacked/core";
 const DATE_PATTERNS: readonly RegExp[] = [
     /^\d{4}-\d{2}-\d{2}$/,
     /^\d{1,2}\/\d{1,2}\/\d{4}$/,

@@ -5,8 +5,8 @@ import {
     ReviewSchema,
     applyReview,
     serializeModelYaml,
-} from "@backed/core";
-import type { Proposal, Review, ReviewAnswer } from "@backed/core";
+} from "@trybacked/core";
+import type { Proposal, Review, ReviewAnswer } from "@trybacked/core";
 import { resolveReviewConfidenceThreshold } from "@backed/semantic";
 import { resolveTenantWorkspace } from "@backed/runner";
 

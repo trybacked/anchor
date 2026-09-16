@@ -1,4 +1,4 @@
-import type { DiffChange, DiffChangeKind, ModelDiff } from "@backed/core";
+import type { DiffChange, DiffChangeKind, ModelDiff } from "@trybacked/core";
 const CHANGE_MARKER_ADDED = "+";
 const CHANGE_MARKER_REMOVED = "-";
 const CHANGE_MARKER_CHANGED = "~";

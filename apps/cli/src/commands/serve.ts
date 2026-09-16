@@ -1,4 +1,4 @@
-import { readModelYaml } from "@backed/core";
+import { readModelYaml } from "@trybacked/core";
 import { MCP_SURFACE_TOOLS, runStdioMcpServerUntilClose, SERVER_NAME } from "@backed/mcp";
 import { findWorkspaceRoot } from "../env.js";
 import { createServeSearchModelOptions } from "../serve-model-search.js";

@@ -1,4 +1,4 @@
-import type { SemanticModel } from "@backed/core";
+import type { SemanticModel } from "@trybacked/core";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
 import { entityNotFoundMessage } from "./errors.js";
