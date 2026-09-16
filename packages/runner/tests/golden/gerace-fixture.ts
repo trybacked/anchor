@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { TenantInputFile } from "../../src/run-tenant.js";
@@ -8,7 +8,16 @@ const FIXTURE_SOURCES_DIR = join(
     "../../../../fixtures/gerace-albo/sources",
 );
 
+function assertFixturePresent(): void {
+    if (!existsSync(FIXTURE_SOURCES_DIR)) {
+        throw new Error(
+            `Missing Gerace fixture at ${FIXTURE_SOURCES_DIR}. Commit fixtures/gerace-albo/sources/ or clone the full repo.`,
+        );
+    }
+}
+
 export function loadGeraceSourceFiles(): TenantInputFile[] {
+    assertFixturePresent();
     const fileNames = readdirSync(FIXTURE_SOURCES_DIR).sort();
     return fileNames.map((fileName) => ({
         fileName,

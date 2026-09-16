@@ -29,10 +29,15 @@ test/
 /scripts/
 fixtures/*
 !fixtures/pmi-minimal/
+!fixtures/gerace-albo/
 fixtures/pmi-minimal/*
 !fixtures/pmi-minimal/model.yaml
 !fixtures/pmi-minimal/.backed/
 fixtures/pmi-minimal/.backed/*
 !fixtures/pmi-minimal/.backed/config.yaml
+fixtures/gerace-albo/*
+!fixtures/gerace-albo/README.md
+!fixtures/gerace-albo/sources/
+!fixtures/gerace-albo/sources/**
 .hermes/
 .cursor/
