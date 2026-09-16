@@ -1,0 +1,133 @@
+{
+  "runId": "89fc6d78-4206-42e7-b927-9cdbf6134503",
+  "generatedAt": "2026-09-12T16:57:17.525Z",
+  "entities": [
+    {
+      "id": "company",
+      "name": "Company",
+      "description": "A business entity with a name and an associated monetary amount. The table 'data' holds 3 rows, each with a unique id, a company-like name (e.g. 'Acme Corp', 'Backed Inc', 'Example LLC') and a numeric amount.",
+      "sourceTable": "data",
+      "status": "proposed",
+      "confidence": 0.5,
+      "provenance": {
+        "table": "data",
+        "evidence": "The 'name' column contains values with corporate suffixes ('Corp', 'Inc', 'LLC'), strongly suggesting these are company names; 'amount' is a DOUBLE column matching an 'amount' pattern, and 'id' is a unique BIGINT primary key candidate."
+      },
+      "properties": [
+        {
+          "name": "ID",
+          "columnName": "id",
+          "semanticType": "identifier",
+          "role": "primary_key",
+          "nullable": false,
+          "confidence": 0.85,
+          "provenance": {
+            "table": "data",
+            "column": "id",
+            "evidence": "SQL type BIGINT, 3 distinct values in 3 rows"
+          }
+        },
+        {
+          "name": "Name",
+          "columnName": "name",
+          "semanticType": "identifier",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.6,
+          "provenance": {
+            "table": "data",
+            "column": "name",
+            "evidence": "SQL type VARCHAR, 3 distinct values in 3 rows"
+          }
+        },
+        {
+          "name": "Amount",
+          "columnName": "amount",
+          "semanticType": "amount",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "data",
+            "column": "amount",
+            "evidence": "SQL type DOUBLE, 3 distinct values in 3 rows"
+          }
+        }
+      ]
+    }
+  ],
+  "relations": [],
+  "rules": [],
+  "doubts": [
+    {
+      "topic": "What the entity actually represents",
+      "question": "Are these rows customers, vendors, partners, or something else? The names ('Acme Corp', 'Backed Inc', 'Example LLC') look like company names, but nothing in the profile distinguishes customers from suppliers or other counterparties.",
+      "reason": "The table is named only 'data' and contains no type, status, or category column that would clarify the business role of these companies."
+    },
+    {
+      "topic": "Meaning of the 'amount' column",
+      "question": "Does 'amount' represent an invoice total, an outstanding balance, a contract value, revenue, or something else?",
+      "reason": "The column is only classified as a generic 'amount' with an 'amount' pattern; there are no related columns (dates, currency, status) that would disambiguate its business meaning."
+    },
+    {
+      "topic": "Granularity of the table",
+      "question": "Is each row one company with a single aggregated amount, or one transaction/invoice per company?",
+      "reason": "With only 3 rows and all three columns being candidate keys (id, name, and amount are each unique), it is impossible to tell whether 'amount' is a per-company aggregate or a per-record value. The fact that 'amount' is itself unique across rows is unusual and unexplained."
+    },
+    {
+      "topic": "Possible missing relations",
+      "question": "Could this table relate to other tables (e.g. invoices, orders) that were not included in the profile?",
+      "reason": "No foreign key candidates exist in this table, and no other tables were provided, so no relations can be proposed — but the presence of company names and amounts suggests a larger model may exist."
+    },
+    {
+      "topic": "Very small sample",
+      "question": "Are the observed patterns stable, or is the profile too small to generalize from?",
+      "reason": "The table has only 3 rows; all statistics (uniqueness, patterns, top values) are based on an extremely small sample and may not reflect the real structure of the data."
+    }
+  ],
+  "questions": [
+    {
+      "id": "q-entity-company",
+      "kind": "entity",
+      "targetId": "company",
+      "question": "Does table \"data\" represent the entity \"Company\"?",
+      "impact": 1,
+      "uncertainty": 0.5,
+      "risk": 0.5,
+      "evidence": {
+        "title": "Table \"data\" (3 rows)",
+        "columns": [
+          "Column",
+          "Type",
+          "Distinct values",
+          "Samples"
+        ],
+        "rows": [
+          [
+            "id",
+            "BIGINT",
+            "3",
+            "2, 3, 4"
+          ],
+          [
+            "name",
+            "VARCHAR",
+            "3",
+            "Acme Corp, Backed Inc, Example LLC"
+          ],
+          [
+            "amount",
+            "DOUBLE",
+            "3",
+            "1200.5, 450.25, 890.0"
+          ]
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "inputTokens": 1324,
+    "outputTokens": 897,
+    "costUsd": 0.0006471000000000001
+  }
+}

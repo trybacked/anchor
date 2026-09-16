@@ -1,5 +1,5 @@
 export const PACKAGE_NAME = "@backed/core" as const;
-export { MODEL_FORMAT_VERSION, LOW_CONFIDENCE_THRESHOLD, DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, MAX_REVIEW_QUESTIONS, } from "./constants.js";
+export { MODEL_FORMAT_VERSION, LOW_CONFIDENCE_THRESHOLD, DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, } from "./constants.js";
 export { DOC_TYPE_TABLE_PREFIX, DOC_TYPE_UNKNOWN_SLUG } from "./tables.js";
 export { NATIVE_FRACTIONAL_TYPE_PATTERN, PROFILE_TOP_VALUES_LIMIT, PROFILE_PATTERN_SAMPLE_SIZE, PROFILE_PATTERN_MATCH_THRESHOLD, PROFILE_FK_OVERLAP_THRESHOLD, PROFILE_FK_SAMPLE_SIZE, PROFILE_FK_CANDIDATES_PER_COLUMN, EMPTY_FOREIGN_KEY_CANDIDATES, ForeignKeyCandidateSchema, DetectedPatternKindSchema, DetectedPatternSchema, TopValueSchema, ColumnProfileSchema, TableProfileSchema, ProfileReportSchema, } from "./profile.js";
 export type { DetectedPatternKind, DetectedPattern, ForeignKeyCandidate, TopValue, ColumnProfile, TableProfile, ProfileReport, } from "./profile.js";
@@ -43,5 +43,7 @@ export { parseLocalizedNumber } from "./numbers.js";
 export { writeWorkspaceConfig, patchWorkspaceConfig, readWorkspaceConfig, } from "./workspace-config.js";
 export { writeRunArtifact, readRunArtifact, hasRunArtifact, listRunIds, } from "./run-artifacts.js";
 export { serializeModelYaml, parseModelYaml, writeModelYaml, readModelYaml, } from "./model-yaml.js";
+export { ModelElementKindSchema, PatchModelElementSchema, ModelElementNotFoundError, patchModelElement, } from "./model-patch.js";
+export type { ModelElementKind, PatchModelElement, } from "./model-patch.js";
 export { ModelSearchMatchKindSchema, ModelSearchMatchSchema, } from "./model-search-match.js";
 export type { ModelSearchMatch } from "./model-search-match.js";

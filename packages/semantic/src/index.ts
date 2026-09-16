@@ -15,8 +15,7 @@ export type {
     OntologyOutput,
     OntologyRelationsOutput,
 } from "./llm-output.js";
-export { selectReviewQuestions, capReviewQuestions, reviewBudgetDoubts } from "./questions.js";
-export type { CappedReviewQuestions } from "./questions.js";
+export { selectReviewQuestions } from "./questions.js";
 export { EMPTY_BURST_USAGE, runBurst, sumBurstUsage } from "./burst.js";
 export type { BurstRequest, BurstUsage, BurstResult } from "./burst.js";
 export { cacheKey, loadCachedOutput, saveCachedOutput, withLlmCache } from "./llm-cache.js";

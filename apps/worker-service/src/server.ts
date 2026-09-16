@@ -1,7 +1,14 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { SERVICE_NAME, type WorkerServiceConfig } from "./config.js";
 import {
+    extractAdminTenantRoute,
     extractTenantRoute,
+    handleAdminGetModel,
+    handleAdminGetReview,
+    handleAdminGetRunStatus,
+    handleAdminListRuns,
+    handleAdminPatchModelElement,
+    handleAdminSubmitRun,
     PayloadTooLargeError,
     type WorkerServiceDeps,
 } from "./handlers.js";
@@ -28,6 +35,39 @@ function unauthorized(response: ServerResponse): void {
 
 function forbidden(response: ServerResponse): void {
     sendApiError(response, 403, { error: "forbidden" });
+}
+
+const BACKED_PARTNER_ID_HEADER = "x-backed-partner-id";
+
+function readBackedPartnerId(request: IncomingMessage): string | null {
+    const raw = request.headers[BACKED_PARTNER_ID_HEADER];
+    if (raw === undefined) {
+        return null;
+    }
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (value === undefined || value.trim().length === 0) {
+        return null;
+    }
+    return value.trim();
+}
+
+function assertAdminTenantAccess(
+    partnerId: string,
+    tenantId: string,
+    registry: PartnerRegistry,
+    response: ServerResponse,
+): boolean {
+    try {
+        assertTenantAccess({ partnerId }, tenantId, registry);
+        return true;
+    }
+    catch (error) {
+        if (error instanceof TenantAccessDeniedError) {
+            forbidden(response);
+            return false;
+        }
+        throw error;
+    }
 }
 
 async function assertAuth(
@@ -96,6 +136,71 @@ async function handleRequest(
     }
     if (request.method === "GET" && url.pathname === "/openapi.yaml") {
         sendYaml(response, 200, loadOpenApiSpec());
+        return;
+    }
+    const internalSecret = deps.config.controlPlane?.internalSecret;
+    const internalToken = parseBearerToken(request.headers.authorization);
+    const isInternalRequest =
+        internalSecret !== undefined && internalToken === internalSecret;
+
+    if (request.method === "GET" && url.pathname === "/admin/v1/runs") {
+        if (!isInternalRequest) {
+            unauthorized(response);
+            return;
+        }
+        handleAdminListRuns(request, response, deps);
+        return;
+    }
+
+    const adminTenantRoute = extractAdminTenantRoute(url.pathname);
+    if (adminTenantRoute !== null) {
+        if (!isInternalRequest) {
+            unauthorized(response);
+            return;
+        }
+        if (request.method === "GET" && adminTenantRoute.remainder === "model") {
+            await handleAdminGetModel(adminTenantRoute.tenantId, response, deps);
+            return;
+        }
+        if (request.method === "PATCH" && adminTenantRoute.remainder === "model/elements") {
+            await handleAdminPatchModelElement(adminTenantRoute.tenantId, request, response, deps);
+            return;
+        }
+        if (request.method === "GET" && adminTenantRoute.remainder === "review") {
+            handleAdminGetReview(adminTenantRoute.tenantId, response, deps);
+            return;
+        }
+        if (request.method === "POST" && adminTenantRoute.remainder === "runs") {
+            const partnerId = readBackedPartnerId(request);
+            if (partnerId === null) {
+                sendApiError(response, 400, { error: "missing_partner_id" });
+                return;
+            }
+            if (!assertAdminTenantAccess(partnerId, adminTenantRoute.tenantId, deps.partnerRegistry, response)) {
+                return;
+            }
+            await handleAdminSubmitRun(adminTenantRoute.tenantId, partnerId, request, response, deps);
+            return;
+        }
+        const adminRunStatusMatch = /^runs\/([^/]+)$/.exec(adminTenantRoute.remainder);
+        if (request.method === "GET" && adminRunStatusMatch !== null) {
+            const partnerId = readBackedPartnerId(request);
+            if (partnerId === null) {
+                sendApiError(response, 400, { error: "missing_partner_id" });
+                return;
+            }
+            if (!assertAdminTenantAccess(partnerId, adminTenantRoute.tenantId, deps.partnerRegistry, response)) {
+                return;
+            }
+            handleAdminGetRunStatus(
+                adminTenantRoute.tenantId,
+                decodeURIComponent(adminRunStatusMatch[1] ?? ""),
+                response,
+                deps,
+            );
+            return;
+        }
+        sendApiError(response, 404, { error: "not_found" });
         return;
     }
     const auth = await assertAuth(request, deps.partnerRegistry, response);

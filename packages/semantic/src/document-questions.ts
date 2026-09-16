@@ -1,14 +1,15 @@
+import { LOW_CONFIDENCE_THRESHOLD } from "@backed/core";
 import type { DocumentCatalog, Entity, EvidenceTable, ReviewQuestion } from "@backed/core";
 import type { CompressedTable } from "./compress.js";
 import { documentTypeEntityId } from "./document-type-identity.js";
 function findTable(tables: CompressedTable[], name: string): CompressedTable | undefined {
     return tables.find((table) => table.table === name);
 }
-export function selectDocumentTypeReviewQuestions(catalog: DocumentCatalog, entities: Entity[], tables: CompressedTable[], reviewConfidenceThreshold: number): ReviewQuestion[] {
+export function selectDocumentTypeReviewQuestions(catalog: DocumentCatalog, entities: Entity[], tables: CompressedTable[]): ReviewQuestion[] {
     const entityById = new Map(entities.map((entity) => [entity.id, entity]));
     const questions: ReviewQuestion[] = [];
     for (const type of catalog.documentTypes) {
-        if (type.confidence >= reviewConfidenceThreshold) {
+        if (type.confidence >= LOW_CONFIDENCE_THRESHOLD) {
             continue;
         }
         const entityId = documentTypeEntityId(type.id);

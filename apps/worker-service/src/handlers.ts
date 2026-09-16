@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { parseModelYaml } from "@backed/core";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
     assertValidTenantId,
@@ -25,6 +26,12 @@ import {
     ReviewNotFoundError,
     StaleReviewError,
 } from "./review-store.js";
+import {
+    ModelElementNotFoundError,
+    ModelNotFoundError,
+    patchTenantModelElement,
+} from "./model-store.js";
+import { PatchModelElementSchema } from "@backed/core";
 import {
     computeRunDurationMs,
     logRunCompleted,
@@ -252,6 +259,159 @@ export async function handleGetAuditLedger(
     const workspace = resolveTenantWorkspace(deps.config.dataRoot, tenantId);
     const result = await readLedgerAudit(workspace.paths.ledgerPath);
     sendJson(response, 200, result);
+}
+
+function readAdminListLimit(request: IncomingMessage): number {
+    const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    const limitRaw = url.searchParams.get("limit");
+    if (limitRaw === null || limitRaw.trim().length === 0) {
+        return 20;
+    }
+    const parsed = Number(limitRaw);
+    if (!Number.isFinite(parsed)) {
+        return 20;
+    }
+    return Math.min(Math.max(Math.trunc(parsed), 1), 100);
+}
+
+function readAdminPartnerFilter(request: IncomingMessage): string | undefined {
+    const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    const partnerId = url.searchParams.get("partnerId");
+    if (partnerId === null || partnerId.trim().length === 0) {
+        return undefined;
+    }
+    return partnerId.trim();
+}
+
+export async function handleAdminSubmitRun(
+    tenantId: string,
+    partnerId: string,
+    request: IncomingMessage,
+    response: ServerResponse,
+    deps: WorkerServiceDeps,
+): Promise<void> {
+    await handleSubmitRun(tenantId, partnerId, request, response, deps);
+}
+
+export function handleAdminGetRunStatus(
+    tenantId: string,
+    runId: string,
+    response: ServerResponse,
+    deps: WorkerServiceDeps,
+): void {
+    handleGetRunStatus(tenantId, runId, response, deps);
+}
+
+export function handleAdminListRuns(
+    request: IncomingMessage,
+    response: ServerResponse,
+    deps: WorkerServiceDeps,
+): void {
+    const limit = readAdminListLimit(request);
+    const partnerFilter = readAdminPartnerFilter(request);
+    const runs = deps.runStore.listRecent(limit, partnerFilter).map((record) => ({
+        runId: record.runId,
+        tenantId: record.tenantId,
+        ...(record.partnerId !== undefined ? { partnerId: record.partnerId } : {}),
+        status: record.status,
+        startedAt: record.startedAt,
+        ...(record.finishedAt !== undefined ? { finishedAt: record.finishedAt } : {}),
+        durationMs: computeRunDurationMs(record.startedAt, record.finishedAt),
+        ...(record.stats !== undefined ? { stats: record.stats } : {}),
+        ...(record.stats?.skippedLlm !== undefined ? { skippedLlm: record.stats.skippedLlm } : {}),
+        ...(record.failureMessage !== undefined ? { failureMessage: record.failureMessage } : {}),
+    }));
+    sendJson(response, 200, { runs });
+}
+
+export async function handleAdminPatchModelElement(
+    tenantId: string,
+    request: IncomingMessage,
+    response: ServerResponse,
+    deps: WorkerServiceDeps,
+): Promise<void> {
+    const body = await readRequestBody(request, deps.config.maxUploadBytes);
+    let parsedPayload: unknown;
+    try {
+        parsedPayload = JSON.parse(body.toString("utf8"));
+    }
+    catch {
+        sendApiError(response, 400, { error: "invalid_json" });
+        return;
+    }
+    const payload = PatchModelElementSchema.safeParse(parsedPayload);
+    if (!payload.success) {
+        sendApiError(response, 400, { error: "invalid_model_patch_payload" });
+        return;
+    }
+    try {
+        const model = await patchTenantModelElement(deps.config.dataRoot, tenantId, payload.data);
+        sendJson(response, 200, { model });
+    }
+    catch (error) {
+        if (error instanceof ModelNotFoundError) {
+            sendApiError(response, 404, { error: "model_not_found" });
+            return;
+        }
+        if (error instanceof ModelElementNotFoundError) {
+            sendApiError(response, 404, { error: "model_element_not_found" });
+            return;
+        }
+        throw error;
+    }
+}
+
+export async function handleAdminGetModel(
+    tenantId: string,
+    response: ServerResponse,
+    deps: WorkerServiceDeps,
+): Promise<void> {
+    const workspace = resolveTenantWorkspace(deps.config.dataRoot, tenantId);
+    if (!existsSync(workspace.paths.modelPath)) {
+        sendApiError(response, 404, { error: "model_not_found" });
+        return;
+    }
+    const modelYaml = await readFile(workspace.paths.modelPath, "utf8");
+    const model = parseModelYaml(modelYaml);
+    sendJson(response, 200, { model });
+}
+
+export function handleAdminGetReview(
+    tenantId: string,
+    response: ServerResponse,
+    deps: WorkerServiceDeps,
+): void {
+    const proposal = loadTenantProposal(deps.config.dataRoot, tenantId);
+    if (proposal === null) {
+        sendApiError(response, 404, { error: "review_not_available" });
+        return;
+    }
+    sendJson(response, 200, {
+        runId: proposal.runId,
+        questions: proposal.questions,
+        entityCount: proposal.entities.length,
+        relationCount: proposal.relations.length,
+        ruleCount: proposal.rules.length,
+        doubtCount: proposal.doubts.length,
+    });
+}
+
+export function extractAdminTenantRoute(pathname: string): { tenantId: string; remainder: string } | null {
+    const match = /^\/admin\/v1\/tenants\/([^/]+)(?:\/(.*))?$/.exec(pathname);
+    if (match === null) {
+        return null;
+    }
+    const tenantId = decodeURIComponent(match[1] ?? "");
+    try {
+        assertValidTenantId(tenantId);
+    }
+    catch {
+        return null;
+    }
+    return {
+        tenantId,
+        remainder: match[2] ?? "",
+    };
 }
 
 export function extractTenantRoute(pathname: string): { tenantId: string; remainder: string } | null {

@@ -1,0 +1,35 @@
+{
+  "name": "@backed/anchor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Official TypeScript client for the Anchor worker HTTP API",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "generate:openapi": "openapi-typescript ../../apps/worker-service/openapi.yaml -o src/generated/openapi.d.ts",
+    "build": "pnpm generate:openapi && tsc -p tsconfig.json",
+    "typecheck": "pnpm generate:openapi && tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@backed/core": "workspace:*",
+    "openapi-fetch": "^0.14.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.8.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

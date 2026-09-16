@@ -60,6 +60,29 @@ function authHeaders(token = "test-token"): HeadersInit {
     return { Authorization: `Bearer ${token}` };
 }
 
+function createAdminTestConfig(dataRoot: string): WorkerServiceConfig {
+    return {
+        ...createTestConfig(dataRoot),
+        authToken: "",
+        controlPlane: {
+            url: "https://cloud.example",
+            internalSecret: "internal-secret",
+        },
+        partners: [{
+            partnerId: "partner-a",
+            token: "partner-a-secret",
+            tenantIdPattern: "^partner-a-",
+        }],
+    };
+}
+
+function adminAuthHeaders(partnerId = "partner-a"): HeadersInit {
+    return {
+        Authorization: "Bearer internal-secret",
+        "X-Backed-Partner-Id": partnerId,
+    };
+}
+
 describe("worker-service HTTP contract", () => {
     let dataRoot: string;
     let close: () => Promise<void>;
@@ -317,5 +340,108 @@ describe("worker-service HTTP contract", () => {
         expect(response.status).toBe(200);
         expect(response.headers.get("etag")).toBeTruthy();
         expect(await response.text()).toContain("formatVersion");
+    });
+});
+
+describe("admin run routes", () => {
+    let dataRoot: string;
+    let close: () => Promise<void>;
+    let baseUrl: string;
+
+    beforeEach(async () => {
+        dataRoot = await mkdtemp(join(tmpdir(), "worker-admin-http-"));
+        mockedRunTenantPipeline.mockResolvedValue({
+            runId: "run-123",
+            tenantId: "partner-a-client-1",
+            skipped: false,
+            modelPath: join(dataRoot, "tenants", "partner-a-client-1", "persist", "model.yaml"),
+            stats: {
+                ingestMs: 0,
+                documentsMs: 0,
+                extractionMs: 0,
+                embedMs: 0,
+                profileMs: 0,
+                proposalMs: 0,
+                llmUsage: { inputTokens: 0, outputTokens: 0, costUsd: null },
+                skippedLlm: false,
+            },
+            deletionEntry: {
+                runId: "run-123",
+                tenantId: "partner-a-client-1",
+                deletedAt: new Date().toISOString(),
+                filesDeleted: 1,
+                bytesDeleted: 64,
+            },
+        });
+        const service = await startWorkerService({
+            config: createAdminTestConfig(dataRoot),
+            runStore: new MemoryRunStore(),
+        });
+        baseUrl = service.url;
+        close = service.close;
+    });
+
+    afterEach(async () => {
+        await close();
+        vi.clearAllMocks();
+    });
+
+    it("returns 401 without internal secret", async () => {
+        const response = await fetch(`${baseUrl}/admin/v1/tenants/partner-a-client-1/runs`, {
+            method: "POST",
+            headers: { "X-Backed-Partner-Id": "partner-a" },
+        });
+        expect(response.status).toBe(401);
+    });
+
+    it("returns 400 when X-Backed-Partner-Id is missing", async () => {
+        const response = await fetch(`${baseUrl}/admin/v1/tenants/partner-a-client-1/runs`, {
+            method: "POST",
+            headers: { Authorization: "Bearer internal-secret" },
+        });
+        expect(response.status).toBe(400);
+        const payload = (await response.json()) as { error: string };
+        expect(payload.error).toBe("missing_partner_id");
+    });
+
+    it("returns 403 when partner cannot access tenant", async () => {
+        const response = await fetch(`${baseUrl}/admin/v1/tenants/acme/runs`, {
+            method: "POST",
+            headers: adminAuthHeaders(),
+        });
+        expect(response.status).toBe(403);
+    });
+
+    it("accepts admin multipart submit and returns run status", async () => {
+        const boundary = "----backed-admin";
+        const body = [
+            `--${boundary}`,
+            'Content-Disposition: form-data; name="file"; filename="data.csv"',
+            "",
+            "id\n1",
+            `--${boundary}--`,
+            "",
+        ].join("\r\n");
+        const submit = await fetch(`${baseUrl}/admin/v1/tenants/partner-a-client-1/runs`, {
+            method: "POST",
+            headers: {
+                ...adminAuthHeaders(),
+                "Content-Type": `multipart/form-data; boundary=${boundary}`,
+            },
+            body,
+        });
+        expect(submit.status).toBe(202);
+        const { runId } = (await submit.json()) as { runId: string };
+        expect(runId).toBeTruthy();
+        await new Promise((resolve) => {
+            setTimeout(resolve, 30);
+        });
+        const status = await fetch(`${baseUrl}/admin/v1/tenants/partner-a-client-1/runs/${runId}`, {
+            headers: adminAuthHeaders(),
+        });
+        expect(status.status).toBe(200);
+        const payload = (await status.json()) as RunStatusResponse;
+        expect(payload.status).toBe("done");
+        expect(payload.stats).toBeDefined();
     });
 });

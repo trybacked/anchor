@@ -1,0 +1,89 @@
+[
+  {
+    "table": "data",
+    "sourceFile": "data.csv",
+    "rowCount": 3,
+    "columns": [
+      {
+        "name": "id",
+        "sqlType": "BIGINT",
+        "nullCount": 0,
+        "nullRatio": 0,
+        "distinctCount": 3,
+        "min": "2",
+        "max": "4",
+        "topValues": [
+          {
+            "value": "2",
+            "count": 1
+          },
+          {
+            "value": "3",
+            "count": 1
+          },
+          {
+            "value": "4",
+            "count": 1
+          }
+        ],
+        "patterns": [],
+        "foreignKeyCandidates": []
+      },
+      {
+        "name": "name",
+        "sqlType": "VARCHAR",
+        "nullCount": 0,
+        "nullRatio": 0,
+        "distinctCount": 3,
+        "min": "Acme Corp",
+        "max": "Example LLC",
+        "topValues": [
+          {
+            "value": "Acme Corp",
+            "count": 1
+          },
+          {
+            "value": "Backed Inc",
+            "count": 1
+          },
+          {
+            "value": "Example LLC",
+            "count": 1
+          }
+        ],
+        "patterns": [],
+        "foreignKeyCandidates": []
+      },
+      {
+        "name": "amount",
+        "sqlType": "DOUBLE",
+        "nullCount": 0,
+        "nullRatio": 0,
+        "distinctCount": 3,
+        "min": "450.25",
+        "max": "1200.5",
+        "topValues": [
+          {
+            "value": "1200.5",
+            "count": 1
+          },
+          {
+            "value": "450.25",
+            "count": 1
+          },
+          {
+            "value": "890.0",
+            "count": 1
+          }
+        ],
+        "patterns": [
+          {
+            "kind": "amount",
+            "matchRatio": 1
+          }
+        ],
+        "foreignKeyCandidates": []
+      }
+    ]
+  }
+]

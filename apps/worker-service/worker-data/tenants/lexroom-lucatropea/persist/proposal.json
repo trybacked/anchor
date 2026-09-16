@@ -1,0 +1,1207 @@
+{
+  "runId": "afe77337-2102-4298-baed-9756052ff80d",
+  "generatedAt": "2026-09-15T17:01:56.768Z",
+  "entities": [
+    {
+      "id": "dtype_municipal_determination",
+      "name": "Municipal determination",
+      "description": "Municipal determination documents extracted from source files",
+      "sourceTable": "doc_municipal_determination",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "doc_municipal_determination",
+        "evidence": "stable-key:municipal_determination; 1 documents classified as \"Municipal determination\" from header extraction (examples: determinazioni_set_tec_n_311_2026_gen_792)"
+      },
+      "properties": [
+        {
+          "name": "Document id",
+          "columnName": "document_id",
+          "semanticType": "identifier",
+          "role": "primary_key",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "document_id",
+            "evidence": "Document id column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Source file",
+          "columnName": "source_file",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "source_file",
+            "evidence": "Source file column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Page count",
+          "columnName": "page_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "page_count",
+            "evidence": "Page count column (INTEGER) on 1 rows"
+          }
+        },
+        {
+          "name": "Department",
+          "columnName": "department",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "department",
+            "evidence": "Department column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Determination date",
+          "columnName": "determination_date",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "determination_date",
+            "evidence": "Determination date column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Determination number",
+          "columnName": "determination_number",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "determination_number",
+            "evidence": "Determination number column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Document form",
+          "columnName": "document_form",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "document_form",
+            "evidence": "Document form column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Issuing entity",
+          "columnName": "issuing_entity",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "issuing_entity",
+            "evidence": "Issuing entity column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Registry date",
+          "columnName": "registry_date",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "registry_date",
+            "evidence": "Registry date column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Registry number",
+          "columnName": "registry_number",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "registry_number",
+            "evidence": "Registry number column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Subject",
+          "columnName": "subject",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "subject",
+            "evidence": "Subject column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Topics",
+          "columnName": "topics",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "topics",
+            "evidence": "Topics column (VARCHAR) on 1 rows"
+          }
+        },
+        {
+          "name": "Summary",
+          "columnName": "summary",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "doc_municipal_determination",
+            "column": "summary",
+            "evidence": "Summary column (VARCHAR) on 1 rows"
+          }
+        }
+      ]
+    },
+    {
+      "id": "document_text",
+      "name": "Document Text",
+      "description": "Line-level text content for all documents in the corpus",
+      "sourceTable": "document_lines",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "document_lines",
+        "evidence": "Unified line table with 432 rows across the document corpus"
+      },
+      "properties": [
+        {
+          "name": "Document ID",
+          "columnName": "document_id",
+          "semanticType": "identifier",
+          "role": "foreign_key",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_lines",
+            "column": "document_id",
+            "evidence": "Document ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Page number",
+          "columnName": "page",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_lines",
+            "column": "page",
+            "evidence": "Page number column (INTEGER)"
+          }
+        },
+        {
+          "name": "Line number",
+          "columnName": "line",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_lines",
+            "column": "line",
+            "evidence": "Line number column (INTEGER)"
+          }
+        },
+        {
+          "name": "Text content",
+          "columnName": "text",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_lines",
+            "column": "text",
+            "evidence": "Text content column (VARCHAR)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "document_chunk",
+      "name": "Document Chunk",
+      "description": "Searchable text segments from documents, split for semantic retrieval",
+      "sourceTable": "document_chunks",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "document_chunks",
+        "evidence": "Chunk table with 27 searchable segments across the document corpus"
+      },
+      "properties": [
+        {
+          "name": "Document ID",
+          "columnName": "document_id",
+          "semanticType": "identifier",
+          "role": "foreign_key",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_chunks",
+            "column": "document_id",
+            "evidence": "Document ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Chunk index",
+          "columnName": "chunk_index",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_chunks",
+            "column": "chunk_index",
+            "evidence": "Chunk index column (INTEGER)"
+          }
+        },
+        {
+          "name": "Start page",
+          "columnName": "page_start",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_chunks",
+            "column": "page_start",
+            "evidence": "Start page column (INTEGER)"
+          }
+        },
+        {
+          "name": "End page",
+          "columnName": "page_end",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_chunks",
+            "column": "page_end",
+            "evidence": "End page column (INTEGER)"
+          }
+        },
+        {
+          "name": "Chunk text",
+          "columnName": "text",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_chunks",
+            "column": "text",
+            "evidence": "Chunk text column (VARCHAR)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "company",
+      "name": "Company",
+      "description": "Named companys mentioned in document body text",
+      "sourceTable": "document_entities",
+      "status": "proposed",
+      "confidence": 0.9,
+      "provenance": {
+        "table": "document_entities",
+        "evidence": "Entity table with 1 deduplicated companys from body-text extraction"
+      },
+      "properties": [
+        {
+          "name": "Entity ID",
+          "columnName": "entity_id",
+          "semanticType": "identifier",
+          "role": "primary_key",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "entity_id",
+            "evidence": "Entity ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Name",
+          "columnName": "name",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "name",
+            "evidence": "Name column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Normalized name",
+          "columnName": "normalized_name",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "normalized_name",
+            "evidence": "Normalized name column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Mention count",
+          "columnName": "mention_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "mention_count",
+            "evidence": "Mention count column (INTEGER)"
+          }
+        },
+        {
+          "name": "Document count",
+          "columnName": "document_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "document_count",
+            "evidence": "Document count column (INTEGER)"
+          }
+        },
+        {
+          "name": "Sector",
+          "columnName": "sector",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "sector",
+            "evidence": "Sector column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Role",
+          "columnName": "role",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "role",
+            "evidence": "Role column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Summary",
+          "columnName": "summary",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "summary",
+            "evidence": "Summary column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Enrichment confidence",
+          "columnName": "enrichment_confidence",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_entities",
+            "column": "enrichment_confidence",
+            "evidence": "Enrichment confidence column (DOUBLE)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "document_mention",
+      "name": "Document Mention",
+      "description": "Occurrences of companys and coded identifiers in document body text",
+      "sourceTable": "document_mentions",
+      "status": "proposed",
+      "confidence": 0.9,
+      "provenance": {
+        "table": "document_mentions",
+        "evidence": "Mention table with 12 extracted mentions from document lines"
+      },
+      "properties": [
+        {
+          "name": "Mention ID",
+          "columnName": "mention_id",
+          "semanticType": "identifier",
+          "role": "primary_key",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "mention_id",
+            "evidence": "Mention ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Document ID",
+          "columnName": "document_id",
+          "semanticType": "identifier",
+          "role": "foreign_key",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "document_id",
+            "evidence": "Document ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Entity ID",
+          "columnName": "entity_id",
+          "semanticType": "identifier",
+          "role": "foreign_key",
+          "nullable": true,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "entity_id",
+            "evidence": "Entity ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Mention type",
+          "columnName": "mention_type",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "mention_type",
+            "evidence": "Mention type column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Mention text",
+          "columnName": "text",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "text",
+            "evidence": "Mention text column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Normalized value",
+          "columnName": "normalized_value",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "normalized_value",
+            "evidence": "Normalized value column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Page number",
+          "columnName": "page",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "page",
+            "evidence": "Page number column (INTEGER)"
+          }
+        },
+        {
+          "name": "Line number",
+          "columnName": "line",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "line",
+            "evidence": "Line number column (INTEGER)"
+          }
+        },
+        {
+          "name": "Confidence",
+          "columnName": "confidence",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "confidence",
+            "evidence": "Confidence column (DOUBLE)"
+          }
+        },
+        {
+          "name": "Context",
+          "columnName": "context",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.9,
+          "provenance": {
+            "table": "document_mentions",
+            "column": "context",
+            "evidence": "Context column (VARCHAR)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "document_fact",
+      "name": "Document Fact",
+      "description": "Quantities stated in the documents: contribution amount",
+      "sourceTable": "document_facts",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "document_facts",
+        "evidence": "Fact table with 3 quantities extracted from document lines"
+      },
+      "properties": [
+        {
+          "name": "Fact ID",
+          "columnName": "fact_id",
+          "semanticType": "identifier",
+          "role": "primary_key",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "fact_id",
+            "evidence": "Fact ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Document ID",
+          "columnName": "document_id",
+          "semanticType": "identifier",
+          "role": "foreign_key",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "document_id",
+            "evidence": "Document ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Entity ID",
+          "columnName": "entity_id",
+          "semanticType": "identifier",
+          "role": "foreign_key",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "entity_id",
+            "evidence": "Entity ID column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Identifier type",
+          "columnName": "identifier_type",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "identifier_type",
+            "evidence": "Identifier type column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Identifier value",
+          "columnName": "identifier_value",
+          "semanticType": "identifier",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "identifier_value",
+            "evidence": "Identifier value column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Quantity type",
+          "columnName": "fact_type",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "fact_type",
+            "evidence": "Quantity type column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Value",
+          "columnName": "amount",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "amount",
+            "evidence": "Value column (DOUBLE)"
+          }
+        },
+        {
+          "name": "Raw text",
+          "columnName": "raw_text",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "raw_text",
+            "evidence": "Raw text column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Page number",
+          "columnName": "page",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "page",
+            "evidence": "Page number column (INTEGER)"
+          }
+        },
+        {
+          "name": "Line number",
+          "columnName": "line",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "document_facts",
+            "column": "line",
+            "evidence": "Line number column (INTEGER)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "company_profile",
+      "name": "Company Profile",
+      "description": "Precomputed rollup per company: documents, aggregated quantities, coded identifiers, related companys, and topics. Answers single-company questions from one row instead of joining mentions and facts.",
+      "sourceTable": "entity_profiles",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "entity_profiles",
+        "evidence": "Rollup with 1 rows aggregating mentions, facts, and co-occurring companys"
+      },
+      "properties": [
+        {
+          "name": "Entity id",
+          "columnName": "entity_id",
+          "semanticType": "identifier",
+          "role": "primary_key",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "entity_id",
+            "evidence": "Entity id column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Name",
+          "columnName": "name",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "name",
+            "evidence": "Name column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Normalized name",
+          "columnName": "normalized_name",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "normalized_name",
+            "evidence": "Normalized name column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Sector",
+          "columnName": "sector",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "sector",
+            "evidence": "Sector column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Role",
+          "columnName": "role",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "role",
+            "evidence": "Role column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Summary",
+          "columnName": "summary",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "summary",
+            "evidence": "Summary column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Mention count",
+          "columnName": "mention_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "mention_count",
+            "evidence": "Mention count column (INTEGER)"
+          }
+        },
+        {
+          "name": "Document count",
+          "columnName": "document_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "document_count",
+            "evidence": "Document count column (INTEGER)"
+          }
+        },
+        {
+          "name": "Fact count",
+          "columnName": "fact_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "fact_count",
+            "evidence": "Fact count column (BIGINT)"
+          }
+        },
+        {
+          "name": "Total contribution amount",
+          "columnName": "total_contribution_amount",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "total_contribution_amount",
+            "evidence": "Total contribution amount column (DOUBLE)"
+          }
+        },
+        {
+          "name": "Determination R.G. number count",
+          "columnName": "determination_rg_number_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "determination_rg_number_count",
+            "evidence": "Determination R.G. number count column (BIGINT)"
+          }
+        },
+        {
+          "name": "Determination R.G. numbers in the entity's documents",
+          "columnName": "determination_rg_number_list",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "determination_rg_number_list",
+            "evidence": "Determination R.G. numbers in the entity's documents column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Determination R.I. number count",
+          "columnName": "determination_ri_number_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "determination_ri_number_count",
+            "evidence": "Determination R.I. number count column (BIGINT)"
+          }
+        },
+        {
+          "name": "Determination R.I. numbers in the entity's documents",
+          "columnName": "determination_ri_number_list",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "determination_ri_number_list",
+            "evidence": "Determination R.I. numbers in the entity's documents column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Attributed determination rg number count",
+          "columnName": "attributed_determination_rg_number_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "attributed_determination_rg_number_count",
+            "evidence": "Attributed determination rg number count column (BIGINT)"
+          }
+        },
+        {
+          "name": "Attributed determination rg number list",
+          "columnName": "attributed_determination_rg_number_list",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "attributed_determination_rg_number_list",
+            "evidence": "Attributed determination rg number list column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Attributed determination ri number count",
+          "columnName": "attributed_determination_ri_number_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "attributed_determination_ri_number_count",
+            "evidence": "Attributed determination ri number count column (BIGINT)"
+          }
+        },
+        {
+          "name": "Attributed determination ri number list",
+          "columnName": "attributed_determination_ri_number_list",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "attributed_determination_ri_number_list",
+            "evidence": "Attributed determination ri number list column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Document ids",
+          "columnName": "document_ids",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "document_ids",
+            "evidence": "Document ids column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Related count",
+          "columnName": "related_count",
+          "semanticType": "number",
+          "role": "attribute",
+          "nullable": false,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "related_count",
+            "evidence": "Related count column (BIGINT)"
+          }
+        },
+        {
+          "name": "Related names",
+          "columnName": "related_names",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "related_names",
+            "evidence": "Related names column (VARCHAR)"
+          }
+        },
+        {
+          "name": "Topics",
+          "columnName": "topics",
+          "semanticType": "text",
+          "role": "attribute",
+          "nullable": true,
+          "confidence": 0.95,
+          "provenance": {
+            "table": "entity_profiles",
+            "column": "topics",
+            "evidence": "Topics column (VARCHAR)"
+          }
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "id": "dtype_municipal_determination_has_text",
+      "name": "Municipal determination has document text",
+      "fromEntity": "dtype_municipal_determination",
+      "toEntity": "document_text",
+      "fromColumn": "document_id",
+      "toColumn": "document_id",
+      "cardinality": "one_to_many",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "doc_municipal_determination",
+        "column": "document_id",
+        "evidence": "Each municipal determination row links to line-level text rows via document_id"
+      }
+    },
+    {
+      "id": "dtype_municipal_determination_has_chunks",
+      "name": "Municipal determination has document chunks",
+      "fromEntity": "dtype_municipal_determination",
+      "toEntity": "document_chunk",
+      "fromColumn": "document_id",
+      "toColumn": "document_id",
+      "cardinality": "one_to_many",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "doc_municipal_determination",
+        "column": "document_id",
+        "evidence": "Each municipal determination row links to searchable text chunks via document_id"
+      }
+    },
+    {
+      "id": "dtype_municipal_determination_has_mentions",
+      "name": "Municipal determination has document mentions",
+      "fromEntity": "dtype_municipal_determination",
+      "toEntity": "document_mention",
+      "fromColumn": "document_id",
+      "toColumn": "document_id",
+      "cardinality": "one_to_many",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "doc_municipal_determination",
+        "column": "document_id",
+        "evidence": "Each municipal determination row links to extracted mentions via document_id"
+      }
+    },
+    {
+      "id": "dtype_municipal_determination_has_facts",
+      "name": "Municipal determination has document facts",
+      "fromEntity": "dtype_municipal_determination",
+      "toEntity": "document_fact",
+      "fromColumn": "document_id",
+      "toColumn": "document_id",
+      "cardinality": "one_to_many",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "doc_municipal_determination",
+        "column": "document_id",
+        "evidence": "Each municipal determination row links to extracted quantities via document_id"
+      }
+    },
+    {
+      "id": "mention_of_company",
+      "name": "Document mention refers to company",
+      "fromEntity": "company",
+      "toEntity": "document_mention",
+      "fromColumn": "entity_id",
+      "toColumn": "entity_id",
+      "cardinality": "one_to_many",
+      "status": "proposed",
+      "confidence": 0.9,
+      "provenance": {
+        "table": "document_mentions",
+        "column": "entity_id",
+        "evidence": "Mentions link to deduplicated company rows via entity_id"
+      }
+    },
+    {
+      "id": "company_has_facts",
+      "name": "Company has document facts",
+      "fromEntity": "company",
+      "toEntity": "document_fact",
+      "fromColumn": "entity_id",
+      "toColumn": "entity_id",
+      "cardinality": "one_to_many",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "document_facts",
+        "column": "entity_id",
+        "evidence": "Facts link to the company named nearest in the document text"
+      }
+    },
+    {
+      "id": "company_has_profile",
+      "name": "Company has rollup profile",
+      "fromEntity": "company",
+      "toEntity": "company_profile",
+      "fromColumn": "entity_id",
+      "toColumn": "entity_id",
+      "cardinality": "one_to_one",
+      "status": "proposed",
+      "confidence": 0.98,
+      "provenance": {
+        "table": "entity_profiles",
+        "column": "entity_id",
+        "evidence": "One precomputed rollup row per company"
+      }
+    },
+    {
+      "id": "company_profile_has_mentions",
+      "name": "Company profile has document mentions",
+      "fromEntity": "company_profile",
+      "toEntity": "document_mention",
+      "fromColumn": "entity_id",
+      "toColumn": "entity_id",
+      "cardinality": "one_to_many",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "entity_profiles",
+        "column": "entity_id",
+        "evidence": "Profile rows expand to the underlying mentions via entity_id"
+      }
+    },
+    {
+      "id": "company_profile_has_facts",
+      "name": "Company profile has document facts",
+      "fromEntity": "company_profile",
+      "toEntity": "document_fact",
+      "fromColumn": "entity_id",
+      "toColumn": "entity_id",
+      "cardinality": "one_to_many",
+      "status": "proposed",
+      "confidence": 0.95,
+      "provenance": {
+        "table": "entity_profiles",
+        "column": "entity_id",
+        "evidence": "Profile totals expand to the individual facts via entity_id"
+      }
+    }
+  ],
+  "rules": [],
+  "doubts": [],
+  "questions": [],
+  "usage": {
+    "inputTokens": 2780,
+    "outputTokens": 2009,
+    "costUsd": 0.0014215
+  }
+}

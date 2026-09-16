@@ -1,0 +1,70 @@
+{
+  "runId": "afe77337-2102-4298-baed-9756052ff80d",
+  "generatedAt": "2026-09-15T17:01:47.710Z",
+  "documents": [
+    {
+      "sourceTable": "determinazioni_set_tec_n_311_2026_gen_792",
+      "sourceFile": "determinazioni_set_tec n. 311-2026 gen. 792.pdf",
+      "documentType": "municipal_determination",
+      "documentTypeLabel": "Municipal determination",
+      "fields": {
+        "determination_number": {
+          "value": "792",
+          "confidence": 0.95
+        },
+        "determination_date": {
+          "value": "11-09-2026",
+          "confidence": 0.95
+        },
+        "registry_number": {
+          "value": "311",
+          "confidence": 0.95
+        },
+        "registry_date": {
+          "value": "11-09-2026",
+          "confidence": 0.95
+        },
+        "issuing_entity": {
+          "value": "Comune di Gerace",
+          "confidence": 0.95
+        },
+        "department": {
+          "value": "Settore 3 Tecnico, Patrimonio e Commercio",
+          "confidence": 0.95
+        },
+        "subject": {
+          "value": "Avviso pubblico per il sostegno di iniziative imprenditoriali da realizzare nel Comune di Gerace assegnatario di risorse per l'attuazione del Progetto pilota per la rigenerazione culturale, sociale ed economica di 20 borghi a rischio abbandono o abbandonati nell'ambito del PNRR, Missione 1 - Digitalizzazione, innovazione, competitività e cultura, Component 3 - Cultura 4.0 (M1C3). Misura 2 \"Rigenerazione di piccoli siti culturali, patrimonio culturale, religioso e rurale\", Investimento 2.1: \"Attrattività dei borghi storici\", finanziato dall'Unione europea - NextGenerationEU - Linea A. Progetto Gerace Porta del Sole.",
+          "confidence": 0.95
+        },
+        "document_form": {
+          "value": "Documento informatico sottoscritto con firma digitale ai sensi dell'art. 24 del D.lgs. 82/2005 e s.m.i. (CAD)",
+          "confidence": 0.95
+        },
+        "topics": {
+          "value": "municipal_administration, public_works",
+          "confidence": 0.95
+        },
+        "summary": {
+          "value": "A digital-signed determination (n. 792 of 11-09-2026) issued by the Comune di Gerace's Technical, Heritage and Commerce sector (Opere Pubbliche), whose subject matter is not specified in the provided text.",
+          "confidence": 0.95
+        }
+      },
+      "confidence": 0.95,
+      "pageCount": 432,
+      "headerFingerprint": "0889444c4d350ef1",
+      "headerContentFingerprint": "6ae8332ccf29cefe"
+    }
+  ],
+  "documentTypes": [
+    {
+      "id": "municipal_determination",
+      "name": "Municipal determination",
+      "tableName": "doc_municipal_determination",
+      "documentCount": 1,
+      "confidence": 0.95,
+      "sampleSourceTables": [
+        "determinazioni_set_tec_n_311_2026_gen_792"
+      ]
+    }
+  ]
+}

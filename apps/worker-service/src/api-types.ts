@@ -12,12 +12,15 @@ export type ApiErrorResponse =
     | { error: "too_many_files"; maxFiles: number }
     | { error: "payload_too_large"; maxBytes: number }
     | { error: "model_not_found" }
+    | { error: "model_element_not_found" }
+    | { error: "invalid_model_patch_payload" }
     | { error: "run_not_found" }
     | { error: "review_not_available" }
     | { error: "invalid_json" }
     | { error: "invalid_review_payload" }
     | { error: "stale_review_answers"; staleAnswerCount: number }
     | { error: "invalid_tenant_id" }
+    | { error: "missing_partner_id" }
     | { error: "invalid_audit_date" }
     | { error: "invalid_audit_pagination" }
     | { error: "not_found" }
