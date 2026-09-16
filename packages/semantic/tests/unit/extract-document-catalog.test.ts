@@ -3,17 +3,19 @@ import { runBurst } from "../../src/burst.js";
 import { inferDocumentTypeHint } from "../../src/document-type-hints.js";
 import { extractDocumentCatalog } from "../../src/extract-document-catalog.js";
 import { SAMPLE_DOCUMENT_TYPE_HINTS_FIXTURE } from "../fixtures/document-type-hints.js";
-import { ITALIAN_PROCUREMENT_VOCABULARY } from "../fixtures/vocabulary.js";
+import { PROCUREMENT_VOCABULARY } from "../fixtures/vocabulary.js";
+
 vi.mock("../../src/burst.js", async (importOriginal) => ({
     ...(await importOriginal<typeof import("../../src/burst.js")>()),
     runBurst: vi.fn(),
+    sumBurstUsage: (await importOriginal<typeof import("../../src/burst.js")>()).sumBurstUsage,
 }));
 const mockedRunBurst = vi.mocked(runBurst);
 const mockModels = {
     language: {} as never,
     embedding: {} as never,
 };
-const LETTERHEAD = "Comune di Gerace - Ufficio Tecnico";
+
 describe("inferDocumentTypeHint", () => {
     it("maps determination slugs from workspace rules", () => {
         expect(inferDocumentTypeHint("determinazioni_set_amm_n_251_2026_gen_741", SAMPLE_DOCUMENT_TYPE_HINTS_FIXTURE)?.documentType).toBe("determination");
@@ -29,6 +31,7 @@ describe("inferDocumentTypeHint", () => {
         expect(inferDocumentTypeHint("aspc982920", SAMPLE_DOCUMENT_TYPE_HINTS_FIXTURE)).toBeNull();
     });
 });
+
 describe("extractDocumentCatalog", () => {
     it("skips LLM for documents with strong slug hints", async () => {
         mockedRunBurst.mockReset();
@@ -36,10 +39,7 @@ describe("extractDocumentCatalog", () => {
             output: {
                 documentType: "unknown",
                 documentTypeLabel: "Unknown",
-                protocolNumber: null,
-                publishedDate: null,
-                subject: null,
-                issuingOffice: null,
+                fields: [],
                 confidence: 0.5,
             },
             usage: { inputTokens: 0, outputTokens: 0, costUsd: null },
@@ -66,23 +66,20 @@ describe("extractDocumentCatalog", () => {
         expect(catalog.documents[0]?.documentType).toBe("determination");
         expect(catalog.documents[1]?.documentType).toBe("notice");
     });
-    it("reads header fields with the corpus vocabulary and its recurring lines", async () => {
+    it("extracts vocabulary identifier fields on the deterministic path", async () => {
         mockedRunBurst.mockReset();
         const { catalog } = await extractDocumentCatalog({
             runId: "test-run",
             models: mockModels,
             documentTypeHints: SAMPLE_DOCUMENT_TYPE_HINTS_FIXTURE,
-            vocabulary: ITALIAN_PROCUREMENT_VOCABULARY,
-            samples: ["strada", "scuola", "cultura", "sport"].map((subject, index) => ({
-                sourceTable: `determina_del_1${String(index)}_08_2026`,
-                headerLines: [LETTERHEAD, `Oggetto: affidamento lavori ${subject} comunale`],
+            vocabulary: PROCUREMENT_VOCABULARY,
+            samples: [{
+                sourceTable: "determina_del_10_08_2026",
+                headerLines: ["Determina di affidamento CIG 1234567890"],
                 pageCount: 1,
-            })),
+            }],
         });
-        const [first] = catalog.documents;
-        expect(first?.issuingOffice?.value).toBe(LETTERHEAD);
-        expect(first?.subject?.value).toBe("Oggetto: affidamento lavori strada comunale");
-        expect(first?.publishedDate?.value).toBe("2026-08-10");
+        expect(catalog.documents[0]?.fields.cig?.value).toBe("1234567890");
     });
     it("calls LLM only for ambiguous documents", async () => {
         mockedRunBurst.mockReset();
@@ -90,10 +87,7 @@ describe("extractDocumentCatalog", () => {
             output: {
                 documentType: "notice",
                 documentTypeLabel: "Notice",
-                protocolNumber: "123",
-                publishedDate: "2026-01-15",
-                subject: "Public notice",
-                issuingOffice: "Municipality",
+                fields: [{ key: "reference_number", value: "123" }],
                 confidence: 0.9,
             },
             usage: { inputTokens: 10, outputTokens: 5, costUsd: null },
@@ -110,7 +104,7 @@ describe("extractDocumentCatalog", () => {
             ],
         });
         expect(mockedRunBurst).toHaveBeenCalledTimes(1);
-        expect(catalog.documents[0]?.protocolNumber?.value).toBe("123");
+        expect(catalog.documents[0]?.fields.reference_number?.value).toBe("123");
     });
     it("surfaces extraction failure with source table provenance", async () => {
         mockedRunBurst.mockReset();
@@ -136,20 +130,14 @@ describe("extractDocumentCatalog", () => {
                         sourceTable: "doc_a",
                         documentType: "notice",
                         documentTypeLabel: "Notice",
-                        protocolNumber: "1",
-                        publishedDate: null,
-                        subject: "A",
-                        issuingOffice: null,
+                        fields: [{ key: "reference_number", value: "1" }],
                         confidence: 0.9,
                     },
                     {
                         sourceTable: "doc_b",
                         documentType: "notice",
                         documentTypeLabel: "Notice",
-                        protocolNumber: "2",
-                        publishedDate: null,
-                        subject: "B",
-                        issuingOffice: null,
+                        fields: [{ key: "reference_number", value: "2" }],
                         confidence: 0.9,
                     },
                 ],
@@ -173,10 +161,7 @@ describe("extractDocumentCatalog", () => {
             output: {
                 documentType: "notice",
                 documentTypeLabel: "Notice",
-                protocolNumber: "123",
-                publishedDate: null,
-                subject: "Public notice",
-                issuingOffice: null,
+                fields: [{ key: "reference_number", value: "123" }],
                 confidence: 0.9,
             },
             usage: { inputTokens: 10, outputTokens: 5, costUsd: null },
@@ -210,5 +195,31 @@ describe("extractDocumentCatalog", () => {
         });
         expect(mockedRunBurst).not.toHaveBeenCalled();
         expect(second.documents[0]?.documentType).toBe(first.documents[0]?.documentType);
+    });
+    it("preserves canonical documentType from the type registry", async () => {
+        mockedRunBurst.mockReset();
+        mockedRunBurst.mockResolvedValue({
+            output: {
+                documentType: "published_act",
+                documentTypeLabel: "Published act",
+                fields: [],
+                confidence: 0.9,
+            },
+            usage: { inputTokens: 10, outputTokens: 5, costUsd: null },
+        });
+        const { catalog } = await extractDocumentCatalog({
+            runId: "test-run",
+            models: mockModels,
+            samples: [{
+                sourceTable: "doc_a",
+                headerLines: ["Changed header"],
+                pageCount: 1,
+            }],
+            typeRegistry: new Map([
+                ["doc_a", { documentType: "publication", documentTypeLabel: "Publication" }],
+            ]),
+        });
+        expect(mockedRunBurst).not.toHaveBeenCalled();
+        expect(catalog.documents[0]?.documentType).toBe("publication");
     });
 });

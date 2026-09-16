@@ -1,13 +1,26 @@
 import type { DocumentCatalog, Doubt } from "@backed/core";
-import { EMPTY_BURST_USAGE, runBurst } from "./burst.js";
+import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage } from "./burst.js";
 import type { BurstUsage } from "./burst.js";
 import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
-import { LLM_SCHEMA_NAMES } from "./constants.js";
+import {
+    LLM_SCHEMA_NAMES,
+    ONTOLOGY_SPLIT_DOCUMENT_TYPE_THRESHOLD,
+    ONTOLOGY_SPLIT_TABLE_THRESHOLD,
+} from "./constants.js";
 import type { CompressedTable } from "./compress.js";
 import type { SemanticModels } from "./env.js";
-import { OntologyOutputSchema } from "./llm-output.js";
+import {
+    OntologyEntitiesOutputSchema,
+    OntologyOutputSchema,
+    OntologyRelationsOutputSchema,
+} from "./llm-output.js";
 import type { ColumnClassificationOutput, OntologyOutput } from "./llm-output.js";
-import { ONTOLOGY_SYSTEM_PROMPT, ontologyPrompt } from "./prompts.js";
+import {
+    ONTOLOGY_SYSTEM_PROMPT,
+    ontologyEntitiesPrompt,
+    ontologyPrompt,
+    ontologyRelationsPrompt,
+} from "./prompts.js";
 import { isDocumentCorpus } from "./line-document.js";
 import { isDocumentPipelineTable, type TableRouting } from "./table-routing.js";
 import { droppedDoubt } from "./propose-assembly.js";
@@ -68,6 +81,12 @@ export function classificationForTables(
     };
 }
 
+export function shouldSplitOntologyBurst(tables: CompressedTable[], documentCatalog?: DocumentCatalog): boolean {
+    const documentTypeCount = documentCatalog?.documentTypes.length ?? 0;
+    return tables.length >= ONTOLOGY_SPLIT_TABLE_THRESHOLD
+        || documentTypeCount >= ONTOLOGY_SPLIT_DOCUMENT_TYPE_THRESHOLD;
+}
+
 async function runOntologyBurst(
     models: SemanticModels,
     timeoutMs: number,
@@ -97,6 +116,97 @@ async function runOntologyBurst(
             : {}),
     });
     return result;
+}
+
+async function runSplitOntologyBurst(
+    models: SemanticModels,
+    timeoutMs: number,
+    tables: CompressedTable[],
+    classification: ColumnClassificationOutput,
+    documentCatalog: DocumentCatalog | undefined,
+    llmCache: LlmCacheContext | undefined,
+    onProgress?: (message: string) => void,
+): Promise<{
+    output: OntologyOutput;
+    usage: BurstUsage;
+}> {
+    onProgress?.("Ontology entities (split pass 1/2)...");
+    const entitiesResult = await runBurst({
+        model: models.language,
+        system: ONTOLOGY_SYSTEM_PROMPT,
+        prompt: ontologyEntitiesPrompt(tables, classification, documentCatalog),
+        schema: OntologyEntitiesOutputSchema,
+        schemaName: LLM_SCHEMA_NAMES.ontologyEntities,
+        timeoutMs,
+        ...withLlmCache(llmCache),
+        ...(onProgress !== undefined
+            ? {
+                  onWaiting: () => {
+                      onProgress("Building ontology entities (LLM)…");
+                  },
+              }
+            : {}),
+    });
+    onProgress?.("Ontology relations (split pass 2/2)...");
+    const relationsResult = await runBurst({
+        model: models.language,
+        system: ONTOLOGY_SYSTEM_PROMPT,
+        prompt: ontologyRelationsPrompt(tables, classification, entitiesResult.output.entities, documentCatalog),
+        schema: OntologyRelationsOutputSchema,
+        schemaName: LLM_SCHEMA_NAMES.ontologyRelations,
+        timeoutMs,
+        ...withLlmCache(llmCache),
+        ...(onProgress !== undefined
+            ? {
+                  onWaiting: () => {
+                      onProgress("Building ontology relations (LLM)…");
+                  },
+              }
+            : {}),
+    });
+    return {
+        output: {
+            entities: entitiesResult.output.entities,
+            relations: relationsResult.output.relations,
+            rules: relationsResult.output.rules,
+            doubts: [...entitiesResult.output.doubts, ...relationsResult.output.doubts],
+        },
+        usage: sumBurstUsage(entitiesResult.usage, relationsResult.usage),
+    };
+}
+
+async function runOntologyForTables(
+    models: SemanticModels,
+    timeoutMs: number,
+    tables: CompressedTable[],
+    classification: ColumnClassificationOutput,
+    documentCatalog: DocumentCatalog | undefined,
+    llmCache: LlmCacheContext | undefined,
+    onProgress?: (message: string) => void,
+): Promise<{
+    output: OntologyOutput;
+    usage: BurstUsage;
+}> {
+    const scopedClassification = classificationForTables(classification, tables);
+    if (shouldSplitOntologyBurst(tables, documentCatalog)) {
+        return runSplitOntologyBurst(
+            models,
+            timeoutMs,
+            tables,
+            scopedClassification,
+            documentCatalog,
+            llmCache,
+            onProgress,
+        );
+    }
+    return runOntologyBurst(
+        models,
+        timeoutMs,
+        ONTOLOGY_SYSTEM_PROMPT,
+        ontologyPrompt(tables, scopedClassification, documentCatalog),
+        llmCache,
+        onProgress,
+    );
 }
 
 export function resolveOntologyStrategy(
@@ -133,15 +243,12 @@ export async function runOntologyStrategy(
     switch (strategy.kind) {
         case "llm-with-catalog": {
             onProgress?.("Ontology proposal for structured tables alongside document catalog...");
-            const ontology = await runOntologyBurst(
+            const ontology = await runOntologyForTables(
                 models,
                 timeoutMs,
-                ONTOLOGY_SYSTEM_PROMPT,
-                ontologyPrompt(
-                    strategy.tables,
-                    classificationForTables(classification, strategy.tables),
-                    strategy.catalog,
-                ),
+                strategy.tables,
+                classification,
+                strategy.catalog,
                 llmCache,
                 onProgress,
             );
@@ -171,7 +278,7 @@ export async function runOntologyStrategy(
                         {
                             topic: "document corpus",
                             question: `How should ${String(strategy.lineDocumentCount)} source documents be grouped into business entity types?`,
-                            reason: "Each line-document table is one extracted file (page/line/text). One entity per file was created deterministically; regroup by document type (determination, notice, publication, etc.) during review.",
+                            reason: "Each line-document table is one extracted file (page/line/text). One entity per file was created deterministically; regroup by document type during review.",
                         },
                     ],
                 },
@@ -180,11 +287,12 @@ export async function runOntologyStrategy(
             };
         }
         case "llm-full": {
-            const ontology = await runOntologyBurst(
+            const ontology = await runOntologyForTables(
                 models,
                 timeoutMs,
-                ONTOLOGY_SYSTEM_PROMPT,
-                ontologyPrompt(strategy.tables, classification),
+                strategy.tables,
+                classification,
+                undefined,
                 llmCache,
                 onProgress,
             );

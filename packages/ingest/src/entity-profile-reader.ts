@@ -23,7 +23,7 @@ function buildDocumentUnion(tables: string[]): string | null {
         return null;
     }
     return tables
-        .map((table) => `SELECT document_id, ${quoteString(table)} AS document_table, subject, published_date, topics, summary
+        .map((table) => `SELECT document_id, ${quoteString(table)} AS document_table
          FROM ${quoteIdentifier(table)}`)
         .join(" UNION ALL ");
 }
@@ -85,10 +85,6 @@ async function readDocuments(query: SqlQuery, entityId: string, documentUnion: s
      SELECT
        linked.document_id,
        documents.document_table,
-       documents.subject,
-       documents.published_date,
-       documents.topics,
-       documents.summary,
        linked.mention_count
      FROM linked
      LEFT JOIN documents ON documents.document_id = linked.document_id

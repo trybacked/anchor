@@ -14,13 +14,14 @@ import type {
     TableProfile,
 } from "@backed/core";
 import type { ColumnClassificationOutput, OntologyOutput } from "./llm-output.js";
-import { selectReviewQuestions, capReviewQuestions, reviewBudgetDoubts } from "./questions.js";
+import { selectReviewQuestions } from "./questions.js";
 import { selectDocumentTypeReviewQuestions } from "./document-questions.js";
 import {
     buildDocumentCorpusEntities,
     buildDocumentCorpusRelations,
     materializedEntityIds,
 } from "./document-ontology.js";
+import { documentTypeEntityId } from "./document-type-identity.js";
 import { slugify } from "./string-utils.js";
 import { buildLineDocumentEntities, isDocumentCorpus } from "./line-document.js";
 import type { TableRouting } from "./table-routing.js";
@@ -216,7 +217,7 @@ export function lowConfidenceDoubts(assembly: AssemblyResult, questionTargets: S
             doubts.push({
                 topic: `${kind} ${id}`,
                 question: `"${name}" has confidence ${confidence.toFixed(2)}, below threshold ${LOW_CONFIDENCE_THRESHOLD.toFixed(2)}.`,
-                reason: "Outside review questions by risk ranking: verify manually.",
+                reason: "Low confidence but no review question was generated; verify manually.",
             });
         }
     };
@@ -235,7 +236,7 @@ export function lowConfidenceDoubts(assembly: AssemblyResult, questionTargets: S
 export function documentEntityIds(catalog: DocumentCatalog, vocabulary: DomainVocabulary): Set<string> {
     const ids = new Set<string>(materializedEntityIds(vocabulary));
     for (const type of catalog.documentTypes) {
-        ids.add(slugify(type.id));
+        ids.add(documentTypeEntityId(type.id));
     }
     return ids;
 }
@@ -283,7 +284,6 @@ export function buildReviewQuestions(
     routing: TableRouting,
     documentCatalog: DocumentCatalog | undefined,
     vocabulary: DomainVocabulary,
-    reviewConfidenceThreshold: number,
 ): Proposal["questions"] {
     const excludedEntityIds =
         documentCatalog !== undefined
@@ -294,7 +294,6 @@ export function buildReviewQuestions(
         assembly.relations,
         assembly.rules,
         routing.allTables,
-        reviewConfidenceThreshold,
     );
     const documentTypeQuestions =
         documentCatalog !== undefined
@@ -302,7 +301,6 @@ export function buildReviewQuestions(
                   documentCatalog,
                   assembly.entities,
                   routing.allTables,
-                  reviewConfidenceThreshold,
               )
             : [];
     return [...documentTypeQuestions, ...standardQuestions].sort(
@@ -310,11 +308,6 @@ export function buildReviewQuestions(
     );
 }
 
-export function finalizeReviewQuestions(
-    assembly: AssemblyResult,
-    allQuestions: Proposal["questions"],
-): Proposal["questions"] {
-    const { questions, dropped } = capReviewQuestions(allQuestions);
-    assembly.doubts.push(...reviewBudgetDoubts(dropped));
-    return questions;
+export function finalizeReviewQuestions(allQuestions: Proposal["questions"]): Proposal["questions"] {
+    return [...allQuestions].sort((a, b) => b.risk - a.risk || a.id.localeCompare(b.id));
 }

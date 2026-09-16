@@ -18,6 +18,7 @@ export interface StoredRun {
 export interface RunStore {
     create(tenantId: string, runId: string, partnerId?: string): StoredRun;
     get(tenantId: string, runId: string): StoredRun | undefined;
+    listRecent(limit: number, partnerId?: string): StoredRun[];
     complete(tenantId: string, runId: string, stats: PipelineStats, deletionEntry: DeletionLogEntry): StoredRun | undefined;
     fail(tenantId: string, runId: string, failureMessage: string, deletionEntry?: DeletionLogEntry): StoredRun | undefined;
 }
@@ -68,6 +69,13 @@ export class MemoryRunStore implements RunStore {
 
     get(tenantId: string, runId: string): StoredRun | undefined {
         return this.runs.get(this.key(tenantId, runId));
+    }
+
+    listRecent(limit: number, partnerId?: string): StoredRun[] {
+        return [...this.runs.values()]
+            .filter((record) => partnerId === undefined || record.partnerId === partnerId)
+            .sort((left, right) => new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime())
+            .slice(0, limit);
     }
 
     complete(tenantId: string, runId: string, stats: PipelineStats, deletionEntry: DeletionLogEntry): StoredRun | undefined {

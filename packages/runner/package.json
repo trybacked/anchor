@@ -14,7 +14,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "gerace:live": "node scripts/gerace-live-run.mjs"
   },
   "dependencies": {
     "@backed/core": "workspace:*",

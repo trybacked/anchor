@@ -50,4 +50,16 @@ describe("FileRunStore", () => {
         expect(record?.failureMessage).toBe("pipeline exploded");
         expect(record?.deletionEntry?.bytesDeleted).toBe(32);
     });
+
+    it("lists recent runs across tenants", async () => {
+        const dataRoot = await mkdtemp(join(tmpdir(), "run-store-fs-list-"));
+        const store = new FileRunStore(dataRoot);
+        await store.init();
+        store.create("tenant-a", "run-old");
+        store.create("tenant-b", "run-new");
+
+        const recent = store.listRecent(10);
+        expect(recent).toHaveLength(2);
+        expect(recent.map((run) => run.runId).sort()).toEqual(["run-new", "run-old"]);
+    });
 });

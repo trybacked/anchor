@@ -6,6 +6,8 @@ import {
     createRunId,
     DEFAULT_SOURCES_DIR,
     DEFAULT_WORKSPACE_CONFIG,
+    DocumentCatalogSchema,
+    DomainVocabularySchema,
     writeWorkspaceConfig,
     parseModelYaml,
     ProfileReportSchema,
@@ -14,13 +16,19 @@ import {
     WorkspaceConfigSchema,
 } from "@backed/core";
 import type { Proposal, SemanticModel, WorkspaceConfig } from "@backed/core";
-import { mergeIncrementalProposal, resolveReviewConfidenceThreshold } from "@backed/semantic";
+import { resolveReviewConfidenceThreshold } from "@backed/semantic";
 import { JSON_PRETTY_INDENT, SKIPPED_PIPELINE_STATS } from "./config.js";
 import { collectGarbage, type DeletionLogEntry } from "./gc.js";
 import { hashContent } from "./file-hash.js";
 import { openHashLedger, partitionFilesByLedger } from "./hash-ledger.js";
 import { noopProgressReporter, type PipelineProgressReporter } from "./progress.js";
 import { runAnchorPipeline } from "./run.js";
+import {
+    loadTenantPersistedArtifacts,
+    persistTenantDocumentCatalog,
+    persistTenantProfile,
+    persistTenantVocabulary,
+} from "./tenant-persist-cache.js";
 import { TenantPipelineError } from "./tenant-pipeline-error.js";
 import { createTenantWorkspace, type TenantWorkspace } from "./tenant-workspace.js";
 import type { PipelineStats, RunAnchorPipelineResult } from "./types.js";
@@ -102,16 +110,44 @@ async function readPersistedModel(modelPath: string): Promise<SemanticModel> {
     return parseModelYaml(await readFile(modelPath, "utf8"));
 }
 
-async function mergeWithExistingModel(
+async function persistPipelineArtifacts(
     workspace: TenantWorkspace,
     pipelineResult: RunAnchorPipelineResult,
-): Promise<Proposal> {
-    const existingModel = await readPersistedModel(workspace.paths.modelPath);
-    const profile = existsSync(pipelineResult.profilePath)
-        ? ProfileReportSchema.parse(JSON.parse(await readFile(pipelineResult.profilePath, "utf8")) as unknown)
-        : readRunArtifact(workspace.paths.workDir, pipelineResult.runId, "profile", ProfileReportSchema);
-    const affectedTables = new Set(profile.map((table) => table.table));
-    return mergeIncrementalProposal(pipelineResult.proposal, existingModel, affectedTables, profile);
+): Promise<void> {
+    await mkdir(workspace.paths.persistDir, { recursive: true });
+    try {
+        const vocabulary = readRunArtifact(
+            workspace.paths.workDir,
+            pipelineResult.runId,
+            "vocabulary",
+            DomainVocabularySchema,
+        );
+        await persistTenantVocabulary(workspace.paths.persistDir, vocabulary);
+    }
+    catch {
+        // no document stage in this run
+    }
+    try {
+        const documentCatalog = readRunArtifact(
+            workspace.paths.workDir,
+            pipelineResult.runId,
+            "documents",
+            DocumentCatalogSchema,
+        );
+        await persistTenantDocumentCatalog(workspace.paths.persistDir, documentCatalog);
+    }
+    catch {
+        // no document stage in this run
+    }
+    try {
+        const profile = existsSync(pipelineResult.profilePath)
+            ? ProfileReportSchema.parse(JSON.parse(await readFile(pipelineResult.profilePath, "utf8")) as unknown)
+            : readRunArtifact(workspace.paths.workDir, pipelineResult.runId, "profile", ProfileReportSchema);
+        await persistTenantProfile(workspace.paths.persistDir, profile);
+    }
+    catch {
+        // profile unavailable
+    }
 }
 
 export async function runTenantPipeline(options: RunTenantPipelineOptions): Promise<RunTenantPipelineResult> {
@@ -153,6 +189,12 @@ export async function runTenantPipeline(options: RunTenantPipelineOptions): Prom
             ...options.config,
         });
         writeWorkspaceConfig(workspace.paths.workDir, config);
+        const persistedArtifacts = options.forceFull
+            ? undefined
+            : await loadTenantPersistedArtifacts(workspace.paths.persistDir);
+        const existingModel = hasExistingModel && !options.forceFull
+            ? await readPersistedModel(workspace.paths.modelPath)
+            : undefined;
         const pipelineResult = await runAnchorPipeline({
             workspaceDir: workspace.paths.workDir,
             runId,
@@ -161,12 +203,20 @@ export async function runTenantPipeline(options: RunTenantPipelineOptions): Prom
             ...(options.forceFull !== undefined ? { forceFull: options.forceFull } : {}),
             ...(options.skipEmbed !== undefined ? { skipEmbed: options.skipEmbed } : {}),
             ...(options.env !== undefined ? { env: options.env } : {}),
+            ...(persistedArtifacts !== undefined ? { persistedArtifacts } : {}),
+            ...(existingModel !== undefined && persistedArtifacts?.profile !== undefined
+                ? {
+                    incrementalContext: {
+                        existingModel,
+                        previousProfile: persistedArtifacts.profile,
+                        unknownSourceFiles: filesToProcess.map((file) => file.fileName),
+                    },
+                }
+                : {}),
             progress,
         });
-        let proposal = pipelineResult.proposal;
-        if (hasExistingModel && known.length > 0 && !options.forceFull) {
-            proposal = await mergeWithExistingModel(workspace, pipelineResult);
-        }
+        await persistPipelineArtifacts(workspace, pipelineResult);
+        const proposal = pipelineResult.proposal;
         const model = proposalToPersistedModel(proposal, options.env);
         await persistModel(workspace, serializeModelYaml(model));
         await writeFile(

@@ -10,15 +10,11 @@ export const DocumentCatalogEntrySchema = z.object({
     sourceFile: z.string().min(1).optional(),
     documentType: z.string().min(1),
     documentTypeLabel: z.string().min(1),
-    protocolNumber: DocumentFieldSchema.optional(),
-    publishedDate: DocumentFieldSchema.optional(),
-    subject: DocumentFieldSchema.optional(),
-    issuingOffice: DocumentFieldSchema.optional(),
-    topics: z.array(z.string().min(1)).optional(),
-    summary: z.string().min(1).optional(),
+    fields: z.record(z.string().min(1), DocumentFieldSchema).default({}),
     confidence: ConfidenceSchema,
     pageCount: z.number().int().nonnegative(),
     headerFingerprint: z.string().min(1).optional(),
+    headerContentFingerprint: z.string().min(1).optional(),
 });
 export const DocumentTypeSummarySchema = z.object({
     id: z.string().min(1),

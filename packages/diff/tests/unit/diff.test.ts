@@ -125,6 +125,55 @@ describe("affectedTablesFromProfileDiff", () => {
 
         expect(affectedTablesFromProfileDiff(baseProfile, nextProfile)).toEqual(new Set(["orders"]));
     });
+
+    it("ignores pipeline infra tables and table removals", () => {
+        const previousProfile: ProfileReport = [
+            {
+                table: "doc_publication",
+                sourceFile: "document-catalog:publication",
+                rowCount: 2,
+                columns: [{ name: "document_id", sqlType: "TEXT", nullable: false }],
+            },
+            {
+                table: "document_lines",
+                sourceFile: "document-catalog:lines",
+                rowCount: 10,
+                columns: [{ name: "text", sqlType: "TEXT", nullable: false }],
+            },
+        ];
+        const nextProfile: ProfileReport = [
+            {
+                table: "doc_notice",
+                sourceFile: "document-catalog:notice",
+                rowCount: 1,
+                columns: [{ name: "document_id", sqlType: "TEXT", nullable: false }],
+            },
+            {
+                table: "document_chunks",
+                sourceFile: "document-catalog:chunks",
+                rowCount: 3,
+                columns: [{ name: "text", sqlType: "TEXT", nullable: false }],
+            },
+        ];
+
+        expect(affectedTablesFromProfileDiff(previousProfile, nextProfile)).toEqual(new Set(["doc_notice"]));
+    });
+
+    it("marks tables whose row counts changed", () => {
+        const previousProfile: ProfileReport = [{
+            table: "doc_publication",
+            sourceFile: "document-catalog:publication",
+            rowCount: 99,
+            columns: [{ name: "document_id", sqlType: "TEXT", nullable: false }],
+        }];
+        const nextProfile: ProfileReport = [{
+            table: "doc_publication",
+            sourceFile: "document-catalog:publication",
+            rowCount: 100,
+            columns: [{ name: "document_id", sqlType: "TEXT", nullable: false }],
+        }];
+        expect(affectedTablesFromProfileDiff(previousProfile, nextProfile)).toEqual(new Set(["doc_publication"]));
+    });
 });
 
 describe("filterProfileToTables", () => {

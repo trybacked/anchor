@@ -51,5 +51,16 @@ export const OntologyOutputSchema = z.object({
         reason: z.string().min(1).describe("Why the model cannot answer"),
     })),
 });
+export const OntologyEntitiesOutputSchema = OntologyOutputSchema.pick({
+    entities: true,
+    doubts: true,
+});
+export const OntologyRelationsOutputSchema = OntologyOutputSchema.pick({
+    relations: true,
+    rules: true,
+    doubts: true,
+});
 export type ColumnClassificationOutput = z.infer<typeof ColumnClassificationOutputSchema>;
 export type OntologyOutput = z.infer<typeof OntologyOutputSchema>;
+export type OntologyEntitiesOutput = z.infer<typeof OntologyEntitiesOutputSchema>;
+export type OntologyRelationsOutput = z.infer<typeof OntologyRelationsOutputSchema>;

@@ -25,7 +25,8 @@ COPY packages/semantic/package.json packages/semantic/
 RUN pnpm install --frozen-lockfile
 COPY apps/worker-service apps/worker-service
 COPY packages packages
-RUN pnpm --filter @backed/worker-service build
+# Build worker-service and all workspace dependencies (core → runner → worker).
+RUN pnpm --filter @backed/worker-service... build
 RUN pnpm --filter @backed/worker-service deploy --prod /out
 RUN rm -rf /out/src /out/tests /out/tsconfig.json /out/vitest.config.ts /out/.turbo
 
@@ -34,18 +35,20 @@ ARG IMAGE_VARIANT=slim
 WORKDIR /app
 ENV NODE_ENV=production
 ENV WORKER_SERVICE_HOST=0.0.0.0
-ENV WORKER_SERVICE_PORT=8790
 ENV WORKER_SERVICE_DATA_ROOT=/data
 RUN if [ "$IMAGE_VARIANT" = "full" ]; then \
       apt-get update \
       && apt-get install -y --no-install-recommends poppler-utils \
       && rm -rf /var/lib/apt/lists/*; \
     fi
-RUN mkdir -p /data && chown node:node /data
 COPY --from=builder --chown=node:node /out /app
-USER node
+COPY apps/worker-service/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 EXPOSE 8790
-VOLUME ["/data"]
+# Persistent storage: mount a Railway Volume at /data (WORKER_SERVICE_DATA_ROOT).
+# Do not use Dockerfile VOLUME — Railway rejects it at build time.
+# Entrypoint chowns the mounted volume for the node user (Railway volumes are root-owned).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:8790/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]

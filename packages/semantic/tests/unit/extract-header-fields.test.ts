@@ -1,14 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractHeaderFields, filterHeaderLinesForLlm, findRecurringLines, isOcrNoiseLine, normalizeLine, } from "../../src/extract-header-fields.js";
-import type { HeaderFieldContext } from "../../src/extract-header-fields.js";
-import { ENGLISH_INVOICE_VOCABULARY, ITALIAN_PROCUREMENT_VOCABULARY, } from "../fixtures/vocabulary.js";
+import { extractVocabularyFields, filterHeaderLinesForLlm, findRecurringLines, isOcrNoiseLine, normalizeLine, } from "../../src/extract-header-fields.js";
+import { ENGLISH_INVOICE_VOCABULARY, PROCUREMENT_VOCABULARY, } from "../fixtures/vocabulary.js";
+
 const LETTERHEAD = "Comune di Gerace - Ufficio Tecnico";
-function italianContext(recurring: string[] = []): HeaderFieldContext {
-    return {
-        vocabulary: ITALIAN_PROCUREMENT_VOCABULARY,
-        recurringLines: new Set(recurring.map(normalizeLine)),
-    };
-}
+
 describe("isOcrNoiseLine", () => {
     it("rejects dash-only OCR separator lines", () => {
         expect(isOcrNoiseLine("--------------------")).toBe(true);
@@ -26,12 +21,14 @@ describe("isOcrNoiseLine", () => {
         expect(isOcrNoiseLine("Invoice for scaffolding rental")).toBe(false);
     });
 });
+
 describe("normalizeLine", () => {
     it("collapses case, whitespace, and digit runs so paginated variants compare equal", () => {
         expect(normalizeLine("  Pag. 1  di 4 ")).toBe("pag. # di #");
         expect(normalizeLine("Pag. 2 di 9")).toBe("pag. # di #");
     });
 });
+
 describe("findRecurringLines", () => {
     it("keeps the lines shared by a large share of the samples", () => {
         const recurring = findRecurringLines([
@@ -47,6 +44,7 @@ describe("findRecurringLines", () => {
         expect(findRecurringLines([[LETTERHEAD], [LETTERHEAD]]).size).toBe(0);
     });
 });
+
 describe("filterHeaderLinesForLlm", () => {
     it("drops recurring boilerplate before the LLM prompt", () => {
         const recurring = findRecurringLines([
@@ -60,50 +58,15 @@ describe("filterHeaderLinesForLlm", () => {
         ]);
     });
 });
-describe("extractHeaderFields", () => {
-    it("skips OCR noise and recurring lines when picking the subject", () => {
-        const fields = extractHeaderFields("documento_avviso_suap", [
-            LETTERHEAD,
-            "--------------------",
-            "l . l . l . l . l .",
-            "Avviso di avvio del procedimento SUAP per autorizzazione commerciale",
-        ], italianContext([LETTERHEAD]));
-        expect(fields.subject).toBe("Avviso di avvio del procedimento SUAP per autorizzazione commerciale");
+
+describe("extractVocabularyFields", () => {
+    it("reads identifier values using vocabulary cues", () => {
+        const procurement = extractVocabularyFields(["Award notice CIG 1234567890"], PROCUREMENT_VOCABULARY);
+        const english = extractVocabularyFields(["Invoice against PO 4451"], ENGLISH_INVOICE_VOCABULARY);
+        expect(procurement.cig).toBe("1234567890");
+        expect(english.po).toBe("4451");
     });
-    it("treats the line recurring across the corpus as the issuing office", () => {
-        const fields = extractHeaderFields("documento_avviso_suap", [LETTERHEAD, "Avviso di avvio del procedimento SUAP"], italianContext([LETTERHEAD]));
-        expect(fields.issuingOffice).toBe(LETTERHEAD);
-    });
-    it("leaves the issuing office unset when no header line recurs", () => {
-        const fields = extractHeaderFields("documento_avviso_suap", [LETTERHEAD, "Avviso di avvio del procedimento SUAP"], italianContext());
-        expect(fields.issuingOffice).toBeNull();
-        expect(fields.subject).toBe(LETTERHEAD);
-    });
-    it("falls back to slug-derived protocol and date", () => {
-        const fields = extractHeaderFields("prot_par_0010783_del_31_08_2026_documento_delibera_g_c_n", [], italianContext());
-        expect(fields.protocolNumber).toBe("0010783");
-        expect(fields.publishedDate).toBe("2026-08-31");
-    });
-    it("reads the registry number after one of the vocabulary's identifier cues", () => {
-        const italian = extractHeaderFields("determinazioni_set_amm_2026_gen_741", ["Determina di affidamento CIG 1234567890"], italianContext());
-        const english = extractHeaderFields("vendor_invoice_march", ["Invoice against PO 4451"], { vocabulary: ENGLISH_INVOICE_VOCABULARY, recurringLines: new Set() });
-        expect(italian.protocolNumber).toBe("1234567890");
-        expect(english.protocolNumber).toBe("4451");
-    });
-    it("orders ambiguous date components by the corpus's convention", () => {
-        const headerLines = ["Data 05/03/2026"];
-        expect(extractHeaderFields("doc", headerLines, italianContext()).publishedDate).toBe("2026-03-05");
-        expect(extractHeaderFields("doc", headerLines, {
-            vocabulary: ENGLISH_INVOICE_VOCABULARY,
-            recurringLines: new Set(),
-        }).publishedDate).toBe("2026-05-03");
-    });
-    it("returns empty fields without a vocabulary or recurring lines", () => {
-        expect(extractHeaderFields("aspc982920", ["Header"])).toEqual({
-            protocolNumber: null,
-            publishedDate: null,
-            subject: null,
-            issuingOffice: null,
-        });
+    it("returns no fields without configured identifier formats", () => {
+        expect(extractVocabularyFields(["Header line"])).toEqual({});
     });
 });

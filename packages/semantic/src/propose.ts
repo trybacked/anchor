@@ -5,7 +5,6 @@ import type { LlmCacheContext } from "./llm-cache.js";
 import type { SemanticModels } from "./env.js";
 import {
     resolveClassificationBatchSize,
-    resolveReviewConfidenceThreshold,
     resolveSemanticRequestTimeoutMs,
 } from "./env.js";
 import { compressProfile } from "./compress.js";
@@ -24,7 +23,6 @@ export interface ProposeModelOptions {
     runId: string;
     models: SemanticModels;
     now?: Date;
-    reviewConfidenceThreshold?: number;
     documentCatalog?: DocumentCatalog;
     vocabulary?: DomainVocabulary;
     extractionUsage?: BurstUsage;
@@ -57,8 +55,6 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     const vocabulary = options.vocabulary ?? EMPTY_DOMAIN_VOCABULARY;
     const timeoutMs = resolveSemanticRequestTimeoutMs();
     const batchSize = resolveClassificationBatchSize();
-    const reviewConfidenceThreshold =
-        options.reviewConfidenceThreshold ?? resolveReviewConfidenceThreshold();
     const routing = routeTables(compressProfile(options.profile), documentCatalog);
     const routingSummary = formatRoutingSummary(routing, documentCatalog);
     if (routingSummary.length > 0) {
@@ -103,9 +99,8 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
         routing,
         documentCatalog,
         vocabulary,
-        reviewConfidenceThreshold,
     );
-    const questions = finalizeReviewQuestions(assembly, allQuestions);
+    const questions = finalizeReviewQuestions(allQuestions);
     const questionTargets = new Set(questions.map((question) => `${question.kind}:${question.targetId}`));
     assembly.doubts.push(...lowConfidenceDoubts(assembly, questionTargets));
     return ProposalSchema.parse({

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
@@ -79,6 +79,33 @@ export class FileRunStore implements RunStore {
 
     get(tenantId: string, runId: string): StoredRun | undefined {
         return this.readRunSync(this.runPath(tenantId, runId));
+    }
+
+    listRecent(limit: number, partnerId?: string): StoredRun[] {
+        if (!existsSync(this.runsRoot)) {
+            return [];
+        }
+
+        const runs: StoredRun[] = [];
+        for (const tenantId of readdirSync(this.runsRoot)) {
+            const tenantDir = path.join(this.runsRoot, tenantId);
+            if (!statSync(tenantDir).isDirectory()) {
+                continue;
+            }
+            for (const fileName of readdirSync(tenantDir)) {
+                if (!fileName.endsWith(".json")) {
+                    continue;
+                }
+                const record = this.readRunSync(path.join(tenantDir, fileName));
+                if (record !== undefined && (partnerId === undefined || record.partnerId === partnerId)) {
+                    runs.push(record);
+                }
+            }
+        }
+
+        return runs
+            .sort((left, right) => new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime())
+            .slice(0, limit);
     }
 
     complete(tenantId: string, runId: string, stats: PipelineStats, deletionEntry: DeletionLogEntry): StoredRun | undefined {

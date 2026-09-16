@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { ensureCurrencyFactTypes, extractFactsFromLines, extractMentionsFromLines, } from "../../../semantic/src/index.js";
 import { ITALIAN_PA_DETERMINATION_LINES } from "../../../semantic/tests/fixtures/italian-pa-document.js";
-import { ITALIAN_PROCUREMENT_VOCABULARY } from "../../../semantic/tests/fixtures/vocabulary.js";
+import { PROCUREMENT_VOCABULARY } from "../../../semantic/tests/fixtures/vocabulary.js";
 import { materializeFacts } from "../../src/materialize-facts.js";
 import { createDuckDbSession } from "../../src/session.js";
 import type { DuckDbSession } from "../../src/session.js";
@@ -14,7 +14,7 @@ describe("materializeFacts", () => {
         await session.close();
     });
     it("materializes Italian PA facts with entity attribution for cloud sync", async () => {
-        const vocabulary = ensureCurrencyFactTypes(ITALIAN_PROCUREMENT_VOCABULARY, ITALIAN_PA_DETERMINATION_LINES);
+        const vocabulary = ensureCurrencyFactTypes(PROCUREMENT_VOCABULARY, ITALIAN_PA_DETERMINATION_LINES);
         const mentions = extractMentionsFromLines(ITALIAN_PA_DETERMINATION_LINES, vocabulary);
         const facts = extractFactsFromLines(ITALIAN_PA_DETERMINATION_LINES, mentions, vocabulary);
         expect(facts).toHaveLength(7);

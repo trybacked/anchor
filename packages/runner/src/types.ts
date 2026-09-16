@@ -1,6 +1,18 @@
-import type { Proposal, WorkspaceConfig } from "@backed/core";
+import type { DocumentCatalog, DomainVocabulary, ProfileReport, Proposal, SemanticModel, WorkspaceConfig } from "@backed/core";
 import type { BurstUsage, SemanticModels } from "@backed/semantic";
 import type { PipelineProgressReporter } from "./progress.js";
+
+export interface PersistedPipelineArtifacts {
+    vocabulary?: DomainVocabulary;
+    documentCatalog?: DocumentCatalog;
+    profile?: ProfileReport;
+}
+
+export interface IncrementalPipelineContext {
+    existingModel: SemanticModel;
+    previousProfile: ProfileReport;
+    unknownSourceFiles: string[];
+}
 
 export interface PipelineStageTimings {
     ingestMs: number;
@@ -26,6 +38,8 @@ export interface RunAnchorPipelineOptions {
     models?: SemanticModels;
     env?: Record<string, string | undefined>;
     progress?: PipelineProgressReporter;
+    persistedArtifacts?: PersistedPipelineArtifacts;
+    incrementalContext?: IncrementalPipelineContext;
 }
 
 export interface RunAnchorPipelineResult {

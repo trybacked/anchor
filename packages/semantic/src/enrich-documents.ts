@@ -1,4 +1,12 @@
-import { describeTerms } from "@backed/core";
+import {
+    describeTerms,
+    DOCUMENT_ENRICHMENT_FIELD_SUMMARY,
+    DOCUMENT_ENRICHMENT_FIELD_TOPICS,
+    fieldsFromRecord,
+    getDocumentFieldValue,
+    longestDocumentFieldValue,
+    normalizeComparableLine,
+} from "@backed/core";
 import type { DocumentCatalogEntry, DomainVocabulary } from "@backed/core";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
@@ -62,18 +70,11 @@ export interface EnrichDocumentsResult {
     documents: DocumentCatalogEntry[];
     usage: BurstUsage;
 }
-function boilerplateKey(line: string): string {
-    return line
-        .trim()
-        .toLowerCase()
-        .replace(/\d+/g, "#")
-        .replace(/\s+/g, " ");
-}
 export function findBoilerplateLines(rows: DocumentLineRow[]): Set<string> {
     const documentsByLine = new Map<string, Set<string>>();
     const documentIds = new Set<string>();
     for (const row of rows) {
-        const key = boilerplateKey(row.text);
+        const key = normalizeComparableLine(row.text);
         if (key.length === 0) {
             continue;
         }
@@ -93,7 +94,7 @@ export function findBoilerplateLines(rows: DocumentLineRow[]): Set<string> {
 export function buildDocumentTopicSample(lines: string[], boilerplate: Set<string>): string {
     const substantive = lines
         .map((line) => line.trim())
-        .filter((line) => line.length > 0 && !boilerplate.has(boilerplateKey(line)));
+        .filter((line) => line.length > 0 && !boilerplate.has(normalizeComparableLine(line)));
     return substantive
         .slice(0, DOCUMENT_ENRICHMENT_SAMPLE_LINE_LIMIT)
         .join(" ")
@@ -124,7 +125,10 @@ function toEnrichmentInput(document: DocumentCatalogEntry, sampleByDocument: Map
     return {
         documentId: document.sourceTable,
         documentTypeLabel: document.documentTypeLabel,
-        sample: sampleByDocument.get(document.sourceTable) ?? document.subject?.value ?? "",
+        sample: sampleByDocument.get(document.sourceTable)
+            ?? getDocumentFieldValue(document, DOCUMENT_ENRICHMENT_FIELD_SUMMARY)
+            ?? longestDocumentFieldValue(document)
+            ?? "",
     };
 }
 interface EnrichedDocument {
@@ -138,7 +142,16 @@ function applyEnrichment(documents: DocumentCatalogEntry[], enriched: Map<string
         if (entry === undefined) {
             return document;
         }
-        return { ...document, topics: entry.topics, summary: entry.summary };
+        return {
+            ...document,
+            fields: {
+                ...document.fields,
+                ...fieldsFromRecord({
+                    [DOCUMENT_ENRICHMENT_FIELD_TOPICS]: entry.topics.join(", "),
+                    [DOCUMENT_ENRICHMENT_FIELD_SUMMARY]: entry.summary,
+                }, document.confidence),
+            },
+        };
     });
 }
 function chunkDocuments(inputs: DocumentEnrichmentInput[], size: number): DocumentEnrichmentInput[][] {

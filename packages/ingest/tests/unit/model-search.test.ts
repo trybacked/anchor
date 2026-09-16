@@ -44,11 +44,9 @@ describe("searchModelViaDocumentChunks", () => {
                 documentType: "determina",
                 documentTypeLabel: "Determina",
                 sourceFile: "determina.pdf",
-                protocolNumber: null,
-                publishedDate: null,
-                subject: null,
-                issuingOffice: null,
-                topics: [],
+                fields: {},
+                confidence: 0.9,
+                pageCount: 1,
             }],
         });
         expect(hits).toEqual([expect.objectContaining({

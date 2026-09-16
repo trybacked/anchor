@@ -78,7 +78,7 @@ export async function classifyAllColumns(
     const lineDocumentClassification =
         documentCatalog !== undefined ? emptyClassification() : classifyLineDocumentTables(routing.lineDocuments);
     const typedDocumentClassification =
-        documentCatalog !== undefined ? classifyTypedDocumentTables(documentCatalog) : emptyClassification();
+        documentCatalog !== undefined ? classifyTypedDocumentTables(documentCatalog, profile) : emptyClassification();
     const metadataClassification = classifyPipelineMetadataTables(routing.pipelineMetadata);
     const mentionClassification =
         documentCatalog !== undefined ? classifyMentionTables(profile, vocabulary) : emptyClassification();

@@ -3,7 +3,8 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import type { DeletionLogEntry } from "@backed/runner";
 import { hashContent, resolveTenantWorkspace } from "@backed/runner";
-import type { PartnerConfig, WorkerServiceConfig } from "./config.js";
+import type { WorkerServiceConfig } from "./config.js";
+import type { PartnerRegistry } from "./partner-registry.js";
 
 export const RUN_COMPLETED_WEBHOOK_EVENT = "run.completed" as const;
 export const WEBHOOK_SIGNATURE_HEADER = "X-Backed-Signature";
@@ -32,18 +33,14 @@ export function signWebhookPayload(body: string, secret: string): string {
     return createHmac("sha256", secret).update(body, "utf8").digest("hex");
 }
 
-export function findPartnerConfig(config: WorkerServiceConfig, partnerId: string): PartnerConfig | undefined {
-    if (partnerId === "default") {
-        return undefined;
-    }
-    return config.partners.find((partner) => partner.partnerId === partnerId);
-}
-
 export function resolveRunCompletedWebhook(
-    config: WorkerServiceConfig,
+    registry: PartnerRegistry,
     partnerId: string,
 ): { url: string; secret: string } | null {
-    const partner = findPartnerConfig(config, partnerId);
+    if (partnerId === "default") {
+        return null;
+    }
+    const partner = registry.getPartner(partnerId);
     if (partner === undefined) {
         return null;
     }
@@ -51,7 +48,10 @@ export function resolveRunCompletedWebhook(
     if (url === undefined || url.length === 0) {
         return null;
     }
-    const secret = partner.webhookSecret?.trim() || partner.token;
+    const secret = partner.webhookSecret?.trim();
+    if (secret === undefined || secret.length === 0) {
+        return null;
+    }
     return { url, secret };
 }
 
@@ -101,6 +101,7 @@ export async function deliverRunCompletedWebhook(options: WebhookDeliveryOptions
 
 export async function notifyRunCompletedWebhook(input: {
     config: WorkerServiceConfig;
+    partnerRegistry: PartnerRegistry;
     partnerId: string;
     tenantId: string;
     runId: string;
@@ -110,7 +111,7 @@ export async function notifyRunCompletedWebhook(input: {
     fetchImpl?: typeof fetch;
     onAttemptFailure?: (attempt: number, error: unknown) => void;
 }): Promise<void> {
-    const target = resolveRunCompletedWebhook(input.config, input.partnerId);
+    const target = resolveRunCompletedWebhook(input.partnerRegistry, input.partnerId);
     if (target === null) {
         return;
     }

@@ -65,7 +65,7 @@ model.yaml        Anchor model (committable)
 
 **Semantic inference** runs schema-constrained LLM bursts on compressed profiles (never raw rows). Column classification and ontology use **`SEMANTIC_MODEL`** (default **`zai/glm-5.3-flash`**); ambiguous document headers use the same model. If domain vocabulary discovery fails, the pipeline **degrades gracefully** (deterministic extraction continues with minimal defaults). **Mixed folders** merge structured-table inference with deterministic document entities in one proposal.
 
-**Review** presents risk-ranked questions for elements below **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`). Answers: Yes · No · Rename. Elements at or above the threshold that were not asked become **`confirmed`** in `model.yaml`; only explicit **No** answers are omitted.
+**Review** presents risk-ranked questions only for elements below **`LOW_CONFIDENCE_THRESHOLD`** (`0.7`) — truly uncertain inferences, with no cap on question count. Answers: Yes · No · Rename. Elements at or above **`REVIEW_CONFIDENCE_THRESHOLD`** (default `0.95`) that were not asked become **`confirmed`** in `model.yaml`; only explicit **No** answers are omitted.
 
 **Consumption** via MCP: five deterministic operations on `model.yaml` — see [MCP surface](#mcp-surface) and [Serve and telemetry](#serve-and-telemetry).
 
@@ -276,7 +276,7 @@ Each pipeline run stores intermediate artifacts under `.backed/runs/<run-id>/`:
 | File | Contents |
 |---|---|
 | `profile.json` | Statistical evidence per table/column |
-| `documents.json` | Document catalog (types, protocol, dates) when line-documents were ingested |
+| `documents.json` | Document catalog (types, protocol, dates) when line-documents were ingested; canonical `documentType` per `sourceTable` is preserved across runs |
 | `proposal.json` | LLM proposal + doubts + review questions |
 | `review.json` | Human answers |
 | `model.yaml` | Final model (workspace root) |
@@ -357,7 +357,7 @@ pnpm cli --help
 
 Monorepo: `@backed/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `@backed/runner` → `apps/cli` / `apps/worker-service`.
 
-CI (GitHub Actions) runs build, schema drift check, and tests including the **Gerace golden** `model.yaml` fixture.
+CI (GitHub Actions) runs build, schema drift check, and tests including the **Gerace golden** `model.yaml` fixture and a **three-run incremental session** (`packages/runner/tests/golden/gerace-incremental.test.ts`: cold → warm → +1 file on `fixtures/gerace-albo`, with deterministic LLM mocks).
 
 ---
 
@@ -368,10 +368,10 @@ Each tenant workspace is split into ephemeral processing and durable persistence
 ```
 tenants/<tenantId>/
 ├── work/      ← uploaded bytes + pipeline scratch (GC'd every run)
-└── persist/   ← model.yaml, ledger.json, deletion-log.jsonl, proposal.json, review.json
+└── persist/   ← model.yaml, ledger.json, deletion-log.jsonl, proposal.json, review.json, vocabulary.json, documents.json, profile.json
 ```
 
-Documents and raw corpus **never** persist — only the semantic model, content hashes, review artifacts, and a deletion log.
+Documents and raw corpus **never** persist — only derived artifacts: the semantic model, domain vocabulary, document catalog metadata, profile snapshot, content hashes, review artifacts, and a deletion log.
 
 Re-submitting unchanged files costs nothing: content hashes skip them.
 
@@ -417,6 +417,25 @@ Structured logs (JSON lines on stdout): `run.started`, `gc.completed`, `run.comp
 
 **Alerting hints:** failed run rate spikes; `gc.completed` with `bytesDeleted: 0` on runs that uploaded files; `dataRootWritable: false`; disk usage on the `/data` volume.
 
+### TypeScript SDK
+
+Official SDK: [`packages/anchor`](./packages/anchor) (`@backed/anchor`).
+
+Types are generated from `apps/worker-service/openapi.yaml` via [openapi-typescript](https://github.com/openapi-ts/openapi-typescript); requests use [openapi-fetch](https://github.com/openapi-ts/openapi-typescript/tree/main/packages/openapi-fetch).
+
+```typescript
+import { createAnchorClient } from "@backed/anchor";
+
+const anchor = createAnchorClient({
+  baseUrl: "https://anchor.backed.app",
+  token: process.env.ANCHOR_API_TOKEN!,
+});
+
+const { runId } = await anchor.submitRun("demo", [{ filename: "export.csv", content: csv }]);
+await anchor.waitForRun("demo", runId);
+const { model } = await anchor.getModel("demo");
+```
+
 API surface:
 
 - `GET /openapi.yaml` — OpenAPI 3.1 spec (no auth)
@@ -432,9 +451,9 @@ API surface:
 
 ## Scope
 
-**In (v1):** Anchor format · CLI · profiling · agentic inference · bounded review · run diff · authenticated MCP export (5 operations) · incremental re-inference · document corpus typing · ephemeral worker API.
+**In (v1):** Anchor format · CLI · TypeScript SDK · profiling · agentic inference · bounded review · run diff · authenticated MCP export (5 operations) · incremental re-inference · document corpus typing · ephemeral worker API.
 
-**Out (v1):** Multi-tenant UI · SDK · registry · billing · dashboard · writeback.
+**Out (v1):** Multi-tenant UI · registry · billing · dashboard · writeback.
 
 **Not Anchor:** ETL · warehouse · ERP · chatbot · connector marketplace.
 

@@ -15,58 +15,17 @@ export const SUFFIX_MAX_LENGTH = 6;
 export const SUFFIX_MIN_DOCUMENTS = 2;
 export const SUFFIX_MAX_RESULTS = 16;
 export const REJECTED_NAME_SUFFIXES = new Set([
-    "del",
-    "dei",
-    "della",
-    "delle",
-    "degli",
-    "nel",
-    "nella",
-    "nelli",
-    "nelle",
-    "agli",
-    "alla",
-    "alle",
-    "allo",
-    "per",
-    "non",
-    "con",
-    "tra",
-    "fra",
-    "via",
-    "nido",
-    "osta",
-    "tue",
     "the",
     "and",
     "for",
     "com",
-    "nn",
-    "aa",
-    "la",
-    "al",
-    "da",
-    "di",
-    "in",
-    "su",
-    "il",
-    "lo",
-    "le",
-    "li",
-    "un",
-    "ecc",
-    "che",
-    "atto",
-    "iva",
-    "albo",
-    "sole",
-    "rup",
-    "anac",
-    "dgr",
-    "dpgr",
-    "dpr",
-    "rtpa",
-    "ddii",
+    "org",
+    "net",
+    "inc",
+    "ltd",
+    "llc",
+    "co",
+    "plc",
 ]);
 export const HEADER_MIN_SLUG_NUMBER_DIGITS = 4;
 export const HEADER_MIN_SUBJECT_CHARS = 12;
@@ -91,21 +50,27 @@ export const LLM_CACHE_FILE_SUFFIX = ".json";
 export const LLM_SCHEMA_NAMES = {
     columnClassification: "column_classification",
     ontologyProposal: "ontology_proposal",
+    ontologyEntities: "ontology_entities",
+    ontologyRelations: "ontology_relations",
     documentExtraction: "document_extraction",
     documentEnrichment: "document_enrichment",
     entityEnrichment: "entity_enrichment",
     domainVocabulary: "domain_vocabulary",
 } as const;
+export const ONTOLOGY_SPLIT_TABLE_THRESHOLD = 2;
+export const ONTOLOGY_SPLIT_DOCUMENT_TYPE_THRESHOLD = 4;
 export type LlmSchemaName = (typeof LLM_SCHEMA_NAMES)[keyof typeof LLM_SCHEMA_NAMES];
 export const STRICT_JSON_SUFFIX = "\n\nIMPORTANT: respond with ONLY the raw JSON object matching the schema. No markdown fences, no prose before or after, no trailing commas. Your entire response must be valid JSON.";
 export const COLUMN_CLASSIFICATION_CONCURRENCY = 4;
 export const RAW_FALLBACK_MAX_OUTPUT_TOKENS: Record<string, number> = {
     [LLM_SCHEMA_NAMES.documentExtraction]: 8192,
-    [LLM_SCHEMA_NAMES.documentEnrichment]: 2048,
-    [LLM_SCHEMA_NAMES.entityEnrichment]: 2048,
+    [LLM_SCHEMA_NAMES.documentEnrichment]: 8192,
+    [LLM_SCHEMA_NAMES.entityEnrichment]: 8192,
     [LLM_SCHEMA_NAMES.columnClassification]: 4096,
     [LLM_SCHEMA_NAMES.domainVocabulary]: 8192,
-    [LLM_SCHEMA_NAMES.ontologyProposal]: 6144,
+    [LLM_SCHEMA_NAMES.ontologyProposal]: 8192,
+    [LLM_SCHEMA_NAMES.ontologyEntities]: 6144,
+    [LLM_SCHEMA_NAMES.ontologyRelations]: 6144,
 };
 export const RAW_FALLBACK_DEFAULT_MAX_OUTPUT_TOKENS = 4096;
 export const DOCUMENT_EXTRACTION_LLM_SKIP_CONFIDENCE = 0.85;

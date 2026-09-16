@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildEntityIndex, entityIdFromName, extractMentionsFromLines, toMaterializedMentions, } from "../../src/extract-document-mentions.js";
 import { ITALIAN_PA_DETERMINATION_LINES } from "../fixtures/italian-pa-document.js";
-import { ITALIAN_PROCUREMENT_VOCABULARY } from "../fixtures/vocabulary.js";
+import { PROCUREMENT_VOCABULARY } from "../fixtures/vocabulary.js";
 describe("mention attribution with EDIL VINCENT fixture", () => {
     it("attributes CIG to EDIL VINCENT SRL from the Italian PA determination lines", () => {
         const mentions = extractMentionsFromLines([
@@ -11,7 +11,7 @@ describe("mention attribution with EDIL VINCENT fixture", () => {
                 line: 8,
                 text: "Affidamento lavori alla ditta EDIL VINCENT SRL, CIG Z123456789",
             },
-        ], ITALIAN_PROCUREMENT_VOCABULARY);
+        ], PROCUREMENT_VOCABULARY);
         const materialized = toMaterializedMentions(mentions, buildEntityIndex(mentions));
         const edilId = entityIdFromName("EDIL VINCENT SRL");
         const edilCig = materialized.find((row) => row.mentionType === "cig" && row.normalizedValue === "Z123456789");
@@ -31,7 +31,7 @@ describe("mention attribution with EDIL VINCENT fixture", () => {
                 line: 8,
                 text: "Servizi Morpheme S.r.l. P.IVA 22222222222",
             },
-        ], ITALIAN_PROCUREMENT_VOCABULARY);
+        ], PROCUREMENT_VOCABULARY);
         const materialized = toMaterializedMentions(mentions, buildEntityIndex(mentions));
         const edilId = entityIdFromName("EDIL VINCENT SRL");
         const byValue = new Map(materialized
@@ -41,7 +41,7 @@ describe("mention attribution with EDIL VINCENT fixture", () => {
         expect(byValue.get("22222222222")).not.toBe(edilId);
     });
     it("attributes identifiers from the full EDIL VINCENT determination fixture", () => {
-        const mentions = extractMentionsFromLines(ITALIAN_PA_DETERMINATION_LINES, ITALIAN_PROCUREMENT_VOCABULARY);
+        const mentions = extractMentionsFromLines(ITALIAN_PA_DETERMINATION_LINES, PROCUREMENT_VOCABULARY);
         const materialized = toMaterializedMentions(mentions, buildEntityIndex(mentions));
         const edilId = entityIdFromName("EDIL VINCENT SRL");
         const edilEntity = materialized.find((row) => row.mentionType === "entity" && row.entityId === edilId);

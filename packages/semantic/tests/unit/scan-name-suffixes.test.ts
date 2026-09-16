@@ -29,6 +29,6 @@ describe("scanNameSuffixes", () => {
         expect(suffixes).not.toContain("nel");
     });
     it("filters junk suffixes out of merged vocabulary lists", () => {
-        expect(filterPlausibleSuffixes(["srl", "di", "del", "spa"])).toEqual(["srl", "spa"]);
+        expect(filterPlausibleSuffixes(["srl", "the", "and", "spa"])).toEqual(["srl", "spa"]);
     });
 });

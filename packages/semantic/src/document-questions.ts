@@ -1,17 +1,18 @@
+import { LOW_CONFIDENCE_THRESHOLD } from "@backed/core";
 import type { DocumentCatalog, Entity, EvidenceTable, ReviewQuestion } from "@backed/core";
 import type { CompressedTable } from "./compress.js";
-import { slugify } from "./string-utils.js";
+import { documentTypeEntityId } from "./document-type-identity.js";
 function findTable(tables: CompressedTable[], name: string): CompressedTable | undefined {
     return tables.find((table) => table.table === name);
 }
-export function selectDocumentTypeReviewQuestions(catalog: DocumentCatalog, entities: Entity[], tables: CompressedTable[], reviewConfidenceThreshold: number): ReviewQuestion[] {
+export function selectDocumentTypeReviewQuestions(catalog: DocumentCatalog, entities: Entity[], tables: CompressedTable[]): ReviewQuestion[] {
     const entityById = new Map(entities.map((entity) => [entity.id, entity]));
     const questions: ReviewQuestion[] = [];
     for (const type of catalog.documentTypes) {
-        if (type.confidence >= reviewConfidenceThreshold) {
+        if (type.confidence >= LOW_CONFIDENCE_THRESHOLD) {
             continue;
         }
-        const entityId = slugify(type.id);
+        const entityId = documentTypeEntityId(type.id);
         const entity = entityById.get(entityId);
         const uncertainty = 1 - type.confidence;
         const impact = 2 + type.documentCount;

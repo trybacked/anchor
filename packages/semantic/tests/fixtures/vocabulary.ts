@@ -1,6 +1,7 @@
 import { DomainVocabularySchema } from "@backed/core";
 import type { DomainVocabulary } from "@backed/core";
-export const ITALIAN_PROCUREMENT_VOCABULARY: DomainVocabulary = DomainVocabularySchema.parse({
+/** Test fixture: vocabulary as discovered for a public-procurement document corpus. */
+export const PROCUREMENT_VOCABULARY: DomainVocabulary = DomainVocabularySchema.parse({
     language: "it",
     numberFormat: "decimal_comma",
     dateOrder: "day_first",

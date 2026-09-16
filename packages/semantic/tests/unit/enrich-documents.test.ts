@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { runBurst } from "../../src/burst.js";
 import { buildDocumentEnrichmentPrompt, buildDocumentTopicSample, buildDocumentTopicSamples, DOCUMENT_ENRICHMENT_BATCH_SIZE, enrichDocuments, findBoilerplateLines, } from "../../src/enrich-documents.js";
 import type { DocumentLineRow } from "../../src/extract-document-mentions.js";
-import { ITALIAN_PROCUREMENT_VOCABULARY } from "../fixtures/vocabulary.js";
+import { PROCUREMENT_VOCABULARY } from "../fixtures/vocabulary.js";
 vi.mock("../../src/burst.js", async (importOriginal) => ({
     ...(await importOriginal<typeof import("../../src/burst.js")>()),
     runBurst: vi.fn(),
@@ -33,7 +33,7 @@ function documentEntry(sourceTable: string, subject: string): DocumentCatalogEnt
         sourceTable,
         documentType: "determination",
         documentTypeLabel: "Determination",
-        subject: { value: subject, confidence: 0.9 },
+        fields: { title: { value: subject, confidence: 0.9 } },
         confidence: 0.9,
         pageCount: 3,
     };
@@ -107,7 +107,7 @@ describe("enrichDocuments", () => {
             model: {} as never,
             documents: [],
             sampleByDocument: new Map(),
-            vocabulary: ITALIAN_PROCUREMENT_VOCABULARY,
+            vocabulary: PROCUREMENT_VOCABULARY,
         });
         expect(result.documents).toHaveLength(0);
         expect(result.usage.inputTokens).toBe(0);
@@ -135,11 +135,11 @@ describe("enrichDocuments", () => {
             model: {} as never,
             documents: [documentEntry("doc_a", "Affidamento lavori")],
             sampleByDocument: new Map([["doc_a", "Oggetto: appalto"]]),
-            vocabulary: ITALIAN_PROCUREMENT_VOCABULARY,
+            vocabulary: PROCUREMENT_VOCABULARY,
         });
         const request = mockedRunBurst.mock.calls[0]?.[0];
         expect(request?.system).toContain("pnrr");
-        expect(request?.system).toContain(ITALIAN_PROCUREMENT_VOCABULARY.corpusSummary);
+        expect(request?.system).toContain(PROCUREMENT_VOCABULARY.corpusSummary);
         expect(() => request?.schema.parse({ documents: [{ documentId: "doc_a", topics: ["hotel"], summary: "" }] })).toThrow();
     });
     it("applies topics and summary onto the matching catalog entries", async () => {
@@ -156,12 +156,12 @@ describe("enrichDocuments", () => {
             model: {} as never,
             documents: [documentEntry("doc_a", "Affidamento lavori"), documentEntry("doc_b", "Avviso")],
             sampleByDocument: new Map([["doc_a", "Oggetto: affidamento lavori PNRR"]]),
-            vocabulary: ITALIAN_PROCUREMENT_VOCABULARY,
+            vocabulary: PROCUREMENT_VOCABULARY,
         });
         const [first, second] = result.documents;
-        expect(first?.topics).toEqual(["pnrr", "appalto"]);
-        expect(first?.summary).toBe("Affida i lavori.");
-        expect(second?.topics).toBeUndefined();
+        expect(first?.fields.topics?.value).toBe("pnrr, appalto");
+        expect(first?.fields.summary?.value).toBe("Affida i lavori.");
+        expect(second?.fields.topics).toBeUndefined();
         expect(result.usage.inputTokens).toBe(120);
     });
     it("splits large corpora into batches and sums usage", async () => {
@@ -175,7 +175,7 @@ describe("enrichDocuments", () => {
             model: {} as never,
             documents,
             sampleByDocument: new Map(),
-            vocabulary: ITALIAN_PROCUREMENT_VOCABULARY,
+            vocabulary: PROCUREMENT_VOCABULARY,
         });
         expect(mockedRunBurst).toHaveBeenCalledTimes(2);
         expect(result.usage.inputTokens).toBe(200);

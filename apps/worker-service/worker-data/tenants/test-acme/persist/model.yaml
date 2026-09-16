@@ -1,0 +1,52 @@
+metadata:
+  formatVersion: "1"
+  runId: 89fc6d78-4206-42e7-b927-9cdbf6134503
+  generatedAt: 2026-09-12T16:57:17.528Z
+entities:
+  - id: company
+    name: Company
+    description: A business entity with a name and an associated monetary amount.
+      The table 'data' holds 3 rows, each with a unique id, a company-like name
+      (e.g. 'Acme Corp', 'Backed Inc', 'Example LLC') and a numeric amount.
+    sourceTable: data
+    status: proposed
+    confidence: 0.5
+    provenance:
+      table: data
+      evidence: The 'name' column contains values with corporate suffixes ('Corp',
+        'Inc', 'LLC'), strongly suggesting these are company names; 'amount' is
+        a DOUBLE column matching an 'amount' pattern, and 'id' is a unique
+        BIGINT primary key candidate.
+    properties:
+      - name: ID
+        columnName: id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.85
+        provenance:
+          table: data
+          column: id
+          evidence: SQL type BIGINT, 3 distinct values in 3 rows
+      - name: Name
+        columnName: name
+        semanticType: identifier
+        role: attribute
+        nullable: false
+        confidence: 0.6
+        provenance:
+          table: data
+          column: name
+          evidence: SQL type VARCHAR, 3 distinct values in 3 rows
+      - name: Amount
+        columnName: amount
+        semanticType: amount
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: data
+          column: amount
+          evidence: SQL type DOUBLE, 3 distinct values in 3 rows
+relations: []
+rules: []
