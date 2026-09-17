@@ -1,0 +1,17 @@
+# Build output
+dist/
+**/dist/
+coverage/
+.turbo/
+
+# Generated sources
+**/src/generated/
+
+# Generated protocol artifact — owned by `pnpm generate:schema`, not by Prettier.
+# Formatting it here would break the CI schema drift check.
+schema/anchor-schema-v1.json
+
+# Worker runtime state
+apps/worker-service/worker-data/
+
+pnpm-lock.yaml

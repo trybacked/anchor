@@ -13,20 +13,28 @@ coverage/
 pnpm-debug.log*
 .vitest/
 tmp/
-test/
-test
 temp/
+test/
 .backed/
 **/src/generated/
 design/
 .cursor/
+.hermes/
+
+# Docs: only the published protocol spec and its assets are tracked.
 docs/*
 !docs/assets/
 !docs/assets/**
 !docs/MODEL-FORMAT-v1.md
-test/
+
+# Tesseract language data — large binaries, installed locally.
 *.traineddata
-/scripts/
+
+# Worker runtime state: tenant models, run metadata, persisted artifacts.
+# Tests use temp dirs; nothing here belongs in git.
+apps/worker-service/worker-data/
+
+# Fixtures: ignore everything, then allow the curated golden-test inputs.
 fixtures/*
 !fixtures/pmi-minimal/
 !fixtures/gerace-albo/
@@ -39,5 +47,3 @@ fixtures/gerace-albo/*
 !fixtures/gerace-albo/README.md
 !fixtures/gerace-albo/sources/
 !fixtures/gerace-albo/sources/**
-.hermes/
-.cursor/

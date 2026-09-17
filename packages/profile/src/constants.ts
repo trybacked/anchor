@@ -16,13 +16,13 @@ export const FK_ALIGNMENT_BASE = 0.85;
 export const FK_SCORE_DECIMAL_PLACES = 3;
 
 export function isNativeDateColumnType(sqlType: string): boolean {
-    return NATIVE_DATE_TYPE_PATTERN.test(sqlType);
+  return NATIVE_DATE_TYPE_PATTERN.test(sqlType);
 }
 
 export function isNativeFractionalColumnType(sqlType: string): boolean {
-    return NATIVE_FRACTIONAL_TYPE_PATTERN.test(sqlType);
+  return NATIVE_FRACTIONAL_TYPE_PATTERN.test(sqlType);
 }
 
 export function isStringColumnType(sqlType: string): boolean {
-    return sqlType.startsWith(VARCHAR_TYPE_PREFIX);
+  return sqlType.startsWith(VARCHAR_TYPE_PREFIX);
 }

@@ -1,35 +1,38 @@
 import type { DocumentTypeHintConfig } from "@trybacked/core";
 export type { DocumentTypeHintConfig };
 export interface DocumentTypeHint {
-    documentType: string;
-    documentTypeLabel: string;
-    confidence: number;
-    evidence: string;
+  documentType: string;
+  documentTypeLabel: string;
+  confidence: number;
+  evidence: string;
 }
 export interface DocumentTypeRegistryEntry {
-    documentType: string;
-    documentTypeLabel: string;
+  documentType: string;
+  documentTypeLabel: string;
 }
 function hintFromConfig(config: DocumentTypeHintConfig): DocumentTypeHint {
-    return {
-        documentType: config.documentType,
-        documentTypeLabel: config.documentTypeLabel,
-        confidence: config.confidence,
-        evidence: `Table slug matches "${config.match}" (workspace rule)`,
-    };
+  return {
+    documentType: config.documentType,
+    documentTypeLabel: config.documentTypeLabel,
+    confidence: config.confidence,
+    evidence: `Table slug matches "${config.match}" (workspace rule)`,
+  };
 }
-export function inferDocumentTypeHint(sourceTable: string, workspaceHints: DocumentTypeHintConfig[] | undefined): DocumentTypeHint | null {
-    if (workspaceHints === undefined || workspaceHints.length === 0) {
-        return null;
-    }
-    const slug = sourceTable.toLowerCase();
-    for (const rule of workspaceHints) {
-        if (slug.includes(rule.match.toLowerCase())) {
-            return {
-                ...hintFromConfig(rule),
-                evidence: `Table slug matches "${rule.match}"`,
-            };
-        }
-    }
+export function inferDocumentTypeHint(
+  sourceTable: string,
+  workspaceHints: DocumentTypeHintConfig[] | undefined,
+): DocumentTypeHint | null {
+  if (workspaceHints === undefined || workspaceHints.length === 0) {
     return null;
+  }
+  const slug = sourceTable.toLowerCase();
+  for (const rule of workspaceHints) {
+    if (slug.includes(rule.match.toLowerCase())) {
+      return {
+        ...hintFromConfig(rule),
+        evidence: `Table slug matches "${rule.match}"`,
+      };
+    }
+  }
+  return null;
 }

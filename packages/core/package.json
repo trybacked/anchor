@@ -3,6 +3,17 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Anchor model.yaml schema, shared types, and run artifacts (.backed/)",
+  "sideEffects": false,
+  "keywords": [
+    "anchor",
+    "backed",
+    "semantic-model",
+    "model-yaml",
+    "yaml",
+    "schema",
+    "typescript",
+    "zod"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -23,10 +34,11 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "generate:schema": "node scripts/generate-json-schema.mjs",
     "prepublishOnly": "pnpm run build && pnpm run test"
   },

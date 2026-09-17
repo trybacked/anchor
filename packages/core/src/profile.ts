@@ -11,29 +11,33 @@ export const PROFILE_FK_OVERLAP_THRESHOLD = 0.7;
 export const PROFILE_FK_SAMPLE_SIZE = PROFILE_SAMPLE_SIZE;
 export const PROFILE_FK_CANDIDATES_PER_COLUMN = 3;
 export const ForeignKeyCandidateSchema = z.object({
-    targetTable: z.string().min(1),
-    targetColumn: z.string().min(1),
-    overlapRatio: z.number().min(0).max(1),
-    confidence: z.number().min(0).max(1),
+  targetTable: z.string().min(1),
+  targetColumn: z.string().min(1),
+  overlapRatio: z.number().min(0).max(1),
+  confidence: z.number().min(0).max(1),
 });
 export const DetectedPatternKindSchema = z.enum([
-    "date",
-    "email",
-    "amount",
-    "vat_number",
-    "fiscal_code",
+  "date",
+  "email",
+  "amount",
+  "vat_number",
+  "fiscal_code",
 ]);
 export const DetectedPatternSchema = z.object({
-    kind: DetectedPatternKindSchema,
-    matchRatio: z.number().min(0).max(1),
+  kind: DetectedPatternKindSchema,
+  matchRatio: z.number().min(0).max(1),
 });
 export const TopValueSchema = z.object({
-    value: z.string(),
-    count: z.number().int().nonnegative(),
+  value: z.string(),
+  count: z.number().int().nonnegative(),
 });
+/**
+ *
+ */
 export type ForeignKeyCandidate = z.infer<typeof ForeignKeyCandidateSchema>;
 export const EMPTY_FOREIGN_KEY_CANDIDATES: ForeignKeyCandidate[] = [];
-export const ColumnProfileSchema = z.object({
+export const ColumnProfileSchema = z
+  .object({
     name: z.string().min(1),
     sqlType: z.string().min(1),
     nullCount: z.number().int().nonnegative(),
@@ -44,20 +48,39 @@ export const ColumnProfileSchema = z.object({
     topValues: z.array(TopValueSchema).max(PROFILE_TOP_VALUES_LIMIT),
     patterns: z.array(DetectedPatternSchema),
     foreignKeyCandidates: z.array(ForeignKeyCandidateSchema).optional(),
-}).transform((column) => ({
+  })
+  .transform((column) => ({
     ...column,
     foreignKeyCandidates: column.foreignKeyCandidates ?? EMPTY_FOREIGN_KEY_CANDIDATES,
-}));
+  }));
 export const TableProfileSchema = z.object({
-    table: z.string().min(1),
-    sourceFile: z.string().min(1),
-    rowCount: z.number().int().nonnegative(),
-    columns: z.array(ColumnProfileSchema),
+  table: z.string().min(1),
+  sourceFile: z.string().min(1),
+  rowCount: z.number().int().nonnegative(),
+  columns: z.array(ColumnProfileSchema),
 });
 export const ProfileReportSchema = z.array(TableProfileSchema);
+/**
+ *
+ */
 export type DetectedPatternKind = z.infer<typeof DetectedPatternKindSchema>;
+/**
+ *
+ */
 export type DetectedPattern = z.infer<typeof DetectedPatternSchema>;
+/**
+ *
+ */
 export type TopValue = z.infer<typeof TopValueSchema>;
+/**
+ *
+ */
 export type ColumnProfile = z.infer<typeof ColumnProfileSchema>;
+/**
+ *
+ */
 export type TableProfile = z.infer<typeof TableProfileSchema>;
+/**
+ *
+ */
 export type ProfileReport = z.infer<typeof ProfileReportSchema>;

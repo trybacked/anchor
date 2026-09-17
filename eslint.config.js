@@ -1,13 +1,27 @@
 import eslint from "@eslint/js";
+import importPlugin from "eslint-plugin-import";
+import jsdoc from "eslint-plugin-jsdoc";
 import tseslint from "typescript-eslint";
+
+const packageSrc = (name) => [`${name}/src/**/*.ts`];
+const publicPackages = ["packages/anchor", "packages/core"];
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/.next/**", "**/coverage/**", "**/src/generated/**"],
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/coverage/**",
+      "**/src/generated/**",
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
+    plugins: {
+      import: importPlugin,
+    },
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -20,11 +34,67 @@ export default tseslint.config(
         { prefer: "type-imports", fixStyle: "separate-type-imports" },
       ],
       "@typescript-eslint/switch-exhaustiveness-check": "error",
+      "import/order": [
+        "error",
+        {
+          alphabetize: { order: "asc", caseInsensitive: true },
+          groups: [["builtin", "external"], "internal", "parent", "sibling", "index"],
+          "newlines-between": "never",
+        },
+      ],
     },
   },
-  // I file di test sono esclusi dai tsconfig dei package: niente typed linting.
+  {
+    files: ["apps/**/src/**/*.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
+    files: ["packages/**/src/**/*.ts"],
+    rules: {
+      "no-console": "error",
+    },
+  },
+  ...publicPackages.flatMap((pkg) => [
+    {
+      files: packageSrc(pkg),
+      plugins: { jsdoc },
+      settings: {
+        jsdoc: {
+          mode: "typescript",
+        },
+      },
+      rules: {
+        "jsdoc/require-jsdoc": [
+          "warn",
+          {
+            publicOnly: { esm: true },
+            require: {
+              FunctionDeclaration: true,
+              MethodDefinition: true,
+              ClassDeclaration: true,
+            },
+            contexts: [
+              "ExportNamedDeclaration > FunctionDeclaration",
+              "ExportNamedDeclaration > TSInterfaceDeclaration",
+              "ExportNamedDeclaration > TSTypeAliasDeclaration",
+              "ExportDefaultDeclaration > ClassDeclaration",
+            ],
+          },
+        ],
+        "jsdoc/require-param-description": "off",
+        "jsdoc/require-returns-description": "off",
+        "jsdoc/require-description": "off",
+        "jsdoc/check-tag-names": "warn",
+      },
+    },
+  ]),
   {
     files: ["**/*.test.ts"],
-    ...tseslint.configs.disableTypeChecked,
+    rules: {
+      "no-console": "off",
+      "jsdoc/require-jsdoc": "off",
+    },
   },
 );

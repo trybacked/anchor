@@ -16,64 +16,75 @@ const RUN_ID_RANDOM_SUFFIX_START = 2;
 const RUN_ID_RANDOM_SUFFIX_END = 6;
 const RUN_ID_RANDOM_SUFFIX_PAD_LENGTH = 4;
 export const RUN_ARTIFACTS = {
-    profile: "profile.json",
-    documents: "documents.json",
-    vocabulary: "vocabulary.json",
-    proposal: "proposal.json",
-    review: "review.json",
-    diff: "diff.json",
+  profile: "profile.json",
+  documents: "documents.json",
+  vocabulary: "vocabulary.json",
+  proposal: "proposal.json",
+  review: "review.json",
+  diff: "diff.json",
 } as const;
+/**
+ *
+ */
 export type RunArtifactName = keyof typeof RUN_ARTIFACTS;
 const WorkspaceConfigInputSchema = z.object({
-    sourcesDir: z.string().min(1),
-    documentTypeHints: z.array(DocumentTypeHintConfigSchema).optional(),
-    domain: DomainVocabularySchema.partial().optional(),
+  sourcesDir: z.string().min(1),
+  documentTypeHints: z.array(DocumentTypeHintConfigSchema).optional(),
+  domain: DomainVocabularySchema.partial().optional(),
 });
 export const WorkspaceConfigSchema = WorkspaceConfigInputSchema.transform((config) => ({
-    sourcesDir: config.sourcesDir,
-    documentTypeHints: config.documentTypeHints ?? EMPTY_DOCUMENT_TYPE_HINTS,
-    domain: config.domain,
+  sourcesDir: config.sourcesDir,
+  documentTypeHints: config.documentTypeHints ?? EMPTY_DOCUMENT_TYPE_HINTS,
+  domain: config.domain,
 }));
+/**
+ *
+ */
 export type WorkspaceConfig = z.infer<typeof WorkspaceConfigSchema>;
 export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {
-    sourcesDir: DEFAULT_SOURCES_DIR,
-    documentTypeHints: EMPTY_DOCUMENT_TYPE_HINTS,
-    domain: undefined,
+  sourcesDir: DEFAULT_SOURCES_DIR,
+  documentTypeHints: EMPTY_DOCUMENT_TYPE_HINTS,
+  domain: undefined,
 };
+/**
+ *
+ */
 export interface WorkspacePaths {
-    root: string;
-    backedDir: string;
-    configPath: string;
-    runsDir: string;
-    llmCacheDir: string;
-    modelPath: string;
-    dataPath: string;
-    runDir: (runId: string) => string;
-    artifactPath: (runId: string, artifact: RunArtifactName) => string;
+  root: string;
+  backedDir: string;
+  configPath: string;
+  runsDir: string;
+  llmCacheDir: string;
+  modelPath: string;
+  dataPath: string;
+  runDir: (runId: string) => string;
+  artifactPath: (runId: string, artifact: RunArtifactName) => string;
 }
+/** Resolves standard `.backed/` workspace paths for a project root. */
 export function workspacePaths(root: string): WorkspacePaths {
-    const backedDir = path.join(root, BACKED_DIR_NAME);
-    const runsDir = path.join(backedDir, RUNS_DIR_NAME);
-    return {
-        root,
-        backedDir,
-        configPath: path.join(backedDir, CONFIG_FILE_NAME),
-        runsDir,
-        llmCacheDir: path.join(backedDir, "cache", "llm"),
-        modelPath: path.join(root, MODEL_FILE_NAME),
-        dataPath: path.join(backedDir, DATA_FILE_NAME),
-        runDir: (runId) => path.join(runsDir, runId),
-        artifactPath: (runId, artifact) => path.join(runsDir, runId, RUN_ARTIFACTS[artifact]),
-    };
+  const backedDir = path.join(root, BACKED_DIR_NAME);
+  const runsDir = path.join(backedDir, RUNS_DIR_NAME);
+  return {
+    root,
+    backedDir,
+    configPath: path.join(backedDir, CONFIG_FILE_NAME),
+    runsDir,
+    llmCacheDir: path.join(backedDir, "cache", "llm"),
+    modelPath: path.join(root, MODEL_FILE_NAME),
+    dataPath: path.join(backedDir, DATA_FILE_NAME),
+    runDir: (runId) => path.join(runsDir, runId),
+    artifactPath: (runId, artifact) => path.join(runsDir, runId, RUN_ARTIFACTS[artifact]),
+  };
 }
+/** Creates a time-sortable run identifier with a random suffix. */
 export function createRunId(now: Date = new Date()): string {
-    const timestamp = now
-        .toISOString()
-        .replaceAll(/[-:]/g, "")
-        .replace(RUN_ID_ISO_MILLIS_SUFFIX_PATTERN, "");
-    const suffix = Math.random()
-        .toString(16)
-        .slice(RUN_ID_RANDOM_SUFFIX_START, RUN_ID_RANDOM_SUFFIX_END)
-        .padEnd(RUN_ID_RANDOM_SUFFIX_PAD_LENGTH, "0");
-    return `${timestamp}-${suffix}`;
+  const timestamp = now
+    .toISOString()
+    .replaceAll(/[-:]/g, "")
+    .replace(RUN_ID_ISO_MILLIS_SUFFIX_PATTERN, "");
+  const suffix = Math.random()
+    .toString(16)
+    .slice(RUN_ID_RANDOM_SUFFIX_START, RUN_ID_RANDOM_SUFFIX_END)
+    .padEnd(RUN_ID_RANDOM_SUFFIX_PAD_LENGTH, "0");
+  return `${timestamp}-${suffix}`;
 }

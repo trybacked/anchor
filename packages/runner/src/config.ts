@@ -16,18 +16,18 @@ export const HASH_LEDGER_FILE_NAME = "ledger.json";
 export const DELETION_LOG_FILE_NAME = "deletion-log.jsonl";
 
 export const ZERO_PIPELINE_STAGE_TIMINGS = {
-    ingestMs: 0,
-    documentsMs: 0,
-    extractionMs: 0,
-    embedMs: 0,
-    profileMs: 0,
-    proposalMs: 0,
+  ingestMs: 0,
+  documentsMs: 0,
+  extractionMs: 0,
+  embedMs: 0,
+  profileMs: 0,
+  proposalMs: 0,
 } as const;
 
 export const SKIPPED_PIPELINE_STATS: PipelineStats = {
-    ...ZERO_PIPELINE_STAGE_TIMINGS,
-    llmUsage: EMPTY_BURST_USAGE,
-    skippedLlm: true,
+  ...ZERO_PIPELINE_STAGE_TIMINGS,
+  llmUsage: EMPTY_BURST_USAGE,
+  skippedLlm: true,
 };
 
 export const DEFAULT_MAX_UPLOAD_BYTES = 200 * 1024 * 1024;

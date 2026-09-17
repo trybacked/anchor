@@ -2,12 +2,21 @@ import { DomainVocabularySchema, EMPTY_DOMAIN_VOCABULARY } from "@trybacked/core
 import type { DomainVocabulary } from "@trybacked/core";
 import type { LanguageModel } from "ai";
 import { EMPTY_BURST_USAGE, runBurst, type BurstResult, type BurstUsage } from "./burst.js";
-import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
-import { DISCOVERY_DOCUMENT_SAMPLE, DISCOVERY_LINES_PER_DOCUMENT, DISCOVERY_MAX_CHARS, LLM_SCHEMA_NAMES, } from "./constants.js";
+import {
+  DISCOVERY_DOCUMENT_SAMPLE,
+  DISCOVERY_LINES_PER_DOCUMENT,
+  DISCOVERY_MAX_CHARS,
+  LLM_SCHEMA_NAMES,
+} from "./constants.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
 import type { DocumentLineRow } from "./extract-document-mentions.js";
+import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
 import { scanNameSuffixes, filterPlausibleSuffixes } from "./scan-name-suffixes.js";
-export { DISCOVERY_DOCUMENT_SAMPLE, DISCOVERY_LINES_PER_DOCUMENT, DISCOVERY_MAX_CHARS, } from "./constants.js";
+export {
+  DISCOVERY_DOCUMENT_SAMPLE,
+  DISCOVERY_LINES_PER_DOCUMENT,
+  DISCOVERY_MAX_CHARS,
+} from "./constants.js";
 const DISCOVER_DOMAIN_SYSTEM_PROMPT = `You are a data modeller profiling an unfamiliar document corpus.
 
 From the excerpts, derive the vocabulary needed to index this corpus. Report only what the excerpts support — never invent categories the text does not show.
@@ -27,108 +36,118 @@ From the excerpts, derive the vocabulary needed to index this corpus. Report onl
 
 Use the corpus language for cues and suffixes, English for ids and descriptions.`;
 function sampleCorpusText(rows: DocumentLineRow[]): string {
-    const byDocument = new Map<string, string[]>();
-    for (const row of rows) {
-        const lines = byDocument.get(row.document_id) ?? [];
-        if (lines.length < DISCOVERY_LINES_PER_DOCUMENT) {
-            lines.push(row.text.trim());
-        }
-        byDocument.set(row.document_id, lines);
+  const byDocument = new Map<string, string[]>();
+  for (const row of rows) {
+    const lines = byDocument.get(row.document_id) ?? [];
+    if (lines.length < DISCOVERY_LINES_PER_DOCUMENT) {
+      lines.push(row.text.trim());
     }
-    const entries = [...byDocument.entries()];
-    const documents = entries.length <= DISCOVERY_DOCUMENT_SAMPLE
-        ? entries
-        : Array.from({ length: DISCOVERY_DOCUMENT_SAMPLE }, (_, index) => {
-            const pick = Math.floor((index * entries.length) / DISCOVERY_DOCUMENT_SAMPLE);
-            const entry = entries[pick];
-            if (entry === undefined) {
-                throw new Error(`document sample index ${String(pick)} is out of range`);
-            }
-            return entry;
+    byDocument.set(row.document_id, lines);
+  }
+  const entries = [...byDocument.entries()];
+  const documents =
+    entries.length <= DISCOVERY_DOCUMENT_SAMPLE
+      ? entries
+      : Array.from({ length: DISCOVERY_DOCUMENT_SAMPLE }, (_, index) => {
+          const pick = Math.floor((index * entries.length) / DISCOVERY_DOCUMENT_SAMPLE);
+          const entry = entries[pick];
+          if (entry === undefined) {
+            throw new Error(`document sample index ${String(pick)} is out of range`);
+          }
+          return entry;
         });
-    return documents
-        .map(([documentId, lines]) => [`### ${documentId}`, lines.filter((line) => line.length > 0).join("\n")].join("\n"))
-        .join("\n\n")
-        .slice(0, DISCOVERY_MAX_CHARS);
+  return documents
+    .map(([documentId, lines]) =>
+      [`### ${documentId}`, lines.filter((line) => line.length > 0).join("\n")].join("\n"),
+    )
+    .join("\n\n")
+    .slice(0, DISCOVERY_MAX_CHARS);
 }
 export interface DiscoverDomainOptions {
-    model: LanguageModel;
-    lines: DocumentLineRow[];
-    onProgress?: (message: string) => void;
-    llmCache?: LlmCacheContext;
+  model: LanguageModel;
+  lines: DocumentLineRow[];
+  onProgress?: (message: string) => void;
+  llmCache?: LlmCacheContext;
 }
 export interface DiscoverDomainResult {
-    vocabulary: DomainVocabulary;
-    usage: BurstUsage;
-    degraded: boolean;
+  vocabulary: DomainVocabulary;
+  usage: BurstUsage;
+  degraded: boolean;
 }
 export function buildFallbackDomainVocabulary(lines: DocumentLineRow[]): DomainVocabulary {
-    const scannedSuffixes = scanNameSuffixes(lines);
-    const suffixes = filterPlausibleSuffixes(scannedSuffixes);
-    return DomainVocabularySchema.parse({
-        ...EMPTY_DOMAIN_VOCABULARY,
-        nameConventions: {
-            suffixes,
-            leadingNoise: [],
-        },
-    });
+  const scannedSuffixes = scanNameSuffixes(lines);
+  const suffixes = filterPlausibleSuffixes(scannedSuffixes);
+  return DomainVocabularySchema.parse({
+    ...EMPTY_DOMAIN_VOCABULARY,
+    nameConventions: {
+      suffixes,
+      leadingNoise: [],
+    },
+  });
 }
-export async function discoverDomain(options: DiscoverDomainOptions): Promise<DiscoverDomainResult> {
-    const sample = sampleCorpusText(options.lines);
-    if (sample.trim().length === 0) {
-        return { vocabulary: EMPTY_DOMAIN_VOCABULARY, usage: EMPTY_BURST_USAGE, degraded: false };
-    }
-    options.onProgress?.("Profiling corpus vocabulary via LLM...");
-    let result: BurstResult<DomainVocabulary>;
-    try {
-        result = await runBurst({
-            model: options.model,
-            system: DISCOVER_DOMAIN_SYSTEM_PROMPT,
-            prompt: `Corpus excerpts:\n\n${sample}`,
-            schema: DomainVocabularySchema,
-            schemaName: LLM_SCHEMA_NAMES.domainVocabulary,
-            timeoutMs: resolveSemanticRequestTimeoutMs(),
-            ...withLlmCache(options.llmCache),
-            ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
-        });
-    }
-    catch {
-        options.onProgress?.("Vocabulary discovery failed — continuing with minimal defaults (deterministic extraction only)...");
-        return {
-            vocabulary: buildFallbackDomainVocabulary(options.lines),
-            usage: EMPTY_BURST_USAGE,
-            degraded: true,
-        };
-    }
-    const scannedSuffixes = scanNameSuffixes(options.lines);
-    const mergedSuffixes = filterPlausibleSuffixes([
-        ...result.output.nameConventions.suffixes,
-        ...scannedSuffixes,
-    ]);
-    const vocabulary = DomainVocabularySchema.parse({
-        ...result.output,
-        nameConventions: {
-            ...result.output.nameConventions,
-            suffixes: mergedSuffixes.length > 0 ? mergedSuffixes : scannedSuffixes,
-        },
+export async function discoverDomain(
+  options: DiscoverDomainOptions,
+): Promise<DiscoverDomainResult> {
+  const sample = sampleCorpusText(options.lines);
+  if (sample.trim().length === 0) {
+    return { vocabulary: EMPTY_DOMAIN_VOCABULARY, usage: EMPTY_BURST_USAGE, degraded: false };
+  }
+  options.onProgress?.("Profiling corpus vocabulary via LLM...");
+  let result: BurstResult<DomainVocabulary>;
+  try {
+    result = await runBurst({
+      model: options.model,
+      system: DISCOVER_DOMAIN_SYSTEM_PROMPT,
+      prompt: `Corpus excerpts:\n\n${sample}`,
+      schema: DomainVocabularySchema,
+      schemaName: LLM_SCHEMA_NAMES.domainVocabulary,
+      timeoutMs: resolveSemanticRequestTimeoutMs(),
+      ...withLlmCache(options.llmCache),
+      ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
     });
-    return { vocabulary, usage: result.usage, degraded: false };
+  } catch {
+    options.onProgress?.(
+      "Vocabulary discovery failed — continuing with minimal defaults (deterministic extraction only)...",
+    );
+    return {
+      vocabulary: buildFallbackDomainVocabulary(options.lines),
+      usage: EMPTY_BURST_USAGE,
+      degraded: true,
+    };
+  }
+  const scannedSuffixes = scanNameSuffixes(options.lines);
+  const mergedSuffixes = filterPlausibleSuffixes([
+    ...result.output.nameConventions.suffixes,
+    ...scannedSuffixes,
+  ]);
+  const vocabulary = DomainVocabularySchema.parse({
+    ...result.output,
+    nameConventions: {
+      ...result.output.nameConventions,
+      suffixes: mergedSuffixes.length > 0 ? mergedSuffixes : scannedSuffixes,
+    },
+  });
+  return { vocabulary, usage: result.usage, degraded: false };
 }
-export function mergeCorpusNameSuffixes(vocabulary: DomainVocabulary, lines: DocumentLineRow[]): DomainVocabulary {
-    const scannedSuffixes = scanNameSuffixes(lines);
-    const mergedSuffixes = filterPlausibleSuffixes([
-        ...vocabulary.nameConventions.suffixes,
-        ...scannedSuffixes,
-    ]);
-    return DomainVocabularySchema.parse({
-        ...vocabulary,
-        nameConventions: {
-            ...vocabulary.nameConventions,
-            suffixes: mergedSuffixes.length > 0
-                ? mergedSuffixes
-                : scannedSuffixes.length > 0
-                    ? filterPlausibleSuffixes(scannedSuffixes)
-                    : vocabulary.nameConventions.suffixes,
-        },
-    });
+export function mergeCorpusNameSuffixes(
+  vocabulary: DomainVocabulary,
+  lines: DocumentLineRow[],
+): DomainVocabulary {
+  const scannedSuffixes = scanNameSuffixes(lines);
+  const mergedSuffixes = filterPlausibleSuffixes([
+    ...vocabulary.nameConventions.suffixes,
+    ...scannedSuffixes,
+  ]);
+  return DomainVocabularySchema.parse({
+    ...vocabulary,
+    nameConventions: {
+      ...vocabulary.nameConventions,
+      suffixes:
+        mergedSuffixes.length > 0
+          ? mergedSuffixes
+          : scannedSuffixes.length > 0
+            ? filterPlausibleSuffixes(scannedSuffixes)
+            : vocabulary.nameConventions.suffixes,
+    },
+  });
 }

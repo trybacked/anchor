@@ -4,13 +4,13 @@ Local MCP server exposing the Anchor semantic model as five deterministic, Zod-v
 
 ## MCP surface
 
-| Tool | Purpose |
-|---|---|
-| `list_entities` | Entity summaries: id, name, description, status |
-| `get_entity` | Entity detail with properties (semanticType, role, provenance) |
-| `list_relations` | Relations with cardinality and status; optional `id` filter |
-| `search_model` | Semantic document-chunk search when DuckDB vectors are available, merged with case-insensitive substring match |
-| `get_definition` | Confirmed business rule with provenance, or structured not-found |
+| Tool             | Purpose                                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| `list_entities`  | Entity summaries: id, name, description, status                                                                |
+| `get_entity`     | Entity detail with properties (semanticType, role, provenance)                                                 |
+| `list_relations` | Relations with cardinality and status; optional `id` filter                                                    |
+| `search_model`   | Semantic document-chunk search when DuckDB vectors are available, merged with case-insensitive substring match |
+| `get_definition` | Confirmed business rule with provenance, or structured not-found                                               |
 
 No LLM inference occurs in the MCP path. `search_model` may embed the query locally when chunk vectors exist in `.backed/data.duckdb`. Data is read from `model.yaml` and the local DuckDB snapshot.
 

@@ -39,13 +39,13 @@ Requires `AI_GATEWAY_API_KEY` in workspace `.env`. Writes `.backed/data.duckdb` 
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `backed init [folder]` | Interactive workspace setup → `.backed/config.yaml` |
+| Command                 | What it does                                                                |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `backed init [folder]`  | Interactive workspace setup → `.backed/config.yaml`                         |
 | `backed model [folder]` | Full pipeline → `proposal.json` (+ `documents.json` when documents present) |
-| `backed review` | Risk-ranked questions → `review.json` + `model.yaml` |
-| `backed diff` | Compare last two runs |
-| `backed serve` | MCP stdio on `model.yaml` + read-only DuckDB |
+| `backed review`         | Risk-ranked questions → `review.json` + `model.yaml`                        |
+| `backed diff`           | Compare last two runs                                                       |
+| `backed serve`          | MCP stdio on `model.yaml` + read-only DuckDB                                |
 
 Environment variables (`.env` in workspace root): `AI_GATEWAY_API_KEY` (required for model), `SEMANTIC_MODEL`, `SEMANTIC_EMBEDDING_MODEL`.
 

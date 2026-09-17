@@ -36,12 +36,12 @@ Writeback **actions** are reserved for a future format version and are **not** p
 
 ## Primitives
 
-| Primitive | Key | Anchored to |
-|---|---|---|
-| Entity | `entities[]` | Source table (`sourceTable`) |
-| Property | `entities[].properties[]` | Source column (`columnName`) |
-| Relation | `relations[]` | Column pair (`fromColumn` → `toColumn`) |
-| Rule | `rules[]` | Entity (`appliesTo`) and optional column |
+| Primitive | Key                       | Anchored to                              |
+| --------- | ------------------------- | ---------------------------------------- |
+| Entity    | `entities[]`              | Source table (`sourceTable`)             |
+| Property  | `entities[].properties[]` | Source column (`columnName`)             |
+| Relation  | `relations[]`             | Column pair (`fromColumn` → `toColumn`)  |
+| Rule      | `rules[]`                 | Entity (`appliesTo`) and optional column |
 
 ### Property semantic types
 
@@ -73,11 +73,11 @@ Elements below confidence 0.7 become doubts or review questions during inference
 
 After human review (`backed review`), elements have one of these statuses:
 
-| Status | Meaning |
-|---|---|
-| `proposed` | Inferred but not explicitly reviewed (below threshold or unanswered question) |
+| Status      | Meaning                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------ |
+| `proposed`  | Inferred but not explicitly reviewed (below threshold or unanswered question)                                |
 | `confirmed` | Accepted in review (Yes), **or** auto-confirmed when confidence ≥ review threshold and no question was asked |
-| `renamed` | Accepted with corrected label (Rename) |
+| `renamed`   | Accepted with corrected label (Rename)                                                                       |
 
 Rejected elements (No) are **omitted** from `model.yaml`.
 
@@ -89,13 +89,13 @@ Rejected elements (No) are **omitted** from `model.yaml`.
 
 Five deterministic operations on a validated model — no LLM in the query path.
 
-| Tool | Lookup strategy |
-|---|---|
-| `list_entities` | Full entity list |
-| `get_entity` | By entity `id` |
-| `list_relations` | All relations, or filter by entity `id` |
-| `search_model` | **Hybrid:** semantic search over ingested document-chunk embeddings when DuckDB vectors exist, merged with case-insensitive substring match on entities, properties, relations, and rules. Falls back to substring-only when embeddings are unavailable. |
-| `get_definition` | **Substring scoring only** on confirmed rules: exact id → exact name → partial name → partial definition. Rules are short structured records; semantic chunk search is not applied here in v1. |
+| Tool             | Lookup strategy                                                                                                                                                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_entities`  | Full entity list                                                                                                                                                                                                                                         |
+| `get_entity`     | By entity `id`                                                                                                                                                                                                                                           |
+| `list_relations` | All relations, or filter by entity `id`                                                                                                                                                                                                                  |
+| `search_model`   | **Hybrid:** semantic search over ingested document-chunk embeddings when DuckDB vectors exist, merged with case-insensitive substring match on entities, properties, relations, and rules. Falls back to substring-only when embeddings are unavailable. |
+| `get_definition` | **Substring scoring only** on confirmed rules: exact id → exact name → partial name → partial definition. Rules are short structured records; semantic chunk search is not applied here in v1.                                                           |
 
 ---
 
@@ -133,13 +133,13 @@ tenants/<tenantId>/
 
 **`persist/` contains only these five files:**
 
-| File | Purpose |
-|---|---|
-| `model.yaml` | Committable semantic model |
-| `ledger.json` | SHA-256 content hashes (incremental skip) |
-| `deletion-log.jsonl` | Append-only GC proof per run |
-| `proposal.json` | Latest inference proposal (review input) |
-| `review.json` | Human review answers |
+| File                 | Purpose                                   |
+| -------------------- | ----------------------------------------- |
+| `model.yaml`         | Committable semantic model                |
+| `ledger.json`        | SHA-256 content hashes (incremental skip) |
+| `deletion-log.jsonl` | Append-only GC proof per run              |
+| `proposal.json`      | Latest inference proposal (review input)  |
+| `review.json`        | Human review answers                      |
 
 Documents, raw corpus, DuckDB snapshots, embeddings, and run scratch data **never** persist. They live under `work/` during processing and are deleted when the run finishes (success or failure).
 

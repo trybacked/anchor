@@ -28,9 +28,18 @@ const anchor = createAnchorClient({
 
 const health = await anchor.health();
 
-const { runId } = await anchor.submitRun("demo", [
-  { filename: "export.csv", content: csvBuffer },
-]);
+const { runId } = await anchor.submitRun("demo", [{ filename: "export.csv", content: csvBuffer }], {
+  config: {
+    documentTypeHints: [
+      {
+        match: "determinazioni",
+        documentType: "municipal_determination",
+        documentTypeLabel: "Determinazione",
+        confidence: 0.95,
+      },
+    ],
+  },
+});
 
 const finalStatus = await anchor.waitForRun("demo", runId, {
   intervalMs: 2_000,
@@ -44,28 +53,27 @@ if (!("notModified" in modelResult)) {
 
 ## API surface
 
-| Method | Worker route |
-|--------|----------------|
-| `health()` | `GET /health` |
-| `submitRun(tenantId, files)` | `POST /v1/tenants/:tenantId/runs` |
-| `getRunStatus(tenantId, runId)` | `GET /v1/tenants/:tenantId/runs/:runId` |
-| `waitForRun(tenantId, runId)` | Poll helper |
-| `getModel(tenantId)` | `GET /v1/tenants/:tenantId/model` |
-| `getReviewQuestions(tenantId)` | `GET /v1/tenants/:tenantId/review` |
-| `submitReview(tenantId, body)` | `POST /v1/tenants/:tenantId/review` |
-| `listDeletions(tenantId, query?)` | `GET /v1/tenants/:tenantId/audit/deletions` |
-| `getLedger(tenantId)` | `GET /v1/tenants/:tenantId/audit/ledger` |
+| Method                                 | Worker route                                |
+| -------------------------------------- | ------------------------------------------- |
+| `health()`                             | `GET /health`                               |
+| `submitRun(tenantId, files, options?)` | `POST /v1/tenants/:tenantId/runs`           |
+| `getTenantConfig(tenantId)`            | `GET /v1/tenants/:tenantId/config`          |
+| `updateTenantConfig(tenantId, patch)`  | `PATCH /v1/tenants/:tenantId/config`        |
+| `getRunStatus(tenantId, runId)`        | `GET /v1/tenants/:tenantId/runs/:runId`     |
+| `waitForRun(tenantId, runId)`          | Poll helper                                 |
+| `getModel(tenantId)`                   | `GET /v1/tenants/:tenantId/model`           |
+| `getReviewQuestions(tenantId)`         | `GET /v1/tenants/:tenantId/review`          |
+| `submitReview(tenantId, body)`         | `POST /v1/tenants/:tenantId/review`         |
+| `listDeletions(tenantId, query?)`      | `GET /v1/tenants/:tenantId/audit/deletions` |
+| `getLedger(tenantId)`                  | `GET /v1/tenants/:tenantId/audit/ledger`    |
 
 ## Webhooks
 
 Verify inbound `run.completed` webhooks from Anchor:
 
 ```typescript
-import {
-  verifyWebhookSignature,
-  parseRunCompletedWebhook,
-  WEBHOOK_SIGNATURE_HEADER,
-} from "@trybacked/anchor";
+import { parseRunCompletedWebhook, WEBHOOK_SIGNATURE_HEADER } from "@trybacked/anchor";
+import { verifyWebhookSignature } from "@trybacked/anchor/webhook";
 
 const body = await request.text();
 const signature = request.headers.get(WEBHOOK_SIGNATURE_HEADER) ?? "";

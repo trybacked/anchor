@@ -1,114 +1,139 @@
-import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_EMBEDDING_DIMENSION, DOCUMENT_CHUNKS_TABLE, DOCUMENT_LINES_TABLE, } from "@trybacked/core";
-import { capturePreservedChunkEmbeddings, restorePreservedChunkEmbeddings, } from "./chunk-embeddings.js";
+import {
+  DEFAULT_CHUNK_OVERLAP,
+  DEFAULT_CHUNK_SIZE,
+  DEFAULT_EMBEDDING_DIMENSION,
+  DOCUMENT_CHUNKS_TABLE,
+  DOCUMENT_LINES_TABLE,
+} from "@trybacked/core";
+import {
+  capturePreservedChunkEmbeddings,
+  restorePreservedChunkEmbeddings,
+} from "./chunk-embeddings.js";
 import { readRowNumber, readRowString } from "./duckdb-row.js";
 import { dropTableIfExists, quoteIdentifier, quoteString } from "./sql.js";
 import type { Dataset, SqlQuery } from "./types.js";
 export interface DocumentLineRow {
-    document_id: string;
-    page: number;
-    line: number;
-    text: string;
+  document_id: string;
+  page: number;
+  line: number;
+  text: string;
 }
 export interface DocumentChunkRow {
-    document_id: string;
-    chunk_index: number;
-    page_start: number;
-    page_end: number;
-    text: string;
+  document_id: string;
+  chunk_index: number;
+  page_start: number;
+  page_end: number;
+  text: string;
 }
 export interface ChunkDocumentLinesOptions {
-    chunkSize?: number;
-    chunkOverlap?: number;
+  chunkSize?: number;
+  chunkOverlap?: number;
 }
 async function listDocumentIds(query: SqlQuery): Promise<string[]> {
-    const rows = await query(`SELECT DISTINCT document_id FROM ${quoteIdentifier(DOCUMENT_LINES_TABLE)} ORDER BY document_id`);
-    return rows.map((row) => readRowString(row, "document_id"));
+  const rows = await query(
+    `SELECT DISTINCT document_id FROM ${quoteIdentifier(DOCUMENT_LINES_TABLE)} ORDER BY document_id`,
+  );
+  return rows.map((row) => readRowString(row, "document_id"));
 }
 async function fetchDocumentLines(query: SqlQuery, documentId: string): Promise<DocumentLineRow[]> {
-    const rows = await query(`SELECT document_id, page, line, text FROM ${quoteIdentifier(DOCUMENT_LINES_TABLE)} WHERE document_id = ${quoteString(documentId)} ORDER BY page, line`);
-    return rows.map((row) => ({
-        document_id: readRowString(row, "document_id"),
-        page: readRowNumber(row, "page"),
-        line: readRowNumber(row, "line"),
-        text: readRowString(row, "text"),
-    }));
+  const rows = await query(
+    `SELECT document_id, page, line, text FROM ${quoteIdentifier(DOCUMENT_LINES_TABLE)} WHERE document_id = ${quoteString(documentId)} ORDER BY page, line`,
+  );
+  return rows.map((row) => ({
+    document_id: readRowString(row, "document_id"),
+    page: readRowNumber(row, "page"),
+    line: readRowNumber(row, "line"),
+    text: readRowString(row, "text"),
+  }));
 }
 function overlapLineCount(lines: DocumentLineRow[], overlapChars: number): number {
-    let total = 0;
-    let count = 0;
-    for (let index = lines.length - 1; index >= 0; index -= 1) {
-        const line = lines[index];
-        if (line === undefined) {
-            break;
-        }
-        total += line.text.length + 1;
-        count += 1;
-        if (total >= overlapChars) {
-            break;
-        }
+  let total = 0;
+  let count = 0;
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    if (line === undefined) {
+      break;
     }
-    return count;
+    total += line.text.length + 1;
+    count += 1;
+    if (total >= overlapChars) {
+      break;
+    }
+  }
+  return count;
 }
-export function chunkDocumentLineRows(lines: DocumentLineRow[], chunkSize: number = DEFAULT_CHUNK_SIZE, chunkOverlap: number = DEFAULT_CHUNK_OVERLAP): DocumentChunkRow[] {
-    if (lines.length === 0) {
-        return [];
+export function chunkDocumentLineRows(
+  lines: DocumentLineRow[],
+  chunkSize: number = DEFAULT_CHUNK_SIZE,
+  chunkOverlap: number = DEFAULT_CHUNK_OVERLAP,
+): DocumentChunkRow[] {
+  if (lines.length === 0) {
+    return [];
+  }
+  const firstLine = lines[0];
+  if (firstLine === undefined) {
+    return [];
+  }
+  const documentId = firstLine.document_id;
+  const chunks: DocumentChunkRow[] = [];
+  let buffer: DocumentLineRow[] = [];
+  let bufferLength = 0;
+  const emit = (): void => {
+    if (buffer.length === 0) {
+      return;
     }
-    const firstLine = lines[0];
-    if (firstLine === undefined) {
-        return [];
+    const text = buffer
+      .map((line) => line.text)
+      .join("\n")
+      .trim();
+    if (text.length === 0) {
+      return;
     }
-    const documentId = firstLine.document_id;
-    const chunks: DocumentChunkRow[] = [];
-    let buffer: DocumentLineRow[] = [];
-    let bufferLength = 0;
-    const emit = (): void => {
-        if (buffer.length === 0) {
-            return;
-        }
-        const text = buffer.map((line) => line.text).join("\n").trim();
-        if (text.length === 0) {
-            return;
-        }
-        const pageStart = buffer[0]?.page;
-        const pageEnd = buffer.at(-1)?.page;
-        if (pageStart === undefined || pageEnd === undefined) {
-            return;
-        }
-        chunks.push({
-            document_id: documentId,
-            chunk_index: chunks.length,
-            page_start: pageStart,
-            page_end: pageEnd,
-            text,
-        });
-    };
-    for (const line of lines) {
-        const lineLength = line.text.length + 1;
-        if (bufferLength + lineLength > chunkSize && buffer.length > 0) {
-            emit();
-            const overlapLines = overlapLineCount(buffer, chunkOverlap);
-            buffer = buffer.slice(Math.max(0, buffer.length - overlapLines));
-            bufferLength = buffer.reduce((total, entry) => total + entry.text.length + 1, 0);
-        }
-        buffer.push(line);
-        bufferLength += lineLength;
+    const pageStart = buffer[0]?.page;
+    const pageEnd = buffer.at(-1)?.page;
+    if (pageStart === undefined || pageEnd === undefined) {
+      return;
     }
-    emit();
-    return chunks;
+    chunks.push({
+      document_id: documentId,
+      chunk_index: chunks.length,
+      page_start: pageStart,
+      page_end: pageEnd,
+      text,
+    });
+  };
+  for (const line of lines) {
+    const lineLength = line.text.length + 1;
+    if (bufferLength + lineLength > chunkSize && buffer.length > 0) {
+      emit();
+      const overlapLines = overlapLineCount(buffer, chunkOverlap);
+      buffer = buffer.slice(Math.max(0, buffer.length - overlapLines));
+      bufferLength = buffer.reduce((total, entry) => total + entry.text.length + 1, 0);
+    }
+    buffer.push(line);
+    bufferLength += lineLength;
+  }
+  emit();
+  return chunks;
 }
 async function insertChunk(query: SqlQuery, chunk: DocumentChunkRow): Promise<void> {
-    await query(`INSERT INTO ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} (document_id, chunk_index, page_start, page_end, text) VALUES (${quoteString(chunk.document_id)}, ${String(chunk.chunk_index)}, ${String(chunk.page_start)}, ${String(chunk.page_end)}, ${quoteString(chunk.text)})`);
+  await query(
+    `INSERT INTO ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} (document_id, chunk_index, page_start, page_end, text) VALUES (${quoteString(chunk.document_id)}, ${String(chunk.chunk_index)}, ${String(chunk.page_start)}, ${String(chunk.page_end)}, ${quoteString(chunk.text)})`,
+  );
 }
-export async function chunkDocumentLines(query: SqlQuery, options: ChunkDocumentLinesOptions = {}): Promise<{
-    dataset: Dataset;
-    chunkCount: number;
-    embeddingsRestored: number;
+export async function chunkDocumentLines(
+  query: SqlQuery,
+  options: ChunkDocumentLinesOptions = {},
+): Promise<{
+  dataset: Dataset;
+  chunkCount: number;
+  embeddingsRestored: number;
 }> {
-    const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
-    const chunkOverlap = options.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP;
-    const preservedEmbeddings = await capturePreservedChunkEmbeddings(query);
-    await dropTableIfExists(query, DOCUMENT_CHUNKS_TABLE);
-    await query(`CREATE TABLE ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} (
+  const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
+  const chunkOverlap = options.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP;
+  const preservedEmbeddings = await capturePreservedChunkEmbeddings(query);
+  await dropTableIfExists(query, DOCUMENT_CHUNKS_TABLE);
+  await query(`CREATE TABLE ${quoteIdentifier(DOCUMENT_CHUNKS_TABLE)} (
       document_id VARCHAR NOT NULL,
       chunk_index INTEGER NOT NULL,
       page_start INTEGER NOT NULL,
@@ -116,24 +141,24 @@ export async function chunkDocumentLines(query: SqlQuery, options: ChunkDocument
       text VARCHAR NOT NULL,
       embedding FLOAT[${String(DEFAULT_EMBEDDING_DIMENSION)}]
     )`);
-    const documentIds = await listDocumentIds(query);
-    let chunkCount = 0;
-    for (const documentId of documentIds) {
-        const lines = await fetchDocumentLines(query, documentId);
-        const chunks = chunkDocumentLineRows(lines, chunkSize, chunkOverlap);
-        for (const chunk of chunks) {
-            await insertChunk(query, chunk);
-            chunkCount += 1;
-        }
+  const documentIds = await listDocumentIds(query);
+  let chunkCount = 0;
+  for (const documentId of documentIds) {
+    const lines = await fetchDocumentLines(query, documentId);
+    const chunks = chunkDocumentLineRows(lines, chunkSize, chunkOverlap);
+    for (const chunk of chunks) {
+      await insertChunk(query, chunk);
+      chunkCount += 1;
     }
-    const embeddingsRestored = await restorePreservedChunkEmbeddings(query, preservedEmbeddings);
-    return {
-        dataset: {
-            tableName: DOCUMENT_CHUNKS_TABLE,
-            sourceFile: "document-chunks",
-            format: "json",
-        },
-        chunkCount,
-        embeddingsRestored,
-    };
+  }
+  const embeddingsRestored = await restorePreservedChunkEmbeddings(query, preservedEmbeddings);
+  return {
+    dataset: {
+      tableName: DOCUMENT_CHUNKS_TABLE,
+      sourceFile: "document-chunks",
+      format: "json",
+    },
+    chunkCount,
+    embeddingsRestored,
+  };
 }
