@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/anchor",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "type": "module",
   "description": "Official TypeScript SDK for the Anchor worker HTTP API",
   "sideEffects": false,
@@ -46,7 +46,7 @@
     "prepublishOnly": "pnpm run build && pnpm run test"
   },
   "dependencies": {
-    "@trybacked/core": "^0.1.0",
+    "@trybacked/core": "^0.2.0",
     "openapi-fetch": "^0.14.0"
   },
   "devDependencies": {
