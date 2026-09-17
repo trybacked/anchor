@@ -46,7 +46,7 @@
     "prepublishOnly": "pnpm run build && pnpm run test"
   },
   "dependencies": {
-    "@trybacked/core": "^0.1.0",
+    "@trybacked/core": "workspace:^",
     "openapi-fetch": "^0.14.0"
   },
   "devDependencies": {
