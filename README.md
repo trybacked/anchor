@@ -1,3 +1,5 @@
+
+
 ![Anchor](docs/assets/logo-black.png)
 
 **The institutional memory of every organization**  
@@ -5,9 +7,13 @@ Open protocol for organizational semantic models
 
 ![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![model.yaml v1](https://img.shields.io/badge/model.yaml-v1-CB3837?style=for-the-badge) ![MCP](https://img.shields.io/badge/MCP-stdio-000000?style=for-the-badge)
 
+
+
 Every organization runs on data spread across systems that were never built to share a vocabulary. ERP, exports, spreadsheets, and documents each tell a partial story; without a shared layer of meaning, humans argue over definitions and agents invent new ones every session.
 
-Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms treat as foundational: map sources to **entities**, wire **relations**, capture **business definitions**, and govern what is true with provenance and confidence. That layer *is* institutional memory when it is written down, versioned, and shared. The output is `model.yaml`: a committable semantic model. Humans confirm what the machine is unsure about through risk-ranked review; agents query what has been confirmed through MCP.
+Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms treat as foundational: map sources to **entities**, wire **relations**, capture **business definitions**, and govern what is true with provenance and confidence. That layer *is* institutional memory when it is written down, versioned, and shared.   
+  
+The output is `model.yaml`: a committable semantic model. Humans confirm what the machine is unsure about through risk-ranked review; agents query what has been confirmed through MCP.
 
 
 |              |                                |
@@ -22,11 +28,15 @@ Anchor does not move data or replace systems. It builds the **ontology layer** a
 
 ---
 
+
+
 ## Why
 
 Organizations have data everywhere and meaning nowhere. Three systems disagree on customer count because *customer* was never defined — not in the database, but in the ontology that should sit above it. Anchor brings that layer within reach for ordinary organizations: local-first, evidence-backed, and small enough to stay true.
 
 ---
+
+
 
 ## How it works
 
@@ -38,10 +48,10 @@ Anchor keeps three questions separate: **what the data shows**, **what it means*
 flowchart TB
     subgraph boundary["Your infrastructure"]
         direction TB
-        sources["Sources<br/>spreadsheets, exports, documents"]
-        evidence["Evidence<br/>statistical profiling"]
-        proposal["Proposal<br/>inferred ontology"]
-        review["Review<br/>human arbitration"]
+        sources["Sources"]
+        evidence["Evidence"]
+        proposal["Proposal"]
+        review["Review"]
         model["Semantic model"]
         mcp["MCP interface"]
 
@@ -57,6 +67,7 @@ flowchart TB
 
     classDef external stroke-dasharray: 5 4
     class inference,agents external
+    style boundary fill:none
 ```
 
 
@@ -95,6 +106,8 @@ These hold on every run and are enforced in code, not by convention.
 | **No silent uncertainty** | Anything below threshold becomes a review question or a recorded doubt, never an unannounced fact          |
 
 
+
+
 ### Governance
 
 Confidence decides whether a person is asked. The answer decides what is written.
@@ -125,6 +138,8 @@ Commands, configuration, and artifacts: [Operational workflow](#operational-work
 
 ---
 
+
+
 ## Install
 
 **Requirements:** Node.js ≥ 22 · pnpm · [Vercel AI Gateway](https://vercel.com/ai-gateway) API key
@@ -145,6 +160,8 @@ REVIEW_CONFIDENCE_THRESHOLD=0.95                # optional
 ```
 
 ---
+
+
 
 ## Operational workflow
 
@@ -226,6 +243,8 @@ Authenticated MCP stdio — five deterministic operations on `model.yaml` (see [
 backed model && backed diff
 ```
 
+
+
 ### Cheat sheet
 
 ```bash
@@ -235,6 +254,8 @@ backed init && backed model && backed review && backed serve
 Agent pattern: `list_entities` → `get_entity` → `search_model` / `get_definition`.
 
 ---
+
+
 
 ## Hosted deployment
 
@@ -250,6 +271,8 @@ The service path: the same pipeline exposed as a multi-tenant HTTP API, for orga
 | Raw files | Stay on your machine     | Deleted after every run                     |
 | Review    | Interactive prompts      | API-driven                                  |
 | Audit     | Run artifacts on disk    | Append-only deletion log and content ledger |
+
+
 
 
 ### Ephemeral by construction
@@ -338,6 +361,8 @@ API surface:
 
 ---
 
+
+
 ## The model
 
 `model.yaml` contains no data. It contains the **model of the data** — portable, committable, schema-validated (`SemanticModelSchema` in `@trybacked/core`).
@@ -420,6 +445,8 @@ rules:
     confidence: 0.7
 ```
 
+
+
 ### Run artifacts
 
 Each pipeline run stores intermediate artifacts under `.backed/runs/<run-id>/`:
@@ -457,6 +484,8 @@ All files are schema-validated on read and write.
 
 ---
 
+
+
 ## MCP surface
 
 `backed serve` exposes the semantic model over MCP stdio. Every response is structured JSON, Zod-validated, with **no LLM** in the path.
@@ -474,6 +503,8 @@ All files are schema-validated on read and write.
 Data is read from local `model.yaml` only. DuckDB snapshots are used by `backed model`, not by `serve`.
 
 ---
+
+
 
 ## Data residency
 
@@ -517,6 +548,8 @@ Credentials are verified once at startup, not on every call.
 
 ---
 
+
+
 ## CLI
 
 
@@ -534,6 +567,8 @@ See [Operational workflow](#operational-workflow) for the step-by-step guide.
 
 ---
 
+
+
 ## Development
 
 ```bash
@@ -542,6 +577,8 @@ pnpm generate:schema   # refresh schema/anchor-schema-v1.json after Zod changes
 pnpm test
 pnpm cli --help
 ```
+
+
 
 ### Packages
 
@@ -563,6 +600,8 @@ Packages published to npm use the `@trybacked/*` scope; internal workspace packa
 | `[apps/cli](./apps/cli)`                       | internal  | `backed` command-line interface                  |
 | `[apps/worker-service](./apps/worker-service)` | internal  | Multi-tenant hosted pipeline API                 |
 | `[apps/auth-api](./apps/auth-api)`             | internal  | Device-flow auth server for `backed login`       |
+
+
 
 
 ### CI
