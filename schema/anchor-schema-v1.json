@@ -28,11 +28,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "formatVersion",
-            "runId",
-            "generatedAt"
-          ],
+          "required": ["formatVersion", "runId", "generatedAt"],
           "additionalProperties": false
         },
         "entities": {
@@ -57,11 +53,7 @@
               },
               "status": {
                 "type": "string",
-                "enum": [
-                  "proposed",
-                  "confirmed",
-                  "renamed"
-                ]
+                "enum": ["proposed", "confirmed", "renamed"]
               },
               "confidence": {
                 "type": "number",
@@ -84,10 +76,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "table",
-                  "evidence"
-                ],
+                "required": ["table", "evidence"],
                 "additionalProperties": false
               },
               "properties": {
@@ -120,11 +109,7 @@
                     },
                     "role": {
                       "type": "string",
-                      "enum": [
-                        "primary_key",
-                        "foreign_key",
-                        "attribute"
-                      ]
+                      "enum": ["primary_key", "foreign_key", "attribute"]
                     },
                     "nullable": {
                       "type": "boolean"
@@ -150,10 +135,7 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "table",
-                        "evidence"
-                      ],
+                      "required": ["table", "evidence"],
                       "additionalProperties": false
                     }
                   },
@@ -213,19 +195,11 @@
               },
               "cardinality": {
                 "type": "string",
-                "enum": [
-                  "one_to_one",
-                  "one_to_many",
-                  "many_to_many"
-                ]
+                "enum": ["one_to_one", "one_to_many", "many_to_many"]
               },
               "status": {
                 "type": "string",
-                "enum": [
-                  "proposed",
-                  "confirmed",
-                  "renamed"
-                ]
+                "enum": ["proposed", "confirmed", "renamed"]
               },
               "confidence": {
                 "type": "number",
@@ -248,10 +222,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "table",
-                  "evidence"
-                ],
+                "required": ["table", "evidence"],
                 "additionalProperties": false
               }
             },
@@ -297,11 +268,7 @@
               },
               "status": {
                 "type": "string",
-                "enum": [
-                  "proposed",
-                  "confirmed",
-                  "renamed"
-                ]
+                "enum": ["proposed", "confirmed", "renamed"]
               },
               "confidence": {
                 "type": "number",
@@ -324,10 +291,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "table",
-                  "evidence"
-                ],
+                "required": ["table", "evidence"],
                 "additionalProperties": false
               }
             },
@@ -344,12 +308,7 @@
           }
         }
       },
-      "required": [
-        "metadata",
-        "entities",
-        "relations",
-        "rules"
-      ],
+      "required": ["metadata", "entities", "relations", "rules"],
       "additionalProperties": false
     }
   }

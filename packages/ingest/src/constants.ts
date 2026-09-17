@@ -1,18 +1,18 @@
 import type { DatasetFormat } from "./types.js";
 
 export const SOURCE_EXTENSION_FORMATS: Readonly<Record<string, DatasetFormat>> = {
-    ".csv": "csv",
-    ".tsv": "csv",
-    ".xlsx": "xlsx",
-    ".xls": "xlsx",
-    ".parquet": "parquet",
-    ".json": "json",
-    ".jsonl": "json",
-    ".pdf": "pdf",
-    ".txt": "text",
-    ".md": "text",
-    ".log": "text",
-    ".docx": "docx",
+  ".csv": "csv",
+  ".tsv": "csv",
+  ".xlsx": "xlsx",
+  ".xls": "xlsx",
+  ".parquet": "parquet",
+  ".json": "json",
+  ".jsonl": "json",
+  ".pdf": "pdf",
+  ".txt": "text",
+  ".md": "text",
+  ".log": "text",
+  ".docx": "docx",
 };
 
 export const ARCHIVE_EXTENSIONS = new Set([".zip", ".rar"]);
@@ -40,4 +40,4 @@ export const KEYWORD_MIN_TOKEN_LENGTH = 3;
 export const KEYWORD_STOPWORDS = new Set(["the", "and", "for", "with", "from", "that", "this"]);
 
 export const PDF_INGEST_NOISE_PATTERN =
-    /Image too small to scale|Line cannot be recognized|(?:Warning:\s*)?TT:\s*undefined function/i;
+  /Image too small to scale|Line cannot be recognized|(?:Warning:\s*)?TT:\s*undefined function/i;

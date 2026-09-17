@@ -27,8 +27,17 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
       - name: Build
         run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
 
       - name: Generate JSON Schema
         run: pnpm generate:schema
@@ -36,5 +45,5 @@ jobs:
       - name: Verify schema artifact is committed
         run: git diff --exit-code schema/anchor-schema-v1.json
 
-      - name: Test
-        run: pnpm test
+      - name: Test with coverage
+        run: pnpm test:coverage

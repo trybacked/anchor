@@ -827,9 +827,9 @@ entities:
     confidence: 0.85
     provenance:
       table: doc_clearance
-      evidence: "2 documents classified as \"Director's clearance\" from header
+      evidence: '2 documents classified as "Director''s clearance" from header
         extraction (examples: documento_no_n_209_2026_gerace_varinate_rupe,
-        documento_no_n_210_2026_gerace_zona_est)"
+        documento_no_n_210_2026_gerace_zona_est)'
     properties:
       - name: Document ID
         columnName: document_id

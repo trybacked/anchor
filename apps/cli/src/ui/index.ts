@@ -8,12 +8,12 @@ export { printHelp } from "./help.js";
 export { createPromptTheme } from "./prompts.js";
 let activeUi: Ui | undefined;
 export function initUi(): Ui {
-    activeUi = createUi();
-    return activeUi;
+  activeUi = createUi();
+  return activeUi;
 }
 export function getUi(): Ui {
-    if (activeUi === undefined) {
-        return initUi();
-    }
-    return activeUi;
+  if (activeUi === undefined) {
+    return initUi();
+  }
+  return activeUi;
 }

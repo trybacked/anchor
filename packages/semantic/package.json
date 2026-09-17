@@ -12,9 +12,10 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "compare:ontology": "node --env-file-if-exists=../../.env scripts/compare-ontology.mjs --all",
     "compare:ontology:simple": "node --env-file-if-exists=../../.env scripts/compare-ontology.mjs --simple",
     "compare:ontology:complex": "node --env-file-if-exists=../../.env scripts/compare-ontology.mjs --complex"

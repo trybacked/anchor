@@ -24,70 +24,74 @@ Propose:
 Every entity, relation and rule needs an honest "confidence" (0..1) and an English "evidence" sentence citing the statistics that support it.
 ${SHARED_RULES}`;
 export function columnClassificationPrompt(tables: CompressedTable[]): string {
-    return `Statistical profile of the tables (JSON):
+  return `Statistical profile of the tables (JSON):
 
 ${JSON.stringify(tables, null, 2)}
 
 Classify every column of every table.`;
 }
 function ontologyContextSections(
-    tables: CompressedTable[],
-    classification: ColumnClassificationOutput,
-    documentCatalog?: DocumentCatalog,
+  tables: CompressedTable[],
+  classification: ColumnClassificationOutput,
+  documentCatalog?: DocumentCatalog,
 ): string[] {
-    const sections = [
-        `Statistical profile of the tables (JSON):
+  const sections = [
+    `Statistical profile of the tables (JSON):
 
 ${JSON.stringify(tables, null, 2)}`,
-        `Column classification produced by a previous step (JSON):
+    `Column classification produced by a previous step (JSON):
 
 ${JSON.stringify(classification, null, 2)}`,
-    ];
-    if (documentCatalog !== undefined) {
-        const documentTypeSummary = documentCatalog.documentTypes.map((type) => ({
-            id: type.id,
-            name: type.name,
-            tableName: type.tableName,
-            documentCount: type.documentCount,
-        }));
-        sections.push(`Materialized document types (JSON):
+  ];
+  if (documentCatalog !== undefined) {
+    const documentTypeSummary = documentCatalog.documentTypes.map((type) => ({
+      id: type.id,
+      name: type.name,
+      tableName: type.tableName,
+      documentCount: type.documentCount,
+    }));
+    sections.push(`Materialized document types (JSON):
 
 ${JSON.stringify(documentTypeSummary, null, 2)}
 
 Document entities for doc_* tables, document_lines, and document_chunks are already built deterministically from the materialized schema.
 Do NOT propose entities for those tables. You may propose relations between structured entities and document types when column evidence supports it.`);
-    }
-    return sections;
+  }
+  return sections;
 }
-export function ontologyPrompt(tables: CompressedTable[], classification: ColumnClassificationOutput, documentCatalog?: DocumentCatalog): string {
-    return [
-        ...ontologyContextSections(tables, classification, documentCatalog),
-        "Propose the semantic model (entities, relations, rules) and declare your doubts.",
-    ].join("\n\n");
+export function ontologyPrompt(
+  tables: CompressedTable[],
+  classification: ColumnClassificationOutput,
+  documentCatalog?: DocumentCatalog,
+): string {
+  return [
+    ...ontologyContextSections(tables, classification, documentCatalog),
+    "Propose the semantic model (entities, relations, rules) and declare your doubts.",
+  ].join("\n\n");
 }
 export function ontologyEntitiesPrompt(
-    tables: CompressedTable[],
-    classification: ColumnClassificationOutput,
-    documentCatalog?: DocumentCatalog,
+  tables: CompressedTable[],
+  classification: ColumnClassificationOutput,
+  documentCatalog?: DocumentCatalog,
 ): string {
-    return [
-        ...ontologyContextSections(tables, classification, documentCatalog),
-        "Propose business entities only. Do NOT propose relations or rules in this step. Declare your doubts.",
-    ].join("\n\n");
+  return [
+    ...ontologyContextSections(tables, classification, documentCatalog),
+    "Propose business entities only. Do NOT propose relations or rules in this step. Declare your doubts.",
+  ].join("\n\n");
 }
 export function ontologyRelationsPrompt(
-    tables: CompressedTable[],
-    classification: ColumnClassificationOutput,
-    entities: OntologyEntitiesOutput["entities"],
-    documentCatalog?: DocumentCatalog,
+  tables: CompressedTable[],
+  classification: ColumnClassificationOutput,
+  entities: OntologyEntitiesOutput["entities"],
+  documentCatalog?: DocumentCatalog,
 ): string {
-    return [
-        ...ontologyContextSections(tables, classification, documentCatalog),
-        `Accepted entities from the previous step (JSON):
+  return [
+    ...ontologyContextSections(tables, classification, documentCatalog),
+    `Accepted entities from the previous step (JSON):
 
 ${JSON.stringify(entities, null, 2)}`,
-        "Propose relations and rules that connect only the accepted entities. Declare your doubts.",
-    ].join("\n\n");
+    "Propose relations and rules that connect only the accepted entities. Declare your doubts.",
+  ].join("\n\n");
 }
 export const DOCUMENT_EXTRACTION_SYSTEM_PROMPT = `You classify documents from an exported PDF/OCR corpus.
 The input is page-1 header lines extracted from PDF/OCR (columns page, line, text in the source system).
@@ -105,35 +109,36 @@ Rules:
 - All labels and field keys in English.
 - Never invent values not supported by the header text.
 - When multiple documents are provided, return one result per input document with the matching sourceTable.`;
-export function documentExtractionPrompt(sample: DocumentExtractionSample, typeHint: DocumentTypeHint | null): string {
-    return documentBatchExtractionPrompt([{ sample, typeHint }]);
+export function documentExtractionPrompt(
+  sample: DocumentExtractionSample,
+  typeHint: DocumentTypeHint | null,
+): string {
+  return documentBatchExtractionPrompt([{ sample, typeHint }]);
 }
-export function documentBatchExtractionPrompt(items: Array<{
+export function documentBatchExtractionPrompt(
+  items: Array<{
     sample: DocumentExtractionSample;
     typeHint: DocumentTypeHint | null;
-}>): string {
-    const documents = items.map(({ sample, typeHint }) => ({
-        sourceTable: sample.sourceTable,
-        pageCount: sample.pageCount,
-        headerLines: sample.headerLines,
-        ...(typeHint !== null
-            ? {
-                typeHint: {
-                    documentType: typeHint.documentType,
-                    documentTypeLabel: typeHint.documentTypeLabel,
-                    confidence: typeHint.confidence,
-                    evidence: typeHint.evidence,
-                },
-            }
-            : {}),
-    }));
-    const intro = documents.length === 1
-        ? "Classify this document and extract header fields supported by the text."
-        : `Classify each of the ${String(documents.length)} documents and extract header fields supported by the text.`;
-    return [
-        intro,
-        "",
-        "Documents (JSON):",
-        JSON.stringify(documents, null, 2),
-    ].join("\n");
+  }>,
+): string {
+  const documents = items.map(({ sample, typeHint }) => ({
+    sourceTable: sample.sourceTable,
+    pageCount: sample.pageCount,
+    headerLines: sample.headerLines,
+    ...(typeHint !== null
+      ? {
+          typeHint: {
+            documentType: typeHint.documentType,
+            documentTypeLabel: typeHint.documentTypeLabel,
+            confidence: typeHint.confidence,
+            evidence: typeHint.evidence,
+          },
+        }
+      : {}),
+  }));
+  const intro =
+    documents.length === 1
+      ? "Classify this document and extract header fields supported by the text."
+      : `Classify each of the ${String(documents.length)} documents and extract header fields supported by the text.`;
+  return [intro, "", "Documents (JSON):", JSON.stringify(documents, null, 2)].join("\n");
 }

@@ -178,9 +178,11 @@ function loadCsvBundle(fixturePath) {
 }
 
 async function loadOntologyContext(fixturePath) {
-  const { readModelYaml } = await import(pathToFileURL(join(REPO_ROOT, "packages/core/dist/index.js")).href);
+  const { readModelYaml } = await import(
+    pathToFileURL(join(REPO_ROOT, "packages/core/dist/index.js")).href
+  );
   const { getDefinition, getEntity, listRelations, listEntities, searchModel } = await import(
-    pathToFileURL(join(REPO_ROOT, "packages/mcp/dist/mapping.js")).href,
+    pathToFileURL(join(REPO_ROOT, "packages/mcp/dist/mapping.js")).href
   );
   const model = readModelYaml(fixturePath);
 
