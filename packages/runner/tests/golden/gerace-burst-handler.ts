@@ -261,16 +261,14 @@ export async function handleGeraceBurst<TSchema extends z.ZodTypeAny>(
     case LLM_SCHEMA_NAMES.ontologyProposal:
       rawOutput = buildOntologyProposal(request.prompt);
       break;
-    case LLM_SCHEMA_NAMES.ontologyEntities:
-      {
-        const proposal = buildOntologyProposal(request.prompt) as { entities: unknown[] };
-        rawOutput = {
-          entities: proposal.entities,
-          doubts: [],
-        };
-        break;
-      }
+    case LLM_SCHEMA_NAMES.ontologyEntities: {
+      const proposal = buildOntologyProposal(request.prompt) as { entities: unknown[] };
+      rawOutput = {
+        entities: proposal.entities,
+        doubts: [],
+      };
       break;
+    }
     case LLM_SCHEMA_NAMES.ontologyRelations:
       rawOutput = {
         relations: [],

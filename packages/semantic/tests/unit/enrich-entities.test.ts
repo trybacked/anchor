@@ -19,7 +19,7 @@ function entity(entityId: string, name: string): EntityRecord {
     documentCount: 2,
   };
 }
-function mention(entityId: string, normalizedValue: string, context: string): RawDocumentMention {
+function mention(normalizedValue: string, context: string): RawDocumentMention {
   return {
     documentId: "doc_a",
     mentionType: ENTITY_MENTION_TYPE,
@@ -47,7 +47,7 @@ async function enrichWith(vocabulary: DomainVocabulary) {
   await enrichEntities({
     model: {} as never,
     entities: new Map([["edil_vincent_srl", entity("edil_vincent_srl", "EDIL VINCENT SRL")]]),
-    mentions: [mention("edil_vincent_srl", "EDIL VINCENT SRL", "EDIL VINCENT SRL aggiudicataria")],
+    mentions: [mention("EDIL VINCENT SRL", "EDIL VINCENT SRL aggiudicataria")],
     vocabulary,
   });
   return firstRequest();

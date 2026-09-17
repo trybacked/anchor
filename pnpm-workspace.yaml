@@ -1,3 +1,9 @@
+# Workspace layout. Build order is derived by Turborepo from package
+# dependencies, not from the order of these globs.
+#
+#   apps/*      Deployable units: CLI, worker service, auth API.
+#   packages/*  Libraries. Those published to npm use the @trybacked/*
+#               scope; internal-only ones use @backed/*.
 packages:
   - "apps/*"
   - "packages/*"

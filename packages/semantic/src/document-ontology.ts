@@ -216,7 +216,6 @@ interface MaterializedEntitySpec {
 function columnProperty(
   tableName: string,
   columnDef: MaterializedColumn,
-  column: ColumnProfile | undefined,
   confidence: number,
   nullable: boolean,
   evidence: string,
@@ -259,7 +258,7 @@ function buildMaterializedEntity(
       const evidence = column
         ? `${columnDef.label} column (${column.sqlType})`
         : `${columnDef.label} on ${spec.tableLabel}`;
-      return columnProperty(spec.table, columnDef, column, spec.confidence, nullable, evidence);
+      return columnProperty(spec.table, columnDef, spec.confidence, nullable, evidence);
     }),
   };
 }
@@ -385,14 +384,7 @@ function buildTypedEntity(
       const evidenceText = column
         ? `${columnDef.label} column (${column.sqlType}) on ${String(type.documentCount)} rows`
         : `${columnDef.label} on materialized document type table`;
-      return columnProperty(
-        type.tableName,
-        columnDef,
-        column,
-        type.confidence,
-        nullable,
-        evidenceText,
-      );
+      return columnProperty(type.tableName, columnDef, type.confidence, nullable, evidenceText);
     }),
   };
 }
@@ -422,7 +414,6 @@ function buildTableEntity(
       return columnProperty(
         tableName,
         columnDef,
-        column,
         ONTOLOGY_HIGH_CONFIDENCE,
         column?.nullCount ? column.nullCount > 0 : false,
         evidenceText,
