@@ -4,8 +4,10 @@
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-black.png" />
     <img src="docs/assets/logo-black.png" alt="Anchor" width="420" />
   </picture>
-  <p><strong>The institutional memory of every organization</strong></p>
-  <p>Open protocol for organizational semantic models</p>
+  <p>
+    <strong>The institutional memory of every organization</strong><br />
+    Open protocol for organizational semantic models
+  </p>
   <p>
     <img src="https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge" alt="License: Apache 2.0" />
     <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -19,15 +21,6 @@ Every organization runs on data spread across systems that were never built to s
 Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms treat as foundational: map sources to **entities**, wire **relations**, capture **business definitions**, and govern what is true with provenance and confidence. That layer _is_ institutional memory when it is written down, versioned, and shared.
 
 The output is `model.yaml`: a committable semantic model. Humans confirm what the machine is unsure about through risk-ranked review; agents query what has been confirmed through MCP.
-
-|              |                                |
-| ------------ | ------------------------------ |
-| **Anchor**   | Protocol                       |
-| **Backed**   | Company, commercial service    |
-| `model.yaml` | Protocol artifact (the output) |
-| `backed`     | CLI command                    |
-
-**Protocol artifacts:** `[schema/anchor-schema-v1.json](./schema/anchor-schema-v1.json)` (JSON Schema) · `[docs/MODEL-FORMAT-v1.md](./docs/MODEL-FORMAT-v1.md)` (format spec)
 
 ---
 
