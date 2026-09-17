@@ -40,7 +40,7 @@
     "generate:openapi": "openapi-typescript ../../apps/worker-service/openapi.yaml -o src/generated/openapi.d.ts",
     "build": "pnpm generate:openapi && tsc -p tsconfig.build.json",
     "typecheck": "pnpm generate:openapi && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
-    "lint": "eslint src",
+    "lint": "pnpm generate:openapi && eslint src",
     "test": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "prepublishOnly": "pnpm run build && pnpm run test"
