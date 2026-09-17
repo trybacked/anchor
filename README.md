@@ -1,20 +1,24 @@
-
-
-![Anchor](docs/assets/logo-black.png)
-
-**The institutional memory of every organization**  
-Open protocol for organizational semantic models
-
-![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![model.yaml v1](https://img.shields.io/badge/model.yaml-v1-CB3837?style=for-the-badge) ![MCP](https://img.shields.io/badge/MCP-stdio-000000?style=for-the-badge)
-
-
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-white.png" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-black.png" />
+    <img src="docs/assets/logo-black.png" alt="Anchor" width="420" />
+  </picture>
+  <p><strong>The institutional memory of every organization</strong></p>
+  <p>Open protocol for organizational semantic models</p>
+  <p>
+    <img src="https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge" alt="License: Apache 2.0" />
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/model.yaml-v1-CB3837?style=for-the-badge" alt="model.yaml v1" />
+    <img src="https://img.shields.io/badge/MCP-stdio-000000?style=for-the-badge" alt="MCP" />
+  </p>
+</div>
 
 Every organization runs on data spread across systems that were never built to share a vocabulary. ERP, exports, spreadsheets, and documents each tell a partial story; without a shared layer of meaning, humans argue over definitions and agents invent new ones every session.
 
-Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms treat as foundational: map sources to **entities**, wire **relations**, capture **business definitions**, and govern what is true with provenance and confidence. That layer *is* institutional memory when it is written down, versioned, and shared.   
-  
-The output is `model.yaml`: a committable semantic model. Humans confirm what the machine is unsure about through risk-ranked review; agents query what has been confirmed through MCP.
+Anchor does not move data or replace systems. It builds the **ontology layer** above them — the same primitive enterprise platforms treat as foundational: map sources to **entities**, wire **relations**, capture **business definitions**, and govern what is true with provenance and confidence. That layer _is_ institutional memory when it is written down, versioned, and shared.
 
+The output is `model.yaml`: a committable semantic model. Humans confirm what the machine is unsure about through risk-ranked review; agents query what has been confirmed through MCP.
 
 |              |                                |
 | ------------ | ------------------------------ |
@@ -23,20 +27,15 @@ The output is `model.yaml`: a committable semantic model. Humans confirm what th
 | `model.yaml` | Protocol artifact (the output) |
 | `backed`     | CLI command                    |
 
-
 **Protocol artifacts:** `[schema/anchor-schema-v1.json](./schema/anchor-schema-v1.json)` (JSON Schema) · `[docs/MODEL-FORMAT-v1.md](./docs/MODEL-FORMAT-v1.md)` (format spec)
 
 ---
 
-
-
 ## Why
 
-Organizations have data everywhere and meaning nowhere. Three systems disagree on customer count because *customer* was never defined — not in the database, but in the ontology that should sit above it. Anchor brings that layer within reach for ordinary organizations: local-first, evidence-backed, and small enough to stay true.
+Organizations have data everywhere and meaning nowhere. Three systems disagree on customer count because _customer_ was never defined — not in the database, but in the ontology that should sit above it. Anchor brings that layer within reach for ordinary organizations: local-first, evidence-backed, and small enough to stay true.
 
 ---
-
-
 
 ## How it works
 
@@ -70,12 +69,9 @@ flowchart TB
     style boundary fill:none
 ```
 
-
-
 Everything on the solid path runs where your data already lives. The dotted path is the only network call in the pipeline, and it carries column names, types, distributions, and patterns — never rows, cell values, or document text.
 
 ### Stages
-
 
 | Stage        | Function                                                   | Inference            |
 | ------------ | ---------------------------------------------------------- | -------------------- |
@@ -88,13 +84,11 @@ Everything on the solid path runs where your data already lives. The dotted path
 | **Review**   | Arbitrate uncertain inferences                             | None                 |
 | **Serve**    | Answer ontology queries                                    | None                 |
 
-
 Six of the eight stages involve no inference at all. Ingest resolves encodings, delimiters, regional number formats, and nested archives without a model call. Profiling derives null rates, distinct counts, value patterns, candidate keys, and the cross-table value overlap that surfaces foreign-key candidates.
 
 ### Design invariants
 
 These hold on every run and are enforced in code, not by convention.
-
 
 | Invariant                 | Guarantee                                                                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -105,20 +99,15 @@ These hold on every run and are enforced in code, not by convention.
 | **Inert caching**         | Responses are cached under a content hash of model, prompt, and schema — caching changes cost, not results |
 | **No silent uncertainty** | Anything below threshold becomes a review question or a recorded doubt, never an unannounced fact          |
 
-
-
-
 ### Governance
 
 Confidence decides whether a person is asked. The answer decides what is written.
-
 
 | Confidence               | Behaviour                       | Outcome                           |
 | ------------------------ | ------------------------------- | --------------------------------- |
 | At or above `0.95`       | Accepted without a question     | Confirmed                         |
 | Between `0.7` and `0.95` | Raised for review               | Confirmed, renamed, or removed    |
 | Below `0.7`              | Recorded as a doubt or question | Proposed, or removed on rejection |
-
 
 Reviewers answer Yes, No, or Rename. A rejection removes the element outright — it never reaches the model. Both thresholds are configurable per workspace.
 
@@ -137,8 +126,6 @@ Every source file is fingerprinted by content hash. Re-running the pipeline repr
 Commands, configuration, and artifacts: [Operational workflow](#operational-workflow) · [The model](#the-model).
 
 ---
-
-
 
 ## Install
 
@@ -160,8 +147,6 @@ REVIEW_CONFIDENCE_THRESHOLD=0.95                # optional
 ```
 
 ---
-
-
 
 ## Operational workflow
 
@@ -210,7 +195,6 @@ backed model ./exports    # override sources (updates config)
 backed model --full       # re-infer everything
 ```
 
-
 | Stage            | When         | LLM?                 | Output                                                             |
 | ---------------- | ------------ | -------------------- | ------------------------------------------------------------------ |
 | Ingest           | Always       | No                   | `.backed/data.duckdb`                                              |
@@ -219,7 +203,6 @@ backed model --full       # re-infer everything
 | Chunk + embed    | Documents    | Embeddings only      | vectors in DuckDB                                                  |
 | Profile          | Always       | No                   | `profile.json`                                                     |
 | Proposal         | Always       | Structured tables    | `proposal.json`                                                    |
-
 
 LLM responses are cached on disk in `.backed/cache/llm/`, keyed by model + prompt + schema. The cache only reduces cost and latency — it never changes validated outputs. Delete the folder or run `backed model --full` to re-infer from scratch.
 
@@ -243,8 +226,6 @@ Authenticated MCP stdio — five deterministic operations on `model.yaml` (see [
 backed model && backed diff
 ```
 
-
-
 ### Cheat sheet
 
 ```bash
@@ -255,14 +236,11 @@ Agent pattern: `list_entities` → `get_entity` → `search_model` / `get_defini
 
 ---
 
-
-
 ## Hosted deployment
 
 The service path: the same pipeline exposed as a multi-tenant HTTP API, for organizations that submit a corpus rather than run a CLI. Partners upload files, the service infers the model, and the uploaded bytes are destroyed when the run completes.
 
 ### How it differs from the local path
-
 
 | Aspect    | Local workflow           | Hosted deployment                           |
 | --------- | ------------------------ | ------------------------------------------- |
@@ -271,9 +249,6 @@ The service path: the same pipeline exposed as a multi-tenant HTTP API, for orga
 | Raw files | Stay on your machine     | Deleted after every run                     |
 | Review    | Interactive prompts      | API-driven                                  |
 | Audit     | Run artifacts on disk    | Append-only deletion log and content ledger |
-
-
-
 
 ### Ephemeral by construction
 
@@ -361,14 +336,11 @@ API surface:
 
 ---
 
-
-
 ## The model
 
 `model.yaml` contains no data. It contains the **model of the data** — portable, committable, schema-validated (`SemanticModelSchema` in `@trybacked/core`).
 
 ### Primitives
-
 
 | Primitive | YAML key                | Anchored to                             |
 | --------- | ----------------------- | --------------------------------------- |
@@ -376,7 +348,6 @@ API surface:
 | Property  | `entities[].properties` | Source column                           |
 | Relation  | `relations`             | Column pair (`fromColumn` → `toColumn`) |
 | Rule      | `rules`                 | Entity (+ optional column)              |
-
 
 Property semantic types: `text` · `number` · `amount` · `date` · `boolean` · `identifier` · `email` · `vat_number` · `fiscal_code` · `category`
 
@@ -386,13 +357,11 @@ Relation cardinality: `one_to_one` · `one_to_many` · `many_to_many`
 
 Every element carries `confidence` (0–1), `provenance` (table, optional column, evidence sentence), and `status`:
 
-
 | Status      | Meaning                                                                                       |
 | ----------- | --------------------------------------------------------------------------------------------- |
 | `proposed`  | Inferred, not explicitly reviewed (below threshold or unanswered question)                    |
 | `confirmed` | Accepted (Yes) or auto-confirmed when confidence ≥ review threshold and no question was asked |
 | `renamed`   | Accepted with corrected label (Rename)                                                        |
-
 
 Rejected elements (No) are omitted. Elements at or above `REVIEW_CONFIDENCE_THRESHOLD` that were not asked in review are written as `confirmed`. Below confidence threshold 0.7, elements become doubts or review questions — never silent facts.
 
@@ -445,12 +414,9 @@ rules:
     confidence: 0.7
 ```
 
-
-
 ### Run artifacts
 
 Each pipeline run stores intermediate artifacts under `.backed/runs/<run-id>/`:
-
 
 | File             | Contents                                                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -460,7 +426,6 @@ Each pipeline run stores intermediate artifacts under `.backed/runs/<run-id>/`:
 | `review.json`    | Human answers                                                                                                                                    |
 | `model.yaml`     | Final model (workspace root)                                                                                                                     |
 | `diff.json`      | Changes vs previous run                                                                                                                          |
-
 
 All files are schema-validated on read and write.
 
@@ -484,12 +449,9 @@ All files are schema-validated on read and write.
 
 ---
 
-
-
 ## MCP surface
 
 `backed serve` exposes the semantic model over MCP stdio. Every response is structured JSON, Zod-validated, with **no LLM** in the path.
-
 
 | Operation              | Input              | Returns                                                                                                                    |
 | ---------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
@@ -499,19 +461,15 @@ All files are schema-validated on read and write.
 | `search_model(query)`  | text               | semantic document-chunk search when DuckDB vectors exist, plus substring matches on entities, properties, relations, rules |
 | `get_definition(term)` | term               | confirmed rule (substring match), or structured not-found                                                                  |
 
-
 Data is read from local `model.yaml` only. DuckDB snapshots are used by `backed model`, not by `serve`.
 
 ---
-
-
 
 ## Data residency
 
 A security review should be answerable from this section alone.
 
 ### What leaves your infrastructure
-
 
 | Data                                         | Leaves the machine                                   |
 | -------------------------------------------- | ---------------------------------------------------- |
@@ -522,19 +480,16 @@ A security review should be answerable from this section alone.
 | Column names, types, distributions, patterns | During inference only, to the endpoint you configure |
 | Names of operations agents call              | Only when telemetry is explicitly enabled            |
 
-
 Inference is the only stage in the pipeline that opens a network connection, and it reaches the endpoint named in your own configuration. Anchor operates no service of its own in this path.
 
 ### Serving modes
 
 Serving the model to agents is a local operation. It has two modes, and the default requires nothing.
 
-
 | Mode                  | Requires                          | Network at runtime | Emits           |
 | --------------------- | --------------------------------- | ------------------ | --------------- |
-| **Local** *(default)* | Nothing                           | None               | Nothing         |
+| **Local** _(default)_ | Nothing                           | None               | Nothing         |
 | **Telemetry**         | An account and an explicit opt-in | Outbound only      | Operation names |
-
 
 In local mode there is no account, no network call, and no external dependency. The model is read from disk and served over standard input and output.
 
@@ -548,10 +503,7 @@ Credentials are verified once at startup, not on every call.
 
 ---
 
-
-
 ## CLI
-
 
 | Command                 | Purpose                                                                                                                               |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -562,12 +514,9 @@ Credentials are verified once at startup, not on every call.
 | `backed login`          | Sign in to Backed (optional — required only for telemetry)                                                                            |
 | `backed serve`          | Local MCP stdio server (5 operations on `model.yaml`)                                                                                 |
 
-
 See [Operational workflow](#operational-workflow) for the step-by-step guide.
 
 ---
-
-
 
 ## Development
 
@@ -578,14 +527,11 @@ pnpm test
 pnpm cli --help
 ```
 
-
-
 ### Packages
 
 Dependency order: `@trybacked/core` → `ingest` → `profile` → `semantic` → `diff` / `mcp` → `@backed/runner` → `apps/cli` / `apps/worker-service`.
 
 Packages published to npm use the `@trybacked/*` scope; internal workspace packages use `@backed/*`.
-
 
 | Package                                        | Scope     | Role                                             |
 | ---------------------------------------------- | --------- | ------------------------------------------------ |
@@ -600,9 +546,6 @@ Packages published to npm use the `@trybacked/*` scope; internal workspace packa
 | `[apps/cli](./apps/cli)`                       | internal  | `backed` command-line interface                  |
 | `[apps/worker-service](./apps/worker-service)` | internal  | Multi-tenant hosted pipeline API                 |
 | `[apps/auth-api](./apps/auth-api)`             | internal  | Device-flow auth server for `backed login`       |
-
-
-
 
 ### CI
 
