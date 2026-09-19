@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "@trybacked/core": "workspace:^",
+    "@trybacked/core": "^0.2.0",
     "openapi-fetch": "^0.14.0"
   },
   "devDependencies": {
