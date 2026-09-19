@@ -47,6 +47,9 @@ importers:
 
   apps/auth-api:
     dependencies:
+      '@backed/http-kernel':
+        specifier: workspace:*
+        version: link:../../packages/http-kernel
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -97,6 +100,9 @@ importers:
 
   apps/worker-service:
     dependencies:
+      '@backed/http-kernel':
+        specifier: workspace:*
+        version: link:../../packages/http-kernel
       '@backed/runner':
         specifier: workspace:*
         version: link:../../packages/runner
@@ -145,6 +151,8 @@ importers:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/http-kernel: {}
 
   packages/ingest:
     dependencies:

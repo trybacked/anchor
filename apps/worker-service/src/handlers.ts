@@ -2,8 +2,6 @@ import {
   assertValidTenantId,
   hashContent,
   resolveTenantWorkspace,
-  runTenantPipeline,
-  TenantPipelineError,
 } from "@backed/runner";
 import { parseModelYaml } from "@trybacked/core";
 import { PatchModelElementSchema } from "@trybacked/core";
@@ -15,7 +13,7 @@ import { AdminListRunsQuerySchema, ReviewSubmitSchema } from "./api-types.js";
 import { parseDeletionLogQuery, queryDeletionLog, readLedgerAudit } from "./audit-export.js";
 import type { WorkerServiceConfig } from "./config.js";
 import { PayloadTooLargeError, readRequestBody, sendApiError, sendJson, sendYaml } from "./http.js";
-import { computeRunDurationMs, logRunCompleted, logRunFailed, logRunStarted } from "./metrics.js";
+import { computeRunDurationMs, logRunStarted } from "./metrics.js";
 import {
   ModelElementNotFoundError,
   ModelNotFoundError,
@@ -31,12 +29,13 @@ import {
 } from "./review-store.js";
 import { toRunStatusResponse, type RunStore } from "./run-store.js";
 import { InvalidSubmitRunConfigError, parseSubmitRunConfig } from "./submit-run-config.js";
-import { notifyRunCompletedWebhook } from "./webhook.js";
+import type { RunExecutor } from "./run-executor.js";
 
 export interface WorkerServiceDeps {
   config: WorkerServiceConfig;
   runStore: RunStore;
   partnerRegistry: PartnerRegistry;
+  runExecutor: RunExecutor;
   webhookFetch?: typeof fetch;
 }
 
@@ -84,70 +83,17 @@ export async function handleSubmitRun(
     fileCount: parsed.files.length,
   });
   sendJson(response, 202, { runId });
-  void runTenantPipeline({
-    dataRoot: deps.config.dataRoot,
+  deps.runExecutor.enqueue({
     tenantId,
     runId,
+    partnerId,
     files: parsed.files.map((file) => ({
       fileName: file.fileName,
       content: file.content,
     })),
     skipEmbed: deps.config.skipEmbed,
-    ...(runConfig !== undefined ? { config: runConfig } : {}),
-  })
-    .then((result) => {
-      const record = deps.runStore.complete(tenantId, runId, result.stats, result.deletionEntry);
-      logRunCompleted({
-        tenantId,
-        runId,
-        partnerId,
-        durationMs: computeRunDurationMs(
-          record?.startedAt ?? new Date().toISOString(),
-          record?.finishedAt,
-        ),
-        skipped: result.skipped,
-        deletionEntry: result.deletionEntry,
-      });
-      void notifyRunCompletedWebhook({
-        config: deps.config,
-        partnerRegistry: deps.partnerRegistry,
-        partnerId,
-        tenantId,
-        runId,
-        status: "done",
-        skipped: result.skipped,
-        deletionEntry: result.deletionEntry,
-        ...(deps.webhookFetch !== undefined ? { fetchImpl: deps.webhookFetch } : {}),
-      });
-    })
-    .catch((error: unknown) => {
-      const deletionEntry = error instanceof TenantPipelineError ? error.deletionEntry : undefined;
-      const failureMessage = error instanceof Error ? error.message : String(error);
-      const existing = deps.runStore.get(tenantId, runId);
-      const record = deps.runStore.fail(tenantId, runId, failureMessage, deletionEntry);
-      logRunFailed({
-        tenantId,
-        runId,
-        partnerId,
-        durationMs: computeRunDurationMs(
-          record?.startedAt ?? existing?.startedAt ?? new Date().toISOString(),
-          record?.finishedAt,
-        ),
-        failureMessage,
-        ...(deletionEntry !== undefined ? { deletionEntry } : {}),
-      });
-      void notifyRunCompletedWebhook({
-        config: deps.config,
-        partnerRegistry: deps.partnerRegistry,
-        partnerId,
-        tenantId,
-        runId,
-        status: "failed",
-        skipped: false,
-        ...(deletionEntry !== undefined ? { deletionEntry } : {}),
-        ...(deps.webhookFetch !== undefined ? { fetchImpl: deps.webhookFetch } : {}),
-      });
-    });
+    config: runConfig,
+  });
 }
 
 export async function handleGetModel(

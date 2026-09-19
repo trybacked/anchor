@@ -87,6 +87,18 @@ const TENANT_ROUTES: TenantRoute[] = [
   },
 ];
 
+export function listTenantOpenApiRoutes(): Array<{ method: string; path: string }> {
+  const routes: Array<{ method: string; path: string }> = [];
+  for (const route of TENANT_ROUTES) {
+    const suffix = typeof route.path === "string" ? route.path : "runs/{runId}";
+    routes.push({
+      method: route.method,
+      path: `/v1/tenants/{tenantId}/${suffix}`,
+    });
+  }
+  return routes;
+}
+
 export async function dispatchTenantRoute(
   method: string | undefined,
   remainder: string,

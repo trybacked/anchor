@@ -88,6 +88,7 @@ export interface ExtractDocumentCatalogOptions {
   catalogCache?: Map<string, DocumentCatalogCacheEntry>;
   typeRegistry?: Map<string, DocumentTypeRegistryEntry>;
   llmCache?: LlmCacheContext;
+  signal?: AbortSignal;
 }
 
 function fieldsFromExtraction(
@@ -178,6 +179,7 @@ async function extractDocumentBatchWithLlm(
     documentTypeHints?: DocumentTypeHintConfig[];
     recurringLines: Set<string>;
     llmCache?: LlmCacheContext;
+    signal?: AbortSignal;
   },
 ): Promise<{
   entries: DocumentCatalogEntry[];
@@ -208,6 +210,7 @@ async function extractDocumentBatchWithLlmOnce(
     documentTypeHints?: DocumentTypeHintConfig[];
     recurringLines: Set<string>;
     llmCache?: LlmCacheContext;
+    signal?: AbortSignal;
   },
 ): Promise<{
   entries: DocumentCatalogEntry[];
@@ -227,6 +230,7 @@ async function extractDocumentBatchWithLlmOnce(
     schemaName: LLM_SCHEMA_NAMES.documentExtraction,
     timeoutMs: options.timeoutMs,
     ...withLlmCache(options.llmCache),
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
   });
   if (samples.length === 1) {
     const sample = samples[0];
@@ -349,6 +353,7 @@ export async function extractDocumentCatalog(options: ExtractDocumentCatalogOpti
                 ? { documentTypeHints: options.documentTypeHints }
                 : {}),
               ...(options.llmCache !== undefined ? { llmCache: options.llmCache } : {}),
+              ...(options.signal !== undefined ? { signal: options.signal } : {}),
             });
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);

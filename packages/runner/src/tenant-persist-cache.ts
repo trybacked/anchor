@@ -1,13 +1,8 @@
 import type { DocumentTypeRegistryEntry } from "@backed/semantic";
 import {
-  DOCUMENT_CHUNKS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  DOCUMENT_LINES_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
+  isPipelineInfraDatasetTable,
   DocumentCatalogSchema,
   DomainVocabularySchema,
-  ENTITY_PROFILES_TABLE,
   ProfileReportSchema,
   documentTypeTableName,
 } from "@trybacked/core";
@@ -29,15 +24,6 @@ export const PERSIST_PROFILE_FILE = "profile.json";
 
 const DOCUMENT_TYPE_SAMPLE_TABLE_LIMIT = 3;
 
-const PIPELINE_INFRA_TABLES = new Set<string>([
-  DOCUMENT_LINES_TABLE,
-  DOCUMENT_CHUNKS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  ENTITY_PROFILES_TABLE,
-]);
-
 export interface TenantPersistedArtifacts {
   vocabulary?: DomainVocabulary;
   documentCatalog?: DocumentCatalog;
@@ -54,7 +40,7 @@ export function mergeProfiles(
   const byTable = new Map(existing.map((table) => [table.table, table]));
   for (const table of incoming) {
     const previous = byTable.get(table.table);
-    if (previous !== undefined && !PIPELINE_INFRA_TABLES.has(table.table)) {
+    if (previous !== undefined && !isPipelineInfraDatasetTable(table.table)) {
       byTable.set(table.table, {
         ...table,
         rowCount: Math.max(previous.rowCount, table.rowCount),

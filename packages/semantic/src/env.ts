@@ -9,11 +9,13 @@ export const EMBEDDING_MODEL_ENV = "SEMANTIC_EMBEDDING_MODEL";
 export const REVIEW_CONFIDENCE_THRESHOLD_ENV = "REVIEW_CONFIDENCE_THRESHOLD";
 export const REQUEST_TIMEOUT_MS_ENV = "SEMANTIC_REQUEST_TIMEOUT_MS";
 export const CLASSIFICATION_BATCH_SIZE_ENV = "SEMANTIC_CLASSIFICATION_BATCH_SIZE";
+export const LLM_MAX_INFLIGHT_ENV = "SEMANTIC_LLM_MAX_INFLIGHT";
 export const DEFAULT_SEMANTIC_MODEL = "zai/glm-5.3-flash";
 export const DEFAULT_CHEAP_MODEL = DEFAULT_SEMANTIC_MODEL;
 export const DEFAULT_FRONTIER_MODEL = DEFAULT_SEMANTIC_MODEL;
 export const DEFAULT_REQUEST_TIMEOUT_MS = 600000;
 export const DEFAULT_CLASSIFICATION_BATCH_SIZE = 12;
+export const DEFAULT_LLM_MAX_INFLIGHT = 8;
 export const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
 export interface SemanticModels {
   language: LanguageModel;
@@ -125,6 +127,27 @@ export function resolveClassificationBatchSize(
   const parsed = Number(raw);
   if (!Number.isInteger(parsed) || parsed < 1) {
     throw new InvalidClassificationBatchSizeError(raw);
+  }
+  return parsed;
+}
+
+export class InvalidLlmMaxInflightError extends Error {
+  constructor(raw: string) {
+    super(`${LLM_MAX_INFLIGHT_ENV} must be a positive integer. Got: ${raw}`);
+    this.name = "InvalidLlmMaxInflightError";
+  }
+}
+
+export function resolveLlmMaxInflight(
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const raw = env[LLM_MAX_INFLIGHT_ENV];
+  if (raw === undefined || raw.trim() === "") {
+    return DEFAULT_LLM_MAX_INFLIGHT;
+  }
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new InvalidLlmMaxInflightError(raw);
   }
   return parsed;
 }

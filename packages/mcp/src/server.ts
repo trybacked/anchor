@@ -115,6 +115,7 @@ export async function runStdioMcpServerUntilClose(
   await new Promise<void>((resolve) => {
     const previousOnClose = transport.onclose;
     transport.onclose = () => {
+      options.searchModelOptions?.dispose?.();
       previousOnClose?.();
       resolve();
     };

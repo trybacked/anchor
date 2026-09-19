@@ -1,25 +1,12 @@
-import {
-  DOCUMENT_CHUNKS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  DOCUMENT_LINES_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
-  ENTITY_PROFILES_TABLE,
-} from "@trybacked/core";
+import { isPipelineInfraDatasetTable, PIPELINE_INFRA_DATASET_TABLE_NAMES } from "@trybacked/core";
 import type { ProfileReport } from "@trybacked/core";
 import { diffProfile, tableFromProfileChange } from "./profile-diff.js";
 
-export const PIPELINE_INFRA_TABLES = new Set<string>([
-  DOCUMENT_LINES_TABLE,
-  DOCUMENT_CHUNKS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  ENTITY_PROFILES_TABLE,
-]);
+/** @deprecated Prefer `isPipelineInfraDatasetTable` from `@trybacked/core`. */
+export const PIPELINE_INFRA_TABLES = new Set<string>(PIPELINE_INFRA_DATASET_TABLE_NAMES);
 
 function isPipelineInfraTable(tableName: string): boolean {
-  return PIPELINE_INFRA_TABLES.has(tableName);
+  return isPipelineInfraDatasetTable(tableName);
 }
 
 export function affectedTablesFromProfileDiff(

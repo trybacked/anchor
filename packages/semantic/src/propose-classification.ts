@@ -1,8 +1,6 @@
 import type { DocumentCatalog, DomainVocabulary, ProfileReport } from "@trybacked/core";
-import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage } from "./burst.js";
-import type { BurstUsage } from "./burst.js";
+import { EMPTY_BURST_USAGE, type BurstUsage } from "./burst.js";
 import type { CompressedTable } from "./compress.js";
-import { mapWithConcurrency } from "./concurrency.js";
 import { LLM_SCHEMA_NAMES, COLUMN_CLASSIFICATION_CONCURRENCY } from "./constants.js";
 import { classifyMentionTables, classifyTypedDocumentTables } from "./document-ontology.js";
 import type { SemanticModels } from "./env.js";
@@ -12,6 +10,7 @@ import { ColumnClassificationOutputSchema } from "./llm-output.js";
 import type { ColumnClassificationOutput } from "./llm-output.js";
 import { COLUMN_CLASSIFICATION_SYSTEM_PROMPT, columnClassificationPrompt } from "./prompts.js";
 import { emptyClassification, mergeClassificationOutputs } from "./propose-assembly.js";
+import { chunkBySize, mapBurstBatches, sumBurstResults } from "./run-batched-burst.js";
 import type { TableRouting } from "./table-routing.js";
 
 async function classifyColumnsInBatches(
@@ -22,6 +21,7 @@ async function classifyColumnsInBatches(
   llmCache: LlmCacheContext | undefined,
   onProgress?: (message: string) => void,
   onBatchProgress?: (progress: { completed: number; total: number }) => void,
+  signal?: AbortSignal,
 ): Promise<{
   output: ColumnClassificationOutput;
   usage: BurstUsage;
@@ -29,38 +29,34 @@ async function classifyColumnsInBatches(
   if (tables.length === 0) {
     return { output: emptyClassification(), usage: EMPTY_BURST_USAGE };
   }
-  const batches: CompressedTable[][] = [];
-  for (let offset = 0; offset < tables.length; offset += batchSize) {
-    batches.push(tables.slice(offset, offset + batchSize));
-  }
-  const batchCount = batches.length;
-  onBatchProgress?.({ completed: 0, total: batchCount });
-  let completed = 0;
-  const results = await mapWithConcurrency(
+  const batches = chunkBySize(tables, batchSize);
+  const results = await mapBurstBatches({
     batches,
-    COLUMN_CLASSIFICATION_CONCURRENCY,
-    async (batch, index) => {
-      const batchIndex = index + 1;
+    concurrency: COLUMN_CLASSIFICATION_CONCURRENCY,
+    ...(signal !== undefined ? { signal } : {}),
+    onBatchStart: (batchIndex, batchCount) => {
+      const batch = batches[batchIndex - 1];
       onProgress?.(
-        `Column classification batch ${String(batchIndex)}/${String(batchCount)} (${String(batch.length)} tables)...`,
+        `Column classification batch ${String(batchIndex)}/${String(batchCount)} (${String(batch?.length ?? 0)} tables)...`,
       );
-      const result = await runBurst({
-        model: models.language,
-        system: COLUMN_CLASSIFICATION_SYSTEM_PROMPT,
-        prompt: columnClassificationPrompt(batch),
-        schema: ColumnClassificationOutputSchema,
-        schemaName: LLM_SCHEMA_NAMES.columnClassification,
-        timeoutMs,
-        ...withLlmCache(llmCache),
-      });
-      completed += 1;
-      onBatchProgress?.({ completed, total: batchCount });
-      return result;
     },
-  );
+    onBatchComplete: (completed, total) => {
+      onBatchProgress?.({ completed, total });
+    },
+    buildRequest: (batch) => ({
+      model: models.language,
+      system: COLUMN_CLASSIFICATION_SYSTEM_PROMPT,
+      prompt: columnClassificationPrompt(batch),
+      schema: ColumnClassificationOutputSchema,
+      schemaName: LLM_SCHEMA_NAMES.columnClassification,
+      timeoutMs,
+      ...withLlmCache(llmCache),
+      ...(signal !== undefined ? { signal } : {}),
+    }),
+  });
   return {
     output: mergeClassificationOutputs(...results.map((result) => result.output)),
-    usage: results.reduce((usage, result) => sumBurstUsage(usage, result.usage), EMPTY_BURST_USAGE),
+    usage: sumBurstResults(results),
   };
 }
 
@@ -75,6 +71,7 @@ export async function classifyAllColumns(
   llmCache: LlmCacheContext | undefined,
   onProgress?: (message: string) => void,
   onBatchProgress?: (progress: { completed: number; total: number }) => void,
+  signal?: AbortSignal,
 ): Promise<{
   classification: ColumnClassificationOutput;
   usage: BurstUsage;
@@ -102,6 +99,7 @@ export async function classifyAllColumns(
           llmCache,
           onProgress,
           onBatchProgress,
+          signal,
         )
       : { output: emptyClassification(), usage: EMPTY_BURST_USAGE };
   return {

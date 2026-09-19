@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { DocumentedHttpRoute } from "./http-routes.js";
+import { DOCUMENTED_HTTP_ROUTES } from "./http-routes.js";
+
+export type { DocumentedHttpRoute } from "./http-routes.js";
+export { DOCUMENTED_HTTP_ROUTES } from "./http-routes.js";
 
 let cachedSpec: string | undefined;
 
@@ -19,23 +24,6 @@ export function loadOpenApiSpec(): string {
   }
   return cachedSpec;
 }
-
-export interface DocumentedHttpRoute {
-  method: string;
-  path: string;
-}
-
-export const DOCUMENTED_HTTP_ROUTES: DocumentedHttpRoute[] = [
-  { method: "GET", path: "/health" },
-  { method: "GET", path: "/openapi.yaml" },
-  { method: "POST", path: "/v1/tenants/{tenantId}/runs" },
-  { method: "GET", path: "/v1/tenants/{tenantId}/runs/{runId}" },
-  { method: "GET", path: "/v1/tenants/{tenantId}/model" },
-  { method: "GET", path: "/v1/tenants/{tenantId}/review" },
-  { method: "POST", path: "/v1/tenants/{tenantId}/review" },
-  { method: "GET", path: "/v1/tenants/{tenantId}/audit/deletions" },
-  { method: "GET", path: "/v1/tenants/{tenantId}/audit/ledger" },
-];
 
 export function assertOpenApiDocumentsRoutes(
   spec: string,

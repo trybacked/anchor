@@ -5,10 +5,7 @@ import {
 } from "@backed/semantic";
 import type { LlmCacheContext, SemanticModels } from "@backed/semantic";
 import {
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
-  ENTITY_PROFILES_TABLE,
+  createPipelineMaterializedDatasetTableSet,
   patchWorkspaceConfig,
   readWorkspaceConfig,
   workspacePaths,
@@ -18,12 +15,7 @@ import { mkdir, rm } from "node:fs/promises";
 import type { RunAnchorPipelineOptions } from "../types.js";
 import { MissingSemanticModelsError } from "../types.js";
 
-export const PIPELINE_DATASET_TABLES = new Set<string>([
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  ENTITY_PROFILES_TABLE,
-]);
+export const PIPELINE_DATASET_TABLES = createPipelineMaterializedDatasetTableSet();
 
 export async function prepareLlmCache(root: string, forceFull: boolean): Promise<LlmCacheContext> {
   const { llmCacheDir } = workspacePaths(root);

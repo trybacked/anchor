@@ -10,8 +10,7 @@ import {
 import type { DocumentCatalogEntry, DomainVocabulary } from "@trybacked/core";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
-import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage, type BurstUsage } from "./burst.js";
-import { mapWithConcurrency } from "./concurrency.js";
+import { EMPTY_BURST_USAGE, type BurstUsage } from "./burst.js";
 import {
   BOILERPLATE_DOCUMENT_RATIO,
   BOILERPLATE_MIN_DOCUMENTS,
@@ -26,6 +25,7 @@ import { LLM_SCHEMA_NAMES } from "./constants.js";
 import { resolveSemanticRequestTimeoutMs } from "./env.js";
 import type { DocumentLineRow } from "./extract-document-mentions.js";
 import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
+import { chunkBySize, mapBurstBatches, sumBurstResults } from "./run-batched-burst.js";
 export {
   BOILERPLATE_DOCUMENT_RATIO,
   BOILERPLATE_MIN_DOCUMENTS,
@@ -76,6 +76,7 @@ export interface EnrichDocumentsOptions {
   llmCache?: LlmCacheContext;
   onProgress?: (message: string) => void;
   onBatchProgress?: (progress: { completed: number; total: number }) => void;
+  signal?: AbortSignal;
 }
 export interface EnrichDocumentsResult {
   documents: DocumentCatalogEntry[];
@@ -185,11 +186,7 @@ function chunkDocuments(
   inputs: DocumentEnrichmentInput[],
   size: number,
 ): DocumentEnrichmentInput[][] {
-  const batches: DocumentEnrichmentInput[][] = [];
-  for (let index = 0; index < inputs.length; index += size) {
-    batches.push(inputs.slice(index, index + size));
-  }
-  return batches;
+  return chunkBySize(inputs, size);
 }
 export async function enrichDocuments(
   options: EnrichDocumentsOptions,
@@ -206,25 +203,24 @@ export async function enrichDocuments(
   options.onProgress?.(
     `Tagging ${String(inputs.length)} document(s) in ${String(batches.length)} batch(es)...`,
   );
-  let completed = 0;
-  const results = await mapWithConcurrency(
+  const results = await mapBurstBatches({
     batches,
-    DOCUMENT_ENRICHMENT_CONCURRENCY,
-    async (batch) => {
-      const result = await runBurst({
-        model: options.model,
-        system,
-        prompt: buildDocumentEnrichmentPrompt(batch),
-        schema,
-        schemaName: LLM_SCHEMA_NAMES.documentEnrichment,
-        timeoutMs: resolveSemanticRequestTimeoutMs(),
-        ...withLlmCache(options.llmCache),
-      });
-      completed += 1;
-      options.onBatchProgress?.({ completed, total: batches.length });
-      return result;
+    concurrency: DOCUMENT_ENRICHMENT_CONCURRENCY,
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+    onBatchComplete: (completed, total) => {
+      options.onBatchProgress?.({ completed, total });
     },
-  );
+    buildRequest: (batch) => ({
+      model: options.model,
+      system,
+      prompt: buildDocumentEnrichmentPrompt(batch),
+      schema,
+      schemaName: LLM_SCHEMA_NAMES.documentEnrichment,
+      timeoutMs: resolveSemanticRequestTimeoutMs(),
+      ...withLlmCache(options.llmCache),
+      ...(options.signal !== undefined ? { signal: options.signal } : {}),
+    }),
+  });
   const enriched = new Map<string, EnrichedDocument>();
   for (const result of results) {
     for (const document of result.output.documents) {
@@ -233,6 +229,6 @@ export async function enrichDocuments(
   }
   return {
     documents: applyEnrichment(options.documents, enriched),
-    usage: sumBurstUsage(...results.map((result) => result.usage)),
+    usage: sumBurstResults(results),
   };
 }

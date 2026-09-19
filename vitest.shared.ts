@@ -39,11 +39,27 @@ export const coreCoverage: SharedCoverageOptions = withThresholds({
   statements: 70,
 });
 
-/** Internal packages — report coverage; thresholds added in Phase 3. */
+/** Internal packages — full-tree coverage report (no gate). */
 export const packageCoverage: SharedCoverageOptions = {
   ...coverageDefaults,
   reporter: ["text", "lcov"],
 };
+
+/** Ingest — gate on modules covered by unit tests (parsers/archives excluded). */
+export const ingestGateCoverage: SharedCoverageOptions = withThresholds({
+  lines: 65,
+  branches: 55,
+  statements: 65,
+  functions: 60,
+});
+
+/** Profile — gate on deterministic profiling helpers under unit test. */
+export const profileGateCoverage: SharedCoverageOptions = withThresholds({
+  lines: 80,
+  branches: 75,
+  statements: 80,
+  functions: 75,
+});
 
 /** Apps and integration tests — coverage reported, no hard gate yet. */
 export const appCoverage: SharedCoverageOptions = {

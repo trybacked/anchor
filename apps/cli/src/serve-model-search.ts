@@ -4,7 +4,7 @@ import {
   openDataSession,
   searchModelViaDocumentChunks,
 } from "@backed/ingest";
-import type { SearchMatch } from "@backed/mcp";
+import type { SearchModelOptions } from "@backed/mcp";
 import { embedQuery, resolveSemanticModels } from "@backed/semantic";
 import {
   DocumentCatalogSchema,
@@ -33,12 +33,7 @@ function readDocumentCatalog(root: string): DocumentCatalog | undefined {
 export async function createServeSearchModelOptions(
   root: string,
   model: SemanticModel,
-): Promise<
-  | {
-      semanticSearch?: (query: string) => Promise<SearchMatch[]>;
-    }
-  | undefined
-> {
+): Promise<SearchModelOptions | undefined> {
   const { dataPath } = workspacePaths(root);
   if (!existsSync(dataPath)) {
     return undefined;
@@ -50,6 +45,7 @@ export async function createServeSearchModelOptions(
     return undefined;
   }
   const session = await openDataSession(dataPath);
+  let keepSessionOpen = false;
   try {
     const embeddingsAvailable = await documentChunksHaveEmbeddings(session.query);
     if (!embeddingsAvailable) {
@@ -59,11 +55,19 @@ export async function createServeSearchModelOptions(
       embedQuery: (text) => embedQuery(models.embedding, text),
     });
     const catalog = readDocumentCatalog(root);
+    keepSessionOpen = true;
     return {
       semanticSearch: async (query) =>
         searchModelViaDocumentChunks(model, chunkSearch, query, catalog),
+      dispose: () => {
+        session.close();
+      },
     };
   } catch {
     return undefined;
+  } finally {
+    if (!keepSessionOpen) {
+      session.close();
+    }
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Anchor model.yaml schema, shared types, and run artifacts (.backed/)",
   "sideEffects": false,
@@ -27,6 +27,22 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./tables": {
+      "types": "./dist/tables.d.ts",
+      "default": "./dist/tables.js"
+    },
+    "./model": {
+      "types": "./dist/model.d.ts",
+      "default": "./dist/model.js"
+    },
+    "./profile": {
+      "types": "./dist/profile.d.ts",
+      "default": "./dist/profile.js"
+    },
+    "./workspace": {
+      "types": "./dist/workspace.d.ts",
+      "default": "./dist/workspace.js"
     }
   },
   "files": [

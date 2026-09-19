@@ -68,6 +68,7 @@ async function embedDocumentChunks(
   models: SemanticModels,
   chunked: Awaited<ReturnType<typeof chunkDocumentLines>>,
   progress: PipelineProgressReporter,
+  signal?: AbortSignal,
 ): Promise<number> {
   const chunkTexts = await fetchChunkTextsForEmbedding(session.query);
   if (chunkTexts.length === 0) {
@@ -88,6 +89,7 @@ async function embedDocumentChunks(
     ({ completed, total }) => {
       progress.track?.("Embedding document chunks", completed, total);
     },
+    signal,
   );
   await storeChunkEmbeddings(
     session.query,
@@ -113,6 +115,7 @@ async function resolveVocabulary(
   forceFull: boolean,
   llmCache: LlmCacheContext,
   persistedVocabulary: DomainVocabulary | undefined,
+  signal?: AbortSignal,
 ): Promise<{ vocabulary: DomainVocabulary; usage: BurstUsage }> {
   if (!forceFull && persistedVocabulary !== undefined) {
     const vocabulary = mergeVocabulary(persistedVocabulary, configured);
@@ -127,7 +130,14 @@ async function resolveVocabulary(
       progress.detail("Reusing vocabulary from previous run...");
       progress.step(`Domain vocabulary reused (${vocabulary.entityLabel})`);
       return { vocabulary, usage: EMPTY_BURST_USAGE };
-    } catch {
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          event: "pipeline.fallback",
+          stage: "vocabulary_previous_run",
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+      );
       // fall through
     }
   }
@@ -143,6 +153,7 @@ async function resolveVocabulary(
       progress.detail(message);
     },
     llmCache,
+    ...(signal !== undefined ? { signal } : {}),
   });
   const vocabulary = mergeVocabulary(discovered.vocabulary, configured);
   writeRunArtifact(root, runId, "vocabulary", vocabulary);
@@ -207,6 +218,7 @@ export async function runDocumentStage(
   persistedVocabulary: DomainVocabulary | undefined,
   persistedDocumentCatalog: DocumentCatalog | undefined,
   unknownSourceFiles: string[] | undefined,
+  signal?: AbortSignal,
 ): Promise<DocumentStageResult> {
   progress.step(`Documents (${String(lineDocuments.length)} file(s))`);
   const extractionStarted = Date.now();
@@ -239,6 +251,7 @@ export async function runDocumentStage(
     forceFull,
     llmCache,
     persistedVocabulary,
+    signal,
   );
   const extractedPromise = extractDocumentCatalog({
     runId,
@@ -247,6 +260,7 @@ export async function runDocumentStage(
     documentTypeHints: workspaceConfig.documentTypeHints,
     vocabulary: vocabularyPromise.then((result) => result.vocabulary),
     llmCache,
+    ...(signal !== undefined ? { signal } : {}),
     ...(catalogCache !== undefined ? { catalogCache } : {}),
     ...(typeRegistry !== undefined ? { typeRegistry } : {}),
     onProgress: (message) => {
@@ -302,6 +316,7 @@ export async function runDocumentStage(
       onBatchProgress: ({ completed, total }) => {
         progress.track?.("Tagging documents (LLM)", completed, total);
       },
+      ...(signal !== undefined ? { signal } : {}),
     });
     enrichUsage = enrichedDocuments.usage;
     enrichedDocumentEntries = mergeEnrichedDocuments(
@@ -348,6 +363,7 @@ export async function runDocumentStage(
       onProgress: (message) => {
         progress.detail(message);
       },
+      ...(signal !== undefined ? { signal } : {}),
     });
     entityIndex = enriched.entities;
     entityEnrichUsage = enriched.usage;
@@ -379,7 +395,7 @@ export async function runDocumentStage(
   session.datasets.push(chunked.dataset);
   let embedMs = 0;
   if (!skipEmbed) {
-    embedMs = await embedDocumentChunks(session, models, chunked, progress);
+    embedMs = await embedDocumentChunks(session, models, chunked, progress, signal);
   } else {
     progress.warn("Embeddings skipped");
   }

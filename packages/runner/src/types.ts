@@ -47,6 +47,7 @@ export interface RunAnchorPipelineOptions {
   progress?: PipelineProgressReporter;
   persistedArtifacts?: PersistedPipelineArtifacts;
   incrementalContext?: IncrementalPipelineContext;
+  signal?: AbortSignal;
 }
 
 export interface RunAnchorPipelineResult {

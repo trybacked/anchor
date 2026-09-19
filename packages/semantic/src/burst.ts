@@ -17,6 +17,8 @@ import {
   type LlmCacheContext,
 } from "./llm-cache.js";
 import { isRecord } from "./record-utils.js";
+import { assertNotAborted, sleepUnlessAborted } from "./pipeline-abort.js";
+import { withLlmSlot } from "./llm-semaphore.js";
 
 export type { BurstUsage };
 
@@ -29,6 +31,7 @@ export interface BurstRequest<TSchema extends z.ZodTypeAny> {
   timeoutMs?: number;
   onWaiting?: (message: string) => void;
   llmCache?: LlmCacheContext;
+  signal?: AbortSignal;
 }
 
 export interface BurstResult<TOutput> {
@@ -111,10 +114,8 @@ function toBurstUsage(result: Awaited<ReturnType<typeof generateText>>): BurstUs
   };
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return sleepUnlessAborted(ms, signal);
 }
 
 /**
@@ -261,6 +262,7 @@ async function runRawAttempt<TSchema extends z.ZodTypeAny>(
     maxRetries: 0,
     maxOutputTokens,
     ...(request.timeoutMs !== undefined ? { timeout: { totalMs: request.timeoutMs } } : {}),
+    ...(request.signal !== undefined ? { abortSignal: request.signal } : {}),
   });
   let recovered: z.infer<TSchema> | undefined;
   try {
@@ -334,6 +336,7 @@ async function runStructuredAttempt<TSchema extends z.ZodTypeAny>(
     temperature: 0,
     maxRetries: 0,
     ...(request.timeoutMs !== undefined ? { timeout: { totalMs: request.timeoutMs } } : {}),
+    ...(request.signal !== undefined ? { abortSignal: request.signal } : {}),
   });
   if (result.output !== undefined) {
     return {
@@ -373,6 +376,7 @@ async function executeBurstAttempt<TSchema extends z.ZodTypeAny>(
 export async function runBurst<TSchema extends z.ZodTypeAny>(
   request: BurstRequest<TSchema>,
 ): Promise<BurstResult<z.infer<TSchema>>> {
+  assertNotAborted(request.signal);
   const schemaJson = await serializeBurstSchemaJson(request.schema);
   const cacheKeyValue = resolveBurstCacheKey(request, schemaJson);
   if (cacheKeyValue !== undefined) {
@@ -381,11 +385,13 @@ export async function runBurst<TSchema extends z.ZodTypeAny>(
       return cached;
     }
   }
+  return withLlmSlot(request.signal, async () => {
   let lastError: unknown;
   for (let attempt = 0; attempt < MAX_BURST_ATTEMPTS; attempt += 1) {
+    assertNotAborted(request.signal);
     const delayMs = BURST_RETRY_DELAYS_MS[attempt] ?? 0;
     if (delayMs > 0) {
-      await sleep(delayMs);
+      await sleep(delayMs, request.signal);
     }
     const strategy = resolveAttemptStrategy(attempt);
     try {
@@ -409,4 +415,5 @@ export async function runBurst<TSchema extends z.ZodTypeAny>(
     );
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  });
 }
