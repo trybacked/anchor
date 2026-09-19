@@ -15,7 +15,7 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage --concurrency=1",
     "changeset": "changeset",
-    "version-packages": "changeset version",
+    "version-packages": "changeset version && pnpm install --lockfile-only --ignore-scripts",
     "release": "pnpm build && changeset publish",
     "cli": "node apps/cli/dist/cli.js",
     "auth-api": "node apps/auth-api/dist/index.js",

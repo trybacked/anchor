@@ -3,7 +3,7 @@ import { BackedApiError, BackedAuthClient } from "./auth/api-client.js";
 import { resolveBackedApiUrl, BACKED_API_PATHS } from "./auth/config.js";
 import type { BackedCredentials } from "./auth/credentials.js";
 import { readBackedCredentials } from "./auth/credentials.js";
-import { verifyAccessToken } from "./auth/device-flow.js";
+import { ensureValidCredentials } from "./auth/session.js";
 import { COMMANDS, formatCliCommand } from "./config.js";
 
 export const BACKED_TELEMETRY_ENV = "BACKED_TELEMETRY";
@@ -44,11 +44,12 @@ async function assertGatewayReachable(apiUrl: string): Promise<void> {
   }
 }
 
-async function buildTelemetryRecorder(credentials: BackedCredentials): Promise<ServeContext> {
+async function buildTelemetryRecorder(initialCredentials: BackedCredentials): Promise<ServeContext> {
   const apiUrl = resolveBackedApiUrl();
   await assertGatewayReachable(apiUrl);
+  let credentials: BackedCredentials;
   try {
-    await verifyAccessToken(apiUrl, credentials.accessToken);
+    credentials = await ensureValidCredentials(apiUrl, initialCredentials);
   } catch (error) {
     if (error instanceof BackedApiError && error.status === 401) {
       throw new ServeAuthError(

@@ -26,6 +26,8 @@ function createTestConfig(dataRoot: string): WorkerServiceConfig {
     rateLimitWindowMs: DEFAULT_RATE_LIMIT_WINDOW_MS,
     rateLimitMaxRequests: DEFAULT_RATE_LIMIT_MAX_REQUESTS,
     skipEmbed: true,
+    maxConcurrentRuns: 2,
+    shutdownDrainMs: 5_000,
   };
 }
 
@@ -36,6 +38,7 @@ describe("OpenAPI", () => {
       assertOpenApiDocumentsRoutes(spec);
     }).not.toThrow();
     expect(DOCUMENTED_HTTP_ROUTES.length).toBeGreaterThan(0);
+    expect(DOCUMENTED_HTTP_ROUTES.some((route) => route.path.endsWith("/config"))).toBe(true);
   });
 
   describe("GET /openapi.yaml", () => {

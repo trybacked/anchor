@@ -3,8 +3,8 @@ import { appCoverage } from "../../vitest.shared.js";
 
 export default defineConfig({
   test: {
-    name: "cli-e2e",
-    include: ["tests/e2e/**/*.test.ts"],
+    name: "cli",
+    include: ["tests/e2e/**/*.test.ts", "tests/unit/**/*.test.ts"],
     testTimeout: 60000,
     hookTimeout: 60000,
     coverage: appCoverage,

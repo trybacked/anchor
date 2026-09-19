@@ -1,39 +1,28 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import {
+  parseBearerToken as parseBearerHeader,
+  readRequestBody as readRequestBodyFromKernel,
+  RequestBodyTooLargeError,
+  sendJson,
+} from "@backed/http-kernel";
 import type { ApiErrorResponse } from "./api-types.js";
 
-export async function readRequestBody(request: IncomingMessage, maxBytes: number): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    let total = 0;
-    request.on("data", (chunk: Buffer) => {
-      total += chunk.length;
-      if (total > maxBytes) {
-        reject(new PayloadTooLargeError(maxBytes));
-        request.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    request.on("end", () => {
-      resolve(Buffer.concat(chunks));
-    });
-    request.on("error", reject);
-  });
+export class PayloadTooLargeError extends RequestBodyTooLargeError {
+  override name = "PayloadTooLargeError";
 }
 
-export class PayloadTooLargeError extends Error {
-  constructor(public readonly maxBytes: number) {
-    super(`Payload exceeds ${String(maxBytes)} bytes`);
-    this.name = "PayloadTooLargeError";
+export async function readRequestBody(request: IncomingMessage, maxBytes: number): Promise<Buffer> {
+  try {
+    return await readRequestBodyFromKernel(request, { maxBytes });
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      throw new PayloadTooLargeError(error.maxBytes);
+    }
+    throw error;
   }
 }
 
-export function sendJson(response: ServerResponse, status: number, body: unknown): void {
-  response.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-  });
-  response.end(JSON.stringify(body));
-}
+export { sendJson, parseBearerHeader as parseBearerToken };
 
 export function sendApiError(
   response: ServerResponse,
@@ -54,12 +43,4 @@ export function sendYaml(
     ...headers,
   });
   response.end(body);
-}
-
-export function parseBearerToken(headerValue: string | undefined): string | null {
-  if (headerValue === undefined) {
-    return null;
-  }
-  const match = /^Bearer\s+(.+)$/i.exec(headerValue.trim());
-  return match?.[1]?.trim() ?? null;
 }

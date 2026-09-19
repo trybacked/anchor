@@ -1,11 +1,4 @@
-import {
-  DOCUMENT_CHUNKS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  DOCUMENT_LINES_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
-  ENTITY_PROFILES_TABLE,
-} from "@trybacked/core";
+import { isPipelineInfraDatasetTable } from "@trybacked/core";
 import type { DocumentCatalog } from "@trybacked/core";
 import type { CompressedTable } from "./compress.js";
 import { partitionStructuredTables, splitTablesByKind } from "./line-document.js";
@@ -19,15 +12,7 @@ export interface TableRouting {
   totalTableCount: number;
 }
 export function isDocumentPipelineTable(tableName: string): boolean {
-  return (
-    tableName.startsWith("doc_") ||
-    tableName === DOCUMENT_LINES_TABLE ||
-    tableName === DOCUMENT_CHUNKS_TABLE ||
-    tableName === DOCUMENT_ENTITIES_TABLE ||
-    tableName === DOCUMENT_MENTIONS_TABLE ||
-    tableName === DOCUMENT_FACTS_TABLE ||
-    tableName === ENTITY_PROFILES_TABLE
-  );
+  return isPipelineInfraDatasetTable(tableName);
 }
 export function routeTables(
   tables: CompressedTable[],

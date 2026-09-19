@@ -1,10 +1,13 @@
 import { defineConfig } from "vitest/config";
-import { packageCoverage } from "../../vitest.shared.js";
+import { profileGateCoverage } from "../../vitest.shared.js";
 
 export default defineConfig({
   test: {
     name: "profile-unit",
     include: ["tests/unit/**/*.test.ts"],
-    coverage: packageCoverage,
+    coverage: {
+      ...profileGateCoverage,
+      include: ["src/patterns.ts"],
+    },
   },
 });

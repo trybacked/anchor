@@ -9,6 +9,8 @@ export const SERVICE_NAME = "backed-worker-service";
 export const DEFAULT_HOST = "127.0.0.1";
 export const DEFAULT_PORT = 8790;
 export const DEFAULT_DATA_ROOT = "./worker-data";
+export const DEFAULT_MAX_CONCURRENT_RUNS = 2;
+export const DEFAULT_SHUTDOWN_DRAIN_MS = 30_000;
 
 export const ENV = {
   HOST: "WORKER_SERVICE_HOST",
@@ -25,6 +27,8 @@ export const ENV = {
   RATE_LIMIT_WINDOW_MS: "WORKER_SERVICE_RATE_LIMIT_WINDOW_MS",
   RATE_LIMIT_MAX_REQUESTS: "WORKER_SERVICE_RATE_LIMIT_MAX_REQUESTS",
   SKIP_EMBED: "WORKER_SERVICE_SKIP_EMBED",
+  MAX_CONCURRENT_RUNS: "WORKER_SERVICE_MAX_CONCURRENT_RUNS",
+  SHUTDOWN_DRAIN_MS: "WORKER_SERVICE_SHUTDOWN_DRAIN_MS",
 } as const;
 
 export interface ControlPlaneConfig {
@@ -56,6 +60,8 @@ export interface WorkerServiceConfig {
   rateLimitWindowMs: number;
   rateLimitMaxRequests: number;
   skipEmbed: boolean;
+  maxConcurrentRuns: number;
+  shutdownDrainMs: number;
 }
 
 function readPositiveInt(raw: string | undefined, fallback: number): number {
@@ -177,5 +183,7 @@ export function loadWorkerServiceConfig(
       DEFAULT_RATE_LIMIT_MAX_REQUESTS,
     ),
     skipEmbed: readBoolean(env[ENV.SKIP_EMBED], true),
+    maxConcurrentRuns: readPositiveInt(env[ENV.MAX_CONCURRENT_RUNS], DEFAULT_MAX_CONCURRENT_RUNS),
+    shutdownDrainMs: readPositiveInt(env[ENV.SHUTDOWN_DRAIN_MS], DEFAULT_SHUTDOWN_DRAIN_MS),
   };
 }

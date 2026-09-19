@@ -19,6 +19,7 @@ export interface RunStore {
   create(tenantId: string, runId: string, partnerId?: string): StoredRun;
   get(tenantId: string, runId: string): StoredRun | undefined;
   listRecent(limit: number, partnerId?: string): StoredRun[];
+  listRunning(): StoredRun[];
   complete(
     tenantId: string,
     runId: string,
@@ -88,6 +89,10 @@ export class MemoryRunStore implements RunStore {
         (left, right) => new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime(),
       )
       .slice(0, limit);
+  }
+
+  listRunning(): StoredRun[] {
+    return [...this.runs.values()].filter((record) => record.status === "running");
   }
 
   complete(

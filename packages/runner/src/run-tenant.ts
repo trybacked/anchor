@@ -59,6 +59,7 @@ export interface RunTenantPipelineOptions {
   skipEmbed?: boolean;
   env?: Record<string, string | undefined>;
   progress?: PipelineProgressReporter;
+  signal?: AbortSignal;
 }
 
 export interface RunTenantPipelineResult {
@@ -225,6 +226,7 @@ export async function runTenantPipeline(
       ...(options.forceFull !== undefined ? { forceFull: options.forceFull } : {}),
       ...(options.skipEmbed !== undefined ? { skipEmbed: options.skipEmbed } : {}),
       ...(options.env !== undefined ? { env: options.env } : {}),
+      ...(options.signal !== undefined ? { signal: options.signal } : {}),
       ...(persistedArtifacts !== undefined ? { persistedArtifacts } : {}),
       ...(existingModel !== undefined && persistedArtifacts?.profile !== undefined
         ? {

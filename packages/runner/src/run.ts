@@ -6,6 +6,7 @@ import {
   mergeIncrementalProposal,
   proposeModel,
   splitTablesByKind,
+  assertNotAborted,
 } from "@backed/semantic";
 import type { BurstUsage } from "@backed/semantic";
 import type { DocumentCatalog, DomainVocabulary, Proposal } from "@trybacked/core";
@@ -34,6 +35,7 @@ import type {
 export async function runAnchorPipeline(
   options: RunAnchorPipelineOptions,
 ): Promise<RunAnchorPipelineResult> {
+  assertNotAborted(options.signal);
   const progress = options.progress ?? noopProgressReporter();
   const root = path.resolve(options.workspaceDir);
   const forceFull = options.forceFull ?? false;
@@ -63,6 +65,7 @@ export async function runAnchorPipeline(
   };
   const ingestStarted = Date.now();
   const session = await ingestFolder(absoluteSources, { databasePath: paths.dataPath });
+  assertNotAborted(options.signal);
   timings.ingestMs = Date.now() - ingestStarted;
   try {
     if (session.datasets.length === 0) {
@@ -101,6 +104,7 @@ export async function runAnchorPipeline(
         options.persistedArtifacts?.vocabulary,
         options.persistedArtifacts?.documentCatalog,
         options.incrementalContext?.unknownSourceFiles,
+        options.signal,
       );
       timings.documentsMs = Date.now() - documentsStarted;
       timings.extractionMs = documentStage.extractionMs;
@@ -141,11 +145,13 @@ export async function runAnchorPipeline(
             catalogForInference,
           );
     const proposalStarted = Date.now();
+    assertNotAborted(options.signal);
     const freshProposal = await proposeModel({
       profile: incrementalScope.profileForInference,
       runId,
       models,
       llmCache,
+      ...(options.signal !== undefined ? { signal: options.signal } : {}),
       ...(catalogForInference !== undefined ? { documentCatalog: catalogForInference } : {}),
       ...(vocabulary !== undefined ? { vocabulary } : {}),
       ...(extractionUsage !== undefined ? { extractionUsage } : {}),

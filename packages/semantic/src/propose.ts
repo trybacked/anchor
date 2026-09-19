@@ -26,6 +26,7 @@ export interface ProposeModelOptions {
   onProgress?: (message: string) => void;
   onBatchProgress?: (progress: { completed: number; total: number }) => void;
   llmCache?: LlmCacheContext;
+  signal?: AbortSignal;
 }
 
 function sumUsageMany(usages: BurstUsage[]): Proposal["usage"] {
@@ -68,6 +69,7 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     options.llmCache,
     onProgress,
     options.onBatchProgress,
+    options.signal,
   );
   const ontologyStrategy = resolveOntologyStrategy(routing, documentCatalog);
   const {
@@ -81,6 +83,7 @@ export async function proposeModel(options: ProposeModelOptions): Promise<Propos
     timeoutMs,
     options.llmCache,
     onProgress,
+    options.signal,
   );
   const assembly = assembleProposal(
     ontologyOutput,

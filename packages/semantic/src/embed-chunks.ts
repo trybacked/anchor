@@ -2,6 +2,7 @@ import { embedMany } from "ai";
 import type { EmbeddingModel } from "ai";
 import { mapWithConcurrency } from "./concurrency.js";
 import { EMBEDDING_BATCH_SIZE, EMBEDDING_CONCURRENCY } from "./constants.js";
+import { withLlmSlot } from "./llm-semaphore.js";
 export { EMBEDDING_BATCH_SIZE, EMBEDDING_CONCURRENCY } from "./constants.js";
 export interface EmbedTextsUsage {
   tokens: number;
@@ -26,6 +27,7 @@ export async function embedTexts(
   texts: string[],
   onProgress?: (message: string) => void,
   onBatchProgress?: (progress: EmbedBatchProgress) => void,
+  signal?: AbortSignal,
 ): Promise<EmbedTextsResult> {
   if (texts.length === 0) {
     return { embeddings: [], usage: { tokens: 0 } };
@@ -42,10 +44,13 @@ export async function embedTexts(
       onProgress?.(
         `Embedding batch ${String(batchIndex)}/${String(batchCount)} (${String(batch.length)} chunks)...`,
       );
-      const result = await embedMany({
-        model,
-        values: batch,
-      });
+      const result = await withLlmSlot(signal, () =>
+        embedMany({
+          model,
+          values: batch,
+          ...(signal !== undefined ? { abortSignal: signal } : {}),
+        }),
+      );
       completed += 1;
       onBatchProgress?.({ completed, total: batchCount });
       return result;

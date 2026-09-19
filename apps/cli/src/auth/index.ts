@@ -15,3 +15,4 @@ export {
   type BackedUser,
 } from "./credentials.js";
 export { runDeviceLogin, verifyAccessToken } from "./device-flow.js";
+export { ensureValidCredentials } from "./session.js";

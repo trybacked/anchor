@@ -2,15 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { assertTenantAccess, TenantAccessDeniedError } from "./auth.js";
 import { SERVICE_NAME, type WorkerServiceConfig } from "./config.js";
 import {
-  extractAdminTenantRoute,
   extractTenantRoute,
-  handleAdminGetModel,
-  handleAdminGetReview,
-  handleAdminGetRunStatus,
-  handleAdminListRuns,
-  handleAdminPatchModelElement,
-  handlePostReview,
-  handleAdminSubmitRun,
   PayloadTooLargeError,
   type WorkerServiceDeps,
 } from "./handlers.js";
@@ -20,16 +12,18 @@ import { loadOpenApiSpec } from "./openapi.js";
 import { createPartnerRegistry, type PartnerRegistry } from "./partner-registry.js";
 import { RateLimiter } from "./rate-limit.js";
 import { logHttpRequest } from "./request-log.js";
+import { createRunExecutor, type RunExecutor } from "./run-executor.js";
+import { dispatchAdminRoute } from "./admin-router.js";
 import { dispatchTenantRoute } from "./router.js";
 import { FileRunStore } from "./run-store-fs.js";
 import type { RunStore } from "./run-store.js";
-import { handleGetTenantConfig, handlePatchTenantConfig } from "./tenant-config-handlers.js";
 
 export interface WorkerServiceOptions {
   config: WorkerServiceConfig;
   runStore?: RunStore;
   rateLimiter?: RateLimiter;
   partnerRegistry?: PartnerRegistry;
+  runExecutor?: RunExecutor;
 }
 
 function unauthorized(response: ServerResponse): void {
@@ -38,38 +32,6 @@ function unauthorized(response: ServerResponse): void {
 
 function forbidden(response: ServerResponse): void {
   sendApiError(response, 403, { error: "forbidden" });
-}
-
-const BACKED_PARTNER_ID_HEADER = "x-backed-partner-id";
-
-function readBackedPartnerId(request: IncomingMessage): string | null {
-  const raw = request.headers[BACKED_PARTNER_ID_HEADER];
-  if (raw === undefined) {
-    return null;
-  }
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  if (value === undefined || value.trim().length === 0) {
-    return null;
-  }
-  return value.trim();
-}
-
-function assertAdminTenantAccess(
-  partnerId: string,
-  tenantId: string,
-  registry: PartnerRegistry,
-  response: ServerResponse,
-): boolean {
-  try {
-    assertTenantAccess({ partnerId }, tenantId, registry);
-    return true;
-  } catch (error) {
-    if (error instanceof TenantAccessDeniedError) {
-      forbidden(response);
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function assertAuth(
@@ -112,10 +74,18 @@ export function createWorkerService(options: WorkerServiceOptions) {
     });
   const partnerRegistry =
     options.partnerRegistry ?? createPartnerRegistry({ config: options.config });
+  const runExecutor =
+    options.runExecutor ??
+    createRunExecutor({
+      config: options.config,
+      runStore,
+      partnerRegistry,
+    });
   const deps: WorkerServiceDeps = {
     config: options.config,
     runStore,
     partnerRegistry,
+    runExecutor,
   };
   return createServer((request, response) => {
     const startedAtMs = Date.now();
@@ -167,92 +137,17 @@ async function handleRequest(
   const internalToken = parseBearerToken(request.headers.authorization);
   const isInternalRequest = internalSecret !== undefined && internalToken === internalSecret;
 
-  if (request.method === "GET" && url.pathname === "/admin/v1/runs") {
+  if (url.pathname === "/admin/v1/runs" || url.pathname.startsWith("/admin/v1/tenants/")) {
     if (!isInternalRequest) {
       unauthorized(response);
       return;
     }
-    handleAdminListRuns(request, response, deps);
-    return;
+    const handled = await dispatchAdminRoute(request.method, url.pathname, request, response, deps);
+    if (handled) {
+      return;
+    }
   }
 
-  const adminTenantRoute = extractAdminTenantRoute(url.pathname);
-  if (adminTenantRoute !== null) {
-    if (!isInternalRequest) {
-      unauthorized(response);
-      return;
-    }
-    if (request.method === "GET" && adminTenantRoute.remainder === "model") {
-      await handleAdminGetModel(adminTenantRoute.tenantId, response, deps);
-      return;
-    }
-    if (request.method === "PATCH" && adminTenantRoute.remainder === "model/elements") {
-      await handleAdminPatchModelElement(adminTenantRoute.tenantId, request, response, deps);
-      return;
-    }
-    if (request.method === "GET" && adminTenantRoute.remainder === "review") {
-      handleAdminGetReview(adminTenantRoute.tenantId, response, deps);
-      return;
-    }
-    if (request.method === "POST" && adminTenantRoute.remainder === "review") {
-      await handlePostReview(adminTenantRoute.tenantId, request, response, deps);
-      return;
-    }
-    if (request.method === "GET" && adminTenantRoute.remainder === "config") {
-      handleGetTenantConfig(adminTenantRoute.tenantId, response, deps);
-      return;
-    }
-    if (request.method === "PATCH" && adminTenantRoute.remainder === "config") {
-      await handlePatchTenantConfig(adminTenantRoute.tenantId, request, response, deps);
-      return;
-    }
-    if (request.method === "POST" && adminTenantRoute.remainder === "runs") {
-      const partnerId = readBackedPartnerId(request);
-      if (partnerId === null) {
-        sendApiError(response, 400, { error: "missing_partner_id" });
-        return;
-      }
-      if (
-        !assertAdminTenantAccess(
-          partnerId,
-          adminTenantRoute.tenantId,
-          deps.partnerRegistry,
-          response,
-        )
-      ) {
-        return;
-      }
-      await handleAdminSubmitRun(adminTenantRoute.tenantId, partnerId, request, response, deps);
-      return;
-    }
-    const adminRunStatusMatch = /^runs\/([^/]+)$/.exec(adminTenantRoute.remainder);
-    if (request.method === "GET" && adminRunStatusMatch !== null) {
-      const partnerId = readBackedPartnerId(request);
-      if (partnerId === null) {
-        sendApiError(response, 400, { error: "missing_partner_id" });
-        return;
-      }
-      if (
-        !assertAdminTenantAccess(
-          partnerId,
-          adminTenantRoute.tenantId,
-          deps.partnerRegistry,
-          response,
-        )
-      ) {
-        return;
-      }
-      handleAdminGetRunStatus(
-        adminTenantRoute.tenantId,
-        decodeURIComponent(adminRunStatusMatch[1] ?? ""),
-        response,
-        deps,
-      );
-      return;
-    }
-    sendApiError(response, 404, { error: "not_found" });
-    return;
-  }
   const auth = await assertAuth(request, deps.partnerRegistry, response);
   if (auth === null) {
     return;
@@ -293,7 +188,27 @@ async function handleRequest(
 export function startWorkerService(
   options: WorkerServiceOptions,
 ): Promise<{ url: string; close: () => Promise<void> }> {
-  const server = createWorkerService(options);
+  const partnerRegistry =
+    options.partnerRegistry ?? createPartnerRegistry({ config: options.config });
+  const runStore = options.runStore ?? new FileRunStore(options.config.dataRoot);
+  const runExecutor =
+    options.runExecutor ??
+    createRunExecutor({
+      config: options.config,
+      runStore,
+      partnerRegistry,
+    });
+  const recovered = runExecutor.recoverOrphanedRuns();
+  if (recovered > 0) {
+    console.error(
+      JSON.stringify({
+        event: "run.recover_orphans",
+        ts: new Date().toISOString(),
+        count: recovered,
+      }),
+    );
+  }
+  const server = createWorkerService({ ...options, runStore, partnerRegistry, runExecutor });
   return new Promise((resolve, reject) => {
     server.listen(options.config.port, options.config.host, () => {
       const address = server.address();
@@ -303,8 +218,9 @@ export function startWorkerService(
       }
       resolve({
         url: `http://${options.config.host}:${String(address.port)}`,
-        close: () =>
-          new Promise<void>((closeResolve, closeReject) => {
+        close: async () => {
+          await runExecutor.shutdown();
+          await new Promise<void>((closeResolve, closeReject) => {
             server.close((error) => {
               if (error) {
                 closeReject(error);
@@ -312,7 +228,8 @@ export function startWorkerService(
               }
               closeResolve();
             });
-          }),
+          });
+        },
       });
     });
   });

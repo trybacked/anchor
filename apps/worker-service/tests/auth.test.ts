@@ -15,6 +15,8 @@ function createConfig(overrides: Partial<WorkerServiceConfig> = {}): WorkerServi
     rateLimitWindowMs: 60_000,
     rateLimitMaxRequests: 120,
     skipEmbed: true,
+    maxConcurrentRuns: 2,
+    shutdownDrainMs: 5_000,
     ...overrides,
   };
 }

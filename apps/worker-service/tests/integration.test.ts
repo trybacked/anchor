@@ -42,6 +42,8 @@ function createTestConfig(
     rateLimitWindowMs: DEFAULT_RATE_LIMIT_WINDOW_MS,
     rateLimitMaxRequests: DEFAULT_RATE_LIMIT_MAX_REQUESTS,
     skipEmbed: true,
+    maxConcurrentRuns: 2,
+    shutdownDrainMs: 5_000,
     ...overrides,
   };
 }

@@ -16,15 +16,19 @@ export {
   DEFAULT_CLASSIFICATION_BATCH_SIZE,
   REQUEST_TIMEOUT_MS_ENV,
   CLASSIFICATION_BATCH_SIZE_ENV,
+  LLM_MAX_INFLIGHT_ENV,
+  DEFAULT_LLM_MAX_INFLIGHT,
   MissingApiKeyError,
   InvalidReviewThresholdError,
   InvalidRequestTimeoutError,
   InvalidClassificationBatchSizeError,
+  InvalidLlmMaxInflightError,
   resolveSemanticModels,
   resolveLanguageModelId,
   resolveReviewConfidenceThreshold,
   resolveSemanticRequestTimeoutMs,
   resolveClassificationBatchSize,
+  resolveLlmMaxInflight,
 } from "./env.js";
 export type { SemanticModels } from "./env.js";
 export {
@@ -42,6 +46,8 @@ export type {
 export { selectReviewQuestions } from "./questions.js";
 export { EMPTY_BURST_USAGE, runBurst, sumBurstUsage } from "./burst.js";
 export type { BurstRequest, BurstUsage, BurstResult } from "./burst.js";
+export { assertNotAborted, PipelineAbortedError, sleepUnlessAborted } from "./pipeline-abort.js";
+export { withLlmSlot, resetLlmSemaphoreForTests } from "./llm-semaphore.js";
 export { cacheKey, loadCachedOutput, saveCachedOutput, withLlmCache } from "./llm-cache.js";
 export type {
   CacheKeyInput,

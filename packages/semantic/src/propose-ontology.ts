@@ -99,6 +99,7 @@ async function runOntologyBurst(
   prompt: string,
   llmCache: LlmCacheContext | undefined,
   onProgress?: (message: string) => void,
+  signal?: AbortSignal,
 ): Promise<{
   output: OntologyOutput;
   usage: BurstUsage;
@@ -112,6 +113,7 @@ async function runOntologyBurst(
     schemaName: LLM_SCHEMA_NAMES.ontologyProposal,
     timeoutMs,
     ...withLlmCache(llmCache),
+    ...(signal !== undefined ? { signal } : {}),
     ...(onProgress !== undefined
       ? {
           onWaiting: () => {
@@ -131,6 +133,7 @@ async function runSplitOntologyBurst(
   documentCatalog: DocumentCatalog | undefined,
   llmCache: LlmCacheContext | undefined,
   onProgress?: (message: string) => void,
+  signal?: AbortSignal,
 ): Promise<{
   output: OntologyOutput;
   usage: BurstUsage;
@@ -144,6 +147,7 @@ async function runSplitOntologyBurst(
     schemaName: LLM_SCHEMA_NAMES.ontologyEntities,
     timeoutMs,
     ...withLlmCache(llmCache),
+    ...(signal !== undefined ? { signal } : {}),
     ...(onProgress !== undefined
       ? {
           onWaiting: () => {
@@ -166,6 +170,7 @@ async function runSplitOntologyBurst(
     schemaName: LLM_SCHEMA_NAMES.ontologyRelations,
     timeoutMs,
     ...withLlmCache(llmCache),
+    ...(signal !== undefined ? { signal } : {}),
     ...(onProgress !== undefined
       ? {
           onWaiting: () => {
@@ -193,6 +198,7 @@ async function runOntologyForTables(
   documentCatalog: DocumentCatalog | undefined,
   llmCache: LlmCacheContext | undefined,
   onProgress?: (message: string) => void,
+  signal?: AbortSignal,
 ): Promise<{
   output: OntologyOutput;
   usage: BurstUsage;
@@ -207,6 +213,7 @@ async function runOntologyForTables(
       documentCatalog,
       llmCache,
       onProgress,
+      signal,
     );
   }
   return runOntologyBurst(
@@ -216,6 +223,7 @@ async function runOntologyForTables(
     ontologyPrompt(tables, scopedClassification, documentCatalog),
     llmCache,
     onProgress,
+    signal,
   );
 }
 
@@ -249,6 +257,7 @@ export async function runOntologyStrategy(
   timeoutMs: number,
   llmCache: LlmCacheContext | undefined,
   onProgress?: (message: string) => void,
+  signal?: AbortSignal,
 ): Promise<OntologyRunResult> {
   switch (strategy.kind) {
     case "llm-with-catalog": {
@@ -261,6 +270,7 @@ export async function runOntologyStrategy(
         strategy.catalog,
         llmCache,
         onProgress,
+        signal,
       );
       const filtered = filterDocumentEntitiesFromOntology(ontology.output);
       return {
@@ -308,6 +318,7 @@ export async function runOntologyStrategy(
         undefined,
         llmCache,
         onProgress,
+        signal,
       );
       return {
         output: ontology.output,

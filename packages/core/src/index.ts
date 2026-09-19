@@ -10,7 +10,15 @@ export {
   LOW_CONFIDENCE_THRESHOLD,
   DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
 } from "./constants.js";
-export { DOC_TYPE_TABLE_PREFIX, DOC_TYPE_UNKNOWN_SLUG } from "./tables.js";
+export {
+  DOC_TYPE_TABLE_PREFIX,
+  DOC_TYPE_UNKNOWN_SLUG,
+  PIPELINE_INFRA_DATASET_TABLE_NAMES,
+  PIPELINE_MATERIALIZED_DATASET_TABLE_NAMES,
+  isDocumentTypeMaterializedTable,
+  isPipelineInfraDatasetTable,
+  createPipelineMaterializedDatasetTableSet,
+} from "./tables.js";
 export {
   NATIVE_FRACTIONAL_TYPE_PATTERN,
   PROFILE_TOP_VALUES_LIMIT,

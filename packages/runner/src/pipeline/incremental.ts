@@ -48,7 +48,14 @@ export function resolveIncrementalScope(
       incrementalTables,
       existingModel,
     };
-  } catch {
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "pipeline.fallback",
+        stage: "incremental_scope",
+        reason: error instanceof Error ? error.message : String(error),
+      }),
+    );
     return fullScope;
   }
 }

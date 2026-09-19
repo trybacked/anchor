@@ -1,22 +1,6 @@
-import {
-  DOCUMENT_CHUNKS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  DOCUMENT_LINES_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
-  ENTITY_PROFILES_TABLE,
-} from "@trybacked/core";
+import { isPipelineInfraDatasetTable } from "@trybacked/core";
 import type { DocumentCatalog, ProfileReport } from "@trybacked/core";
 import path from "node:path";
-
-const PIPELINE_INFRA_TABLES = new Set<string>([
-  DOCUMENT_LINES_TABLE,
-  DOCUMENT_CHUNKS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_MENTIONS_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  ENTITY_PROFILES_TABLE,
-]);
 
 function sourceBasename(sourceFile: string): string {
   return path.basename(sourceFile);
@@ -35,7 +19,7 @@ export function resolveTenantAffectedTables(
   const affected = new Set<string>();
 
   for (const table of profile) {
-    if (PIPELINE_INFRA_TABLES.has(table.table)) {
+    if (isPipelineInfraDatasetTable(table.table)) {
       continue;
     }
     if (unknown.has(sourceBasename(table.sourceFile))) {

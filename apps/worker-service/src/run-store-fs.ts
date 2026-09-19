@@ -81,6 +81,18 @@ export class FileRunStore implements RunStore {
   }
 
   listRecent(limit: number, partnerId?: string): StoredRun[] {
+    return this.listAllRuns(partnerId)
+      .sort(
+        (left, right) => new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime(),
+      )
+      .slice(0, limit);
+  }
+
+  listRunning(): StoredRun[] {
+    return this.listAllRuns().filter((record) => record.status === "running");
+  }
+
+  private listAllRuns(partnerId?: string): StoredRun[] {
     if (!existsSync(this.runsRoot)) {
       return [];
     }
@@ -101,12 +113,7 @@ export class FileRunStore implements RunStore {
         }
       }
     }
-
-    return runs
-      .sort(
-        (left, right) => new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime(),
-      )
-      .slice(0, limit);
+    return runs;
   }
 
   complete(

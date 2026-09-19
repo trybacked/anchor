@@ -79,6 +79,8 @@ function matches(query: string, ...fields: (string | undefined)[]): boolean {
 }
 export interface SearchModelOptions {
   semanticSearch?: (query: string) => Promise<SearchMatch[]>;
+  /** Releases resources held for semantic search (e.g. a read-only DuckDB session). */
+  dispose?: () => void;
 }
 function mergeSearchMatches(
   semanticMatches: SearchMatch[],

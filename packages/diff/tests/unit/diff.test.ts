@@ -134,21 +134,17 @@ describe("affectedTablesFromProfileDiff", () => {
       table("document_chunks", [col("text", "TEXT")], 3),
     ];
 
-    expect(affectedTablesFromProfileDiff(previousProfile, nextProfile)).toEqual(
-      new Set(["doc_notice"]),
-    );
+    expect(affectedTablesFromProfileDiff(previousProfile, nextProfile)).toEqual(new Set());
   });
 
-  it("marks tables whose row counts changed", () => {
+  it("ignores row-count changes on pipeline infra tables including doc_*", () => {
     const previousProfile: ProfileReport = [
       table("doc_publication", [col("document_id", "TEXT")], 99),
     ];
     const nextProfile: ProfileReport = [
       table("doc_publication", [col("document_id", "TEXT")], 100),
     ];
-    expect(affectedTablesFromProfileDiff(previousProfile, nextProfile)).toEqual(
-      new Set(["doc_publication"]),
-    );
+    expect(affectedTablesFromProfileDiff(previousProfile, nextProfile)).toEqual(new Set());
   });
 });
 

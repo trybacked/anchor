@@ -68,6 +68,7 @@ export interface DiscoverDomainOptions {
   lines: DocumentLineRow[];
   onProgress?: (message: string) => void;
   llmCache?: LlmCacheContext;
+  signal?: AbortSignal;
 }
 export interface DiscoverDomainResult {
   vocabulary: DomainVocabulary;
@@ -104,8 +105,16 @@ export async function discoverDomain(
       timeoutMs: resolveSemanticRequestTimeoutMs(),
       ...withLlmCache(options.llmCache),
       ...(options.onProgress !== undefined ? { onWaiting: options.onProgress } : {}),
+      ...(options.signal !== undefined ? { signal: options.signal } : {}),
     });
-  } catch {
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "pipeline.degraded",
+        stage: "discover_domain",
+        reason: error instanceof Error ? error.message : String(error),
+      }),
+    );
     options.onProgress?.(
       "Vocabulary discovery failed — continuing with minimal defaults (deterministic extraction only)...",
     );

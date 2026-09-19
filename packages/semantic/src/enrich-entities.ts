@@ -2,8 +2,7 @@ import { ENTITY_MENTION_TYPE, describeTerms } from "@trybacked/core";
 import type { DomainTerm, DomainVocabulary } from "@trybacked/core";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
-import { EMPTY_BURST_USAGE, runBurst, sumBurstUsage, type BurstUsage } from "./burst.js";
-import { mapWithConcurrency } from "./concurrency.js";
+import { EMPTY_BURST_USAGE, type BurstUsage } from "./burst.js";
 import {
   ENTITY_ENRICHMENT_BATCH_SIZE,
   ENTITY_ENRICHMENT_CONCURRENCY,
@@ -16,6 +15,7 @@ import { resolveSemanticRequestTimeoutMs } from "./env.js";
 import { entityIdFromName } from "./extract-document-mentions.js";
 import type { EntityRecord, RawDocumentMention } from "./extract-document-mentions.js";
 import { withLlmCache, type LlmCacheContext } from "./llm-cache.js";
+import { chunkBySize, mapBurstBatches, sumBurstResults } from "./run-batched-burst.js";
 export { ENTITY_ENRICHMENT_BATCH_SIZE, ENTITY_ENRICHMENT_CONCURRENCY } from "./constants.js";
 function termEnum(terms: DomainTerm[]): z.ZodTypeAny {
   const ids = terms.map((term) => term.id);
@@ -57,6 +57,7 @@ export interface EnrichEntitiesOptions {
   llmCache?: LlmCacheContext;
   onProgress?: (message: string) => void;
   onBatchProgress?: (progress: { completed: number; total: number }) => void;
+  signal?: AbortSignal;
 }
 export interface EnrichEntitiesResult {
   entities: Map<string, EntityRecord>;
@@ -129,11 +130,7 @@ function applyEnrichment(
   return next;
 }
 function chunkEntities(entities: EntityRecord[], size: number): EntityRecord[][] {
-  const batches: EntityRecord[][] = [];
-  for (let index = 0; index < entities.length; index += size) {
-    batches.push(entities.slice(index, index + size));
-  }
-  return batches;
+  return chunkBySize(entities, size);
 }
 export async function enrichEntities(
   options: EnrichEntitiesOptions,
@@ -148,25 +145,24 @@ export async function enrichEntities(
   options.onProgress?.(
     `Enriching ${String(entityList.length)} ${options.vocabulary.entityLabel}(s) in ${String(batches.length)} batch(es)...`,
   );
-  let completed = 0;
-  const results = await mapWithConcurrency(
+  const results = await mapBurstBatches({
     batches,
-    ENTITY_ENRICHMENT_CONCURRENCY,
-    async (batch) => {
-      const result = await runBurst({
-        model: options.model,
-        system,
-        prompt: buildEnrichmentPrompt(batch, options.mentions),
-        schema,
-        schemaName: LLM_SCHEMA_NAMES.entityEnrichment,
-        timeoutMs: resolveSemanticRequestTimeoutMs(),
-        ...withLlmCache(options.llmCache),
-      });
-      completed += 1;
-      options.onBatchProgress?.({ completed, total: batches.length });
-      return result;
+    concurrency: ENTITY_ENRICHMENT_CONCURRENCY,
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+    onBatchComplete: (completed, total) => {
+      options.onBatchProgress?.({ completed, total });
     },
-  );
+    buildRequest: (batch) => ({
+      model: options.model,
+      system,
+      prompt: buildEnrichmentPrompt(batch, options.mentions),
+      schema,
+      schemaName: LLM_SCHEMA_NAMES.entityEnrichment,
+      timeoutMs: resolveSemanticRequestTimeoutMs(),
+      ...withLlmCache(options.llmCache),
+      ...(options.signal !== undefined ? { signal: options.signal } : {}),
+    }),
+  });
   const enriched: EnrichedEntity[] = [];
   for (const result of results) {
     const output = result.output as {
@@ -176,6 +172,6 @@ export async function enrichEntities(
   }
   return {
     entities: applyEnrichment(options.entities, enriched),
-    usage: sumBurstUsage(...results.map((result) => result.usage)),
+    usage: sumBurstResults(results),
   };
 }
