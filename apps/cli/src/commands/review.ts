@@ -1,9 +1,14 @@
 import { resolveReviewConfidenceThreshold } from "@backed/semantic";
 import { input, select } from "@inquirer/prompts";
 import {
+  DiscoveryReportSchema,
   DocumentCatalogSchema,
   ProposalSchema,
   applyReview,
+  applyReviewLifecycle,
+  appendAuditEvents,
+  buildAutoConfirmAuditEvents,
+  buildReviewAuditEvents,
   hasRunArtifact,
   listRunIds,
   patchWorkspaceConfig,
@@ -12,6 +17,8 @@ import {
   writeModelYaml,
   writeRunArtifact,
 } from "@trybacked/core";
+import path from "node:path";
+import { defaultReviewer } from "../reviewer.js";
 import type {
   DocumentCatalog,
   EvidenceTable,
@@ -159,13 +166,39 @@ export const reviewCommand: CommandHandler = async () => {
       answers.push(answer);
     }
   }
-  const review = { runId, answeredAt: new Date().toISOString(), answers };
+  const reviewer = defaultReviewer();
+  const review = {
+    runId,
+    answeredAt: new Date().toISOString(),
+    answers,
+    ...(reviewer !== undefined ? { reviewer } : {}),
+  };
   const reviewPath = writeRunArtifact(root, runId, "review", review);
   ui.blank();
   ui.writeSuccess(`Answers saved → ${ui.path(reviewPath)}`);
+  const reviewThreshold = resolveReviewConfidenceThreshold(process.env);
   const { model, staleAnswerCount } = applyReview(proposal, review, new Date(), {
-    reviewConfidenceThreshold: resolveReviewConfidenceThreshold(process.env),
+    reviewConfidenceThreshold: reviewThreshold,
   });
+  const baseDiscovery = hasRunArtifact(root, runId, "discovery")
+    ? readRunArtifact(root, runId, "discovery", DiscoveryReportSchema).ontology
+    : undefined;
+  const { ontology: lifecycleOntology } = applyReviewLifecycle(proposal, review, {
+    ontologyId: path.basename(root),
+    reviewConfidenceThreshold: reviewThreshold,
+    ...(baseDiscovery !== undefined ? { baseOntology: baseDiscovery } : {}),
+  });
+  const lifecyclePath = writeRunArtifact(root, runId, "lifecycle", lifecycleOntology);
+  ui.writeSuccess(`Lifecycle → ${ui.path(lifecyclePath)}`);
+
+  const auditEvents = [
+    ...buildReviewAuditEvents(proposal, review),
+    ...buildAutoConfirmAuditEvents(proposal, review, model.entities, model.relations, model.rules, {
+      reviewConfidenceThreshold: reviewThreshold,
+    }),
+  ];
+  writeRunArtifact(root, runId, "audit", { version: 1, events: auditEvents });
+  appendAuditEvents(root, auditEvents);
   if (staleAnswerCount > 0) {
     ui.writeWarn(
       `${String(staleAnswerCount)} review answer(s) ignored — they no longer match this proposal.`,

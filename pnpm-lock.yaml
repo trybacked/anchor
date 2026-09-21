@@ -72,6 +72,12 @@ importers:
       '@backed/profile':
         specifier: workspace:*
         version: link:../../packages/profile
+      '@backed/provider-databricks':
+        specifier: workspace:*
+        version: link:../../packages/provider-databricks
+      '@backed/provider-duckdb':
+        specifier: workspace:*
+        version: link:../../packages/provider-duckdb
       '@backed/runner':
         specifier: workspace:*
         version: link:../../packages/runner
@@ -152,6 +158,12 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/discovery:
+    dependencies:
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/http-kernel: {}
 
   packages/ingest:
@@ -206,17 +218,44 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/provider-databricks:
+    dependencies:
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+
+  packages/provider-duckdb:
+    dependencies:
+      '@backed/ingest':
+        specifier: workspace:*
+        version: link:../ingest
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/runner:
     dependencies:
       '@backed/diff':
         specifier: workspace:*
         version: link:../diff
+      '@backed/discovery':
+        specifier: workspace:*
+        version: link:../discovery
       '@backed/ingest':
         specifier: workspace:*
         version: link:../ingest
       '@backed/profile':
         specifier: workspace:*
         version: link:../profile
+      '@backed/provider-databricks':
+        specifier: workspace:*
+        version: link:../provider-databricks
+      '@backed/provider-duckdb':
+        specifier: workspace:*
+        version: link:../provider-duckdb
       '@backed/semantic':
         specifier: workspace:*
         version: link:../semantic

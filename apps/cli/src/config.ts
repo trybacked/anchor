@@ -8,8 +8,13 @@ export const COMMANDS = {
   LOGIN: "login",
   LOGOUT: "logout",
   MODEL: "model",
+  DISCOVER: "discover",
+  INSPECT: "inspect",
   REVIEW: "review",
+  PUBLISH: "publish",
+  ROLLBACK: "rollback",
   DIFF: "diff",
+  VALIDATE: "validate",
   SERVE: "serve",
 } as const;
 export function formatCliCommand(command: string): string {
@@ -20,6 +25,9 @@ export const FLAGS = {
   HELP_SHORT: "-h",
   FULL: "--full",
   NO_EMBED: "--no-embed",
+  SNAPSHOT: "--snapshot",
+  ONTOLOGY: "--ontology",
+  DATABRICKS: "--databricks",
   KEY: "--key",
   KEY_SHORT: "-k",
   TOKEN: "--token",

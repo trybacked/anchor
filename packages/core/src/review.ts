@@ -16,6 +16,8 @@ export const ReviewAnswerSchema = z
 export const ReviewSchema = z.object({
   runId: z.string().min(1),
   answeredAt: z.string().datetime(),
+  /** Optional reviewer identity (user id, email, or machine name). */
+  reviewer: z.string().min(1).optional(),
   answers: z.array(ReviewAnswerSchema),
 });
 /**

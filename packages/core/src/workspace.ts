@@ -17,6 +17,9 @@ const RUN_ID_RANDOM_SUFFIX_END = 6;
 const RUN_ID_RANDOM_SUFFIX_PAD_LENGTH = 4;
 export const RUN_ARTIFACTS = {
   profile: "profile.json",
+  discovery: "discovery.json",
+  lifecycle: "lifecycle.json",
+  audit: "audit.json",
   documents: "documents.json",
   vocabulary: "vocabulary.json",
   proposal: "proposal.json",

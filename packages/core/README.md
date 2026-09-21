@@ -1,6 +1,8 @@
 # @trybacked/core
 
-The center of the system: `model.yaml` schema, run/diff/review types, `.backed/` paths.
+Ontology schema, governance, workspace paths, and the v1 serialization used on disk.
+
+**Docs:** [Ontology](../../docs/ONTOLOGY.md) · [Architecture](../../docs/ARCHITECTURE.md) · [Governance](../../docs/GOVERNANCE.md)
 
 **Responsibilities:**
 

@@ -27,6 +27,8 @@
     "@backed/ingest": "workspace:*",
     "@backed/mcp": "workspace:*",
     "@backed/profile": "workspace:*",
+    "@backed/provider-databricks": "workspace:*",
+    "@backed/provider-duckdb": "workspace:*",
     "@backed/runner": "workspace:*",
     "@backed/semantic": "workspace:*",
     "zod": "^3.24.1"

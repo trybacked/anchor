@@ -1,3 +1,4 @@
+import { discoverFromProfile, enrichProposalFromDiscovery } from "@backed/discovery";
 import { ingestFolder } from "@backed/ingest";
 import { profileTables } from "@backed/profile";
 import {
@@ -118,6 +119,9 @@ export async function runAnchorPipeline(
     }
     const profilePath = writeRunArtifact(root, runId, "profile", profile);
     progress.success(`Profile → ${profilePath}`);
+    const discovery = discoverFromProfile(profile, { ontologyId: path.basename(root) });
+    const discoveryPath = writeRunArtifact(root, runId, "discovery", discovery);
+    progress.success(`Discovery → ${discoveryPath}`);
     const catalogForInference = resolveCatalogForInference(
       documentCatalog,
       options.persistedArtifacts?.documentCatalog,
@@ -146,7 +150,7 @@ export async function runAnchorPipeline(
           );
     const proposalStarted = Date.now();
     assertNotAborted(options.signal);
-    const freshProposal = await proposeModel({
+    let freshProposal = await proposeModel({
       profile: incrementalScope.profileForInference,
       runId,
       models,
@@ -167,6 +171,13 @@ export async function runAnchorPipeline(
       },
     });
     timings.proposalMs = Date.now() - proposalStarted;
+    const enriched = enrichProposalFromDiscovery(freshProposal, discovery);
+    freshProposal = enriched.proposal;
+    if (enriched.addedRelationIds.length > 0) {
+      progress.detail(
+        `Discovery merge: +${String(enriched.addedRelationIds.length)} relation(s) from schema analysis`,
+      );
+    }
     const proposal: Proposal =
       incrementalScope.incrementalTables !== null && incrementalScope.existingModel !== null
         ? mergeIncrementalProposal(

@@ -72,6 +72,17 @@ const INIT_FLAGS = new Set<string>([
 
 const MODEL_FLAGS = new Set<string>([FLAGS.HELP, FLAGS.HELP_SHORT, FLAGS.FULL, FLAGS.NO_EMBED]);
 
+const DIFF_FLAGS = new Set<string>([FLAGS.HELP, FLAGS.HELP_SHORT, FLAGS.ONTOLOGY]);
+
+const DISCOVER_FLAGS = new Set<string>([
+  FLAGS.HELP,
+  FLAGS.HELP_SHORT,
+  FLAGS.SNAPSHOT,
+  FLAGS.DATABRICKS,
+]);
+
+const INSPECT_FLAGS = new Set<string>([FLAGS.HELP, FLAGS.HELP_SHORT, FLAGS.DATABRICKS]);
+
 function assertOnlyKnownFlags(args: string[], allowed: Set<string>): void {
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -122,6 +133,50 @@ export function parseModelArgs(args: string[]): ModelArgs {
     help: args.some(isHelpFlag),
     forceFull: hasFlag(args, FLAGS.FULL),
     skipEmbed: hasFlag(args, FLAGS.NO_EMBED),
+    ...(positional !== undefined ? { sourcesDir: positional } : {}),
+  };
+}
+
+export interface DiscoverArgs {
+  help: boolean;
+  useSnapshot: boolean;
+  useDatabricks: boolean;
+  sourcesDir?: string;
+}
+
+export interface InspectArgs {
+  help: boolean;
+  useDatabricks: boolean;
+}
+
+export function parseInspectArgs(args: string[]): InspectArgs {
+  assertOnlyKnownFlags(args, INSPECT_FLAGS);
+  return {
+    help: args.some(isHelpFlag),
+    useDatabricks: hasFlag(args, FLAGS.DATABRICKS),
+  };
+}
+
+export interface DiffArgs {
+  help: boolean;
+  ontology: boolean;
+}
+
+export function parseDiffArgs(args: string[]): DiffArgs {
+  assertOnlyKnownFlags(args, DIFF_FLAGS);
+  return {
+    help: args.some(isHelpFlag),
+    ontology: hasFlag(args, FLAGS.ONTOLOGY),
+  };
+}
+
+export function parseDiscoverArgs(args: string[]): DiscoverArgs {
+  assertOnlyKnownFlags(args, DISCOVER_FLAGS);
+  const positional = findPositionalArg(args);
+  return {
+    help: args.some(isHelpFlag),
+    useSnapshot: hasFlag(args, FLAGS.SNAPSHOT),
+    useDatabricks: hasFlag(args, FLAGS.DATABRICKS),
     ...(positional !== undefined ? { sourcesDir: positional } : {}),
   };
 }

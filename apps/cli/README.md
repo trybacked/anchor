@@ -1,54 +1,53 @@
 # @backed/cli
 
-Local-first CLI. Command orchestration only, no domain logic. User-facing copy in English.
+Local-first **`backed`** command-line interface. Orchestration only — domain logic lives in `@backed/runner` and `@trybacked/core`.
 
-## Operational workflow
+User-facing copy is English. Errors exit with code `1`.
+
+---
+
+## Documentation
+
+| Resource | Contents |
+| -------- | -------- |
+| [Operations guide](../../docs/OPERATIONS.md) | Full workspace workflow |
+| [Governance](../../docs/GOVERNANCE.md) | validate, publish, rollback |
+| [Providers](../../docs/PROVIDERS.md) | DuckDB and Databricks |
+| [CLI index](../../docs/README.md#cli-command-index) | All commands |
+
+---
+
+## Quick start
 
 ```bash
-cd client-folder
+cd your-workspace
 mkdir -p sources
-
-backed init              # interactive: optional filename rules, sources folder
-# edit .backed/config.yaml if needed
-
-backed model             # ingest → profile → proposal (needs AI_GATEWAY_API_KEY)
-backed review            # confirm/correct → model.yaml
-backed serve             # MCP for agents
-
-backed model && backed diff   # when sources change
+backed init
+backed model          # requires AI_GATEWAY_API_KEY in .env
+backed review
+backed validate
+backed serve
 ```
 
-### `backed init`
+Global install from monorepo: `pnpm build && cd apps/cli && pnpm link --global`.
 
-Requires an interactive terminal. Writes `.backed/config.yaml` with:
-
-- **`sourcesDir`** — where CSV, Excel, PDF, etc. live (default `./sources`)
-- **`documentTypeHints`** — filename keyword rules (see README). One keyword per rule; repeat the same `documentType` for aliases (`invoice`, `inv`, …). Empty = LLM for every document.
-
-At inference time only `config.yaml` rules apply — no built-in document types.
-
-### `backed model`
-
-Stages: ingest → document extraction (if PDFs/TXT) → mentions/facts → chunk/embed → profile → semantic proposal.
-
-Document corpora run deterministic mention and fact extraction (`ensureCurrencyFactTypes` → `extractMentionsFromLines` → `extractFactsFromLines` → `materializeFacts`) before profiling. Facts live in `.backed/data.duckdb`; they are not backfilled from older snapshots.
-
-**After upgrading fact extraction**, re-run `backed model` on existing workspaces so `document_facts` and entity rollups reflect the improved parser.
-
-Requires `AI_GATEWAY_API_KEY` in workspace `.env`. Writes `.backed/data.duckdb` and `.backed/runs/<id>/`.
+---
 
 ## Commands
 
-| Command                 | What it does                                                                |
-| ----------------------- | --------------------------------------------------------------------------- |
-| `backed init [folder]`  | Interactive workspace setup → `.backed/config.yaml`                         |
-| `backed model [folder]` | Full pipeline → `proposal.json` (+ `documents.json` when documents present) |
-| `backed review`         | Risk-ranked questions → `review.json` + `model.yaml`                        |
-| `backed diff`           | Compare last two runs                                                       |
-| `backed serve`          | MCP stdio on `model.yaml` + read-only DuckDB                                |
+| Command | Purpose |
+| ------- | ------- |
+| `init` | Interactive `.backed/config.yaml` |
+| `model` | Ingest → profile → proposal |
+| `inspect` | Dataset catalog (`--databricks`) |
+| `discover` | Deterministic discovery (`--snapshot`, `--databricks`) |
+| `review` | Steward review → workspace ontology |
+| `validate` | Schema and ontology checks |
+| `publish` | Publication registry (`--status`) |
+| `rollback` | Restore prior publication |
+| `diff` | Run or ontology diff (`--ontology`) |
+| `serve` | MCP over the agreed ontology |
+| `gateway` | AI Gateway key |
+| `login` / `logout` | Optional telemetry auth |
 
-Environment variables (`.env` in workspace root): `AI_GATEWAY_API_KEY` (required for model), `SEMANTIC_MODEL`, `SEMANTIC_EMBEDDING_MODEL`.
-
-Global install: `cd apps/cli && pnpm link --global`.
-
-Errors are always explained in English; exit code 1 on failure.
+See `backed <command> --help` for flags.

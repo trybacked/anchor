@@ -6,7 +6,12 @@ import {
   loginCommand,
   logoutCommand,
   modelCommand,
+  discoverCommand,
+  inspectCommand,
   reviewCommand,
+  publishCommand,
+  rollbackCommand,
+  validateCommand,
   serveCommand,
 } from "./commands/index.js";
 import { COMMANDS as CLI_COMMAND_NAMES, isHelpFlag } from "./config.js";
@@ -40,14 +45,39 @@ export const COMMANDS: readonly Command[] = [
     handler: modelCommand,
   },
   {
+    name: CLI_COMMAND_NAMES.DISCOVER,
+    description: "Ingest + profile + deterministic discovery (no LLM)",
+    handler: discoverCommand,
+  },
+  {
+    name: CLI_COMMAND_NAMES.INSPECT,
+    description: "List datasets and columns from the local DuckDB snapshot",
+    handler: inspectCommand,
+  },
+  {
     name: CLI_COMMAND_NAMES.REVIEW,
     description: "Human review (risk-ranked questions) → model.yaml",
     handler: reviewCommand,
   },
   {
+    name: CLI_COMMAND_NAMES.PUBLISH,
+    description: "Publish reviewed model (registry + publication.json)",
+    handler: publishCommand,
+  },
+  {
+    name: CLI_COMMAND_NAMES.ROLLBACK,
+    description: "Restore a previous published ontology version",
+    handler: rollbackCommand,
+  },
+  {
     name: CLI_COMMAND_NAMES.DIFF,
     description: "Compare the last two runs",
     handler: diffCommand,
+  },
+  {
+    name: CLI_COMMAND_NAMES.VALIDATE,
+    description: "Structural validation of model.yaml (schema + references)",
+    handler: validateCommand,
   },
   {
     name: CLI_COMMAND_NAMES.SERVE,
