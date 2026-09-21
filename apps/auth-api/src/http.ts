@@ -1,10 +1,10 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   parseBearerToken as parseBearerHeader,
   readRequestBodyUtf8,
   requestUrl as buildRequestUrl,
   sendJson,
 } from "@backed/http-kernel";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { BIND_HOST, DEFAULT_PORT, URL_PLACEHOLDER } from "./constants.js";
 
 export { BIND_HOST } from "./constants.js";
