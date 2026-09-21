@@ -18,8 +18,12 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.base.js
 COPY apps/worker-service/package.json apps/worker-service/
 COPY packages/core/package.json packages/core/
 COPY packages/diff/package.json packages/diff/
+COPY packages/discovery/package.json packages/discovery/
+COPY packages/http-kernel/package.json packages/http-kernel/
 COPY packages/ingest/package.json packages/ingest/
 COPY packages/profile/package.json packages/profile/
+COPY packages/provider-databricks/package.json packages/provider-databricks/
+COPY packages/provider-duckdb/package.json packages/provider-duckdb/
 COPY packages/runner/package.json packages/runner/
 COPY packages/semantic/package.json packages/semantic/
 RUN pnpm install --frozen-lockfile
