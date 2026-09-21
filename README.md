@@ -36,18 +36,19 @@ Each element records **confidence**, **provenance**, **review status**, and a **
 
 ```mermaid
 flowchart TB
-  subgraph ontology["Governed ontology"]
-    objects["Objects"]
-    relationships["Relationships"]
-    logic["Logic"]
-    actions["Actions"]
-    objects --> properties["Properties"]
-  end
-
-  sources["Datasets"] --> objects
-  ontology --> agents["Agents · MCP"]
-  ontology --> registry["Publication registry"]
+  datasets["Datasets"] --> objects["Objects"]
+  objects --> properties["Properties"]
+  objects --> relationships["Relationships"]
+  objects --> logic["Logic"]
+  objects --> actions["Actions"]
+  properties --> registry["Publication registry"]
+  relationships --> registry
+  logic --> registry
+  actions --> registry
+  registry --> agents["Agents"]
 ```
+
+Datasets become objects. Properties, relationships, logic, and actions describe those objects. The publication registry stores that version. Agents read the registry.
 
 Full specification: **[Ontology](./docs/ONTOLOGY.md)**.
 
