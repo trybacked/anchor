@@ -1,8 +1,8 @@
 import { discoverFromProfile } from "@backed/discovery";
 import { openDataSession } from "@backed/ingest";
+import type { Dataset, IngestSession } from "@backed/ingest";
 import { profileTables } from "@backed/profile";
 import { listDuckDbTableNames } from "@backed/provider-duckdb";
-import type { Dataset, IngestSession } from "@backed/ingest";
 import {
   createRunId,
   readWorkspaceConfig,
@@ -51,7 +51,9 @@ export async function runDiscoverFromSnapshot(
   readWorkspaceConfig(root);
 
   if (!existsSync(paths.dataPath)) {
-    throw new Error(`No DuckDB snapshot at ${paths.dataPath}. Run ingest once or use "backed discover" with sources.`);
+    throw new Error(
+      `No DuckDB snapshot at ${paths.dataPath}. Run ingest once or use "backed discover" with sources.`,
+    );
   }
 
   const runId = options.runId ?? createRunId();
@@ -64,12 +66,9 @@ export async function runDiscoverFromSnapshot(
     if (tableNames.length === 0) {
       throw new Error("DuckDB snapshot contains no tables.");
     }
-    const ingestSession = buildIngestSession(
-      session.query,
-      tableNames,
-      paths.dataPath,
-      () => session.close(),
-    );
+    const ingestSession = buildIngestSession(session.query, tableNames, paths.dataPath, () => {
+      session.close();
+    });
     const profileStarted = Date.now();
     const profile = await profileTables(ingestSession);
     const profileMs = Date.now() - profileStarted;

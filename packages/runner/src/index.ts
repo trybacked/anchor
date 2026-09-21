@@ -3,8 +3,14 @@ export { runDiscoverPipeline, formatDiscoverDuration } from "./run-discover.js";
 export type { RunDiscoverPipelineResult } from "./run-discover.js";
 export { runDiscoverFromSnapshot, formatDiscoverSnapshotDuration } from "./discover-snapshot.js";
 export type { RunDiscoverSnapshotOptions, RunDiscoverSnapshotResult } from "./discover-snapshot.js";
-export { runDiscoverFromDatabricks, formatDiscoverDatabricksDuration } from "./discover-databricks.js";
-export type { RunDiscoverDatabricksOptions, RunDiscoverDatabricksResult } from "./discover-databricks.js";
+export {
+  runDiscoverFromDatabricks,
+  formatDiscoverDatabricksDuration,
+} from "./discover-databricks.js";
+export type {
+  RunDiscoverDatabricksOptions,
+  RunDiscoverDatabricksResult,
+} from "./discover-databricks.js";
 export { runTenantPipeline, TenantPipelineError } from "./run-tenant.js";
 export type {
   RunAnchorPipelineOptions,

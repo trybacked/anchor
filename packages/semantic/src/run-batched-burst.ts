@@ -1,5 +1,4 @@
 import type { z } from "zod";
-import { mapWithConcurrency } from "./concurrency.js";
 import {
   EMPTY_BURST_USAGE,
   runBurst,
@@ -8,6 +7,7 @@ import {
   type BurstResult,
   type BurstUsage,
 } from "./burst.js";
+import { mapWithConcurrency } from "./concurrency.js";
 
 export function chunkBySize<T>(items: T[], batchSize: number): T[][] {
   if (items.length === 0 || batchSize < 1) {
@@ -41,9 +41,7 @@ export async function mapBurstBatches<TBatch, TSchema extends z.ZodTypeAny>(
   return mapWithConcurrency(options.batches, options.concurrency, async (batch, index) => {
     const batchIndex = index + 1;
     options.onBatchStart?.(batchIndex, batchCount);
-    const result = await runBurst(
-      options.buildRequest(batch, batchIndex, batchCount),
-    );
+    const result = await runBurst(options.buildRequest(batch, batchIndex, batchCount));
     completed += 1;
     options.onBatchComplete?.(completed, batchCount);
     return result;
@@ -54,8 +52,5 @@ export function sumBurstResults<T>(results: BurstResult<T>[]): BurstUsage {
   if (results.length === 0) {
     return EMPTY_BURST_USAGE;
   }
-  return results.reduce(
-    (usage, result) => sumBurstUsage(usage, result.usage),
-    EMPTY_BURST_USAGE,
-  );
+  return results.reduce((usage, result) => sumBurstUsage(usage, result.usage), EMPTY_BURST_USAGE);
 }

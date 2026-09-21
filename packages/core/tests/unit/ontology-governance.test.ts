@@ -65,7 +65,9 @@ describe("ontology governance patches", () => {
       payload: { propertyIds: ["title"] },
     });
     expect(split.objects).toHaveLength(3);
-    expect(split.objects.find((object) => object.id === "item_details")?.properties).toHaveLength(1);
+    expect(split.objects.find((object) => object.id === "item_details")?.properties).toHaveLength(
+      1,
+    );
   });
 
   it("builds audit events for governance actions", () => {

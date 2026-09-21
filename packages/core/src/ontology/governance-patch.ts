@@ -197,13 +197,20 @@ function applyMerge(ontology: Ontology, patch: OntologyGovernancePatch): Ontolog
   };
   const removedId = patch.secondaryId;
   return applyRemove(
-    { ...ontology, objects: ontology.objects.map((object) => (object.id === target.id ? merged : object)) },
+    {
+      ...ontology,
+      objects: ontology.objects.map((object) => (object.id === target.id ? merged : object)),
+    },
     { action: "remove", elementKind: "object", targetId: removedId },
   );
 }
 
 function applySplit(ontology: Ontology, patch: OntologyGovernancePatch): Ontology {
-  if (patch.elementKind !== "object" || patch.secondaryId === undefined || patch.name === undefined) {
+  if (
+    patch.elementKind !== "object" ||
+    patch.secondaryId === undefined ||
+    patch.name === undefined
+  ) {
     throw new OntologyGovernanceError("Split requires object kind, secondaryId, and name");
   }
   const source = findObject(ontology.objects, patch.targetId);
@@ -230,7 +237,9 @@ function applySplit(ontology: Ontology, patch: OntologyGovernancePatch): Ontolog
     ...ontology,
     objects: [
       ...ontology.objects.map((object) =>
-        object.id === patch.targetId ? { ...object, properties: remainder, source: "manual" as const } : object,
+        object.id === patch.targetId
+          ? { ...object, properties: remainder, source: "manual" as const }
+          : object,
       ),
       newObject,
     ],

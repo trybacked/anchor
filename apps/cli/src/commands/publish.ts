@@ -14,7 +14,7 @@ import { defaultReviewer } from "../reviewer.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
-export const publishCommand: CommandHandler = async (args) => {
+export const publishCommand: CommandHandler = (args) => {
   const ui = initUi();
   const root = findWorkspaceRoot(process.cwd());
   if (args.some((arg) => arg === "--status" || arg === "-s")) {
@@ -39,11 +39,9 @@ export const publishCommand: CommandHandler = async (args) => {
 
   const model = readModelYaml(modelPath);
   const ontologyId = path.basename(root);
-  const preflight = validateOntology(
-    semanticModelToOntology(model, { ontologyId }),
-  );
+  const preflight = validateOntology(semanticModelToOntology(model, { ontologyId }));
   if (!preflight.valid) {
-    ui.writeError("Model does not produce a valid ontology. Run \"backed validate\" first.");
+    ui.writeError('Model does not produce a valid ontology. Run "backed validate" first.');
     process.exitCode = 1;
     return;
   }

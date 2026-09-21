@@ -1,7 +1,13 @@
 import { discoverFromProfile } from "@backed/discovery";
 import { ingestFolder } from "@backed/ingest";
 import { profileTables } from "@backed/profile";
-import { createRunId, patchWorkspaceConfig, readWorkspaceConfig, workspacePaths, writeRunArtifact } from "@trybacked/core";
+import {
+  createRunId,
+  patchWorkspaceConfig,
+  readWorkspaceConfig,
+  workspacePaths,
+  writeRunArtifact,
+} from "@trybacked/core";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { MS_PER_SECOND } from "./config.js";

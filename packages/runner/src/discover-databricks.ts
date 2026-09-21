@@ -40,7 +40,9 @@ export async function runDiscoverFromDatabricks(
   const profilePath = writeRunArtifact(root, runId, "profile", profile);
   progress.success(`Profile → ${profilePath}`);
 
-  const discovery = await discoverFromDatasetProvider(provider, { ontologyId: path.basename(root) });
+  const discovery = await discoverFromDatasetProvider(provider, {
+    ontologyId: path.basename(root),
+  });
   const discoveryPath = writeRunArtifact(root, runId, "discovery", discovery);
   progress.success(`Discovery → ${discoveryPath}`);
   progress.detail(

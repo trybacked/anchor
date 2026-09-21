@@ -59,7 +59,11 @@ export const inspectCommand: CommandHandler = async (args) => {
   const session = await openDataSession(dataPath);
   try {
     const tableNames = await listDuckDbTableNames(session.query);
-    const provider = createDuckDbDatasetProvider({ kind: "query", query: session.query, tableNames });
+    const provider = createDuckDbDatasetProvider({
+      kind: "query",
+      query: session.query,
+      tableNames,
+    });
     const datasets = await provider.listDatasets();
 
     ui.heading("Dataset inspection");
@@ -71,7 +75,9 @@ export const inspectCommand: CommandHandler = async (args) => {
       const metadata = await provider.getMetadata(dataset);
       ui.log(`${ui.bold(dataset.id)} ${ui.dim(`(${String(metadata.rowCount ?? 0)} rows)`)}`);
       for (const column of schema.columns) {
-        ui.log(`  ${column.name} ${ui.dim(column.type)}${column.nullable ? ui.dim(" · nullable") : ""}`);
+        ui.log(
+          `  ${column.name} ${ui.dim(column.type)}${column.nullable ? ui.dim(" · nullable") : ""}`,
+        );
       }
       ui.blank();
     }

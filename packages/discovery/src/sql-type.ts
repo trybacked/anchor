@@ -1,6 +1,9 @@
 import type { DetectedPattern, OntologyPropertyType } from "@trybacked/core";
 
-export function inferPropertyType(sqlType: string, patterns: DetectedPattern[]): OntologyPropertyType {
+export function inferPropertyType(
+  sqlType: string,
+  patterns: DetectedPattern[],
+): OntologyPropertyType {
   const upper = sqlType.toUpperCase();
   if (upper.startsWith("BOOLEAN")) {
     return "boolean";

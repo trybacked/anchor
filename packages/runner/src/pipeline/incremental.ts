@@ -49,12 +49,12 @@ export function resolveIncrementalScope(
       existingModel,
     };
   } catch (error) {
-    console.error(
-      JSON.stringify({
+    process.stderr.write(
+      `${JSON.stringify({
         event: "pipeline.fallback",
         stage: "incremental_scope",
         reason: error instanceof Error ? error.message : String(error),
-      }),
+      })}\n`,
     );
     return fullScope;
   }

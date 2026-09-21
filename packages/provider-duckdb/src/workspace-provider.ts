@@ -1,8 +1,8 @@
 import { openDataSession } from "@backed/ingest";
 import { workspacePaths } from "@trybacked/core";
+import type { DatasetProvider } from "@trybacked/core";
 import { existsSync } from "node:fs";
 import { createDuckDbDatasetProvider, listDuckDbTableNames } from "./duckdb-dataset-provider.js";
-import type { DatasetProvider } from "@trybacked/core";
 
 export type WorkspaceDuckDbProvider = DatasetProvider & {
   close: () => void;
@@ -25,6 +25,8 @@ export async function createWorkspaceDuckDbProvider(
   });
   return {
     ...provider,
-    close: () => session.close(),
+    close() {
+      session.close();
+    },
   };
 }

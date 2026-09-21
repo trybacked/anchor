@@ -17,6 +17,16 @@ export type DuckDbDatasetProviderSource =
   | { kind: "session"; session: IngestSession }
   | { kind: "query"; query: SqlQuery; tableNames: string[] };
 
+function cellText(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return value.toString();
+  }
+  return undefined;
+}
+
 function toCount(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.max(0, Math.trunc(value));
@@ -28,7 +38,9 @@ function toCount(value: unknown): number {
   return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
 }
 
-function resolveTables(source: DuckDbDatasetProviderSource): Array<{ id: string; sourceFile?: string }> {
+function resolveTables(
+  source: DuckDbDatasetProviderSource,
+): Array<{ id: string; sourceFile?: string }> {
   if (source.kind === "session") {
     return source.session.datasets.map((dataset: IngestDataset) => ({
       id: dataset.tableName,
@@ -47,23 +59,25 @@ export function createDuckDbDatasetProvider(source: DuckDbDatasetProviderSource)
   const query = resolveQuery(source);
 
   return {
-    async listDatasets(): Promise<Dataset[]> {
-      return tables.map((table) => ({
-        id: table.id,
-        name: table.id,
-        ...(table.sourceFile !== undefined && table.sourceFile.length > 0
-          ? { description: `Ingested from ${table.sourceFile}` }
-          : {}),
-      }));
+    listDatasets(): Promise<Dataset[]> {
+      return Promise.resolve(
+        tables.map((table) => ({
+          id: table.id,
+          name: table.id,
+          ...(table.sourceFile !== undefined && table.sourceFile.length > 0
+            ? { description: `Ingested from ${table.sourceFile}` }
+            : {}),
+        })),
+      );
     },
 
     async getSchema(dataset: DatasetIdentifier): Promise<DatasetSchema> {
       const table = quoteIdentifier(dataset.id);
       const describeRows = await query(`DESCRIBE ${table}`);
       const columns: DatasetColumn[] = describeRows.map((row) => ({
-        name: String(row["column_name"]),
-        type: String(row["column_type"]),
-        nullable: String(row["null"] ?? "YES").toUpperCase() !== "NO",
+        name: cellText(row["column_name"]) ?? "",
+        type: cellText(row["column_type"]) ?? "",
+        nullable: (cellText(row["null"]) ?? "YES").toUpperCase() !== "NO",
       }));
       return { columns };
     },
@@ -93,18 +107,18 @@ export function createDuckDbDatasetProvider(source: DuckDbDatasetProviderSource)
           MAX(${col})::VARCHAR AS max_value
         FROM ${table}`);
         const stats = statsRows[0];
-        const minValue = stats?.["min_value"];
-        const maxValue = stats?.["max_value"];
+        const minValue = cellText(stats?.["min_value"]);
+        const maxValue = cellText(stats?.["max_value"]);
         const entry: DatasetColumnStatistics = {
           name: column.name,
           nullCount: toCount(stats?.["null_count"]),
           distinctCount: toCount(stats?.["distinct_count"]),
         };
-        if (minValue !== null && minValue !== undefined) {
-          entry.min = String(minValue);
+        if (minValue !== undefined) {
+          entry.min = minValue;
         }
-        if (maxValue !== null && maxValue !== undefined) {
-          entry.max = String(maxValue);
+        if (maxValue !== undefined) {
+          entry.max = maxValue;
         }
         columns.push(entry);
       }

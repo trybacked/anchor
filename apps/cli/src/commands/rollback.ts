@@ -22,12 +22,12 @@ function parseVersionArg(args: string[]): number | undefined {
   return version;
 }
 
-export const rollbackCommand: CommandHandler = async (args) => {
+export const rollbackCommand: CommandHandler = (args) => {
   const ui = initUi();
   const root = findWorkspaceRoot(process.cwd());
   const versions = listPublicationVersions(root);
   if (versions.length === 0) {
-    ui.writeError("No published ontology versions. Run \"backed publish\" first.");
+    ui.writeError('No published ontology versions. Run "backed publish" first.');
     process.exitCode = 1;
     return;
   }

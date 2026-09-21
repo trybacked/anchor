@@ -44,7 +44,9 @@ async function assertGatewayReachable(apiUrl: string): Promise<void> {
   }
 }
 
-async function buildTelemetryRecorder(initialCredentials: BackedCredentials): Promise<ServeContext> {
+async function buildTelemetryRecorder(
+  initialCredentials: BackedCredentials,
+): Promise<ServeContext> {
   const apiUrl = resolveBackedApiUrl();
   await assertGatewayReachable(apiUrl);
   let credentials: BackedCredentials;

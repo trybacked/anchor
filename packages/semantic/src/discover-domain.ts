@@ -108,12 +108,12 @@ export async function discoverDomain(
       ...(options.signal !== undefined ? { signal: options.signal } : {}),
     });
   } catch (error) {
-    console.error(
-      JSON.stringify({
+    process.stderr.write(
+      `${JSON.stringify({
         event: "pipeline.degraded",
         stage: "discover_domain",
         reason: error instanceof Error ? error.message : String(error),
-      }),
+      })}\n`,
     );
     options.onProgress?.(
       "Vocabulary discovery failed — continuing with minimal defaults (deterministic extraction only)...",

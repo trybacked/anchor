@@ -14,6 +14,7 @@ import type { Proposal } from "../../src/proposal.js";
 
 const proposal: Proposal = {
   runId: "run-1",
+  generatedAt: "2026-01-01T00:00:00.000Z",
   entities: [
     {
       id: "orders",
@@ -90,7 +91,9 @@ describe("ontology lifecycle and audit", () => {
     expect(humanEvents[0]?.actor?.id).toBe("tester");
 
     const { ontology } = applyReviewLifecycle(proposal, review, { ontologyId: "demo" });
-    expect(ontology.objects.find((object) => object.id === "customers")?.lifecycle).toBe("reviewed");
+    expect(ontology.objects.find((object) => object.id === "customers")?.lifecycle).toBe(
+      "reviewed",
+    );
     expect(ontology.objects.find((object) => object.id === "orders")?.lifecycle).toBe("confirmed");
 
     const autoEvents = buildAutoConfirmAuditEvents(

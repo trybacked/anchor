@@ -1,9 +1,6 @@
-import { isPipelineInfraDatasetTable, PIPELINE_INFRA_DATASET_TABLE_NAMES } from "@trybacked/core";
+import { isPipelineInfraDatasetTable } from "@trybacked/core";
 import type { ProfileReport } from "@trybacked/core";
 import { diffProfile, tableFromProfileChange } from "./profile-diff.js";
-
-/** @deprecated Prefer `isPipelineInfraDatasetTable` from `@trybacked/core`. */
-export const PIPELINE_INFRA_TABLES = new Set<string>(PIPELINE_INFRA_DATASET_TABLE_NAMES);
 
 function isPipelineInfraTable(tableName: string): boolean {
   return isPipelineInfraDatasetTable(tableName);

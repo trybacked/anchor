@@ -1,11 +1,18 @@
-import type { DatasetProvider, DiscoveryReport, ProfileReport, TableProfile } from "@trybacked/core";
+import type {
+  DatasetProvider,
+  DiscoveryReport,
+  ProfileReport,
+  TableProfile,
+} from "@trybacked/core";
 import { PIPELINE_INFRA_DATASET_TABLE_NAMES } from "@trybacked/core";
 import { discoverFromProfile, type DiscoverFromProfileOptions } from "./discover-from-profile.js";
 
 const INFRA_TABLES = new Set<string>(PIPELINE_INFRA_DATASET_TABLE_NAMES);
 
 /** Builds a minimal profile from provider metadata (no FK overlap analysis). */
-export async function profileFromDatasetProvider(provider: DatasetProvider): Promise<ProfileReport> {
+export async function profileFromDatasetProvider(
+  provider: DatasetProvider,
+): Promise<ProfileReport> {
   const datasets = await provider.listDatasets();
   const tables: TableProfile[] = [];
 

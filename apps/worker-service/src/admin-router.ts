@@ -70,8 +70,7 @@ const ADMIN_TENANT_ROUTES: AdminTenantRoute[] = [
   {
     method: "GET",
     path: "model",
-    handler: (tenantId, _request, response, deps) =>
-      handleAdminGetModel(tenantId, response, deps),
+    handler: (tenantId, _request, response, deps) => handleAdminGetModel(tenantId, response, deps),
   },
   {
     method: "PATCH",

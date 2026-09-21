@@ -16,9 +16,9 @@ import {
   type BurstUsage,
   type LlmCacheContext,
 } from "./llm-cache.js";
-import { isRecord } from "./record-utils.js";
-import { assertNotAborted, sleepUnlessAborted } from "./pipeline-abort.js";
 import { withLlmSlot } from "./llm-semaphore.js";
+import { assertNotAborted, sleepUnlessAborted } from "./pipeline-abort.js";
+import { isRecord } from "./record-utils.js";
 
 export type { BurstUsage };
 
@@ -386,34 +386,34 @@ export async function runBurst<TSchema extends z.ZodTypeAny>(
     }
   }
   return withLlmSlot(request.signal, async () => {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < MAX_BURST_ATTEMPTS; attempt += 1) {
-    assertNotAborted(request.signal);
-    const delayMs = BURST_RETRY_DELAYS_MS[attempt] ?? 0;
-    if (delayMs > 0) {
-      await sleep(delayMs, request.signal);
-    }
-    const strategy = resolveAttemptStrategy(attempt);
-    try {
-      const result = await executeBurstAttempt(request, strategy, schemaJson);
-      const llmCache = request.llmCache;
-      if (strategy !== "raw_json" && cacheKeyValue !== undefined && llmCache !== undefined) {
-        await saveCachedOutput(llmCache.cacheDir, cacheKeyValue, result.output, result.usage);
+    let lastError: unknown;
+    for (let attempt = 0; attempt < MAX_BURST_ATTEMPTS; attempt += 1) {
+      assertNotAborted(request.signal);
+      const delayMs = BURST_RETRY_DELAYS_MS[attempt] ?? 0;
+      if (delayMs > 0) {
+        await sleep(delayMs, request.signal);
       }
-      return result;
-    } catch (error) {
-      lastError = error;
-      if (!isRetryableBurstError(error)) {
-        break;
+      const strategy = resolveAttemptStrategy(attempt);
+      try {
+        const result = await executeBurstAttempt(request, strategy, schemaJson);
+        const llmCache = request.llmCache;
+        if (strategy !== "raw_json" && cacheKeyValue !== undefined && llmCache !== undefined) {
+          await saveCachedOutput(llmCache.cacheDir, cacheKeyValue, result.output, result.usage);
+        }
+        return result;
+      } catch (error) {
+        lastError = error;
+        if (!isRetryableBurstError(error)) {
+          break;
+        }
       }
     }
-  }
-  if (lastError instanceof Error && isRetryableBurstError(lastError)) {
-    const detail = lastError.message.length > 0 ? ` Last error: ${lastError.message}` : "";
-    throw new Error(
-      `LLM returned invalid JSON for "${request.schemaName}" after ${String(MAX_BURST_ATTEMPTS)} attempts.${detail} Retry; if it persists, change ${SEMANTIC_MODEL_ENV} in .env.`,
-    );
-  }
-  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+    if (lastError instanceof Error && isRetryableBurstError(lastError)) {
+      const detail = lastError.message.length > 0 ? ` Last error: ${lastError.message}` : "";
+      throw new Error(
+        `LLM returned invalid JSON for "${request.schemaName}" after ${String(MAX_BURST_ATTEMPTS)} attempts.${detail} Retry; if it persists, change ${SEMANTIC_MODEL_ENV} in .env.`,
+      );
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
   });
 }

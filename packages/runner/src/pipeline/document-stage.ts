@@ -131,12 +131,12 @@ async function resolveVocabulary(
       progress.step(`Domain vocabulary reused (${vocabulary.entityLabel})`);
       return { vocabulary, usage: EMPTY_BURST_USAGE };
     } catch (error) {
-      console.error(
-        JSON.stringify({
+      process.stderr.write(
+        `${JSON.stringify({
           event: "pipeline.fallback",
           stage: "vocabulary_previous_run",
           reason: error instanceof Error ? error.message : String(error),
-        }),
+        })}\n`,
       );
       // fall through
     }

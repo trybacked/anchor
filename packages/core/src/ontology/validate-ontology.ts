@@ -32,7 +32,10 @@ function validatePropertyTypes(object: OntologyObject): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   for (const property of object.properties) {
     const basePath = `objects[id=${object.id}].properties[id=${property.id}]`;
-    if (property.type === "enum" && (property.enumValues === undefined || property.enumValues.length === 0)) {
+    if (
+      property.type === "enum" &&
+      (property.enumValues === undefined || property.enumValues.length === 0)
+    ) {
       issues.push({
         code: "invalid_property_type",
         severity: "error",

@@ -1,16 +1,19 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import type { SemanticModel } from "../model.js";
 import { publicationPath } from "../audit-log.js";
+import type { SemanticModel } from "../model.js";
+import { markOntologyPublished } from "./apply-review-lifecycle.js";
+import { PublicationRecordSchema, type PublicationRecord } from "./publication.js";
 import {
   archivePublicationRecord,
   restorePublicationVersion,
   updateOntologyRegistry,
 } from "./registry.js";
-import { PublicationRecordSchema, type PublicationRecord } from "./publication.js";
-import { markOntologyPublished } from "./apply-review-lifecycle.js";
 import { semanticModelToOntology } from "./semantic-model-bridge.js";
 
+/**
+ *
+ */
 export function readPublicationRecord(root: string): PublicationRecord | null {
   const filePath = publicationPath(root);
   try {
@@ -21,6 +24,9 @@ export function readPublicationRecord(root: string): PublicationRecord | null {
   }
 }
 
+/**
+ *
+ */
 export function publishSemanticModel(
   root: string,
   model: SemanticModel,
@@ -47,10 +53,16 @@ export function publishSemanticModel(
   return record;
 }
 
+/**
+ *
+ */
 export function rollbackPublication(root: string, version: number): PublicationRecord {
   return restorePublicationVersion(root, version);
 }
 
+/**
+ *
+ */
 export function loadPublishedOntology(root: string): PublicationRecord["ontology"] | null {
   const record = readPublicationRecord(root);
   return record?.ontology ?? null;

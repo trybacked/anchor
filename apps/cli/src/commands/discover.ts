@@ -59,7 +59,11 @@ export const discoverCommand: CommandHandler = async (args) => {
   try {
     const progress = createCliPipelineProgress(ui);
     if (parsed.useDatabricks) {
-      const result = await runDiscoverFromDatabricks({ workspaceDir: root, progress, env: process.env });
+      const result = await runDiscoverFromDatabricks({
+        workspaceDir: root,
+        progress,
+        env: process.env,
+      });
       ui.blank();
       ui.writeSuccess(
         `Done in ${formatDiscoverDatabricksDuration(result.stats.profileMs)} · run ${result.runId}`,

@@ -37,7 +37,9 @@ function indexObjects(objects: OntologyObject[]): Map<string, OntologyObject> {
   return new Map(objects.map((object) => [object.id, object]));
 }
 
-function indexRelationships(relationships: OntologyRelationship[]): Map<string, OntologyRelationship> {
+function indexRelationships(
+  relationships: OntologyRelationship[],
+): Map<string, OntologyRelationship> {
   return new Map(relationships.map((relationship) => [relationship.id, relationship]));
 }
 
@@ -185,7 +187,13 @@ export function formatOntologyDiff(diff: OntologyDiff): string {
       ? `${String(diff.changes.length)} changes (${String(breakingCount)} breaking)`
       : `${String(diff.changes.length)} changes`;
   const lines = diff.changes.map((change) => {
-    const marker = change.breaking ? "!" : change.kind.endsWith("_added") ? "+" : change.kind.endsWith("_removed") ? "-" : "~";
+    const marker = change.breaking
+      ? "!"
+      : change.kind.endsWith("_added")
+        ? "+"
+        : change.kind.endsWith("_removed")
+          ? "-"
+          : "~";
     return `  ${marker} ${change.detail}`;
   });
   return [header, summary, ...lines].join("\n");

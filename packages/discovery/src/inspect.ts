@@ -1,4 +1,9 @@
-import type { ColumnProfile, DatasetInspection, ProfileReport, TableProfile } from "@trybacked/core";
+import type {
+  ColumnProfile,
+  DatasetInspection,
+  ProfileReport,
+  TableProfile,
+} from "@trybacked/core";
 import { PIPELINE_INFRA_DATASET_TABLE_NAMES } from "@trybacked/core";
 
 const INFRA_TABLES = new Set<string>(PIPELINE_INFRA_DATASET_TABLE_NAMES);

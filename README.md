@@ -24,13 +24,13 @@ Stewards review what inference cannot confirm. Agents consume what the organizat
 
 ## Ontology
 
-| Primitive | Meaning |
-| --------- | ------- |
-| **Object** | A business concept tied to a dataset |
-| **Property** | An attribute tied to a column |
-| **Relationship** | A link between objects, with cardinality |
-| **Logic** | A business definition or constraint |
-| **Action** | An operation contract on an object (specified; not executed) |
+| Primitive        | Meaning                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| **Object**       | A business concept tied to a dataset                         |
+| **Property**     | An attribute tied to a column                                |
+| **Relationship** | A link between objects, with cardinality                     |
+| **Logic**        | A business definition or constraint                          |
+| **Action**       | An operation contract on an object (specified; not executed) |
 
 Each element records **confidence**, **provenance**, **review status**, and a **lifecycle** from discovery to publication.
 
@@ -57,11 +57,11 @@ Full specification: **[Ontology](./docs/ONTOLOGY.md)**.
 
 Anchor separates three responsibilities.
 
-| Stage | Question | Mechanism |
-| ----- | -------- | --------- |
-| **Evidence** | What does the data show? | Deterministic profiling and discovery |
-| **Proposal** | What does it likely mean? | Inference on statistics only — never row payloads |
-| **Agreement** | What has the organization accepted? | Review, validation, and versioned publication |
+| Stage         | Question                            | Mechanism                                         |
+| ------------- | ----------------------------------- | ------------------------------------------------- |
+| **Evidence**  | What does the data show?            | Deterministic profiling and discovery             |
+| **Proposal**  | What does it likely mean?           | Inference on statistics only — never row payloads |
+| **Agreement** | What has the organization accepted? | Review, validation, and versioned publication     |
 
 ```mermaid
 flowchart LR
@@ -99,29 +99,29 @@ Inference, when used, sends column names, types, and distributions to the endpoi
 
 ## Documentation
 
-| Document | Audience |
-| -------- | -------- |
-| **[Ontology](./docs/ONTOLOGY.md)** | Structure, primitives, governance fields |
-| [Documentation hub](./docs/README.md) | Index |
-| [Architecture](./docs/ARCHITECTURE.md) | System design |
-| [Operations](./docs/OPERATIONS.md) | Workspace and CLI |
-| [Governance](./docs/GOVERNANCE.md) | Review, publish, rollback, audit |
-| [Providers](./docs/PROVIDERS.md) | Local snapshot and Databricks |
-| [Security and data residency](./docs/SECURITY-AND-RESIDENCY.md) | Security review |
+| Document                                                        | Audience                                 |
+| --------------------------------------------------------------- | ---------------------------------------- |
+| **[Ontology](./docs/ONTOLOGY.md)**                              | Structure, primitives, governance fields |
+| [Documentation hub](./docs/README.md)                           | Index                                    |
+| [Architecture](./docs/ARCHITECTURE.md)                          | System design                            |
+| [Operations](./docs/OPERATIONS.md)                              | Workspace and CLI                        |
+| [Governance](./docs/GOVERNANCE.md)                              | Review, publish, rollback, audit         |
+| [Providers](./docs/PROVIDERS.md)                                | Local snapshot and Databricks            |
+| [Security and data residency](./docs/SECURITY-AND-RESIDENCY.md) | Security review                          |
 
 ---
 
 ## Capabilities
 
-| Capability | Outcome |
-| ---------- | ------- |
-| Workspace | Local artifacts, snapshot, and a committable ontology |
-| Discovery | Deterministic objects and relationships from schema evidence |
-| Review | Risk-ranked confirmation before anything is treated as agreed |
-| Publication | Numbered versions, archive, and rollback |
-| Databricks | Catalog inspect and discover against a SQL warehouse |
-| Agents | MCP over the agreed ontology, with no model call on the query path |
-| Hosted | Same pipeline as a multi-tenant API ([worker service](./apps/worker-service/README.md)) |
+| Capability  | Outcome                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------- |
+| Workspace   | Local artifacts, snapshot, and a committable ontology                                   |
+| Discovery   | Deterministic objects and relationships from schema evidence                            |
+| Review      | Risk-ranked confirmation before anything is treated as agreed                           |
+| Publication | Numbered versions, archive, and rollback                                                |
+| Databricks  | Catalog inspect and discover against a SQL warehouse                                    |
+| Agents      | MCP over the agreed ontology, with no model call on the query path                      |
+| Hosted      | Same pipeline as a multi-tenant API ([worker service](./apps/worker-service/README.md)) |
 
 ---
 
@@ -151,20 +151,20 @@ Environment: copy [`.env.example`](./.env.example). Databricks variables are req
 
 ## Command reference
 
-| Command | Phase | Result |
-| ------- | ----- | ------ |
-| `backed init` | Setup | Workspace configuration |
-| `backed model` | Build | Ingest, profile, and semantic proposal |
-| `backed inspect` | Connect | Dataset catalog (add `--databricks` for the warehouse) |
-| `backed discover` | Connect | Deterministic discovery report |
-| `backed review` | Govern | Steward decisions applied to the ontology |
-| `backed validate` | Govern | Structural validation |
-| `backed publish` | Govern | Version recorded in the registry (`--status` lists versions) |
-| `backed rollback` | Govern | A prior published version restored |
-| `backed diff` | Change | Drift between runs (`--ontology` for breaking vs additive) |
-| `backed serve` | Consume | MCP server |
-| `backed gateway` | Config | Inference endpoint key |
-| `backed login` | Config | Optional telemetry authentication |
+| Command           | Phase   | Result                                                       |
+| ----------------- | ------- | ------------------------------------------------------------ |
+| `backed init`     | Setup   | Workspace configuration                                      |
+| `backed model`    | Build   | Ingest, profile, and semantic proposal                       |
+| `backed inspect`  | Connect | Dataset catalog (add `--databricks` for the warehouse)       |
+| `backed discover` | Connect | Deterministic discovery report                               |
+| `backed review`   | Govern  | Steward decisions applied to the ontology                    |
+| `backed validate` | Govern  | Structural validation                                        |
+| `backed publish`  | Govern  | Version recorded in the registry (`--status` lists versions) |
+| `backed rollback` | Govern  | A prior published version restored                           |
+| `backed diff`     | Change  | Drift between runs (`--ontology` for breaking vs additive)   |
+| `backed serve`    | Consume | MCP server                                                   |
+| `backed gateway`  | Config  | Inference endpoint key                                       |
+| `backed login`    | Config  | Optional telemetry authentication                            |
 
 ---
 
@@ -172,13 +172,13 @@ Environment: copy [`.env.example`](./.env.example). Databricks variables are req
 
 `backed serve` answers from the agreed ontology. Responses are structured and schema-validated. There is no language model on this path.
 
-| Operation | Returns |
-| --------- | ------- |
-| `list_entities` | Object catalog |
-| `get_entity` | Properties and provenance |
-| `list_relations` | Relationships and cardinality |
-| `search_model` | Search across objects, properties, relationships, and logic |
-| `get_definition` | A confirmed logic statement, or a structured miss |
+| Operation        | Returns                                                     |
+| ---------------- | ----------------------------------------------------------- |
+| `list_entities`  | Object catalog                                              |
+| `get_entity`     | Properties and provenance                                   |
+| `list_relations` | Relationships and cardinality                               |
+| `search_model`   | Search across objects, properties, relationships, and logic |
+| `get_definition` | A confirmed logic statement, or a structured miss           |
 
 Tool names follow the current MCP contract. They resolve the ontology primitives in [Ontology](./docs/ONTOLOGY.md).
 
@@ -186,12 +186,12 @@ Tool names follow the current MCP contract. They resolve the ontology primitives
 
 ## Data residency
 
-| Data | Leaves your infrastructure |
-| ---- | -------------------------- |
-| Source files, rows, document text | No |
-| Agreed ontology | No, unless you publish it yourself (Git or hosted API) |
-| Column statistics | Only to your configured inference endpoint, during proposal |
-| Warehouse metadata | Only to your Databricks workspace, when you use `--databricks` |
+| Data                              | Leaves your infrastructure                                     |
+| --------------------------------- | -------------------------------------------------------------- |
+| Source files, rows, document text | No                                                             |
+| Agreed ontology                   | No, unless you publish it yourself (Git or hosted API)         |
+| Column statistics                 | Only to your configured inference endpoint, during proposal    |
+| Warehouse metadata                | Only to your Databricks workspace, when you use `--databricks` |
 
 ---
 
@@ -209,13 +209,13 @@ pnpm generate:schema
 pnpm test
 ```
 
-| Package | Responsibility |
-| ------- | -------------- |
-| `@trybacked/core` | Ontology schema, governance, workspace |
-| `@backed/discovery` | Deterministic discovery |
-| `@backed/provider-duckdb` · `@backed/provider-databricks` | Dataset providers |
-| `@backed/runner` | Pipeline |
-| `@backed/cli` | Command line |
+| Package                                                   | Responsibility                         |
+| --------------------------------------------------------- | -------------------------------------- |
+| `@trybacked/core`                                         | Ontology schema, governance, workspace |
+| `@backed/discovery`                                       | Deterministic discovery                |
+| `@backed/provider-duckdb` · `@backed/provider-databricks` | Dataset providers                      |
+| `@backed/runner`                                          | Pipeline                               |
+| `@backed/cli`                                             | Command line                           |
 
 Published packages use `@trybacked/*`. Workspace packages use `@backed/*`.
 

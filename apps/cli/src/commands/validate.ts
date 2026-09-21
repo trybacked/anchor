@@ -12,13 +12,15 @@ import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
-export const validateCommand: CommandHandler = async () => {
+export const validateCommand: CommandHandler = () => {
   const ui = initUi();
   const root = findWorkspaceRoot(process.cwd());
   const { modelPath } = workspacePaths(root);
 
   if (!existsSync(modelPath)) {
-    ui.writeError(`No model.yaml at ${modelPath}. Run "backed review" or copy a model into the workspace.`);
+    ui.writeError(
+      `No model.yaml at ${modelPath}. Run "backed review" or copy a model into the workspace.`,
+    );
     process.exitCode = 1;
     return;
   }

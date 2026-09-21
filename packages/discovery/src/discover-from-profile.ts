@@ -31,7 +31,10 @@ function isPrimaryKeyCandidate(column: ColumnProfile, rowCount: number): boolean
 }
 
 function columnEvidence(table: TableProfile, column: ColumnProfile): string[] {
-  return [`${table.table}.${column.name}`, `${column.sqlType} null_ratio=${column.nullRatio.toFixed(2)}`];
+  return [
+    `${table.table}.${column.name}`,
+    `${column.sqlType} null_ratio=${column.nullRatio.toFixed(2)}`,
+  ];
 }
 
 function discoverProperty(table: TableProfile, column: ColumnProfile): OntologyProperty {
@@ -47,7 +50,7 @@ function discoverProperty(table: TableProfile, column: ColumnProfile): OntologyP
     type: inferPropertyType(column.sqlType, column.patterns),
     role,
     nullable: column.nullCount > 0,
-    confidence: role === "primary_key" ? 0.95 : bestFk?.confidence ?? 0.75,
+    confidence: role === "primary_key" ? 0.95 : (bestFk?.confidence ?? 0.75),
     provenance: {
       type: DISCOVERY_TYPE,
       table: table.table,

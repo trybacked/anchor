@@ -61,7 +61,12 @@ export function createRunExecutor(deps: RunExecutorDeps): RunExecutor {
     const partnerId = job.partnerId;
     if (outcome.ok) {
       const result = outcome.result;
-      const record = deps.runStore.complete(job.tenantId, job.runId, result.stats, result.deletionEntry);
+      const record = deps.runStore.complete(
+        job.tenantId,
+        job.runId,
+        result.stats,
+        result.deletionEntry,
+      );
       if (partnerId !== undefined) {
         logRunCompleted({
           tenantId: job.tenantId,

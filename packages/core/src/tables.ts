@@ -38,7 +38,9 @@ export function isDocumentTypeMaterializedTable(tableName: string): boolean {
 }
 
 export function isPipelineInfraDatasetTable(tableName: string): boolean {
-  return isDocumentTypeMaterializedTable(tableName) || PIPELINE_INFRA_DATASET_TABLE_SET.has(tableName);
+  return (
+    isDocumentTypeMaterializedTable(tableName) || PIPELINE_INFRA_DATASET_TABLE_SET.has(tableName)
+  );
 }
 
 export function createPipelineMaterializedDatasetTableSet(): Set<string> {

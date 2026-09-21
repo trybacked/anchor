@@ -1,8 +1,8 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { BACKED_DIR_NAME } from "../workspace.js";
 import { publicationPath } from "../audit-log.js";
+import { BACKED_DIR_NAME } from "../workspace.js";
 import { PublicationRecordSchema, type PublicationRecord } from "./publication.js";
 
 export const REGISTRY_FILE_NAME = "registry.json";
@@ -21,17 +21,32 @@ export const OntologyRegistrySchema = z.object({
   entries: z.array(OntologyRegistryEntrySchema),
 });
 
+/**
+ *
+ */
 export type OntologyRegistryEntry = z.infer<typeof OntologyRegistryEntrySchema>;
+/**
+ *
+ */
 export type OntologyRegistry = z.infer<typeof OntologyRegistrySchema>;
 
+/**
+ *
+ */
 export function registryPath(root: string): string {
   return path.join(root, BACKED_DIR_NAME, REGISTRY_FILE_NAME);
 }
 
+/**
+ *
+ */
 export function publicationArchivePath(root: string, version: number): string {
   return path.join(root, BACKED_DIR_NAME, PUBLICATIONS_DIR_NAME, `v${String(version)}.json`);
 }
 
+/**
+ *
+ */
 export function readOntologyRegistry(root: string): OntologyRegistry | null {
   const filePath = registryPath(root);
   if (!existsSync(filePath)) {
@@ -44,6 +59,9 @@ export function readOntologyRegistry(root: string): OntologyRegistry | null {
   }
 }
 
+/**
+ *
+ */
 export function readPublicationByVersion(root: string, version: number): PublicationRecord | null {
   const archived = publicationArchivePath(root, version);
   if (existsSync(archived)) {
@@ -64,6 +82,9 @@ function readPublicationRecordFromPath(filePath: string): PublicationRecord | nu
   }
 }
 
+/**
+ *
+ */
 export function listPublicationVersions(root: string): OntologyRegistryEntry[] {
   const registry = readOntologyRegistry(root);
   if (registry !== null) {
@@ -82,12 +103,18 @@ export function listPublicationVersions(root: string): OntologyRegistryEntry[] {
   ];
 }
 
+/**
+ *
+ */
 export function archivePublicationRecord(root: string, record: PublicationRecord): void {
   const archivePath = publicationArchivePath(root, record.version);
   mkdirSync(path.dirname(archivePath), { recursive: true });
   writeFileSync(archivePath, `${JSON.stringify(record, null, 2)}\n`, "utf-8");
 }
 
+/**
+ *
+ */
 export function updateOntologyRegistry(
   root: string,
   record: PublicationRecord,
@@ -113,6 +140,9 @@ export function updateOntologyRegistry(
   return registry;
 }
 
+/**
+ *
+ */
 export function restorePublicationVersion(root: string, version: number): PublicationRecord {
   const record = readPublicationByVersion(root, version);
   if (record === null) {

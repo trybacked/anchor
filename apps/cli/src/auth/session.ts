@@ -1,8 +1,4 @@
-import {
-  BackedApiError,
-  BackedAuthClient,
-  tokenResponseToCredentials,
-} from "./api-client.js";
+import { BackedApiError, BackedAuthClient, tokenResponseToCredentials } from "./api-client.js";
 import type { BackedCredentials } from "./credentials.js";
 import { writeBackedCredentials } from "./credentials.js";
 import { verifyAccessToken } from "./device-flow.js";

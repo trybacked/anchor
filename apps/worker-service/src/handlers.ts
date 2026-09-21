@@ -1,8 +1,4 @@
-import {
-  assertValidTenantId,
-  hashContent,
-  resolveTenantWorkspace,
-} from "@backed/runner";
+import { assertValidTenantId, hashContent, resolveTenantWorkspace } from "@backed/runner";
 import { parseModelYaml } from "@trybacked/core";
 import { PatchModelElementSchema } from "@trybacked/core";
 import { randomUUID } from "node:crypto";
@@ -27,9 +23,9 @@ import {
   ReviewNotFoundError,
   StaleReviewError,
 } from "./review-store.js";
+import type { RunExecutor } from "./run-executor.js";
 import { toRunStatusResponse, type RunStore } from "./run-store.js";
 import { InvalidSubmitRunConfigError, parseSubmitRunConfig } from "./submit-run-config.js";
-import type { RunExecutor } from "./run-executor.js";
 
 export interface WorkerServiceDeps {
   config: WorkerServiceConfig;

@@ -11,7 +11,10 @@ export function assertNotAborted(signal: AbortSignal | undefined): void {
   }
 }
 
-export async function sleepUnlessAborted(ms: number, signal: AbortSignal | undefined): Promise<void> {
+export async function sleepUnlessAborted(
+  ms: number,
+  signal: AbortSignal | undefined,
+): Promise<void> {
   if (ms <= 0) {
     assertNotAborted(signal);
     return;

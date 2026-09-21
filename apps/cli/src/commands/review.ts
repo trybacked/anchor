@@ -17,8 +17,6 @@ import {
   writeModelYaml,
   writeRunArtifact,
 } from "@trybacked/core";
-import path from "node:path";
-import { defaultReviewer } from "../reviewer.js";
 import type {
   DocumentCatalog,
   EvidenceTable,
@@ -26,9 +24,11 @@ import type {
   Review,
   ReviewAnswer,
 } from "@trybacked/core";
+import path from "node:path";
 import { wantsHeadlessCommand } from "../args.js";
 import { findWorkspaceRoot } from "../env.js";
 import { MESSAGES, reviewNextSteps } from "../messages.js";
+import { defaultReviewer } from "../reviewer.js";
 import type { CommandHandler } from "../types.js";
 import { createPromptTheme, getUi, initUi } from "../ui/index.js";
 function slugifyDocumentTypeId(id: string): string {

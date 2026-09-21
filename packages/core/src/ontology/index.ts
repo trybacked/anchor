@@ -71,7 +71,10 @@ export {
 } from "./audit.js";
 export type { AuditAction, AuditActor, AuditEvent, AuditLog } from "./audit.js";
 export { applyReviewLifecycle, markOntologyPublished } from "./apply-review-lifecycle.js";
-export type { ApplyReviewLifecycleOptions, ReviewLifecycleResult } from "./apply-review-lifecycle.js";
+export type {
+  ApplyReviewLifecycleOptions,
+  ReviewLifecycleResult,
+} from "./apply-review-lifecycle.js";
 export { PublicationRecordSchema } from "./publication.js";
 export type { PublicationRecord } from "./publication.js";
 export {

@@ -48,9 +48,21 @@ function qualifyTable(id: string, config: DatabricksProviderConfig): string {
     (segment): segment is string => segment !== undefined && segment.length > 0,
   );
   if (segments.length === 0) {
-    throw new Error(`Cannot qualify table id "${id}" — set BACKED_DATABRICKS_CATALOG and BACKED_DATABRICKS_SCHEMA`);
+    throw new Error(
+      `Cannot qualify table id "${id}" — set BACKED_DATABRICKS_CATALOG and BACKED_DATABRICKS_SCHEMA`,
+    );
   }
   return segments.map(quoteIdentifier).join(".");
+}
+
+function cellText(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return value.toString();
+  }
+  return undefined;
 }
 
 function toCount(value: unknown): number {
@@ -137,15 +149,15 @@ export function createDatabricksDatasetProvider(
       const rows = await execute(`DESCRIBE TABLE ${table}`);
       const columns: DatasetColumn[] = rows
         .map((row) => {
-          const name = String(row["col_name"] ?? row["column_name"] ?? row["name"] ?? "");
-          const type = String(row["data_type"] ?? row["column_type"] ?? row["type"] ?? "string");
+          const name = cellText(row["col_name"] ?? row["column_name"] ?? row["name"]) ?? "";
+          const type = cellText(row["data_type"] ?? row["column_type"] ?? row["type"]) ?? "string";
           if (name.length === 0 || name.startsWith("#")) {
             return null;
           }
           return {
             name,
             type,
-            nullable: !String(row["comment"] ?? "").toLowerCase().includes("not null"),
+            nullable: !(cellText(row["comment"]) ?? "").toLowerCase().includes("not null"),
           };
         })
         .filter((column): column is DatasetColumn => column !== null);
@@ -184,13 +196,13 @@ export function createDatabricksDatasetProvider(
           nullCount: toCount(stats?.["null_count"]),
           distinctCount: toCount(stats?.["distinct_count"]),
         };
-        const minValue = stats?.["min_value"];
-        const maxValue = stats?.["max_value"];
-        if (minValue !== null && minValue !== undefined) {
-          entry.min = String(minValue);
+        const minValue = cellText(stats?.["min_value"]);
+        const maxValue = cellText(stats?.["max_value"]);
+        if (minValue !== undefined) {
+          entry.min = minValue;
         }
-        if (maxValue !== null && maxValue !== undefined) {
-          entry.max = String(maxValue);
+        if (maxValue !== undefined) {
+          entry.max = maxValue;
         }
         columns.push(entry);
       }

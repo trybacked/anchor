@@ -250,24 +250,15 @@ Anchor should operate against a generic interface such as:
 
 ```typescript
 interface DatasetProvider {
-  listDatasets(): Promise<Dataset[]>
+  listDatasets(): Promise<Dataset[]>;
 
-  getSchema(
-    dataset: DatasetIdentifier
-  ): Promise<DatasetSchema>
+  getSchema(dataset: DatasetIdentifier): Promise<DatasetSchema>;
 
-  getMetadata(
-    dataset: DatasetIdentifier
-  ): Promise<DatasetMetadata>
+  getMetadata(dataset: DatasetIdentifier): Promise<DatasetMetadata>;
 
-  getStatistics(
-    dataset: DatasetIdentifier
-  ): Promise<DatasetStatistics>
+  getStatistics(dataset: DatasetIdentifier): Promise<DatasetStatistics>;
 
-  sample?(
-    dataset: DatasetIdentifier,
-    options?: SampleOptions
-  ): Promise<DatasetSample>
+  sample?(dataset: DatasetIdentifier, options?: SampleOptions): Promise<DatasetSample>;
 }
 ```
 
@@ -632,23 +623,23 @@ Design a runtime capable of exposing ontology concepts programmatically.
 Target capabilities:
 
 ```typescript
-listObjectTypes()
+listObjectTypes();
 
-getObjectType()
+getObjectType();
 
-queryObjects()
+queryObjects();
 
-getObject()
+getObject();
 
-getRelatedObjects()
+getRelatedObjects();
 
-traverseRelationship()
+traverseRelationship();
 
-evaluateLogic()
+evaluateLogic();
 
-listActions()
+listActions();
 
-executeAction()
+executeAction();
 ```
 
 The runtime should hide unnecessary details about the underlying physical datasets.

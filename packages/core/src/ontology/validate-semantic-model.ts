@@ -38,7 +38,9 @@ function validateEntityProperties(entity: Entity): ValidationIssue[] {
     }
     columns.add(property.columnName);
   }
-  const hasPrimaryKey = entity.properties.some((property: Property) => property.role === "primary_key");
+  const hasPrimaryKey = entity.properties.some(
+    (property: Property) => property.role === "primary_key",
+  );
   if (!hasPrimaryKey) {
     issues.push({
       code: "missing_identifier",
@@ -65,9 +67,24 @@ export function validateSemanticModel(model: SemanticModel): ReturnType<typeof v
   const parsed = parseResult.data;
   const issues: ValidationIssue[] = [];
 
-  issues.push(...duplicateIdIssues("entity", parsed.entities.map((entity) => entity.id)));
-  issues.push(...duplicateIdIssues("relation", parsed.relations.map((relation) => relation.id)));
-  issues.push(...duplicateIdIssues("rule", parsed.rules.map((rule) => rule.id)));
+  issues.push(
+    ...duplicateIdIssues(
+      "entity",
+      parsed.entities.map((entity) => entity.id),
+    ),
+  );
+  issues.push(
+    ...duplicateIdIssues(
+      "relation",
+      parsed.relations.map((relation) => relation.id),
+    ),
+  );
+  issues.push(
+    ...duplicateIdIssues(
+      "rule",
+      parsed.rules.map((rule) => rule.id),
+    ),
+  );
 
   const entities = new Map(parsed.entities.map((entity) => [entity.id, entity]));
 

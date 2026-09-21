@@ -3,6 +3,7 @@ import type { Proposal } from "../proposal.js";
 import { applyReview, collectVerdicts, type Review } from "../review.js";
 import type { OntologyLifecycleStage } from "./lifecycle.js";
 import { lifecycleFromModelStatus } from "./lifecycle.js";
+import { semanticModelToOntology } from "./semantic-model-bridge.js";
 import type {
   Ontology,
   OntologyAction,
@@ -10,19 +11,27 @@ import type {
   OntologyObject,
   OntologyRelationship,
 } from "./spec.js";
-import { semanticModelToOntology } from "./semantic-model-bridge.js";
 
+/**
+ *
+ */
 export type ApplyReviewLifecycleOptions = {
   ontologyId: string;
   reviewConfidenceThreshold?: number;
   baseOntology?: Ontology;
 };
 
+/**
+ *
+ */
 export type ReviewLifecycleResult = {
   ontology: Ontology;
 };
 
-function withObjectLifecycle(object: OntologyObject, stage: OntologyLifecycleStage): OntologyObject {
+function withObjectLifecycle(
+  object: OntologyObject,
+  stage: OntologyLifecycleStage,
+): OntologyObject {
   return { ...object, lifecycle: stage };
 }
 
@@ -37,7 +46,10 @@ function withLogicLifecycle(entry: OntologyLogic, stage: OntologyLifecycleStage)
   return { ...entry, lifecycle: stage };
 }
 
-function withActionLifecycle(action: OntologyAction, stage: OntologyLifecycleStage): OntologyAction {
+function withActionLifecycle(
+  action: OntologyAction,
+  stage: OntologyLifecycleStage,
+): OntologyAction {
   return { ...action, lifecycle: stage };
 }
 
@@ -54,6 +66,9 @@ function lifecycleAfterReview(
   return modelLifecycle;
 }
 
+/**
+ *
+ */
 export function applyReviewLifecycle(
   proposal: Proposal,
   review: Review,
@@ -112,6 +127,9 @@ export function applyReviewLifecycle(
   return { ontology };
 }
 
+/**
+ *
+ */
 export function markOntologyPublished(ontology: Ontology, publishedAt: string): Ontology {
   const toPublished = (): OntologyLifecycleStage => "published";
   return {

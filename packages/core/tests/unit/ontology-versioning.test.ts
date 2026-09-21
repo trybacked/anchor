@@ -47,32 +47,36 @@ describe("ontology versioning essentials", () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "anchor-versioning-"));
     try {
       publishSemanticModel(root, baseModel, { ontologyId: "demo" });
-      publishSemanticModel(root, {
-        ...baseModel,
-        metadata: { ...baseModel.metadata, runId: "run-2" },
-        entities: [
-          ...baseModel.entities,
-          {
-            id: "customers",
-            name: "Customers",
-            sourceTable: "customers",
-            status: "confirmed" as const,
-            confidence: 0.9,
-            provenance: { table: "customers", evidence: "test" },
-            properties: [
-              {
-                name: "Id",
-                columnName: "id",
-                semanticType: "identifier" as const,
-                role: "primary_key" as const,
-                nullable: false,
-                confidence: 0.9,
-                provenance: { table: "customers", column: "id", evidence: "pk" },
-              },
-            ],
-          },
-        ],
-      }, { ontologyId: "demo" });
+      publishSemanticModel(
+        root,
+        {
+          ...baseModel,
+          metadata: { ...baseModel.metadata, runId: "run-2" },
+          entities: [
+            ...baseModel.entities,
+            {
+              id: "customers",
+              name: "Customers",
+              sourceTable: "customers",
+              status: "confirmed" as const,
+              confidence: 0.9,
+              provenance: { table: "customers", evidence: "test" },
+              properties: [
+                {
+                  name: "Id",
+                  columnName: "id",
+                  semanticType: "identifier" as const,
+                  role: "primary_key" as const,
+                  nullable: false,
+                  confidence: 0.9,
+                  provenance: { table: "customers", column: "id", evidence: "pk" },
+                },
+              ],
+            },
+          ],
+        },
+        { ontologyId: "demo" },
+      );
 
       expect(listPublicationVersions(root)).toHaveLength(2);
       expect(readPublicationByVersion(root, 1)?.ontology.objects).toHaveLength(1);
