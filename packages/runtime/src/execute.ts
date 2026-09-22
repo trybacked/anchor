@@ -1,5 +1,5 @@
-import { compileObjectQuery } from "@backed/compiler";
-import type { ObjectQuery, SqlParameter } from "@backed/compiler";
+import { compileObjectQuery } from "@trybacked/compiler";
+import type { ObjectQuery, SqlParameter } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
 
 /** Executes one parameterized statement against the backing warehouse. */

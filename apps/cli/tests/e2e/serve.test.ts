@@ -15,7 +15,7 @@ function parseToolJson(result: Awaited<ReturnType<Client["callTool"]>>): unknown
 async function withMcpClient<T>(cwd: string, run: (client: Client) => Promise<T>): Promise<T> {
   const transport = new StdioClientTransport({
     command: NODE_EXECUTABLE,
-    args: [CLI_PATH, "serve"],
+    args: [CLI_PATH, "anchor", "deploy"],
     cwd,
     env: Object.fromEntries(
       Object.entries(process.env).filter(
@@ -32,7 +32,7 @@ async function withMcpClient<T>(cwd: string, run: (client: Client) => Promise<T>
   }
 }
 
-describe("backed serve e2e", () => {
+describe("backed anchor deploy e2e", () => {
   it("runs the five MCP operations on pmi-minimal", async () => {
     await withMcpClient(PMI_MINIMAL_FIXTURE, async (client) => {
       const entities = parseToolJson(

@@ -1,5 +1,11 @@
 # @trybacked/core
 
+## 0.2.1
+
+### Patch Changes
+
+- Republish `@trybacked/core` with ontology exports (`OntologySchema`) so global CLI install works with `@trybacked/registry`.
+
 ## 0.2.0
 
 ### Minor Changes

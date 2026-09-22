@@ -1,11 +1,24 @@
 {
-  "name": "@backed/cli",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@trybacked/cli",
+  "version": "0.2.1",
   "type": "module",
-  "description": "Anchor CLI: init, inspect, discover, review, publish, diff, validate, serve",
+  "description": "Anchor CLI (`backed`): pull, sync, and deploy a governed ontology over Databricks",
+  "license": "Apache-2.0",
+  "keywords": ["anchor", "backed", "ontology", "databricks", "mcp", "cli"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybacked/anchor.git",
+    "directory": "apps/cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "backed": "./dist/cli.js"
+  },
+  "files": ["dist", "README.md"],
+  "engines": {
+    "node": ">=22"
   },
   "exports": {
     ".": {
@@ -18,17 +31,16 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage"
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@trybacked/core": "workspace:*",
-    "@inquirer/prompts": "^7.3.2",
-    "@backed/diff": "workspace:*",
-    "@backed/discovery": "workspace:*",
-    "@backed/mcp": "workspace:*",
-    "@backed/provider-databricks": "workspace:*",
-    "@backed/registry": "workspace:*",
-    "@backed/runtime": "workspace:*",
+    "@trybacked/discovery": "workspace:*",
+    "@trybacked/mcp": "workspace:*",
+    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/registry": "workspace:*",
+    "@trybacked/runtime": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {

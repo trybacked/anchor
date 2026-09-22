@@ -1,9 +1,21 @@
 {
-  "name": "@backed/runtime",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@trybacked/runtime",
+  "version": "0.2.1",
   "type": "module",
   "description": "Executes compiled ontology queries through an injected SQL executor and returns object rows",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybacked/anchor.git",
+    "directory": "packages/runtime"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": ["dist"],
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,10 +27,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage"
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@backed/compiler": "workspace:*",
+    "@trybacked/compiler": "workspace:*",
     "@trybacked/core": "workspace:*"
   },
   "devDependencies": {

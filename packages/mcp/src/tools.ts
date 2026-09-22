@@ -1,5 +1,5 @@
-import { ObjectQueryCompileError, ObjectQuerySchema } from "@backed/compiler";
-import type { OntologyQueryRuntime } from "@backed/runtime";
+import { ObjectQueryCompileError, ObjectQuerySchema } from "@trybacked/compiler";
+import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import type { SemanticModel } from "@trybacked/core";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";

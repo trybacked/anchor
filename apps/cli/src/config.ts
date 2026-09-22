@@ -1,25 +1,43 @@
 import { BACKED_DIR_NAME, CONFIG_FILE_NAME } from "@trybacked/core";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+function readCliVersion(): string {
+  const packagePath = path.join(path.dirname(fileURLToPath(import.meta.url)), "../package.json");
+  const raw = readFileSync(packagePath, "utf8");
+  const parsed: unknown = JSON.parse(raw);
+  if (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    "version" in parsed &&
+    typeof parsed.version === "string"
+  ) {
+    return parsed.version;
+  }
+  throw new Error(`Invalid package.json at ${packagePath}`);
+}
 
 export const CLI_NAME = "backed";
-export const CLI_VERSION = "0.1.0";
+export const CLI_VERSION = readCliVersion();
+export const SERVICES = {
+  ANCHOR: "anchor",
+} as const;
 export const COMMANDS = {
   INIT: "init",
-  INSPECT: "inspect",
-  DISCOVER: "discover",
-  REVIEW: "review",
-  PUBLISH: "publish",
-  ROLLBACK: "rollback",
-  DIFF: "diff",
-  VALIDATE: "validate",
-  SERVE: "serve",
+  PULL: "pull",
+  SYNC: "sync",
+  DEPLOY: "deploy",
 } as const;
 export function formatCliCommand(command: string): string {
-  return `${CLI_NAME} ${command}`;
+  return `${CLI_NAME} ${SERVICES.ANCHOR} ${command}`;
+}
+export function isVersionFlag(arg: string): boolean {
+  return arg === "--version" || arg === "-V" || arg === "version";
 }
 export const FLAGS = {
   HELP: "--help",
   HELP_SHORT: "-h",
-  ONTOLOGY: "--ontology",
   STATUS: "--status",
   YES: "--yes",
   YES_SHORT: "-y",

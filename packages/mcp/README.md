@@ -1,4 +1,4 @@
-# @backed/mcp
+# @trybacked/mcp
 
 Local MCP server exposing the Anchor semantic model as five deterministic, Zod-validated operations.
 
@@ -19,5 +19,5 @@ No LLM inference occurs in the MCP path. `search_model` may embed the query loca
 Started by `backed serve` (local by default). Set `BACKED_TELEMETRY=1` after `backed login` to opt in to background usage metering — failures never block tool calls.
 
 ```typescript
-import { createModelMcpServer, runStdioMcpServerUntilClose } from "@backed/mcp";
+import { createModelMcpServer, runStdioMcpServerUntilClose } from "@trybacked/mcp";
 ```

@@ -2,8 +2,6 @@
 
 Ontology schema, governance, workspace paths, and the v1 serialization used on disk.
 
-**Docs:** [Ontology](../../docs/ONTOLOGY.md) · [Architecture](../../docs/ARCHITECTURE.md) · [Governance](../../docs/GOVERNANCE.md)
-
 **Responsibilities:**
 
 - Zod schema for `model.yaml` (`SemanticModelSchema`) — exported as [`schema/anchor-schema-v1.json`](../../schema/anchor-schema-v1.json); spec in [`docs/MODEL-FORMAT-v1.md`](../../docs/MODEL-FORMAT-v1.md)

@@ -1,8 +1,6 @@
-# @backed/provider-databricks
+# @trybacked/provider-databricks
 
 Enterprise **Databricks SQL warehouse** adapter implementing Anchor’s `DatasetProvider` contract.
-
-**Full guide:** [Providers (Databricks)](../../docs/PROVIDERS.md)
 
 ---
 
@@ -34,8 +32,8 @@ Uses the [SQL Statement Execution API](https://docs.databricks.com/api/workspace
 ## Programmatic
 
 ```typescript
-import { createDatabricksProviderFromEnv } from "@backed/provider-databricks";
-import { discoverFromDatasetProvider } from "@backed/discovery";
+import { createDatabricksProviderFromEnv } from "@trybacked/provider-databricks";
+import { discoverFromDatasetProvider } from "@trybacked/discovery";
 
 const { provider } = createDatabricksProviderFromEnv();
 const report = await discoverFromDatasetProvider(provider, { ontologyId: "my-workspace" });

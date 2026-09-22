@@ -1,8 +1,6 @@
 # Serialization format v1
 
-Normative layout of the **workspace ontology file** (`model.yaml`). The conceptual model — objects, properties, relationships, logic, actions — is specified in [Ontology](./ONTOLOGY.md). This document describes the v1 keys used on disk.
-
-**Documentation hub:** [docs/README.md](./README.md) · **Governance:** [GOVERNANCE.md](./GOVERNANCE.md)
+Normative layout of the **workspace ontology file** (`model.yaml`). The conceptual model — objects, properties, relationships, logic, actions — is described in the root [README](../README.md). This document describes the v1 keys used on disk.
 
 **Machine-readable schema:** [`schema/anchor-schema-v1.json`](../schema/anchor-schema-v1.json) (generated from Zod in `@trybacked/core`).
 
