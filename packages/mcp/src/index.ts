@@ -1,4 +1,4 @@
-export const PACKAGE_NAME = "@backed/mcp" as const;
+export const PACKAGE_NAME = "@trybacked/mcp" as const;
 export { listEntities, getEntity, listRelations, searchModel, getDefinition } from "./mapping.js";
 export type { SearchModelOptions } from "./mapping.js";
 export type {

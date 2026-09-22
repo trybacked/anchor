@@ -1,9 +1,24 @@
 {
-  "name": "@backed/mcp",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@trybacked/mcp",
+  "version": "0.2.1",
   "type": "module",
   "description": "Local MCP server: ontology consumption via AI agents",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybacked/anchor.git",
+    "directory": "packages/mcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,11 +30,12 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage"
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@backed/compiler": "workspace:*",
-    "@backed/runtime": "workspace:*",
+    "@trybacked/compiler": "workspace:*",
+    "@trybacked/runtime": "workspace:*",
     "@trybacked/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.24.1"

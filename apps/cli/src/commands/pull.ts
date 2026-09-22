@@ -1,17 +1,27 @@
 import {
+  applyReview,
+  createRunId,
+  readWorkspaceConfig,
+  writeModelYaml,
+  writeRunArtifact,
+} from "@trybacked/core";
+import {
   discoverFromProfile,
   proposalFromDiscovery,
   profileFromDatasetProvider,
-} from "@backed/discovery";
-import { createDatabricksProviderFromEnv } from "@backed/provider-databricks";
-import { createRunId, readWorkspaceConfig, writeRunArtifact } from "@trybacked/core";
+} from "@trybacked/discovery";
+import { createDatabricksProviderFromEnv } from "@trybacked/provider-databricks";
 import path from "node:path";
 import { commandErrorMessage, parseHelpOnlyArgs } from "../args.js";
+import { COMMANDS, formatCliCommand } from "../config.js";
 import { findWorkspaceRoot } from "../env.js";
+import { pullNextSteps } from "../messages.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
 const MS_PER_SECOND = 1000;
+/** Auto-confirm every proposed element (no human review step). */
+const AUTO_CONFIRM_CONFIDENCE_THRESHOLD = 0;
 
 function resolveOntologyId(root: string): string {
   try {
@@ -21,7 +31,7 @@ function resolveOntologyId(root: string): string {
   }
 }
 
-export const discoverCommand: CommandHandler = async (args) => {
+export const pullCommand: CommandHandler = async (args) => {
   const ui = initUi();
   let parsed;
   try {
@@ -32,16 +42,16 @@ export const discoverCommand: CommandHandler = async (args) => {
     return;
   }
   if (parsed.help) {
-    ui.log("Usage: backed discover");
-    ui.log("  Profiles curated Databricks datasets and proposes an ontology (no LLM).");
+    ui.log(`Usage: ${formatCliCommand(COMMANDS.PULL)}`);
+    ui.log("  Pull schema from Databricks and write model.yaml (deterministic, no LLM).");
     ui.log("  Requires BACKED_DATABRICKS_HOST, _TOKEN, _WAREHOUSE_ID.");
     return;
   }
   const root = findWorkspaceRoot(process.cwd());
   const runId = createRunId();
   try {
-    ui.heading("Discover run (Databricks)");
-    ui.step(`${runId} · listing tables from Databricks SQL warehouse`);
+    ui.heading("Pull (Databricks)");
+    ui.step(`${runId} · reading tables from Databricks SQL warehouse`);
     const { provider } = createDatabricksProviderFromEnv(process.env);
     const profileStarted = Date.now();
     const profile = await profileFromDatasetProvider(provider);
@@ -56,16 +66,30 @@ export const discoverCommand: CommandHandler = async (args) => {
     const discoveryPath = writeRunArtifact(root, runId, "discovery", discovery);
     ui.writeSuccess(`Discovery → ${ui.path(discoveryPath)}`);
     ui.detail(
-      `${String(discovery.ontology.objects.length)} object(s), ${String(discovery.ontology.relationships.length)} relationship(s) (proposed)`,
+      `${String(discovery.ontology.objects.length)} object(s), ${String(discovery.ontology.relationships.length)} relationship(s)`,
     );
 
-    const proposal = proposalFromDiscovery(discovery, { runId });
+    const proposal = proposalFromDiscovery(discovery, {
+      runId,
+      reviewConfidenceThreshold: AUTO_CONFIRM_CONFIDENCE_THRESHOLD,
+    });
     const proposalPath = writeRunArtifact(root, runId, "proposal", proposal);
     ui.writeSuccess(`Proposal → ${ui.path(proposalPath)}`);
-    ui.blank();
-    ui.writeSuccess(
-      `Done in ${String(Math.round(profileMs / MS_PER_SECOND))}s · run ${runId} · ${String(proposal.questions.length)} review question(s)`,
+
+    const generatedAt = new Date();
+    const { model } = applyReview(
+      proposal,
+      { runId, answeredAt: generatedAt.toISOString(), answers: [] },
+      generatedAt,
+      { reviewConfidenceThreshold: AUTO_CONFIRM_CONFIDENCE_THRESHOLD },
     );
+    const modelPath = writeModelYaml(root, model);
+    ui.writeSuccess(
+      `Model → ${ui.path(modelPath)} (${String(model.entities.length)} entities, ${String(model.relations.length)} relations)`,
+    );
+    ui.blank();
+    ui.writeSuccess(`Done in ${String(Math.round(profileMs / MS_PER_SECOND))}s · run ${runId}`);
+    ui.step(pullNextSteps());
   } catch (error) {
     ui.writeError(commandErrorMessage(error));
     process.exitCode = 1;

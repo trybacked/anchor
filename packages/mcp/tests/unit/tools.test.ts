@@ -1,4 +1,4 @@
-import type { OntologyQueryRuntime } from "@backed/runtime";
+import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { describe, expect, it } from "vitest";
 import { MCP_SURFACE_TOOLS, TOOL_NAMES } from "../../src/constants.js";
 import { MCP_TOOL_DEFINITIONS, QUERY_OBJECTS_TOOL_DEFINITION } from "../../src/tools.js";

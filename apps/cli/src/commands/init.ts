@@ -1,6 +1,7 @@
 import { DEFAULT_WORKSPACE_CONFIG, workspacePaths, writeWorkspaceConfig } from "@trybacked/core";
 import { existsSync } from "node:fs";
 import { commandErrorMessage, parseHelpOnlyArgs } from "../args.js";
+import { COMMANDS, formatCliCommand } from "../config.js";
 import { initNextStep } from "../messages.js";
 import type { CommandHandler } from "../types.js";
 import { initUi, renderLogo } from "../ui/index.js";
@@ -16,7 +17,7 @@ export const initCommand: CommandHandler = (args) => {
     return;
   }
   if (parsed.help) {
-    ui.log("Usage: backed init");
+    ui.log(`Usage: ${formatCliCommand(COMMANDS.INIT)}`);
     ui.log("  Creates .backed/config.yaml in the current directory.");
     return;
   }

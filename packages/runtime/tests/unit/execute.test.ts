@@ -1,4 +1,4 @@
-import type { SqlParameter } from "@backed/compiler";
+import type { SqlParameter } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { createOntologyQueryRuntime } from "../../src/index.js";

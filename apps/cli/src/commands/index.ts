@@ -1,9 +1,5 @@
+export { deployCommand } from "./deploy.js";
 export { initCommand } from "./init.js";
-export { discoverCommand } from "./discover.js";
-export { inspectCommand } from "./inspect.js";
-export { reviewCommand } from "./review.js";
-export { publishCommand } from "./publish.js";
-export { rollbackCommand } from "./rollback.js";
-export { diffCommand } from "./diff.js";
-export { validateCommand } from "./validate.js";
-export { serveCommand } from "./serve.js";
+export { pullCommand } from "./pull.js";
+export { syncCommand } from "./sync.js";
+export { versionCommand } from "./version.js";

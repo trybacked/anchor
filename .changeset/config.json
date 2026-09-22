@@ -7,14 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@backed/cli",
-    "@backed/diff",
-    "@backed/discovery",
-    "@backed/compiler",
-    "@backed/mcp",
-    "@backed/registry",
-    "@backed/runtime",
-    "@backed/provider-databricks"
-  ]
+  "ignore": ["@backed/diff"]
 }

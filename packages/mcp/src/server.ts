@@ -1,7 +1,7 @@
-import type { OntologyQueryRuntime } from "@backed/runtime";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { SemanticModel } from "@trybacked/core";
+import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import type { McpSurfaceTool } from "./constants.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";

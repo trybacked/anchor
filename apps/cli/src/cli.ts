@@ -1,91 +1,95 @@
 #!/usr/bin/env node
 import {
-  diffCommand,
-  discoverCommand,
-  initCommand,
-  inspectCommand,
-  publishCommand,
-  reviewCommand,
-  rollbackCommand,
-  serveCommand,
-  validateCommand,
-} from "./commands/index.js";
-import { COMMANDS as CLI_COMMAND_NAMES, isHelpFlag } from "./config.js";
+  ANCHOR_COMMAND_NAMES,
+  ANCHOR_COMMANDS,
+  dispatchAnchorCommand,
+  UnknownAnchorCommandError,
+} from "./anchor-commands.js";
+import { printCliVersion } from "./commands/version.js";
+import { formatCliCommand, isHelpFlag, isVersionFlag, SERVICES } from "./config.js";
 import { loadWorkspaceDotEnv } from "./env.js";
-import type { Command } from "./types.js";
-import { getUi, initUi, printHelp } from "./ui/index.js";
-export const COMMANDS: readonly Command[] = [
-  {
-    name: CLI_COMMAND_NAMES.INIT,
-    description: "Initialize an Anchor workspace (.backed/config.yaml)",
-    handler: initCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.INSPECT,
-    description: "List datasets and columns from the Databricks SQL warehouse",
-    handler: inspectCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.DISCOVER,
-    description: "Profile Databricks datasets → proposed ontology (no LLM)",
-    handler: discoverCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.REVIEW,
-    description: "Human review (risk-ranked questions) → model.yaml",
-    handler: reviewCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.PUBLISH,
-    description: "Publish reviewed ontology (registry + publication.json)",
-    handler: publishCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.ROLLBACK,
-    description: "Restore a previous published ontology version",
-    handler: rollbackCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.DIFF,
-    description: "Compare the last two runs or published versions",
-    handler: diffCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.VALIDATE,
-    description: "Structural validation of model.yaml (schema + references)",
-    handler: validateCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.SERVE,
-    description: "MCP server on the published ontology (deterministic tools)",
-    handler: serveCommand,
-  },
-];
+import { getUi, initUi, printAnchorHelp, printRootHelp } from "./ui/index.js";
+
+export const COMMANDS = ANCHOR_COMMANDS;
+
 export function printCliHelp(): void {
-  printHelp(getUi(), COMMANDS);
+  printRootHelp(getUi());
 }
+
 function loadDotEnv(): void {
   loadWorkspaceDotEnv(process.cwd());
 }
+
+async function runAnchorCommand(commandName: string, args: string[]): Promise<void> {
+  try {
+    await dispatchAnchorCommand(commandName, args);
+  } catch (error) {
+    if (error instanceof UnknownAnchorCommandError) {
+      const ui = getUi();
+      ui.writeError(error.message);
+      ui.blank();
+      printAnchorHelp(ui, ANCHOR_COMMANDS);
+      process.exitCode = 1;
+      return;
+    }
+    throw error;
+  }
+}
+
 async function main(): Promise<void> {
   initUi();
-  const [, , commandName, ...args] = process.argv;
-  if (!commandName || isHelpFlag(commandName)) {
-    printCliHelp();
+  const argv = process.argv.slice(2);
+
+  if (argv.length === 0 || isHelpFlag(argv[0] ?? "")) {
+    printRootHelp(getUi());
     return;
   }
-  const command = COMMANDS.find((c) => c.name === commandName);
-  if (!command) {
+
+  const first = argv[0];
+  if (first === undefined) {
+    printRootHelp(getUi());
+    return;
+  }
+  const second = argv[1];
+  const rest = argv.slice(2);
+
+  if (isVersionFlag(first)) {
+    printCliVersion();
+    return;
+  }
+
+  if (first === SERVICES.ANCHOR) {
+    if (second === undefined || isHelpFlag(second)) {
+      printAnchorHelp(getUi(), ANCHOR_COMMANDS);
+      return;
+    }
+    loadDotEnv();
+    await runAnchorCommand(second, rest);
+    return;
+  }
+
+  const legacyAliases: Record<string, string> = {
+    discover: "pull",
+    serve: "deploy",
+    publish: "sync",
+    register: "sync",
+  };
+  if (legacyAliases[first] !== undefined || ANCHOR_COMMAND_NAMES.has(first)) {
     const ui = getUi();
-    ui.writeError(`Unknown command: ${commandName}`);
-    ui.blank();
-    printCliHelp();
-    process.exitCode = 1;
+    const canonical = legacyAliases[first] ?? first;
+    ui.log(ui.dim(`Prefer ${formatCliCommand(canonical)} — running top-level alias.`));
+    loadDotEnv();
+    await runAnchorCommand(first, argv.slice(1));
     return;
   }
-  loadDotEnv();
-  await command.handler(args);
+
+  const ui = getUi();
+  ui.writeError(`Unknown command: ${first}`);
+  ui.blank();
+  printRootHelp(ui);
+  process.exitCode = 1;
 }
+
 main().catch((error: unknown) => {
   const ui = getUi();
   ui.writeError(error instanceof Error ? error.message : String(error));

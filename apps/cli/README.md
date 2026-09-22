@@ -1,19 +1,6 @@
-# @backed/cli
+# @trybacked/cli
 
-Local-first **`backed`** command-line interface. Orchestration only — domain logic lives in `@backed/runner` and `@trybacked/core`.
-
-User-facing copy is English. Errors exit with code `1`.
-
----
-
-## Documentation
-
-| Resource                                            | Contents                    |
-| --------------------------------------------------- | --------------------------- |
-| [Operations guide](../../docs/OPERATIONS.md)        | Full workspace workflow     |
-| [Governance](../../docs/GOVERNANCE.md)              | validate, publish, rollback |
-| [Providers](../../docs/PROVIDERS.md)                | DuckDB and Databricks       |
-| [CLI index](../../docs/README.md#cli-command-index) | All commands                |
+**`backed`** command-line interface for the Anchor ontology engine.
 
 ---
 
@@ -21,33 +8,25 @@ User-facing copy is English. Errors exit with code `1`.
 
 ```bash
 cd your-workspace
-mkdir -p sources
-backed init
-backed model          # requires AI_GATEWAY_API_KEY in .env
-backed review
-backed validate
-backed serve
+backed anchor init
+backed anchor pull        # Databricks env in .env → model.yaml
+backed anchor sync
+backed anchor deploy
 ```
 
-Global install from monorepo: `pnpm build && cd apps/cli && pnpm link --global`.
+Global install: `pnpm build && cd apps/cli && pnpm link --global`.
 
 ---
 
 ## Commands
 
-| Command            | Purpose                                                |
-| ------------------ | ------------------------------------------------------ |
-| `init`             | Interactive `.backed/config.yaml`                      |
-| `model`            | Ingest → profile → proposal                            |
-| `inspect`          | Dataset catalog (`--databricks`)                       |
-| `discover`         | Deterministic discovery (`--snapshot`, `--databricks`) |
-| `review`           | Steward review → workspace ontology                    |
-| `validate`         | Schema and ontology checks                             |
-| `publish`          | Publication registry (`--status`)                      |
-| `rollback`         | Restore prior publication                              |
-| `diff`             | Run or ontology diff (`--ontology`)                    |
-| `serve`            | MCP over the agreed ontology                           |
-| `gateway`          | AI Gateway key                                         |
-| `login` / `logout` | Optional telemetry auth                                |
+| Command  | Purpose                                          |
+| -------- | ------------------------------------------------ |
+| `init`   | Workspace `.backed/config.yaml`                  |
+| `pull`   | Warehouse schema → `model.yaml`                  |
+| `sync`   | Versioned registry snapshot (`--status` to list) |
+| `deploy` | MCP for agents                                   |
 
-See `backed <command> --help` for flags.
+Top level: `backed version` · `backed anchor …`
+
+Legacy aliases: `discover` → `pull`, `register` / `publish` → `sync`, `serve` → `deploy`.
