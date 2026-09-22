@@ -1,24 +1,18 @@
 import path from "node:path";
 import { z } from "zod";
-import { DocumentTypeHintConfigSchema } from "./document-type-hints.js";
-import type { DocumentTypeHintConfig } from "./document-type-hints.js";
-import { DomainVocabularySchema } from "./domain.js";
-export const DEFAULT_SOURCES_DIR = "./sources";
-export const EMPTY_DOCUMENT_TYPE_HINTS: DocumentTypeHintConfig[] = [];
-export const DocumentTypeHintsSchema = z.array(DocumentTypeHintConfigSchema);
 export const BACKED_DIR_NAME = ".backed";
 export const CONFIG_FILE_NAME = "config.yaml";
 export const RUNS_DIR_NAME = "runs";
 export const MODEL_FILE_NAME = "model.yaml";
-export const DATA_FILE_NAME = "data.duckdb";
 const RUN_ID_ISO_MILLIS_SUFFIX_PATTERN = /\.\d{3}Z$/;
 const RUN_ID_RANDOM_SUFFIX_START = 2;
 const RUN_ID_RANDOM_SUFFIX_END = 6;
 const RUN_ID_RANDOM_SUFFIX_PAD_LENGTH = 4;
 export const RUN_ARTIFACTS = {
   profile: "profile.json",
-  documents: "documents.json",
-  vocabulary: "vocabulary.json",
+  discovery: "discovery.json",
+  lifecycle: "lifecycle.json",
+  audit: "audit.json",
   proposal: "proposal.json",
   review: "review.json",
   diff: "diff.json",
@@ -27,25 +21,15 @@ export const RUN_ARTIFACTS = {
  *
  */
 export type RunArtifactName = keyof typeof RUN_ARTIFACTS;
-const WorkspaceConfigInputSchema = z.object({
-  sourcesDir: z.string().min(1),
-  documentTypeHints: z.array(DocumentTypeHintConfigSchema).optional(),
-  domain: DomainVocabularySchema.partial().optional(),
+export const WorkspaceConfigSchema = z.object({
+  /** Ontology identifier; defaults to the workspace folder name when omitted. */
+  ontologyId: z.string().min(1).optional(),
 });
-export const WorkspaceConfigSchema = WorkspaceConfigInputSchema.transform((config) => ({
-  sourcesDir: config.sourcesDir,
-  documentTypeHints: config.documentTypeHints ?? EMPTY_DOCUMENT_TYPE_HINTS,
-  domain: config.domain,
-}));
 /**
  *
  */
 export type WorkspaceConfig = z.infer<typeof WorkspaceConfigSchema>;
-export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {
-  sourcesDir: DEFAULT_SOURCES_DIR,
-  documentTypeHints: EMPTY_DOCUMENT_TYPE_HINTS,
-  domain: undefined,
-};
+export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {};
 /**
  *
  */
@@ -54,9 +38,7 @@ export interface WorkspacePaths {
   backedDir: string;
   configPath: string;
   runsDir: string;
-  llmCacheDir: string;
   modelPath: string;
-  dataPath: string;
   runDir: (runId: string) => string;
   artifactPath: (runId: string, artifact: RunArtifactName) => string;
 }
@@ -69,9 +51,7 @@ export function workspacePaths(root: string): WorkspacePaths {
     backedDir,
     configPath: path.join(backedDir, CONFIG_FILE_NAME),
     runsDir,
-    llmCacheDir: path.join(backedDir, "cache", "llm"),
     modelPath: path.join(root, MODEL_FILE_NAME),
-    dataPath: path.join(backedDir, DATA_FILE_NAME),
     runDir: (runId) => path.join(runsDir, runId),
     artifactPath: (runId, artifact) => path.join(runsDir, runId, RUN_ARTIFACTS[artifact]),
   };

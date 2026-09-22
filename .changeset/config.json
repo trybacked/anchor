@@ -3,19 +3,18 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@trybacked/core", "@trybacked/anchor"]],
+  "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@backed/auth-api",
     "@backed/cli",
-    "@backed/worker-service",
     "@backed/diff",
-    "@backed/ingest",
+    "@backed/discovery",
+    "@backed/compiler",
     "@backed/mcp",
-    "@backed/profile",
-    "@backed/runner",
-    "@backed/semantic"
+    "@backed/registry",
+    "@backed/runtime",
+    "@backed/provider-databricks"
   ]
 }

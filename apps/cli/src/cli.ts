@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import {
   diffCommand,
-  gatewayCommand,
+  discoverCommand,
   initCommand,
-  loginCommand,
-  logoutCommand,
-  modelCommand,
+  inspectCommand,
+  publishCommand,
   reviewCommand,
+  rollbackCommand,
   serveCommand,
+  validateCommand,
 } from "./commands/index.js";
 import { COMMANDS as CLI_COMMAND_NAMES, isHelpFlag } from "./config.js";
 import { loadWorkspaceDotEnv } from "./env.js";
@@ -16,28 +17,18 @@ import { getUi, initUi, printHelp } from "./ui/index.js";
 export const COMMANDS: readonly Command[] = [
   {
     name: CLI_COMMAND_NAMES.INIT,
-    description: "Initialize workspace (interactive document type setup)",
+    description: "Initialize an Anchor workspace (.backed/config.yaml)",
     handler: initCommand,
   },
   {
-    name: CLI_COMMAND_NAMES.GATEWAY,
-    description: "Save Vercel AI Gateway API key to workspace .env",
-    handler: gatewayCommand,
+    name: CLI_COMMAND_NAMES.INSPECT,
+    description: "List datasets and columns from the Databricks SQL warehouse",
+    handler: inspectCommand,
   },
   {
-    name: CLI_COMMAND_NAMES.LOGIN,
-    description: "Sign in to your Backed account (device authorization)",
-    handler: loginCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.LOGOUT,
-    description: "Sign out of your Backed account on this machine",
-    handler: logoutCommand,
-  },
-  {
-    name: CLI_COMMAND_NAMES.MODEL,
-    description: "Ingest + profile + semantic → ontology proposal",
-    handler: modelCommand,
+    name: CLI_COMMAND_NAMES.DISCOVER,
+    description: "Profile Databricks datasets → proposed ontology (no LLM)",
+    handler: discoverCommand,
   },
   {
     name: CLI_COMMAND_NAMES.REVIEW,
@@ -45,13 +36,28 @@ export const COMMANDS: readonly Command[] = [
     handler: reviewCommand,
   },
   {
+    name: CLI_COMMAND_NAMES.PUBLISH,
+    description: "Publish reviewed ontology (registry + publication.json)",
+    handler: publishCommand,
+  },
+  {
+    name: CLI_COMMAND_NAMES.ROLLBACK,
+    description: "Restore a previous published ontology version",
+    handler: rollbackCommand,
+  },
+  {
     name: CLI_COMMAND_NAMES.DIFF,
-    description: "Compare the last two runs",
+    description: "Compare the last two runs or published versions",
     handler: diffCommand,
   },
   {
+    name: CLI_COMMAND_NAMES.VALIDATE,
+    description: "Structural validation of model.yaml (schema + references)",
+    handler: validateCommand,
+  },
+  {
     name: CLI_COMMAND_NAMES.SERVE,
-    description: "Authenticated MCP server on model.yaml (5 deterministic operations)",
+    description: "MCP server on the published ontology (deterministic tools)",
     handler: serveCommand,
   },
 ];

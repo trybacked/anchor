@@ -1,6 +1,8 @@
-# Anchor model format v1
+# Serialization format v1
 
-Normative specification for **`model.yaml`** — the committable semantic model produced by Anchor.
+Normative layout of the **workspace ontology file** (`model.yaml`). The conceptual model — objects, properties, relationships, logic, actions — is specified in [Ontology](./ONTOLOGY.md). This document describes the v1 keys used on disk.
+
+**Documentation hub:** [docs/README.md](./README.md) · **Governance:** [GOVERNANCE.md](./GOVERNANCE.md)
 
 **Machine-readable schema:** [`schema/anchor-schema-v1.json`](../schema/anchor-schema-v1.json) (generated from Zod in `@trybacked/core`).
 
@@ -10,7 +12,7 @@ Normative specification for **`model.yaml`** — the committable semantic model 
 
 ## Purpose
 
-`model.yaml` contains no row data. It describes **entities**, **properties**, **relations**, and **rules** inferred from organizational sources, with provenance and review status on every element.
+The file contains no row data. It serializes the ontology as **entities** (objects), **properties**, **relations** (relationships), and **rules** (logic), with provenance and review status on every element. Actions are not part of this file version.
 
 Implementations in any language should validate against `anchor-schema-v1.json`.
 

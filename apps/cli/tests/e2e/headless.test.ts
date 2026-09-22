@@ -14,20 +14,14 @@ describe("headless CLI", () => {
 
   it("init completes without a TTY", async () => {
     tempWorkspace = await createTempWorkspace("backed-headless-init-");
-    const result = await runCli(
-      ["init", "--sources", "./sources", "--rules", '{"documentTypeHints":[]}', "-y"],
-      tempWorkspace,
-    );
+    const result = await runCli(["init"], tempWorkspace);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Workspace initialized");
   });
 
   it("review exits cleanly without a TTY when a proposal exists", async () => {
     tempWorkspace = await createTempWorkspace("backed-headless-review-");
-    await runCli(
-      ["init", "--sources", "./sources", "--rules", '{"documentTypeHints":[]}', "-y"],
-      tempWorkspace,
-    );
+    await runCli(["init"], tempWorkspace);
     const runDir = join(tempWorkspace, ".backed", "runs", "20260101T120000-test");
     await mkdir(runDir, { recursive: true });
     await writeFile(
@@ -57,19 +51,5 @@ describe("headless CLI", () => {
     const result = await runCli(["review"], tempWorkspace, process.env, 10_000);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Review pending");
-  });
-
-  it("model does not hang without a TTY", async () => {
-    tempWorkspace = await createTempWorkspace("backed-headless-model-");
-    const sourcesDir = join(tempWorkspace, "sources");
-    await mkdir(sourcesDir, { recursive: true });
-    await writeFile(join(sourcesDir, "customers.csv"), "id,name\n1,Acme\n", "utf8");
-    await runCli(
-      ["init", "--sources", "./sources", "--rules", '{"documentTypeHints":[]}', "-y"],
-      tempWorkspace,
-    );
-    const result = await runCli(["model", "--no-embed"], tempWorkspace, process.env, 20_000);
-    expect(result.exitCode).not.toBeNull();
-    expect(result.stdout.length + result.stderr.length).toBeGreaterThan(0);
   });
 });

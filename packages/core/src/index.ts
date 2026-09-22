@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
- * Shared Anchor primitives: semantic model schemas, workspace layout, review workflow,
- * document catalog types, and query helpers used by `@trybacked/anchor` and internal packages.
+ * Anchor ontology contract: ontology spec, dataset provider interface, workspace layout,
+ * review workflow, and model.yaml v1 serialization used by internal packages.
  */
 /** Published npm package name. */
 export const PACKAGE_NAME = "@trybacked/core" as const;
@@ -109,159 +109,13 @@ export {
   CONFIG_FILE_NAME,
   RUNS_DIR_NAME,
   MODEL_FILE_NAME,
-  DATA_FILE_NAME,
   RUN_ARTIFACTS,
-  DEFAULT_SOURCES_DIR,
-  EMPTY_DOCUMENT_TYPE_HINTS,
   DEFAULT_WORKSPACE_CONFIG,
-  DocumentTypeHintsSchema,
   WorkspaceConfigSchema,
   workspacePaths,
   createRunId,
 } from "./workspace.js";
 export type { RunArtifactName, WorkspaceConfig, WorkspacePaths } from "./workspace.js";
-export { DocumentTypeHintConfigSchema } from "./document-type-hints.js";
-export type { DocumentTypeHintConfig } from "./document-type-hints.js";
-export {
-  MIN_TRAVERSE_DEPTH,
-  MAX_TRAVERSE_DEPTH,
-  clampTraverseDepth,
-  buildRelationPath,
-  resolveRelationPath,
-} from "./graph-traverse.js";
-export type {
-  GraphTraverseRequest,
-  GraphTraverser,
-  RelationHop,
-  RelationPathSegment,
-  TraverseDirection,
-} from "./graph-traverse.js";
-export { DEFAULT_ROW_LIMIT, MAX_ROW_LIMIT } from "./data-query.js";
-export { ROW_FILTER_OPS } from "./data-query.js";
-export type {
-  RowFilter,
-  RowFilterOp,
-  EntityRowRequest,
-  RowReader,
-  EntityAggregateRequest,
-  AggregateReader,
-} from "./data-query.js";
-export {
-  AGGREGATE_OPS,
-  DEFAULT_OBJECT_QUERY_LIMIT,
-  MAX_OBJECT_QUERY_LIMIT,
-} from "./object-query.js";
-export { resolveAggregationAlias } from "./object-query.js";
-export type {
-  AggregateOp,
-  AggregateOpKind,
-  ObjectQueryExecutor,
-  ObjectQueryReader,
-  ObjectQueryRequest,
-  ObjectSetDefinition,
-  TableObjectQueryRequest,
-  TimeRange,
-} from "./object-query.js";
-export {
-  DEFAULT_PROFILE_MATCH_LIMIT,
-  MAX_PROFILE_MATCH_LIMIT,
-  DEFAULT_PROFILE_FACT_LIMIT,
-  DEFAULT_PROFILE_DOCUMENT_LIMIT,
-  MAX_PROFILE_ROW_LIMIT,
-} from "./entity-profile.js";
-export type {
-  EntityProfileRequest,
-  EntityProfileResult,
-  EntityProfileReader,
-} from "./entity-profile.js";
-export {
-  DEFAULT_ENTITY_SEARCH_LIMIT,
-  MAX_ENTITY_SEARCH_LIMIT,
-  DEFAULT_ENTITY_SEARCH_MIN_SCORE,
-  INDEXED_ONTOLOGY_TABLES,
-  isIndexedOntologyTable,
-} from "./entity-search.js";
-export type { EntitySearchMode, EntitySearchRequest, EntitySearcher } from "./entity-search.js";
-export {
-  DocumentFieldSchema,
-  DocumentCatalogEntrySchema,
-  DocumentTypeSummarySchema,
-  DocumentCatalogSchema,
-  DOCUMENT_LINES_TABLE,
-  documentTypeTableName,
-} from "./document-catalog.js";
-export type {
-  DocumentField,
-  DocumentCatalogEntry,
-  DocumentTypeSummary,
-  DocumentCatalog,
-} from "./document-catalog.js";
-export {
-  DOCUMENT_INFRASTRUCTURE_COLUMNS,
-  DOCUMENT_ENRICHMENT_FIELD_TOPICS,
-  DOCUMENT_ENRICHMENT_FIELD_SUMMARY,
-  normalizeDocumentFieldKey,
-  documentField,
-  fieldsFromRecord,
-  collectDocumentFieldKeys,
-  getDocumentFieldValue,
-  mergeDocumentFields,
-  isDocumentInfrastructureColumn,
-  enrichmentFieldValues,
-  hasEnrichmentFieldValues,
-  longestDocumentFieldValue,
-} from "./document-fields.js";
-export type { DocumentInfrastructureColumn } from "./document-fields.js";
-export { normalizeComparableLine } from "./text-normalize.js";
-export {
-  DOCUMENT_CHUNKS_TABLE,
-  DEFAULT_CHUNK_SIZE,
-  MAX_CHUNK_SIZE,
-  DEFAULT_CHUNK_OVERLAP,
-  DEFAULT_CHUNK_SEARCH_LIMIT,
-  MAX_CHUNK_SEARCH_LIMIT,
-  DEFAULT_CHUNK_SEARCH_MIN_SCORE,
-  DEFAULT_EMBEDDING_DIMENSION,
-} from "./document-chunk.js";
-export type {
-  ChunkSearchRequest,
-  ChunkSearcher,
-  ChunkSearchMode,
-  QueryEmbedder,
-} from "./document-chunk.js";
-export {
-  DOCUMENT_MENTIONS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENT_FACTS_TABLE,
-  ENTITY_PROFILES_TABLE,
-  ENTITY_MENTION_TYPE,
-  MENTION_CONTEXT_MAX_CHARS,
-  MENTION_CONTEXT_LINE_RADIUS,
-} from "./document-mentions.js";
-export {
-  DomainTermSchema,
-  FactTypeSchema,
-  IdentifierFormatSchema,
-  NameConventionSchema,
-  DomainVocabularySchema,
-  NUMBER_FORMATS,
-  DATE_ORDERS,
-  EMPTY_DOMAIN_VOCABULARY,
-  describeTerms,
-  mergeVocabulary,
-  termIds,
-} from "./domain.js";
-export type {
-  DateOrder,
-  DomainTerm,
-  DomainVocabulary,
-  DomainVocabularyOverrides,
-  FactType,
-  IdentifierFormat,
-  NameConvention,
-  NumberFormat,
-} from "./domain.js";
-export { parseLocalizedNumber } from "./numbers.js";
 export {
   writeWorkspaceConfig,
   patchWorkspaceConfig,
@@ -269,12 +123,108 @@ export {
 } from "./workspace-config.js";
 export { writeRunArtifact, readRunArtifact, hasRunArtifact, listRunIds } from "./run-artifacts.js";
 export { serializeModelYaml, parseModelYaml, writeModelYaml, readModelYaml } from "./model-yaml.js";
-export {
-  ModelElementKindSchema,
-  PatchModelElementSchema,
-  ModelElementNotFoundError,
-  patchModelElement,
-} from "./model-patch.js";
-export type { ModelElementKind, PatchModelElement } from "./model-patch.js";
 export { ModelSearchMatchKindSchema, ModelSearchMatchSchema } from "./model-search-match.js";
 export type { ModelSearchMatch } from "./model-search-match.js";
+export {
+  AUDIT_LOG_FILE_NAME,
+  PUBLICATION_FILE_NAME,
+  appendAuditEvents,
+  auditLogPath,
+  publicationPath,
+  readAuditLog,
+} from "./audit-log.js";
+export {
+  DatasetInspectionSchema,
+  DatasetInspectionTableSchema,
+  DiscoveryReportSchema,
+  ONTOLOGY_FORMAT_VERSION,
+  OntologyLifecycleStageSchema,
+  AuditActionSchema,
+  AuditActorSchema,
+  AuditEventSchema,
+  AuditLogSchema,
+  EMPTY_AUDIT_LOG,
+  applyReviewLifecycle,
+  buildAutoConfirmAuditEvents,
+  buildPublishAuditEvent,
+  buildRollbackAuditEvent,
+  buildReviewAuditEvents,
+  diffOntology,
+  formatOntologyDiff,
+  hasBreakingOntologyChanges,
+  OntologyDiffChangeKindSchema,
+  OntologyDiffChangeSchema,
+  OntologyDiffSchema,
+  canAdvanceLifecycle,
+  isGovernedLifecycleStage,
+  lifecycleFromModelStatus,
+  lifecycleStageIndex,
+  markOntologyPublished,
+  mergeAuditLogs,
+  GovernanceElementKindSchema,
+  OntologyGovernanceError,
+  OntologyGovernancePatchSchema,
+  applyOntologyGovernancePatch,
+  buildGovernanceAuditEvent,
+  isGovernancePatchAction,
+  OntologyActionHandlerSchema,
+  OntologyActionInputSchema,
+  OntologyActionSchema,
+  OntologyLogicSchema,
+  OntologyMetadataSchema,
+  OntologyObjectSchema,
+  OntologyPropertyRoleSchema,
+  OntologyPropertySchema,
+  OntologyPropertyTypeSchema,
+  OntologyProvenanceSchema,
+  OntologyRelationshipCardinalitySchema,
+  OntologyRelationshipSchema,
+  OntologySchema,
+  mergeValidationResults,
+  semanticModelToOntology,
+  validateOntology,
+  validateSemanticModel,
+  validationResult,
+} from "./ontology/index.js";
+export type {
+  AuditAction,
+  AuditActor,
+  AuditEvent,
+  AuditLog,
+  DatasetInspection,
+  DatasetInspectionTable,
+  DiscoveryReport,
+  OntologyLifecycleStage,
+  OntologyDiff,
+  OntologyDiffChange,
+  OntologyDiffChangeKind,
+  ApplyReviewLifecycleOptions,
+  ReviewLifecycleResult,
+  GovernanceElementKind,
+  GovernancePatchAction,
+  OntologyGovernancePatch,
+  Dataset,
+  DatasetColumn,
+  DatasetColumnStatistics,
+  DatasetIdentifier,
+  DatasetMetadata,
+  DatasetProvider,
+  DatasetSample,
+  DatasetSchema,
+  DatasetStatistics,
+  Ontology,
+  OntologyAction,
+  OntologyLogic,
+  OntologyMetadata,
+  OntologyObject,
+  OntologyProperty,
+  OntologyPropertyRole,
+  OntologyPropertyType,
+  OntologyProvenance,
+  OntologyRelationship,
+  OntologyRelationshipCardinality,
+  SampleOptions,
+  ValidationIssue,
+  ValidationResult,
+  ValidationSeverity,
+} from "./ontology/index.js";

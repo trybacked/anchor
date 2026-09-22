@@ -18,6 +18,8 @@
     "test:coverage": "vitest run --config vitest.config.ts --coverage"
   },
   "dependencies": {
+    "@backed/compiler": "workspace:*",
+    "@backed/runtime": "workspace:*",
     "@trybacked/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.24.1"

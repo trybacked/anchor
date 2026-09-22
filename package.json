@@ -18,9 +18,6 @@
     "version-packages": "changeset version && pnpm install --lockfile-only --ignore-scripts",
     "release": "pnpm build && changeset publish",
     "cli": "node apps/cli/dist/cli.js",
-    "auth-api": "node apps/auth-api/dist/index.js",
-    "compare:ontology": "pnpm --filter @backed/semantic run compare:ontology",
-    "compare:ontology:complex": "pnpm --filter @backed/semantic run compare:ontology:complex",
     "generate:schema": "pnpm --filter @trybacked/core run generate:schema"
   },
   "devDependencies": {

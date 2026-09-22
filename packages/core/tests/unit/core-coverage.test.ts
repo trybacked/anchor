@@ -3,19 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MODEL_FORMAT_VERSION } from "../../src/constants.js";
-import {
-  collectDocumentFieldKeys,
-  documentField,
-  enrichmentFieldValues,
-  fieldsFromRecord,
-  getDocumentFieldValue,
-  hasEnrichmentFieldValues,
-  isDocumentInfrastructureColumn,
-  longestDocumentFieldValue,
-  mergeDocumentFields,
-  normalizeDocumentFieldKey,
-} from "../../src/document-fields.js";
-import type { DocumentCatalogEntry } from "../../src/document-catalog.js";
 import type { SemanticModel } from "../../src/model.js";
 import {
   parseModelYaml,
@@ -36,13 +23,6 @@ import {
   writeWorkspaceConfig,
 } from "../../src/workspace-config.js";
 import { createRunId, workspacePaths } from "../../src/workspace.js";
-import {
-  describeTerms,
-  EMPTY_DOMAIN_VOCABULARY,
-  mergeVocabulary,
-  termIds,
-} from "../../src/domain.js";
-import { isIndexedOntologyTable } from "../../src/entity-search.js";
 
 const MINIMAL_MODEL: SemanticModel = {
   metadata: {
@@ -109,14 +89,10 @@ describe("workspace config IO", () => {
   });
 
   it("writes, reads, and patches workspace config", () => {
-    writeWorkspaceConfig(root, {
-      sourcesDir: "./sources",
-      documentTypeHints: [],
-      domain: undefined,
-    });
-    expect(readWorkspaceConfig(root).sourcesDir).toBe("./sources");
-    patchWorkspaceConfig(root, { sourcesDir: "./data" });
-    expect(readWorkspaceConfig(root).sourcesDir).toBe("./data");
+    writeWorkspaceConfig(root, {});
+    expect(readWorkspaceConfig(root).ontologyId).toBeUndefined();
+    patchWorkspaceConfig(root, { ontologyId: "demo" });
+    expect(readWorkspaceConfig(root).ontologyId).toBe("demo");
   });
 
   it("throws when config is missing", async () => {
@@ -150,63 +126,5 @@ describe("run artifacts", () => {
       /Missing artifact/,
     );
     expect(listRunIds("/missing-root")).toEqual([]);
-  });
-});
-
-describe("document fields", () => {
-  const document: DocumentCatalogEntry = {
-    sourceTable: "doc_demo_pdf",
-    sourceFile: "demo.pdf",
-    pageCount: 1,
-    documentType: "invoice",
-    documentTypeLabel: "Invoice",
-    confidence: 0.9,
-    fields: {
-      summary: documentField("hello", 0.8),
-      topics: documentField("finance", 0.7),
-    },
-  };
-
-  it("normalizes keys and reads field values", () => {
-    expect(normalizeDocumentFieldKey(" Invoice Number ")).toBe("invoice_number");
-    expect(getDocumentFieldValue(document, "Summary")).toBe("hello");
-  });
-
-  it("builds fields from records and merges updates", () => {
-    const fields = fieldsFromRecord({ "Line Total": "10" }, 0.5);
-    expect(fields.line_total?.value).toBe("10");
-    expect(mergeDocumentFields(document.fields, fields)).toMatchObject(fields);
-  });
-
-  it("collects keys and enrichment helpers", () => {
-    expect(collectDocumentFieldKeys([document])).toEqual(["summary", "topics"]);
-    expect(enrichmentFieldValues(document).summary).toBe("hello");
-    expect(hasEnrichmentFieldValues(enrichmentFieldValues(document))).toBe(true);
-    expect(
-      longestDocumentFieldValue({
-        ...document,
-        fields: {
-          summary: documentField("a".repeat(25), 0.8),
-        },
-      }),
-    ).toHaveLength(25);
-    expect(isDocumentInfrastructureColumn("document_id")).toBe(true);
-  });
-});
-
-describe("domain and entity search helpers", () => {
-  it("merges vocabulary overrides and lists term ids", () => {
-    const merged = mergeVocabulary(EMPTY_DOMAIN_VOCABULARY, {
-      entityLabel: "organization",
-      documentTopics: [{ id: "finance", label: "Finance", description: "Finance docs" }],
-    });
-    expect(merged.entityLabel).toBe("organization");
-    expect(termIds(merged.documentTopics)).toEqual(["finance"]);
-    expect(describeTerms(merged.documentTopics)).toContain("Finance");
-  });
-
-  it("detects indexed ontology tables", () => {
-    expect(isIndexedOntologyTable("entity_profiles")).toBe(true);
-    expect(isIndexedOntologyTable("customers")).toBe(false);
   });
 });
