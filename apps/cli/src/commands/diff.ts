@@ -1,5 +1,6 @@
 import { diffRuns, formatDiff } from "@backed/diff";
 import type { RunSnapshot } from "@backed/diff";
+import { listPublicationVersions, readPublicationByVersion } from "@backed/registry";
 import {
   ProfileReportSchema,
   ProposalSchema,
@@ -7,9 +8,7 @@ import {
   formatOntologyDiff,
   hasBreakingOntologyChanges,
   hasRunArtifact,
-  listPublicationVersions,
   listRunIds,
-  readPublicationByVersion,
   readRunArtifact,
   writeRunArtifact,
 } from "@trybacked/core";

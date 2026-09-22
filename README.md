@@ -16,7 +16,9 @@
   </p>
 </div>
 
-Organizations hold data in warehouses, exports, and documents. They rarely hold a single, auditable definition of what that data **means**. Anchor produces that definition: a **governed ontology** above your sources, without replacing the systems that store the rows.
+Organizations hold curated datasets in their warehouse. They rarely hold a single, auditable definition of what that data **means**. Anchor produces that definition: a **governed ontology** above your datasets, without replacing the systems that store the rows.
+
+**Anchor does not turn raw data into datasets. Anchor turns datasets into meaning.** Ingestion, parsing, and storage belong to your data platform; Anchor starts where a structured, queryable dataset already exists.
 
 Stewards review what inference cannot confirm. Agents consume what the organization has published.
 
@@ -36,7 +38,7 @@ Each element records **confidence**, **provenance**, **review status**, and a **
 
 ```mermaid
 flowchart TB
-  datasets["Datasets"] --> objects["Objects"]
+  datasets["Curated datasets"] --> objects["Objects"]
   objects --> properties["Properties"]
   objects --> relationships["Relationships"]
   objects --> logic["Logic"]
@@ -48,7 +50,7 @@ flowchart TB
   registry --> agents["Agents"]
 ```
 
-Datasets become objects. Properties, relationships, logic, and actions describe those objects. The publication registry stores that version. Agents read the registry.
+Datasets become objects. Properties, relationships, logic, and actions describe those objects. The publication registry stores that version. Agents read the registry and query objects through it.
 
 Full specification: **[Ontology](./docs/ONTOLOGY.md)**.
 
@@ -56,45 +58,26 @@ Full specification: **[Ontology](./docs/ONTOLOGY.md)**.
 
 ## Operating model
 
-Anchor separates three responsibilities.
+The flow before Anchor stays in your platform: **files / databases / APIs → ingestion → warehouse pipeline → curated dataset**. Anchor begins at the curated dataset.
 
-| Stage         | Question                            | Mechanism                                         |
-| ------------- | ----------------------------------- | ------------------------------------------------- |
-| **Evidence**  | What does the data show?            | Deterministic profiling and discovery             |
-| **Proposal**  | What does it likely mean?           | Inference on statistics only — never row payloads |
-| **Agreement** | What has the organization accepted? | Review, validation, and versioned publication     |
+| Step          | Question                   | What happens                                                                  |
+| ------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| **Connect**   | Where is the data?         | A Databricks SQL warehouse, queried in place                                  |
+| **Evidence**  | What does the schema show? | Dataset profiles and a proposed set of objects, properties, and relationships |
+| **Agreement** | What do we accept?         | A steward reviews risk-ranked questions. Publish stores a numbered version    |
+| **Agents**    | What can an agent rely on? | Deterministic tools and object queries against the published version          |
 
 ```mermaid
 flowchart LR
-  subgraph connect["1 · Connect"]
-    files["Local sources"]
-    warehouse["Databricks"]
-  end
-
-  subgraph evidence["2 · Evidence"]
-    profile["Profile"]
-    discover["Discover"]
-  end
-
-  subgraph govern["3 · Govern"]
-    review["Review"]
-    publish["Publish"]
-  end
-
-  subgraph consume["4 · Consume"]
-    mcp["MCP"]
-  end
-
-  files --> profile
-  warehouse --> discover
-  profile --> review
-  discover --> review
-  review --> publish --> mcp
+  dataset["Curated dataset"] --> discovery["Discovery"]
+  discovery --> ontology["Ontology"]
+  ontology --> registry["Registry"]
+  registry --> compiler["Compiler"]
+  compiler --> runtime["Runtime"]
+  runtime --> databricks["Databricks SQL"]
 ```
 
-Default path: local files into a workspace snapshot, then proposal and review. Warehouse path: **Databricks** for inspect and discover, without copying the warehouse. See [Providers](./docs/PROVIDERS.md).
-
-Inference, when used, sends column names, types, and distributions to the endpoint you configure. Source files and cell values stay on your infrastructure. See [Security and data residency](./docs/SECURITY-AND-RESIDENCY.md).
+Discovery is deterministic: schema and statistics only, no language model. Rows never leave your warehouse; object queries run on it directly.
 
 ---
 
@@ -107,28 +90,28 @@ Inference, when used, sends column names, types, and distributions to the endpoi
 | [Architecture](./docs/ARCHITECTURE.md)                          | System design                            |
 | [Operations](./docs/OPERATIONS.md)                              | Workspace and CLI                        |
 | [Governance](./docs/GOVERNANCE.md)                              | Review, publish, rollback, audit         |
-| [Providers](./docs/PROVIDERS.md)                                | Local snapshot and Databricks            |
+| [Providers](./docs/PROVIDERS.md)                                | Databricks                               |
+| [Repository structure](./docs/STRUCTURE.md)                     | Monorepo map                             |
 | [Security and data residency](./docs/SECURITY-AND-RESIDENCY.md) | Security review                          |
 
 ---
 
 ## Capabilities
 
-| Capability  | Outcome                                                                                 |
-| ----------- | --------------------------------------------------------------------------------------- |
-| Workspace   | Local artifacts, snapshot, and a committable ontology                                   |
-| Discovery   | Deterministic objects and relationships from schema evidence                            |
-| Review      | Risk-ranked confirmation before anything is treated as agreed                           |
-| Publication | Numbered versions, archive, and rollback                                                |
-| Databricks  | Catalog inspect and discover against a SQL warehouse                                    |
-| Agents      | MCP over the agreed ontology, with no model call on the query path                      |
-| Hosted      | Same pipeline as a multi-tenant API ([worker service](./apps/worker-service/README.md)) |
+| Capability  | Outcome                                                            |
+| ----------- | ------------------------------------------------------------------ |
+| Workspace   | Local artifacts and a committable ontology                         |
+| Discovery   | Deterministic objects and relationships from schema evidence       |
+| Review      | Risk-ranked confirmation before anything is treated as agreed      |
+| Publication | Numbered versions, archive, and rollback                           |
+| Query       | Compiled, parameterized SQL over published objects                 |
+| Agents      | MCP over the agreed ontology, with no model call on the query path |
 
 ---
 
 ## Quick start
 
-**Requirements:** Node.js ≥ 22 · pnpm · [Vercel AI Gateway](https://vercel.com/ai-gateway) key for semantic proposal
+**Requirements:** Node.js ≥ 22 · pnpm · a Databricks SQL warehouse
 
 ```bash
 git clone https://github.com/trybacked/anchor.git
@@ -137,16 +120,15 @@ cd apps/cli && pnpm link --global
 ```
 
 ```bash
-mkdir -p sources
 backed init
-backed model
+backed discover
 backed review
 backed validate
 backed publish
 backed serve
 ```
 
-Environment: copy [`.env.example`](./.env.example). Databricks variables are required only for `--databricks`. Procedures: [Operations](./docs/OPERATIONS.md).
+Environment: copy [`.env.example`](./.env.example) and set `BACKED_DATABRICKS_HOST`, `BACKED_DATABRICKS_TOKEN`, `BACKED_DATABRICKS_WAREHOUSE_ID`. Procedures: [Operations](./docs/OPERATIONS.md).
 
 ---
 
@@ -155,17 +137,14 @@ Environment: copy [`.env.example`](./.env.example). Databricks variables are req
 | Command           | Phase   | Result                                                       |
 | ----------------- | ------- | ------------------------------------------------------------ |
 | `backed init`     | Setup   | Workspace configuration                                      |
-| `backed model`    | Build   | Ingest, profile, and semantic proposal                       |
-| `backed inspect`  | Connect | Dataset catalog (add `--databricks` for the warehouse)       |
-| `backed discover` | Connect | Deterministic discovery report                               |
+| `backed inspect`  | Connect | Dataset catalog from the SQL warehouse                       |
+| `backed discover` | Connect | Deterministic discovery report and review proposal           |
 | `backed review`   | Govern  | Steward decisions applied to the ontology                    |
 | `backed validate` | Govern  | Structural validation                                        |
 | `backed publish`  | Govern  | Version recorded in the registry (`--status` lists versions) |
 | `backed rollback` | Govern  | A prior published version restored                           |
 | `backed diff`     | Change  | Drift between runs (`--ontology` for breaking vs additive)   |
 | `backed serve`    | Consume | MCP server                                                   |
-| `backed gateway`  | Config  | Inference endpoint key                                       |
-| `backed login`    | Config  | Optional telemetry authentication                            |
 
 ---
 
@@ -173,13 +152,16 @@ Environment: copy [`.env.example`](./.env.example). Databricks variables are req
 
 `backed serve` answers from the agreed ontology. Responses are structured and schema-validated. There is no language model on this path.
 
-| Operation        | Returns                                                     |
-| ---------------- | ----------------------------------------------------------- |
-| `list_entities`  | Object catalog                                              |
-| `get_entity`     | Properties and provenance                                   |
-| `list_relations` | Relationships and cardinality                               |
-| `search_model`   | Search across objects, properties, relationships, and logic |
-| `get_definition` | A confirmed logic statement, or a structured miss           |
+| Operation        | Returns                                                       |
+| ---------------- | ------------------------------------------------------------- |
+| `list_entities`  | Object catalog                                                |
+| `get_entity`     | Properties and provenance                                     |
+| `list_relations` | Relationships and cardinality                                 |
+| `search_model`   | Search across objects, properties, relationships, and logic   |
+| `get_definition` | A confirmed logic statement, or a structured miss             |
+| `query_objects`  | Rows of one published object, with property filters and limit |
+
+`query_objects` is available when an ontology is published and the Databricks environment is configured. The query compiles to parameterized SQL from the published mappings and runs on your warehouse.
 
 Tool names follow the current MCP contract. They resolve the ontology primitives in [Ontology](./docs/ONTOLOGY.md).
 
@@ -187,18 +169,11 @@ Tool names follow the current MCP contract. They resolve the ontology primitives
 
 ## Data residency
 
-| Data                              | Leaves your infrastructure                                     |
-| --------------------------------- | -------------------------------------------------------------- |
-| Source files, rows, document text | No                                                             |
-| Agreed ontology                   | No, unless you publish it yourself (Git or hosted API)         |
-| Column statistics                 | Only to your configured inference endpoint, during proposal    |
-| Warehouse metadata                | Only to your Databricks workspace, when you use `--databricks` |
-
----
-
-## Hosted deployment
-
-The worker service runs the same stages for tenants that submit a corpus over HTTP. Uploaded bytes are removed after each run; derived artifacts and a deletion ledger remain. SDK: [`@trybacked/anchor`](./packages/anchor). Deployment: [worker service](./apps/worker-service/README.md).
+| Data               | Leaves your infrastructure                               |
+| ------------------ | -------------------------------------------------------- |
+| Rows               | No — object queries run inside your Databricks workspace |
+| Agreed ontology    | No, unless you publish it yourself (for example via Git) |
+| Warehouse metadata | Only to your Databricks workspace                        |
 
 ---
 
@@ -210,14 +185,35 @@ pnpm generate:schema
 pnpm test
 ```
 
-| Package                                                   | Responsibility                         |
-| --------------------------------------------------------- | -------------------------------------- |
-| `@trybacked/core`                                         | Ontology schema, governance, workspace |
-| `@backed/discovery`                                       | Deterministic discovery                |
-| `@backed/provider-duckdb` · `@backed/provider-databricks` | Dataset providers                      |
-| `@backed/runner`                                          | Pipeline                               |
-| `@backed/cli`                                             | Command line                           |
+```text
+anchor/
+├── apps/
+│   └── cli/                    # backed command line
+├── packages/
+│   ├── core/                   # ontology schema, validation, DatasetProvider
+│   ├── discovery/              # inspect/ evidence · propose/ deterministic proposal
+│   ├── registry/               # publications, versioning, rollback
+│   ├── compiler/               # object query → parameterized SQL
+│   ├── runtime/                # executes compiled queries
+│   ├── provider-databricks/    # Databricks SQL warehouse adapter
+│   ├── diff/                   # run and ontology diffs
+│   └── mcp/                    # agent tools + query_objects
+├── schema/                     # JSON Schema for ontology serialization v1
+└── docs/
+```
+
+| Package                       | Responsibility                                     |
+| ----------------------------- | -------------------------------------------------- |
+| `@trybacked/core`             | Ontology schema, validation, `DatasetProvider`     |
+| `@backed/discovery`           | Deterministic inspection and proposal              |
+| `@backed/registry`            | Publications, versioning, rollback                 |
+| `@backed/compiler`            | Object queries → parameterized SQL                 |
+| `@backed/runtime`             | Executes compiled queries via an injected executor |
+| `@backed/provider-databricks` | Databricks SQL warehouse adapter                   |
+| `@backed/diff`                | Run and ontology diffs                             |
+| `@backed/mcp`                 | Agent tools over the published ontology            |
+| `@backed/cli`                 | Command line                                       |
+
+Dependencies flow toward `core`, never the reverse. Full map: [Repository structure](./docs/STRUCTURE.md).
 
 Published packages use `@trybacked/*`. Workspace packages use `@backed/*`.
-
-Maintainer roadmap: [Architecture evolution](./docs/ONTOLOGY-ENGINE-MIGRATION.md).

@@ -1,3 +1,5 @@
+import { ObjectQueryCompileError, ObjectQuerySchema } from "@backed/compiler";
+import type { OntologyQueryRuntime } from "@backed/runtime";
 import type { SemanticModel } from "@trybacked/core";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
@@ -14,6 +16,7 @@ import {
 export interface ToolContext {
   model: SemanticModel;
   searchModelOptions?: SearchModelOptions;
+  queryRuntime?: OntologyQueryRuntime;
 }
 
 export type ToolResult =
@@ -97,3 +100,52 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     handler: ({ model }, args) => getDefinition(model, readToolString(args, "term")),
   },
 ];
+
+/**
+ * Registered only when a query runtime is configured: queries the published
+ * ontology and returns rows from the backing warehouse.
+ */
+export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
+  name: TOOL_NAMES.queryObjects,
+  title: "Query objects",
+  description:
+    "Query rows of one published ontology object with property filters and a row limit. " +
+    "The query compiles to SQL from the published mappings and runs on the backing warehouse.",
+  inputSchema: {
+    objectId: z.string().min(1).describe("Object id, e.g. 'customer'"),
+    filters: z
+      .array(
+        z.object({
+          propertyId: z.string().min(1).describe("Property id (column) of the object"),
+          op: z.enum(["eq", "neq", "gt", "gte", "lt", "lte"]),
+          value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
+        }),
+      )
+      .optional()
+      .describe("Property filters combined with AND"),
+    limit: z.number().int().positive().optional().describe("Row limit (default 100, max 1000)"),
+  },
+  handler: async ({ queryRuntime }, args) => {
+    if (queryRuntime === undefined) {
+      return { error: "Object queries are unavailable: no published ontology or warehouse." };
+    }
+    const parsed = ObjectQuerySchema.safeParse(args);
+    if (!parsed.success) {
+      return { error: `Invalid query: ${parsed.error.issues[0]?.message ?? "bad input"}` };
+    }
+    try {
+      const result = await queryRuntime.queryObjects(parsed.data);
+      return {
+        objectId: result.objectId,
+        columns: result.columns,
+        rows: result.rows,
+        rowCount: result.rowCount,
+      };
+    } catch (error) {
+      if (error instanceof ObjectQueryCompileError) {
+        return { error: error.message };
+      }
+      throw error;
+    }
+  },
+};

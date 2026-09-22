@@ -1,8 +1,7 @@
+import { listPublicationVersions, publishSemanticModel } from "@backed/registry";
 import {
   appendAuditEvents,
   buildPublishAuditEvent,
-  listPublicationVersions,
-  publishSemanticModel,
   readModelYaml,
   semanticModelToOntology,
   validateOntology,

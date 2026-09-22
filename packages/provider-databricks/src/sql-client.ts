@@ -2,6 +2,30 @@ import type { DatabricksProviderConfig } from "./config.js";
 
 export type SqlRow = Record<string, unknown>;
 
+export type SqlParameterValue = string | number | boolean;
+
+export type SqlParameter = {
+  name: string;
+  value: SqlParameterValue;
+};
+
+type StatementParameter = {
+  name: string;
+  value: string;
+  type: string;
+};
+
+function toStatementParameter(parameter: SqlParameter): StatementParameter {
+  const { name, value } = parameter;
+  if (typeof value === "boolean") {
+    return { name, value: String(value), type: "BOOLEAN" };
+  }
+  if (typeof value === "number") {
+    return { name, value: String(value), type: Number.isInteger(value) ? "BIGINT" : "DOUBLE" };
+  }
+  return { name, value, type: "STRING" };
+}
+
 type StatementColumn = { name?: string };
 type StatementManifest = { schema?: { columns?: StatementColumn[] } };
 type StatementStatus = { state?: string };
@@ -19,7 +43,7 @@ type StatementResponse = {
 };
 
 export type DatabricksSqlClient = {
-  execute: (sql: string) => Promise<SqlRow[]>;
+  execute: (sql: string, parameters?: SqlParameter[]) => Promise<SqlRow[]>;
 };
 
 const TERMINAL_STATES = new Set(["SUCCEEDED", "FAILED", "CANCELED", "CLOSED"]);
@@ -79,7 +103,7 @@ async function waitForStatement(
 
 export function createDatabricksSqlClient(config: DatabricksProviderConfig): DatabricksSqlClient {
   return {
-    async execute(sql: string): Promise<SqlRow[]> {
+    async execute(sql: string, parameters?: SqlParameter[]): Promise<SqlRow[]> {
       const response = await fetch(`${apiBaseUrl(config.host)}/api/2.0/sql/statements/`, {
         method: "POST",
         headers: {
@@ -91,6 +115,9 @@ export function createDatabricksSqlClient(config: DatabricksProviderConfig): Dat
           statement: sql,
           wait_timeout: "30s",
           on_wait_timeout: "CONTINUE",
+          ...(parameters !== undefined && parameters.length > 0
+            ? { parameters: parameters.map(toStatementParameter) }
+            : {}),
         }),
       });
       if (!response.ok) {

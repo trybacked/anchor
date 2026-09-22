@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enrichProposalFromDiscovery } from "../../src/enrich-proposal.js";
+import { enrichProposalFromDiscovery } from "../../src/propose/enrich-proposal.js";
 
 describe("enrichProposalFromDiscovery", () => {
   it("adds schema-derived relations missing from the LLM proposal", () => {

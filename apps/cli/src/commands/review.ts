@@ -1,8 +1,7 @@
-import { resolveReviewConfidenceThreshold } from "@backed/semantic";
 import { input, select } from "@inquirer/prompts";
 import {
+  DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
   DiscoveryReportSchema,
-  DocumentCatalogSchema,
   ProposalSchema,
   applyReview,
   applyReviewLifecycle,
@@ -11,19 +10,11 @@ import {
   buildReviewAuditEvents,
   hasRunArtifact,
   listRunIds,
-  patchWorkspaceConfig,
   readRunArtifact,
-  readWorkspaceConfig,
   writeModelYaml,
   writeRunArtifact,
 } from "@trybacked/core";
-import type {
-  DocumentCatalog,
-  EvidenceTable,
-  Proposal,
-  Review,
-  ReviewAnswer,
-} from "@trybacked/core";
+import type { EvidenceTable, Proposal, ReviewAnswer } from "@trybacked/core";
 import path from "node:path";
 import { wantsHeadlessCommand } from "../args.js";
 import { findWorkspaceRoot } from "../env.js";
@@ -31,12 +22,21 @@ import { MESSAGES, reviewNextSteps } from "../messages.js";
 import { defaultReviewer } from "../reviewer.js";
 import type { CommandHandler } from "../types.js";
 import { createPromptTheme, getUi, initUi } from "../ui/index.js";
-function slugifyDocumentTypeId(id: string): string {
-  return id
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+
+const REVIEW_CONFIDENCE_THRESHOLD_ENV = "BACKED_REVIEW_CONFIDENCE_THRESHOLD";
+
+function resolveReviewConfidenceThreshold(env: Record<string, string | undefined>): number {
+  const raw = env[REVIEW_CONFIDENCE_THRESHOLD_ENV];
+  if (raw === undefined || raw.trim() === "") {
+    return DEFAULT_REVIEW_CONFIDENCE_THRESHOLD;
+  }
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1) {
+    throw new Error(`Invalid ${REVIEW_CONFIDENCE_THRESHOLD_ENV}: "${raw}" (expected 0 < n <= 1).`);
+  }
+  return parsed;
 }
+
 function renderEvidenceTable(ui: ReturnType<typeof getUi>, evidence: EvidenceTable): string {
   const rows = [evidence.columns, ...evidence.rows];
   const widths = evidence.columns.map((_, columnIndex) =>
@@ -55,6 +55,7 @@ function renderEvidenceTable(ui: ReturnType<typeof getUi>, evidence: EvidenceTab
     ...evidence.rows.map((row) => `  ${renderRow(row)}`),
   ].join("\n");
 }
+
 async function askQuestion(
   proposal: Proposal,
   questionIndex: number,
@@ -91,50 +92,12 @@ async function askQuestion(
   }
   return { questionId: question.id, decision };
 }
+
 function findLatestRunWithProposal(root: string): string | null {
   const runIds = listRunIds(root).reverse();
   return runIds.find((runId) => hasRunArtifact(root, runId, "proposal")) ?? null;
 }
-function applyDocumentTypeRenamesFromReview(
-  root: string,
-  proposal: Proposal,
-  review: Review,
-  documentCatalog: DocumentCatalog | undefined,
-): void {
-  if (documentCatalog === undefined) {
-    return;
-  }
-  const ui = getUi();
-  const typeIdByEntityId = new Map(
-    documentCatalog.documentTypes.map((type) => [slugifyDocumentTypeId(type.id), type.id]),
-  );
-  const questionsById = new Map(proposal.questions.map((question) => [question.id, question]));
-  const config = readWorkspaceConfig(root);
-  let hints = config.documentTypeHints;
-  let updated = false;
-  for (const answer of review.answers) {
-    if (answer.decision !== "rename" || answer.newName === undefined) {
-      continue;
-    }
-    const question = questionsById.get(answer.questionId);
-    if (question === undefined || question.kind !== "entity") {
-      continue;
-    }
-    const documentTypeId = typeIdByEntityId.get(question.targetId);
-    if (documentTypeId === undefined) {
-      continue;
-    }
-    const newName = answer.newName;
-    hints = hints.map((hint) =>
-      hint.documentType === documentTypeId ? { ...hint, documentTypeLabel: newName } : hint,
-    );
-    updated = true;
-    ui.writeSuccess(`Config updated: document type "${documentTypeId}" → "${newName}"`);
-  }
-  if (updated) {
-    patchWorkspaceConfig(root, { documentTypeHints: hints });
-  }
-}
+
 export const reviewCommand: CommandHandler = async () => {
   const ui = initUi();
   const root = findWorkspaceRoot(process.cwd());
@@ -213,10 +176,6 @@ export const reviewCommand: CommandHandler = async () => {
   ui.writeSuccess(
     `Model written → ${ui.path(modelPath)} (${String(model.entities.length)} entities, ${String(model.relations.length)} relations, ${String(model.rules.length)} rules)`,
   );
-  const documentCatalog = hasRunArtifact(root, runId, "documents")
-    ? readRunArtifact(root, runId, "documents", DocumentCatalogSchema)
-    : undefined;
-  applyDocumentTypeRenamesFromReview(root, proposal, review, documentCatalog);
   ui.blank();
   ui.step(reviewNextSteps());
 };

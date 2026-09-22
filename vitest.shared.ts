@@ -24,14 +24,6 @@ function withThresholds(thresholds: CoverageThresholds): SharedCoverageOptions {
   return { ...coverageDefaults, thresholds };
 }
 
-/** Published SDK — Phase 0 floor from current baseline (~84% lines). */
-export const anchorCoverage: SharedCoverageOptions = withThresholds({
-  lines: 75,
-  branches: 70,
-  statements: 75,
-  functions: 80,
-});
-
 /** Published core — floor after the ontology module (~78% lines, ~73% branches). */
 export const coreCoverage: SharedCoverageOptions = withThresholds({
   lines: 70,
@@ -44,22 +36,6 @@ export const packageCoverage: SharedCoverageOptions = {
   ...coverageDefaults,
   reporter: ["text", "lcov"],
 };
-
-/** Ingest — gate on modules covered by unit tests (parsers/archives excluded). */
-export const ingestGateCoverage: SharedCoverageOptions = withThresholds({
-  lines: 65,
-  branches: 55,
-  statements: 65,
-  functions: 60,
-});
-
-/** Profile — gate on deterministic profiling helpers under unit test. */
-export const profileGateCoverage: SharedCoverageOptions = withThresholds({
-  lines: 80,
-  branches: 75,
-  statements: 80,
-  functions: 75,
-});
 
 /** Apps and integration tests — coverage reported, no hard gate yet. */
 export const appCoverage: SharedCoverageOptions = {

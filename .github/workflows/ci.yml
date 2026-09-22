@@ -45,10 +45,5 @@ jobs:
       - name: Verify schema artifact is committed
         run: git diff --exit-code schema/anchor-schema-v1.json
 
-      - name: Verify Anchor SDK OpenAPI types match worker spec
-        run: |
-          pnpm --filter @trybacked/anchor generate:openapi
-          git diff --exit-code packages/anchor/src/generated/openapi.d.ts
-
       - name: Test with coverage
         run: pnpm test:coverage

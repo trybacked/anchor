@@ -1,5 +1,5 @@
+import { loadPublishedOntology } from "@backed/registry";
 import {
-  loadPublishedOntology,
   mergeValidationResults,
   readModelYaml,
   semanticModelToOntology,

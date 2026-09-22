@@ -14,7 +14,7 @@ export {
 } from "./databricks-dataset-provider.js";
 export type { CreateDatabricksDatasetProviderOptions } from "./databricks-dataset-provider.js";
 export { createDatabricksSqlClient } from "./sql-client.js";
-export type { DatabricksSqlClient, SqlRow } from "./sql-client.js";
+export type { DatabricksSqlClient, SqlParameter, SqlParameterValue, SqlRow } from "./sql-client.js";
 
 /** Provider + SQL client from `BACKED_DATABRICKS_*` environment variables. */
 export function createDatabricksProviderFromEnv(

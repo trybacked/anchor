@@ -1,10 +1,9 @@
 import {
-  appendAuditEvents,
-  buildRollbackAuditEvent,
   listPublicationVersions,
   readPublicationRecord,
   rollbackPublication,
-} from "@trybacked/core";
+} from "@backed/registry";
+import { appendAuditEvents, buildRollbackAuditEvent } from "@trybacked/core";
 import { findWorkspaceRoot } from "../env.js";
 import { defaultReviewer } from "../reviewer.js";
 import type { CommandHandler } from "../types.js";

@@ -1,53 +1,60 @@
-import { MCP_SURFACE_TOOLS, runStdioMcpServerUntilClose, SERVER_NAME } from "@backed/mcp";
+import {
+  MCP_QUERY_TOOL,
+  MCP_SURFACE_TOOLS,
+  runStdioMcpServerUntilClose,
+  SERVER_NAME,
+} from "@backed/mcp";
+import {
+  createDatabricksSqlClient,
+  databricksConfigFromEnv,
+  hasDatabricksEnv,
+} from "@backed/provider-databricks";
+import { loadPublishedOntology } from "@backed/registry";
+import { createOntologyQueryRuntime } from "@backed/runtime";
+import type { OntologyQueryRuntime } from "@backed/runtime";
 import { readModelYaml } from "@trybacked/core";
 import { findWorkspaceRoot } from "../env.js";
-import { BACKED_TELEMETRY_ENV, resolveServeContext, ServeAuthError } from "../serve-auth.js";
-import { createServeSearchModelOptions } from "../serve-model-search.js";
 import type { CommandHandler } from "../types.js";
 import { ANSI, wrap } from "../ui/ansi.js";
-import { getUi, initUi } from "../ui/index.js";
+import { initUi } from "../ui/index.js";
 
 const SERVE_PRIVACY_NOTE =
-  "Model data stays local — MCP reads model.yaml and DuckDB on this machine only.";
+  "Ontology data stays local — object queries run on your configured warehouse.";
 
 function writeServeStderr(text: string, style: "dim" | "brand" = "dim"): void {
   console.error(wrap(style === "brand" ? ANSI.brand : ANSI.dim, text));
 }
 
+function buildQueryRuntime(root: string): OntologyQueryRuntime | undefined {
+  const ontology = loadPublishedOntology(root);
+  if (ontology === null || !hasDatabricksEnv(process.env)) {
+    return undefined;
+  }
+  const client = createDatabricksSqlClient(databricksConfigFromEnv(process.env));
+  return createOntologyQueryRuntime({
+    ontology,
+    executor: (sql, parameters) => client.execute(sql, parameters),
+  });
+}
+
 export const serveCommand: CommandHandler = async () => {
   initUi();
-  const ui = getUi();
   const root = findWorkspaceRoot(process.cwd());
   const model = readModelYaml(root);
-  let serveContext;
-  try {
-    serveContext = await resolveServeContext();
-  } catch (error) {
-    if (error instanceof ServeAuthError) {
-      ui.writeError(error.message);
-      process.exitCode = 1;
-      return;
-    }
-    throw error;
-  }
+  const queryRuntime = buildQueryRuntime(root);
+  const toolNames = [...MCP_SURFACE_TOOLS, ...(queryRuntime !== undefined ? [MCP_QUERY_TOOL] : [])];
   writeServeStderr(
     `MCP server "${SERVER_NAME}" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`,
     "brand",
   );
-  if (serveContext.mode === "telemetry" && serveContext.userEmail !== undefined) {
-    writeServeStderr(`Telemetry on · signed in as ${serveContext.userEmail}`);
-  } else {
+  writeServeStderr(`Tools: ${toolNames.join(", ")} · Ctrl+C to exit`);
+  if (queryRuntime === undefined) {
     writeServeStderr(
-      `Local mode · no telemetry (set ${BACKED_TELEMETRY_ENV}=1 after backed login to opt in)`,
+      "Object queries disabled — publish an ontology and set BACKED_DATABRICKS_* to enable query_objects.",
     );
   }
-  writeServeStderr(`Tools: ${MCP_SURFACE_TOOLS.join(", ")} · Ctrl+C to exit`);
   writeServeStderr(SERVE_PRIVACY_NOTE);
-  const searchModelOptions = await createServeSearchModelOptions(root, model);
   await runStdioMcpServerUntilClose(model, {
-    ...(serveContext.usageRecorder !== undefined
-      ? { usageRecorder: serveContext.usageRecorder }
-      : {}),
-    ...(searchModelOptions !== undefined ? { searchModelOptions } : {}),
+    ...(queryRuntime !== undefined ? { queryRuntime } : {}),
   });
 };

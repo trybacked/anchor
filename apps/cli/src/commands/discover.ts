@@ -1,91 +1,70 @@
 import {
-  formatDiscoverDatabricksDuration,
-  formatDiscoverDuration,
-  formatDiscoverSnapshotDuration,
-  runDiscoverFromDatabricks,
-  runDiscoverFromSnapshot,
-  runDiscoverPipeline,
-} from "@backed/runner";
-import { existsSync } from "node:fs";
+  discoverFromProfile,
+  proposalFromDiscovery,
+  profileFromDatasetProvider,
+} from "@backed/discovery";
+import { createDatabricksProviderFromEnv } from "@backed/provider-databricks";
+import { createRunId, readWorkspaceConfig, writeRunArtifact } from "@trybacked/core";
 import path from "node:path";
-import { commandErrorMessage, parseDiscoverArgs } from "../args.js";
+import { commandErrorMessage, parseHelpOnlyArgs } from "../args.js";
 import { findWorkspaceRoot } from "../env.js";
-import { createCliPipelineProgress } from "../runner-progress.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
+const MS_PER_SECOND = 1000;
+
+function resolveOntologyId(root: string): string {
+  try {
+    return readWorkspaceConfig(root).ontologyId ?? path.basename(root);
+  } catch {
+    return path.basename(root);
+  }
+}
+
 export const discoverCommand: CommandHandler = async (args) => {
   const ui = initUi();
-  const root = findWorkspaceRoot(process.cwd());
   let parsed;
   try {
-    parsed = parseDiscoverArgs(args);
+    parsed = parseHelpOnlyArgs(args);
   } catch (error) {
     ui.writeError(commandErrorMessage(error));
     process.exitCode = 1;
     return;
   }
   if (parsed.help) {
-    ui.log("Usage: backed discover [sources-dir] [--snapshot | --databricks]");
-    ui.log("  Default: ingest sources + profile + deterministic discovery (no LLM).");
-    ui.log("  --snapshot   Profile existing .backed/data.duckdb without re-ingest.");
-    ui.log("  --databricks Profile curated tables from Databricks SQL warehouse.");
+    ui.log("Usage: backed discover");
+    ui.log("  Profiles curated Databricks datasets and proposes an ontology (no LLM).");
+    ui.log("  Requires BACKED_DATABRICKS_HOST, _TOKEN, _WAREHOUSE_ID.");
     return;
   }
-  const modeCount = Number(parsed.useSnapshot) + Number(parsed.useDatabricks);
-  if (modeCount > 1) {
-    ui.writeError("Choose only one of: sources-dir, --snapshot, --databricks.");
-    process.exitCode = 1;
-    return;
-  }
-  if (parsed.useSnapshot && parsed.sourcesDir !== undefined) {
-    ui.writeError("Use either sources-dir or --snapshot, not both.");
-    process.exitCode = 1;
-    return;
-  }
-  if (parsed.useDatabricks && parsed.sourcesDir !== undefined) {
-    ui.writeError("Use either sources-dir or --databricks, not both.");
-    process.exitCode = 1;
-    return;
-  }
-  if (parsed.sourcesDir !== undefined) {
-    const absoluteSources = path.resolve(root, parsed.sourcesDir);
-    if (!existsSync(absoluteSources)) {
-      ui.writeError(`Sources folder not found: ${absoluteSources}`);
-      process.exitCode = 1;
-      return;
-    }
-  }
+  const root = findWorkspaceRoot(process.cwd());
+  const runId = createRunId();
   try {
-    const progress = createCliPipelineProgress(ui);
-    if (parsed.useDatabricks) {
-      const result = await runDiscoverFromDatabricks({
-        workspaceDir: root,
-        progress,
-        env: process.env,
-      });
-      ui.blank();
-      ui.writeSuccess(
-        `Done in ${formatDiscoverDatabricksDuration(result.stats.profileMs)} · run ${result.runId}`,
-      );
-      return;
+    ui.heading("Discover run (Databricks)");
+    ui.step(`${runId} · listing tables from Databricks SQL warehouse`);
+    const { provider } = createDatabricksProviderFromEnv(process.env);
+    const profileStarted = Date.now();
+    const profile = await profileFromDatasetProvider(provider);
+    const profileMs = Date.now() - profileStarted;
+    if (profile.length === 0) {
+      throw new Error("No datasets returned from Databricks. Check catalog/schema env vars.");
     }
-    if (parsed.useSnapshot) {
-      const result = await runDiscoverFromSnapshot({ workspaceDir: root, progress });
-      ui.blank();
-      ui.writeSuccess(
-        `Done in ${formatDiscoverSnapshotDuration(result.stats.profileMs)} · run ${result.runId}`,
-      );
-      return;
-    }
-    const result = await runDiscoverPipeline({
-      workspaceDir: root,
-      ...(parsed.sourcesDir !== undefined ? { sourcesDir: parsed.sourcesDir } : {}),
-      progress,
-    });
+    const profilePath = writeRunArtifact(root, runId, "profile", profile);
+    ui.writeSuccess(`Profile → ${ui.path(profilePath)}`);
+
+    const discovery = discoverFromProfile(profile, { ontologyId: resolveOntologyId(root) });
+    const discoveryPath = writeRunArtifact(root, runId, "discovery", discovery);
+    ui.writeSuccess(`Discovery → ${ui.path(discoveryPath)}`);
+    ui.detail(
+      `${String(discovery.ontology.objects.length)} object(s), ${String(discovery.ontology.relationships.length)} relationship(s) (proposed)`,
+    );
+
+    const proposal = proposalFromDiscovery(discovery, { runId });
+    const proposalPath = writeRunArtifact(root, runId, "proposal", proposal);
+    ui.writeSuccess(`Proposal → ${ui.path(proposalPath)}`);
     ui.blank();
     ui.writeSuccess(
-      `Done in ${formatDiscoverDuration(result.stats.ingestMs + result.stats.profileMs)} · run ${result.runId}`,
+      `Done in ${String(Math.round(profileMs / MS_PER_SECOND))}s · run ${runId} · ${String(proposal.questions.length)} review question(s)`,
     );
   } catch (error) {
     ui.writeError(commandErrorMessage(error));

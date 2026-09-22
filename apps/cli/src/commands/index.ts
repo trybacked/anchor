@@ -1,8 +1,4 @@
 export { initCommand } from "./init.js";
-export { gatewayCommand } from "./gateway.js";
-export { loginCommand } from "./login.js";
-export { logoutCommand } from "./logout.js";
-export { modelCommand } from "./model.js";
 export { discoverCommand } from "./discover.js";
 export { inspectCommand } from "./inspect.js";
 export { reviewCommand } from "./review.js";

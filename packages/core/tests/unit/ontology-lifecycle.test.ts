@@ -1,14 +1,9 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   applyReviewLifecycle,
   buildAutoConfirmAuditEvents,
   buildReviewAuditEvents,
   canAdvanceLifecycle,
-  publishSemanticModel,
-  readPublicationRecord,
 } from "../../src/index.js";
 import type { Proposal } from "../../src/proposal.js";
 
@@ -112,39 +107,5 @@ describe("ontology lifecycle and audit", () => {
       [],
     );
     expect(autoEvents.some((event) => event.action === "auto_confirm")).toBe(true);
-  });
-
-  it("publishes governed ontology with incremented version", () => {
-    const review = {
-      runId: "run-1",
-      answeredAt: new Date().toISOString(),
-      answers: [{ questionId: "q-customers", decision: "yes" as const }],
-    };
-    const { ontology } = applyReviewLifecycle(proposal, review, { ontologyId: "demo" });
-    const model = {
-      metadata: {
-        formatVersion: "1" as const,
-        runId: "run-1",
-        generatedAt: new Date().toISOString(),
-      },
-      entities: proposal.entities.map((entity) => ({ ...entity, status: "confirmed" as const })),
-      relations: [],
-      rules: [],
-    };
-    const tmpRoot = mkdtempSync(path.join(os.tmpdir(), "anchor-phase3-"));
-    try {
-      const first = publishSemanticModel(tmpRoot, model, { ontologyId: "demo", now: new Date() });
-      expect(first.version).toBe(1);
-      expect(first.ontology.objects.every((object) => object.lifecycle === "published")).toBe(true);
-      const second = publishSemanticModel(tmpRoot, model, {
-        ontologyId: "demo",
-        now: new Date(Date.now() + 1000),
-      });
-      expect(second.version).toBe(2);
-      expect(readPublicationRecord(tmpRoot)?.version).toBe(2);
-    } finally {
-      rmSync(tmpRoot, { recursive: true, force: true });
-    }
-    void ontology;
   });
 });
