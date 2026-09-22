@@ -13,10 +13,7 @@ Stewards review what inference cannot confirm. Agents consume what the organizat
 
 ---
 
-
-
 ## Ontology
-
 
 | Primitive        | Meaning                                                      |
 | ---------------- | ------------------------------------------------------------ |
@@ -25,7 +22,6 @@ Stewards review what inference cannot confirm. Agents consume what the organizat
 | **Relationship** | A link between objects, with cardinality                     |
 | **Logic**        | A business definition or constraint                          |
 | **Action**       | An operation contract on an object (specified; not executed) |
-
 
 Each element records **confidence**, **provenance**, **review status**, and a **lifecycle** from discovery to publication.
 
@@ -43,20 +39,15 @@ flowchart TB
   registry --> agents["Agents"]
 ```
 
-
-
 Datasets become objects. Properties, relationships, logic, and actions describe those objects. The publication registry stores that version. Agents read the registry and query objects through it.
 
 Full specification: **[Ontology](./docs/ONTOLOGY.md)**.
 
 ---
 
-
-
 ## Operating model
 
 The flow before Anchor stays in your platform: **files / databases / APIs → ingestion → warehouse pipeline → curated dataset**. Anchor begins at the curated dataset.
-
 
 | Step          | Question                   | What happens                                                                  |
 | ------------- | -------------------------- | ----------------------------------------------------------------------------- |
@@ -64,7 +55,6 @@ The flow before Anchor stays in your platform: **files / databases / APIs → in
 | **Evidence**  | What does the schema show? | Dataset profiles and a proposed set of objects, properties, and relationships |
 | **Agreement** | What do we accept?         | A steward reviews risk-ranked questions. Publish stores a numbered version    |
 | **Agents**    | What can an agent rely on? | Deterministic tools and object queries against the published version          |
-
 
 ```mermaid
 flowchart LR
@@ -76,16 +66,11 @@ flowchart LR
   runtime --> databricks["Databricks SQL"]
 ```
 
-
-
 Discovery is deterministic: schema and statistics only, no language model. Rows never leave your warehouse; object queries run on it directly.
 
 ---
 
-
-
 ## Documentation
-
 
 | Document                                                        | Audience                                 |
 | --------------------------------------------------------------- | ---------------------------------------- |
@@ -98,13 +83,9 @@ Discovery is deterministic: schema and statistics only, no language model. Rows 
 | [Repository structure](./docs/STRUCTURE.md)                     | Monorepo map                             |
 | [Security and data residency](./docs/SECURITY-AND-RESIDENCY.md) | Security review                          |
 
-
 ---
 
-
-
 ## Capabilities
-
 
 | Capability  | Outcome                                                            |
 | ----------- | ------------------------------------------------------------------ |
@@ -115,10 +96,7 @@ Discovery is deterministic: schema and statistics only, no language model. Rows 
 | Query       | Compiled, parameterized SQL over published objects                 |
 | Agents      | MCP over the agreed ontology, with no model call on the query path |
 
-
 ---
-
-
 
 ## Quick start
 
@@ -143,10 +121,7 @@ Environment: copy `[.env.example](./.env.example)` and set `BACKED_DATABRICKS_HO
 
 ---
 
-
-
 ## Command reference
-
 
 | Command           | Phase   | Result                                                       |
 | ----------------- | ------- | ------------------------------------------------------------ |
@@ -160,15 +135,11 @@ Environment: copy `[.env.example](./.env.example)` and set `BACKED_DATABRICKS_HO
 | `backed diff`     | Change  | Drift between runs (`--ontology` for breaking vs additive)   |
 | `backed serve`    | Consume | MCP server                                                   |
 
-
 ---
-
-
 
 ## Agent interface
 
 `backed serve` answers from the agreed ontology. Responses are structured and schema-validated. There is no language model on this path.
-
 
 | Operation        | Returns                                                       |
 | ---------------- | ------------------------------------------------------------- |
@@ -179,17 +150,13 @@ Environment: copy `[.env.example](./.env.example)` and set `BACKED_DATABRICKS_HO
 | `get_definition` | A confirmed logic statement, or a structured miss             |
 | `query_objects`  | Rows of one published object, with property filters and limit |
 
-
 `query_objects` is available when an ontology is published and the Databricks environment is configured. The query compiles to parameterized SQL from the published mappings and runs on your warehouse.
 
 Tool names follow the current MCP contract. They resolve the ontology primitives in [Ontology](./docs/ONTOLOGY.md).
 
 ---
 
-
-
 ## Data residency
-
 
 | Data               | Leaves your infrastructure                               |
 | ------------------ | -------------------------------------------------------- |
@@ -197,10 +164,7 @@ Tool names follow the current MCP contract. They resolve the ontology primitives
 | Agreed ontology    | No, unless you publish it yourself (for example via Git) |
 | Warehouse metadata | Only to your Databricks workspace                        |
 
-
 ---
-
-
 
 ## Development
 
@@ -227,7 +191,6 @@ anchor/
 └── docs/
 ```
 
-
 | Package                       | Responsibility                                     |
 | ----------------------------- | -------------------------------------------------- |
 | `@trybacked/core`             | Ontology schema, validation, `DatasetProvider`     |
@@ -239,7 +202,6 @@ anchor/
 | `@backed/diff`                | Run and ontology diffs                             |
 | `@backed/mcp`                 | Agent tools over the published ontology            |
 | `@backed/cli`                 | Command line                                       |
-
 
 Dependencies flow toward `core`, never the reverse. Full map: [Repository structure](./docs/STRUCTURE.md).
 
