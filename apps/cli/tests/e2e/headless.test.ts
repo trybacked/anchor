@@ -23,5 +23,4 @@ describe("headless CLI", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Workspace initialized");
   });
-
 });

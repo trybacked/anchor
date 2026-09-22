@@ -46,9 +46,7 @@ export const syncCommand: CommandHandler = (args) => {
   const modelPath = path.join(root, "model.yaml");
 
   if (!existsSync(modelPath)) {
-    ui.writeError(
-      `No model.yaml at ${modelPath}. Run "${formatCliCommand(COMMANDS.PULL)}" first.`,
-    );
+    ui.writeError(`No model.yaml at ${modelPath}. Run "${formatCliCommand(COMMANDS.PULL)}" first.`);
     process.exitCode = 1;
     return;
   }

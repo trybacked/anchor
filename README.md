@@ -196,9 +196,9 @@ anchor/
 └── docs/
 ```
 
-| Package                       | Responsibility                                     |
-| ----------------------------- | -------------------------------------------------- |
-| `@trybacked/core`             | Ontology schema, validation, `DatasetProvider`     |
+| Package                          | Responsibility                                     |
+| -------------------------------- | -------------------------------------------------- |
+| `@trybacked/core`                | Ontology schema, validation, `DatasetProvider`     |
 | `@trybacked/discovery`           | Deterministic inspection and proposal              |
 | `@trybacked/registry`            | Publications, versioning, rollback                 |
 | `@trybacked/compiler`            | Object queries → parameterized SQL                 |

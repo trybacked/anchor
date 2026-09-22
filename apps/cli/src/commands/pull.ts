@@ -88,9 +88,7 @@ export const pullCommand: CommandHandler = async (args) => {
       `Model → ${ui.path(modelPath)} (${String(model.entities.length)} entities, ${String(model.relations.length)} relations)`,
     );
     ui.blank();
-    ui.writeSuccess(
-      `Done in ${String(Math.round(profileMs / MS_PER_SECOND))}s · run ${runId}`,
-    );
+    ui.writeSuccess(`Done in ${String(Math.round(profileMs / MS_PER_SECOND))}s · run ${runId}`);
     ui.step(pullNextSteps());
   } catch (error) {
     ui.writeError(commandErrorMessage(error));

@@ -4,7 +4,14 @@
   "type": "module",
   "description": "Anchor CLI (`backed`): pull, sync, and deploy a governed ontology over Databricks",
   "license": "Apache-2.0",
-  "keywords": ["anchor", "backed", "ontology", "databricks", "mcp", "cli"],
+  "keywords": [
+    "anchor",
+    "backed",
+    "ontology",
+    "databricks",
+    "mcp",
+    "cli"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/trybacked/anchor.git",
@@ -16,7 +23,10 @@
   "bin": {
     "backed": "./dist/cli.js"
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "engines": {
     "node": ">=22"
   },
