@@ -1,3 +1,4 @@
+import { readModelYaml } from "@trybacked/core";
 import {
   MCP_QUERY_TOOL,
   MCP_SURFACE_TOOLS,
@@ -12,7 +13,6 @@ import {
 import { loadPublishedOntology } from "@trybacked/registry";
 import { createOntologyQueryRuntime } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
-import { readModelYaml } from "@trybacked/core";
 import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { ANSI, wrap } from "../ui/ansi.js";

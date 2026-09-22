@@ -1,4 +1,3 @@
-import { listPublicationVersions, publishSemanticModel } from "@trybacked/registry";
 import {
   appendAuditEvents,
   buildPublishAuditEvent,
@@ -6,6 +5,7 @@ import {
   semanticModelToOntology,
   validateOntology,
 } from "@trybacked/core";
+import { listPublicationVersions, publishSemanticModel } from "@trybacked/registry";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { COMMANDS, formatCliCommand } from "../config.js";
