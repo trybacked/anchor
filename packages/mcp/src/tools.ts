@@ -12,10 +12,7 @@ import {
   searchModel,
   type SearchModelOptions,
 } from "./mapping.js";
-import {
-  capQueryObjectsPayload,
-  MCP_DEFAULT_OBJECT_QUERY_LIMIT,
-} from "./response-cap.js";
+import { capQueryObjectsPayload, MCP_DEFAULT_OBJECT_QUERY_LIMIT } from "./response-cap.js";
 
 export interface ToolContext {
   model: SemanticModel;
@@ -113,8 +110,8 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
   name: TOOL_NAMES.queryObjects,
   title: "Query objects",
   description:
-    "Query one published ontology object with filters. mode \"count\" returns a single total (use for how-many questions). " +
-    "mode \"rows\" returns table rows (default limit 15, max 1000). Wide objects (e.g. contract) need low limits or count mode.",
+    'Query one published ontology object with filters. mode "count" returns a single total (use for how-many questions). ' +
+    'mode "rows" returns table rows (default limit 15, max 1000). Wide objects (e.g. contract) need low limits or count mode.',
   inputSchema: {
     objectId: z.string().min(1).describe("Object id, e.g. 'customer'"),
     mode: z

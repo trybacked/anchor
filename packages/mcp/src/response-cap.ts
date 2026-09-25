@@ -45,7 +45,7 @@ export function capQueryObjectsPayload(payload: QueryObjectsToolPayload): QueryO
     truncated: true,
     originalRowCount,
     truncationReason:
-      "Response exceeded MCP size limit (~1MB). Rows were trimmed. Use mode \"count\" for totals, " +
+      'Response exceeded MCP size limit (~1MB). Rows were trimmed. Use mode "count" for totals, ' +
       "add filters, pass a lower limit, or request fewer fields.",
   };
 }
