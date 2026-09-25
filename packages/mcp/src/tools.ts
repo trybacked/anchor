@@ -3,6 +3,10 @@ import type { SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
+import {
+  capQueryObjectsPayload,
+  MCP_DEFAULT_OBJECT_QUERY_LIMIT,
+} from "./response-cap.js";
 import { entityNotFoundMessage } from "./errors.js";
 import {
   getDefinition,
@@ -109,10 +113,14 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
   name: TOOL_NAMES.queryObjects,
   title: "Query objects",
   description:
-    "Query rows of one published ontology object with property filters and a row limit. " +
-    "The query compiles to SQL from the published mappings and runs on the backing warehouse.",
+    "Query one published ontology object with filters. mode \"count\" returns a single total (use for how-many questions). " +
+    "mode \"rows\" returns table rows (default limit 15, max 1000). Wide objects (e.g. contract) need low limits or count mode.",
   inputSchema: {
     objectId: z.string().min(1).describe("Object id, e.g. 'customer'"),
+    mode: z
+      .enum(["rows", "count"])
+      .optional()
+      .describe("rows (default) or count for COUNT(*) with the same filters"),
     filters: z
       .array(
         z.object({
@@ -123,7 +131,12 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
       )
       .optional()
       .describe("Property filters combined with AND"),
-    limit: z.number().int().positive().optional().describe("Row limit (default 100, max 1000)"),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Row limit for mode rows (default 15 in MCP, max 1000); ignored for count"),
   },
   handler: async ({ queryRuntime }, args) => {
     if (queryRuntime === undefined) {
@@ -134,13 +147,23 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
       return { error: `Invalid query: ${parsed.error.issues[0]?.message ?? "bad input"}` };
     }
     try {
-      const result = await queryRuntime.queryObjects(parsed.data);
-      return {
+      const mode = parsed.data.mode ?? "rows";
+      const query =
+        mode === "count"
+          ? parsed.data
+          : {
+              ...parsed.data,
+              limit: parsed.data.limit ?? MCP_DEFAULT_OBJECT_QUERY_LIMIT,
+            };
+      const result = await queryRuntime.queryObjects(query);
+      const payload = capQueryObjectsPayload({
         objectId: result.objectId,
         columns: result.columns,
         rows: result.rows,
         rowCount: result.rowCount,
-      };
+        mode,
+      });
+      return payload;
     } catch (error) {
       if (error instanceof ObjectQueryCompileError) {
         return { error: error.message };

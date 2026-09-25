@@ -94,10 +94,15 @@ export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): Comp
   const columns = object.properties.map((property) => property.id);
   const parameters: SqlParameter[] = [];
   const conditions = query.filters.map((filter) => compileFilter(object, filter, parameters));
-  const limit = query.limit ?? DEFAULT_OBJECT_QUERY_LIMIT;
-
-  const selectList = columns.map(quoteIdentifier).join(", ");
   const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+
+  if (query.mode === "count") {
+    const sql = `SELECT COUNT(*) AS ${quoteIdentifier("count")} FROM ${quoteDatasetId(datasetId)}${whereClause}`;
+    return { objectId: object.id, sql, parameters, columns: ["count"] };
+  }
+
+  const limit = query.limit ?? DEFAULT_OBJECT_QUERY_LIMIT;
+  const selectList = columns.map(quoteIdentifier).join(", ");
   const sql = `SELECT ${selectList} FROM ${quoteDatasetId(datasetId)}${whereClause} LIMIT ${String(limit)}`;
 
   return { objectId: object.id, sql, parameters, columns };

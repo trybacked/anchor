@@ -51,7 +51,7 @@ export const syncCommand: CommandHandler = (args) => {
     return;
   }
 
-  const model = readModelYaml(modelPath);
+  const model = readModelYaml(root);
   const ontologyId = path.basename(root);
   const preflight = validateOntology(semanticModelToOntology(model, { ontologyId }));
   if (!preflight.valid) {
