@@ -3,10 +3,6 @@ import type { SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
-import {
-  capQueryObjectsPayload,
-  MCP_DEFAULT_OBJECT_QUERY_LIMIT,
-} from "./response-cap.js";
 import { entityNotFoundMessage } from "./errors.js";
 import {
   getDefinition,
@@ -16,6 +12,10 @@ import {
   searchModel,
   type SearchModelOptions,
 } from "./mapping.js";
+import {
+  capQueryObjectsPayload,
+  MCP_DEFAULT_OBJECT_QUERY_LIMIT,
+} from "./response-cap.js";
 
 export interface ToolContext {
   model: SemanticModel;
@@ -147,7 +147,7 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
       return { error: `Invalid query: ${parsed.error.issues[0]?.message ?? "bad input"}` };
     }
     try {
-      const mode = parsed.data.mode ?? "rows";
+      const mode = parsed.data.mode;
       const query =
         mode === "count"
           ? parsed.data
