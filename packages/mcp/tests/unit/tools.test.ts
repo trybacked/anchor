@@ -61,6 +61,7 @@ describe("query_objects tool", () => {
       {
         objectId: "customer",
         filters: [{ propertyId: "city", op: "eq", value: "Milano" }],
+        mode: "rows",
         limit: 5,
       },
     ]);
@@ -69,6 +70,7 @@ describe("query_objects tool", () => {
       columns: ["id", "city"],
       rows: [{ id: 1, city: "Milano" }],
       rowCount: 1,
+      mode: "rows",
     });
   });
 

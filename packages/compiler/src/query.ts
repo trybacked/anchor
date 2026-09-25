@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const OBJECT_QUERY_FILTER_OPS = ["eq", "neq", "gt", "gte", "lt", "lte"] as const;
 
+export const OBJECT_QUERY_MODES = ["rows", "count"] as const;
+
 export const DEFAULT_OBJECT_QUERY_LIMIT = 100;
 export const MAX_OBJECT_QUERY_LIMIT = 1000;
 
@@ -14,12 +16,14 @@ export const ObjectQueryFilterSchema = z.object({
 export const ObjectQuerySchema = z.object({
   objectId: z.string().min(1),
   filters: z.array(ObjectQueryFilterSchema).default([]),
+  mode: z.enum(OBJECT_QUERY_MODES).default("rows"),
   limit: z.number().int().positive().max(MAX_OBJECT_QUERY_LIMIT).optional(),
 });
 
 export type ObjectQueryFilterOp = (typeof OBJECT_QUERY_FILTER_OPS)[number];
 export type ObjectQueryFilter = z.infer<typeof ObjectQueryFilterSchema>;
-export type ObjectQuery = z.infer<typeof ObjectQuerySchema>;
+/** Pre-parse query payload (`mode` and `filters` optional; defaults applied in compile). */
+export type ObjectQuery = z.input<typeof ObjectQuerySchema>;
 
 /** Named parameter bound to the compiled statement. */
 export type SqlParameter = {

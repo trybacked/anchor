@@ -54,6 +54,19 @@ describe("compileObjectQuery", () => {
     expect(compiled.parameters).toEqual([]);
   });
 
+  it("compiles count mode without a row limit", () => {
+    const compiled = compileObjectQuery(ontology, {
+      objectId: "customer",
+      filters: [{ propertyId: "city", op: "eq", value: "Milano" }],
+      mode: "count",
+    });
+    expect(compiled.sql).toBe(
+      "SELECT COUNT(*) AS `count` FROM `main`.`sales`.`customers` WHERE `city` = :p0",
+    );
+    expect(compiled.columns).toEqual(["count"]);
+    expect(compiled.parameters).toEqual([{ name: "p0", value: "Milano" }]);
+  });
+
   it("compiles null filters as IS NULL / IS NOT NULL", () => {
     const compiled = compileObjectQuery(ontology, {
       objectId: "customer",
