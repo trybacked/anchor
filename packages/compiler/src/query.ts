@@ -22,7 +22,8 @@ export const ObjectQuerySchema = z.object({
 
 export type ObjectQueryFilterOp = (typeof OBJECT_QUERY_FILTER_OPS)[number];
 export type ObjectQueryFilter = z.infer<typeof ObjectQueryFilterSchema>;
-export type ObjectQuery = z.infer<typeof ObjectQuerySchema>;
+/** Pre-parse query payload (`mode` and `filters` optional; defaults applied in compile). */
+export type ObjectQuery = z.input<typeof ObjectQuerySchema>;
 
 /** Named parameter bound to the compiled statement. */
 export type SqlParameter = {
