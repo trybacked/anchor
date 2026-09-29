@@ -1,4 +1,9 @@
 /** Canonical DuckDB table names and document-type slug helpers. */
+/** Databricks docs pipeline: one row per file. */
+export const DOCUMENTS_TABLE = "documents" as const;
+/** Databricks docs pipeline: one row per parsed element (retrieval unit). */
+export const DOCUMENT_ELEMENTS_TABLE = "document_elements" as const;
+/** Legacy DuckDB chunk table (superseded by document_elements in Databricks). */
 export const DOCUMENT_CHUNKS_TABLE = "document_chunks" as const;
 export const DOCUMENT_LINES_TABLE = "document_lines" as const;
 export const DOCUMENT_MENTIONS_TABLE = "document_mentions" as const;

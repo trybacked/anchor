@@ -4,6 +4,7 @@ import {
   MCP_SURFACE_TOOLS,
   runStdioMcpServerUntilClose,
   SERVER_NAME,
+  TOOL_NAMES as MCP_TOOL_NAMES,
 } from "@trybacked/mcp";
 import {
   createDatabricksSqlClient,
@@ -11,7 +12,7 @@ import {
   hasDatabricksEnv,
 } from "@trybacked/provider-databricks";
 import { loadPublishedOntology } from "@trybacked/registry";
-import { createOntologyQueryRuntime } from "@trybacked/runtime";
+import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
@@ -25,24 +26,41 @@ function writeDeployStderr(text: string, style: "dim" | "brand" = "dim"): void {
   console.error(wrap(style === "brand" ? ANSI.brand : ANSI.dim, text));
 }
 
-function buildQueryRuntime(root: string): OntologyQueryRuntime | undefined {
+async function buildQueryRuntime(root: string): Promise<OntologyQueryRuntime | undefined> {
   const ontology = loadPublishedOntology(root);
   if (ontology === null || !hasDatabricksEnv(process.env)) {
     return undefined;
   }
   const client = createDatabricksSqlClient(databricksConfigFromEnv(process.env));
-  return createOntologyQueryRuntime({
+  const model = readModelYaml(root);
+  const built = await buildQueryRuntimeFromEnv({
     ontology,
+    model,
     executor: (sql, parameters) => client.execute(sql, parameters),
+    env: process.env,
   });
+  if (built.warehouseUnavailableReason !== undefined) {
+    writeDeployStderr(built.warehouseUnavailableReason);
+  }
+  return built.runtime;
 }
 
 export const deployCommand: CommandHandler = async () => {
   initUi();
   const root = findWorkspaceRoot(process.cwd());
   const model = readModelYaml(root);
-  const queryRuntime = buildQueryRuntime(root);
-  const toolNames = [...MCP_SURFACE_TOOLS, ...(queryRuntime !== undefined ? [MCP_QUERY_TOOL] : [])];
+  const ontology = loadPublishedOntology(root);
+  const queryRuntime = await buildQueryRuntime(root);
+  const warehouseTools =
+    queryRuntime !== undefined
+      ? [
+          MCP_QUERY_TOOL,
+          ...(queryRuntime.chunkSearch !== undefined ? [MCP_TOOL_NAMES.searchDocuments] : []),
+          ...(queryRuntime.entityProfile !== undefined ? [MCP_TOOL_NAMES.getEntityProfile] : []),
+          ...(queryRuntime.graphTraverse !== undefined ? [MCP_TOOL_NAMES.traverseGraph] : []),
+        ]
+      : [];
+  const toolNames = [...MCP_SURFACE_TOOLS, ...warehouseTools];
   writeDeployStderr(
     `MCP server "${SERVER_NAME}" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`,
     "brand",
@@ -55,6 +73,7 @@ export const deployCommand: CommandHandler = async () => {
   }
   writeDeployStderr(DEPLOY_PRIVACY_NOTE);
   await runStdioMcpServerUntilClose(model, {
+    ...(ontology !== null ? { ontology } : {}),
     ...(queryRuntime !== undefined ? { queryRuntime } : {}),
   });
 };

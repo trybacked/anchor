@@ -24,11 +24,16 @@ export type { ModelMcpServerOptions, McpSurfaceOperation, ServeUsageRecorder } f
 export {
   MCP_QUERY_TOOL,
   MCP_SURFACE_TOOLS,
+  MCP_WAREHOUSE_READER_TOOLS,
   TOOL_NAMES,
   SERVER_NAME,
   SERVER_VERSION,
   type McpSurfaceTool,
 } from "./constants.js";
-export { MCP_TOOL_DEFINITIONS, QUERY_OBJECTS_TOOL_DEFINITION } from "./tools.js";
+export {
+  MCP_TOOL_DEFINITIONS,
+  QUERY_OBJECTS_TOOL_DEFINITION,
+  WAREHOUSE_READER_TOOL_DEFINITIONS,
+} from "./tools.js";
 export type { ToolContext, ToolDefinition } from "./tools.js";
 export { entityNotFoundMessage } from "./errors.js";

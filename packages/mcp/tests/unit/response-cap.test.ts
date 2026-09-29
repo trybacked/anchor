@@ -8,6 +8,7 @@ describe("capQueryObjectsPayload", () => {
       columns: ["id"],
       rows: [{ id: 1 }],
       rowCount: 1,
+      provenance: [],
     };
     expect(capQueryObjectsPayload(payload)).toEqual(payload);
   });
@@ -20,6 +21,7 @@ describe("capQueryObjectsPayload", () => {
       columns: ["id", "blob"],
       rows,
       rowCount: rows.length,
+      provenance: [],
     };
     const capped = capQueryObjectsPayload(payload);
     expect(capped.truncated).toBe(true);

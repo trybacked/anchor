@@ -9,7 +9,23 @@ export {
   MODEL_FORMAT_VERSION,
   LOW_CONFIDENCE_THRESHOLD,
   DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
+  DEFAULT_SEARCH_MIN_SCORE,
+  DEFAULT_WAREHOUSE_ROW_LIMIT,
+  MAX_WAREHOUSE_ROW_LIMIT,
+  SEMANTIC_CHAT_MAX_ROW_LIMIT,
 } from "./constants.js";
+export {
+  MIN_TRAVERSE_DEPTH,
+  MAX_TRAVERSE_DEPTH,
+  clampTraverseDepth,
+  buildRelationPath,
+  resolveRelationPath,
+} from "./graph-traverse.js";
+export type {
+  TraverseDirection,
+  RelationHop,
+  RelationPathSegment,
+} from "./graph-traverse.js";
 export {
   DOC_TYPE_TABLE_PREFIX,
   DOC_TYPE_UNKNOWN_SLUG,

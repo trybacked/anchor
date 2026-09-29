@@ -1,0 +1,50 @@
+{
+  "name": "@trybacked/semantic-chat",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "NL → semantic query planner and deterministic executor with row provenance for chat/workshop",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybacked/anchor.git",
+    "directory": "packages/semantic-chat"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./adapters/openai-compatible": {
+      "types": "./dist/adapters/openai-compatible.d.ts",
+      "default": "./dist/adapters/openai-compatible.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@trybacked/compiler": "workspace:*",
+    "@trybacked/core": "workspace:*",
+    "@trybacked/runtime": "workspace:*",
+    "@trybacked/service": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}

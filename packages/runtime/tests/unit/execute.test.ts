@@ -41,7 +41,7 @@ describe("createOntologyQueryRuntime", () => {
     });
     expect(executed).toHaveLength(1);
     expect(executed[0]?.sql).toBe(
-      "SELECT `id`, `city` FROM `main`.`sales`.`customers` WHERE `city` = :p0 LIMIT 50",
+      "SELECT `o0`.`id`, `o0`.`city` FROM `main`.`sales`.`customers` AS `o0` WHERE `o0`.`city` = :p0 LIMIT 50",
     );
     expect(executed[0]?.parameters).toEqual([{ name: "p0", value: "Milano" }]);
     expect(result).toEqual({

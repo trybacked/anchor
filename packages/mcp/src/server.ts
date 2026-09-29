@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { SemanticModel } from "@trybacked/core";
+import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import type { McpSurfaceTool } from "./constants.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
@@ -8,6 +8,7 @@ import type { SearchModelOptions } from "./mapping.js";
 import {
   MCP_TOOL_DEFINITIONS,
   QUERY_OBJECTS_TOOL_DEFINITION,
+  warehouseReaderToolsForRuntime,
   type ToolContext,
   type ToolDefinition,
 } from "./tools.js";
@@ -22,6 +23,7 @@ export interface ModelMcpServerOptions {
   usageRecorder?: ServeUsageRecorder;
   searchModelOptions?: SearchModelOptions;
   queryRuntime?: OntologyQueryRuntime;
+  ontology?: Ontology | undefined;
 }
 
 function jsonContent(data: unknown): {
@@ -76,6 +78,7 @@ export function createModelMcpServer(
   const usageRecorder = options.usageRecorder;
   const toolContext: ToolContext = {
     model,
+    ...(options.ontology !== undefined ? { ontology: options.ontology } : {}),
     ...(options.searchModelOptions !== undefined
       ? { searchModelOptions: options.searchModelOptions }
       : {}),
@@ -84,6 +87,7 @@ export function createModelMcpServer(
   const tools: ToolDefinition[] = [
     ...MCP_TOOL_DEFINITIONS,
     ...(options.queryRuntime !== undefined ? [QUERY_OBJECTS_TOOL_DEFINITION] : []),
+    ...warehouseReaderToolsForRuntime(options.queryRuntime),
   ];
 
   for (const tool of tools) {

@@ -34,7 +34,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@trybacked/compiler": "workspace:*",
+    "@trybacked/service": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",

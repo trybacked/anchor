@@ -1,0 +1,163 @@
+import type { ObjectQuery } from "@trybacked/compiler";
+import type { ObjectQueryRequest, ObjectSetDefinition, RowFilter, SemanticQueryPlan } from "./plan-types.js";
+
+const LEGACY_OP_TO_COMPILER: Record<string, string> = {
+    "=": "eq",
+    "!=": "neq",
+    ">": "gt",
+    ">=": "gte",
+    "<": "lt",
+    "<=": "lte",
+    contains: "contains",
+    not_contains: "not_contains",
+    eq: "eq",
+    neq: "neq",
+    gt: "gt",
+    gte: "gte",
+    lt: "lt",
+    lte: "lte",
+  };
+
+function normalizeFilterOp(op: RowFilter["op"]): NonNullable<ObjectQuery["filters"]>[number]["op"] {
+  const mapped = LEGACY_OP_TO_COMPILER[op];
+  if (mapped === undefined) {
+    throw new Error(`Unsupported filter operator "${op}".`);
+  }
+  return mapped as NonNullable<ObjectQuery["filters"]>[number]["op"];
+}
+
+function normalizeFilter(
+  filter: RowFilter,
+  defaultEntityId: string,
+): NonNullable<ObjectQuery["filters"]>[number] {
+  const propertyId = filter.propertyId ?? filter.column;
+  if (propertyId === undefined) {
+    throw new Error("Filter is missing propertyId/column.");
+  }
+  const objectId = filter.entityId ?? defaultEntityId;
+  return {
+    ...(objectId !== defaultEntityId ? { objectId } : {}),
+    propertyId,
+    op: normalizeFilterOp(filter.op),
+    value: filter.value,
+  };
+}
+
+function mergeObjectSet(
+  query: ObjectQueryRequest,
+  objectSet: ObjectSetDefinition | undefined,
+): ObjectQueryRequest {
+  if (objectSet === undefined) {
+    return query;
+  }
+  const scopedFilters = objectSet.filters.map((filter) => ({
+    ...filter,
+    entityId: filter.entityId ?? objectSet.entityId,
+  }));
+  const documentIds = [...(query.documentIds ?? []), ...(objectSet.documentIds ?? [])];
+  return {
+    ...query,
+    filters: [...scopedFilters, ...query.filters],
+    ...(documentIds.length > 0 ? { documentIds: [...new Set(documentIds)] } : {}),
+    limit: query.limit ?? objectSet.limit,
+  };
+}
+
+function applyDocumentIdFilters(
+  query: ObjectQueryRequest,
+  objectId: string,
+): NonNullable<ObjectQuery["filters"]> {
+  if (query.documentIds === undefined || query.documentIds.length === 0) {
+    return [];
+  }
+  if (query.documentIds.length > 1) {
+    throw new Error(
+      "Multiple documentIds require separate queries (compiler supports AND filters only).",
+    );
+  }
+  return [
+    {
+      objectId,
+      propertyId: "document_id",
+      op: "eq",
+      value: query.documentIds[0] ?? "",
+    },
+  ];
+}
+
+function applyTimeRange(
+  objectSet: ObjectSetDefinition | undefined,
+  objectId: string,
+): NonNullable<ObjectQuery["filters"]> {
+  const range = objectSet?.timeRange;
+  if (range === undefined) {
+    return [];
+  }
+  const column = range.column;
+  const filters: NonNullable<ObjectQuery["filters"]> = [];
+  if (range.from !== undefined) {
+    filters.push({ objectId, propertyId: column, op: "gte", value: range.from });
+  }
+  if (range.to !== undefined) {
+    filters.push({ objectId, propertyId: column, op: "lte", value: range.to });
+  }
+  return filters;
+}
+
+export type NormalizedSemanticQueryPlan = {
+  reasoning?: string | undefined;
+  objectQuery: ObjectQuery;
+  attempts?: number | undefined;
+};
+
+/** Map LLM plan types to compiler {@link ObjectQuery} (deterministic, no LLM). */
+export function normalizeSemanticQueryPlan(plan: SemanticQueryPlan): NormalizedSemanticQueryPlan {
+  const merged = mergeObjectSet(plan.objectQuery, plan.objectSet);
+  const objectId = merged.entityId;
+  const baseFilters = merged.filters.map((filter) => normalizeFilter(filter, objectId));
+  const documentFilters = applyDocumentIdFilters(merged, objectId);
+  const timeFilters = applyTimeRange(plan.objectSet, plan.objectSet?.entityId ?? objectId);
+
+  const objectQuery: ObjectQuery = {
+    objectId,
+    filters: [...baseFilters, ...documentFilters, ...timeFilters],
+    ...(merged.mode !== undefined ? { mode: merged.mode } : {}),
+    ...(merged.limit !== undefined ? { limit: merged.limit } : {}),
+    ...(merged.joins !== undefined ? { joins: merged.joins } : {}),
+    ...(merged.select !== undefined ? { select: merged.select } : {}),
+    ...(merged.groupBy !== undefined ? { groupBy: merged.groupBy } : {}),
+    ...(merged.orderBy !== undefined ? { orderBy: merged.orderBy } : {}),
+    ...(merged.orderDirection !== undefined ? { orderDirection: merged.orderDirection } : {}),
+    ...(merged.textSearch !== undefined
+      ? {
+          textSearch: {
+            query: merged.textSearch.query,
+            ...(merged.textSearch.entityId !== undefined
+              ? { objectId: merged.textSearch.entityId }
+              : {}),
+            ...(merged.textSearch.columns !== undefined
+              ? { propertyIds: merged.textSearch.columns }
+              : {}),
+          },
+        }
+      : {}),
+    ...(merged.aggregations !== undefined
+      ? {
+          aggregations: merged.aggregations.map((aggregation) => ({
+            op: aggregation.op,
+            ...(aggregation.propertyId !== undefined
+              ? { propertyId: aggregation.propertyId }
+              : aggregation.column !== undefined
+                ? { propertyId: aggregation.column }
+                : {}),
+            ...(aggregation.alias !== undefined ? { alias: aggregation.alias } : {}),
+          })),
+        }
+      : {}),
+  };
+
+  return {
+    ...(plan.reasoning !== undefined ? { reasoning: plan.reasoning } : {}),
+    objectQuery,
+  };
+}

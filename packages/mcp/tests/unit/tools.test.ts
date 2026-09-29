@@ -71,6 +71,8 @@ describe("query_objects tool", () => {
       rows: [{ id: 1, city: "Milano" }],
       rowCount: 1,
       mode: "rows",
+      sql: "SELECT ...",
+      provenance: [],
     });
   });
 

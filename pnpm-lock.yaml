@@ -45,6 +45,43 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@22.20.1)(yaml@2.9.0)
 
+  apps/api-server:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.14.4
+        version: 1.19.17(hono@4.13.5)
+      '@hono/zod-validator':
+        specifier: ^0.5.0
+        version: 0.5.0(hono@4.13.5)(zod@3.25.76)
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@trybacked/provider-databricks':
+        specifier: workspace:*
+        version: link:../../packages/provider-databricks
+      '@trybacked/registry':
+        specifier: workspace:*
+        version: link:../../packages/registry
+      '@trybacked/runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
+      '@trybacked/semantic-chat':
+        specifier: workspace:*
+        version: link:../../packages/semantic-chat
+      '@trybacked/service':
+        specifier: workspace:*
+        version: link:../../packages/service
+      hono:
+        specifier: ^4.13.5
+        version: 4.13.5
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
+
   apps/cli:
     dependencies:
       '@trybacked/core':
@@ -75,6 +112,12 @@ importers:
       vitest:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
+
+  packages/anchor:
+    dependencies:
+      '@trybacked/service':
+        specifier: workspace:*
+        version: link:../service
 
   packages/compiler:
     dependencies:
@@ -119,15 +162,15 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.30.0
         version: 1.30.0(zod@3.25.76)
-      '@trybacked/compiler':
-        specifier: workspace:*
-        version: link:../compiler
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
       '@trybacked/runtime':
         specifier: workspace:*
         version: link:../runtime
+      '@trybacked/service':
+        specifier: workspace:*
+        version: link:../service
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -162,6 +205,47 @@ importers:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
+
+  packages/semantic-chat:
+    dependencies:
+      '@trybacked/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+      '@trybacked/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@trybacked/service':
+        specifier: workspace:*
+        version: link:../service
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
+
+  packages/service:
+    dependencies:
+      '@trybacked/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+      '@trybacked/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       vitest:
         specifier: ^3.0.5
@@ -465,11 +549,17 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@hono/node-server@2.1.1':
-    resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
-    engines: {node: '>=20'}
+  '@hono/node-server@1.19.17':
+    resolution: {integrity: sha512-dSneS5qhiauZWGDCeK4o695Xd9nUNjviSZCMQrj10eetr8Uln1ucn6bbphOM6UynAMMtNIzZNSpL9vnASJwrPQ==}
+    engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
+
+  '@hono/zod-validator@0.5.0':
+    resolution: {integrity: sha512-ds5bW6DCgAnNHP33E3ieSbaZFd5dkV52ZjyaXtGoR06APFrCtzAsKZxTHwOrJNBdXsi0e5wNwo5L4nVEVnJUdg==}
+    peerDependencies:
+      hono: '>=3.9.0'
+      zod: ^3.19.1
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2587,9 +2677,14 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@hono/node-server@2.1.1(hono@4.13.5)':
+  '@hono/node-server@1.19.17(hono@4.13.5)':
     dependencies:
       hono: 4.13.5
+
+  '@hono/zod-validator@0.5.0(hono@4.13.5)(zod@3.25.76)':
+    dependencies:
+      hono: 4.13.5
+      zod: 3.25.76
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -2649,7 +2744,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.30.0(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 2.1.1(hono@4.13.5)
+      '@hono/node-server': 1.19.17(hono@4.13.5)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -2920,6 +3015,14 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 7.3.6(@types/node@22.20.1)(yaml@2.9.0)
+
+  '@vitest/mocker@3.2.7(vite@7.3.6(@types/node@26.6.1)(yaml@2.9.0))':
+    dependencies:
+      '@vitest/spy': 3.2.7
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.3.6(@types/node@26.6.1)(yaml@2.9.0)
 
   '@vitest/pretty-format@3.2.7':
     dependencies:
@@ -4664,7 +4767,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.7
-      '@vitest/mocker': 3.2.7(vite@7.3.6(@types/node@22.20.1)(yaml@2.9.0))
+      '@vitest/mocker': 3.2.7(vite@7.3.6(@types/node@26.6.1)(yaml@2.9.0))
       '@vitest/pretty-format': 3.2.7
       '@vitest/runner': 3.2.7
       '@vitest/snapshot': 3.2.7

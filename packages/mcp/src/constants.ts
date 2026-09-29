@@ -14,6 +14,9 @@ export const TOOL_NAMES = {
   searchModel: "search_model",
   getDefinition: "get_definition",
   queryObjects: "query_objects",
+  searchDocuments: "search_documents",
+  getEntityProfile: "get_entity_profile",
+  traverseGraph: "traverse_graph",
 } as const;
 export const MCP_SURFACE_TOOLS = [
   TOOL_NAMES.listEntities,
@@ -24,4 +27,12 @@ export const MCP_SURFACE_TOOLS = [
 ] as const;
 /** Registered only when a query runtime (published ontology + executor) is provided. */
 export const MCP_QUERY_TOOL = TOOL_NAMES.queryObjects;
+
+/** Archive / graph readers — registered when document schema readers are configured on the runtime. */
+export const MCP_WAREHOUSE_READER_TOOLS = [
+  TOOL_NAMES.searchDocuments,
+  TOOL_NAMES.getEntityProfile,
+  TOOL_NAMES.traverseGraph,
+] as const;
+
 export type McpSurfaceTool = (typeof TOOL_NAMES)[keyof typeof TOOL_NAMES];
