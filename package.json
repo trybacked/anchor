@@ -18,6 +18,8 @@
     "version-packages": "changeset version && pnpm install --lockfile-only --ignore-scripts",
     "release": "pnpm build && changeset publish",
     "cli": "node apps/cli/dist/cli.js",
+    "smoke:semantic-nl": "node scripts/semantic-nl-smoke.mjs",
+    "smoke:semantic-nl-benchmark": "node scripts/semantic-nl-benchmark.mjs --count 50",
     "generate:schema": "pnpm --filter @trybacked/core run generate:schema"
   },
   "devDependencies": {

@@ -23,6 +23,15 @@ pnpm --filter @trybacked/api-server start
 
 Use `mode: "count"` for totals; add filters or lower `limit` instead of raising the cap.
 
+### Semantic chat (Vercel AI SDK)
+
+`POST /v1/chat/ask` uses the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) via `@trybacked/semantic-chat/adapters/vercel-ai`:
+
+- **`AI_GATEWAY_API_KEY`** — single key for OpenAI, Anthropic, etc. through Gateway
+- **`SEMANTIC_CHAT_MODEL`** or **`SEMANTIC_MODEL`** — optional, default `openai/gpt-4o-mini`
+
+Smoke test (real LLM + warehouse): from repo root after `pnpm build`, run `pnpm smoke:semantic-nl` (see `scripts/semantic-nl-smoke.cases.json`).
+
 Generate a committed spec after build:
 
 ```bash

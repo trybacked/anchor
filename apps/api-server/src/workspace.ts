@@ -8,7 +8,7 @@ import { loadPublishedOntology } from "@trybacked/registry";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { createSemanticChatEngine, renderAnswer } from "@trybacked/semantic-chat";
-import { createOpenAiCompatibleTranslatorFromEnv } from "@trybacked/semantic-chat/adapters/openai-compatible";
+import { createVercelAiTranslatorFromEnv } from "@trybacked/semantic-chat/adapters/vercel-ai";
 import {
   createAnchorService,
   type AnchorOperationAuditHook,
@@ -77,7 +77,7 @@ export async function createWorkspaceService(
     ...(audit?.auditPrincipal !== undefined ? { auditPrincipal: audit.auditPrincipal } : {}),
   });
 
-  const translator = createOpenAiCompatibleTranslatorFromEnv(process.env);
+  const translator = createVercelAiTranslatorFromEnv(process.env);
   if (ontology !== null && queryRuntime !== undefined && translator !== undefined) {
     const engine = createSemanticChatEngine({
       ontology,

@@ -16,6 +16,11 @@ const LEGACY_OP_TO_COMPILER: Record<string, string> = {
     gte: "gte",
     lt: "lt",
     lte: "lte",
+    in: "in",
+    not_in: "not_in",
+    is_null: "is_null",
+    is_not_null: "is_not_null",
+    starts_with: "starts_with",
   };
 
 function normalizeFilterOp(op: RowFilter["op"]): NonNullable<ObjectQuery["filters"]>[number]["op"] {
@@ -26,15 +31,25 @@ function normalizeFilterOp(op: RowFilter["op"]): NonNullable<ObjectQuery["filter
   return mapped as NonNullable<ObjectQuery["filters"]>[number]["op"];
 }
 
+/** LLM sometimes emits "contract.foo" for root properties; strip when it matches the query root. */
+function normalizeRootPropertyId(propertyId: string, rootObjectId: string): string {
+  const prefix = `${rootObjectId}.`;
+  if (propertyId.startsWith(prefix)) {
+    return propertyId.slice(prefix.length);
+  }
+  return propertyId;
+}
+
 function normalizeFilter(
   filter: RowFilter,
   defaultEntityId: string,
 ): NonNullable<ObjectQuery["filters"]>[number] {
-  const propertyId = filter.propertyId ?? filter.column;
-  if (propertyId === undefined) {
+  const rawPropertyId = filter.propertyId ?? filter.column;
+  if (rawPropertyId === undefined) {
     throw new Error("Filter is missing propertyId/column.");
   }
   const objectId = filter.entityId ?? defaultEntityId;
+  const propertyId = normalizeRootPropertyId(rawPropertyId, defaultEntityId);
   return {
     ...(objectId !== defaultEntityId ? { objectId } : {}),
     propertyId,
@@ -125,8 +140,12 @@ export function normalizeSemanticQueryPlan(plan: SemanticQueryPlan): NormalizedS
     ...(merged.limit !== undefined ? { limit: merged.limit } : {}),
     ...(merged.joins !== undefined ? { joins: merged.joins } : {}),
     ...(merged.select !== undefined ? { select: merged.select } : {}),
-    ...(merged.groupBy !== undefined ? { groupBy: merged.groupBy } : {}),
-    ...(merged.orderBy !== undefined ? { orderBy: merged.orderBy } : {}),
+    ...(merged.groupBy !== undefined
+      ? { groupBy: merged.groupBy.map((propertyId) => normalizeRootPropertyId(propertyId, objectId)) }
+      : {}),
+    ...(merged.orderBy !== undefined
+      ? { orderBy: normalizeRootPropertyId(merged.orderBy, objectId) }
+      : {}),
     ...(merged.orderDirection !== undefined ? { orderDirection: merged.orderDirection } : {}),
     ...(merged.textSearch !== undefined
       ? {
@@ -143,15 +162,16 @@ export function normalizeSemanticQueryPlan(plan: SemanticQueryPlan): NormalizedS
       : {}),
     ...(merged.aggregations !== undefined
       ? {
-          aggregations: merged.aggregations.map((aggregation) => ({
+          aggregations: merged.aggregations.map((aggregation) => {
+            const rawPropertyId = aggregation.propertyId ?? aggregation.column;
+            return {
             op: aggregation.op,
-            ...(aggregation.propertyId !== undefined
-              ? { propertyId: aggregation.propertyId }
-              : aggregation.column !== undefined
-                ? { propertyId: aggregation.column }
-                : {}),
+            ...(rawPropertyId !== undefined
+              ? { propertyId: normalizeRootPropertyId(rawPropertyId, objectId) }
+              : {}),
             ...(aggregation.alias !== undefined ? { alias: aggregation.alias } : {}),
-          })),
+          };
+          }),
         }
       : {}),
   };

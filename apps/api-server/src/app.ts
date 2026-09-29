@@ -118,7 +118,10 @@ export function createAnchorApiApp(
       semanticAsk?: (body: { question: string; evidence?: boolean }) => Promise<unknown>;
     };
     if (service.semanticAsk === undefined) {
-      return c.json({ error: "Semantic chat is unavailable: configure SEMANTIC_CHAT_LLM_* env vars." }, 503);
+      return c.json(
+        { error: "Semantic chat is unavailable: set AI_GATEWAY_API_KEY (Vercel AI Gateway)." },
+        503,
+      );
     }
     const body = c.req.valid("json");
     const answer = await service.semanticAsk({

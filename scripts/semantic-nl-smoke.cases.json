@@ -1,0 +1,148 @@
+{
+  "tenant": "gerace",
+  "baselineNotes": "Counts use ingest month source_year_month=2025-06 on contract (≈121416 on shared ANAC).",
+  "cases": [
+    {
+      "id": "count-contracts-ingest-2025-06",
+      "question": "Quanti contratti ci sono nel mese di ingest giugno 2025?",
+      "expect": {
+        "objectId": "contract",
+        "mode": "count",
+        "maxAttempts": 2,
+        "filtersInclude": [
+          { "propertyId": "source_year_month", "op": "eq", "value": "2025-06" }
+        ],
+        "countEquals": 121416,
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "count-organizations",
+      "question": "Quante amministrazioni appaltanti (organizzazioni) sono presenti?",
+      "expect": {
+        "objectId": "organization",
+        "mode": "count",
+        "maxAttempts": 2,
+        "countMin": 1000,
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "rows-contracts-sample",
+      "question": "Mostrami al massimo 5 contratti pubblicati nel mese di ingest 2025-06.",
+      "expect": {
+        "objectId": "contract",
+        "mode": "rows",
+        "maxAttempts": 2,
+        "maxRowCount": 5,
+        "filtersInclude": [
+          { "propertyId": "source_year_month", "op": "eq", "value": "2025-06" }
+        ],
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "multi-hop-sicilia",
+      "question": "Quanti contratti del mese 2025-06 riguardano enti con sezione regionale Sicilia?",
+      "expect": {
+        "objectId": "contract",
+        "mode": "count",
+        "maxAttempts": 2,
+        "joinsInclude": [{ "relationshipId": "organization_has_contracts" }],
+        "filtersInclude": [
+          { "objectId": "organization", "propertyId": "sezione_regionale", "op": "eq", "value": "Sicilia" }
+        ],
+        "countMin": 0,
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "in-multiple-ingest-months",
+      "question": "Quanti contratti ci sono nei mesi di ingest maggio e giugno 2025?",
+      "expect": {
+        "objectId": "contract",
+        "mode": "count",
+        "maxAttempts": 2,
+        "filtersInclude": [
+          {
+            "propertyId": "source_year_month",
+            "op": "in",
+            "value": ["2025-05", "2025-06"]
+          }
+        ],
+        "countMin": 121416,
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "groupby-region-2025-06",
+      "question": "Per il mese ingest 2025-06, elenca fino a 10 righe con sezione regionale e numero di contratti per ciascuna.",
+      "expect": {
+        "objectId": "contract",
+        "mode": "rows",
+        "maxAttempts": 2,
+        "filtersIncludeMonths": ["2025-06"],
+        "groupByIncludes": ["sezione_regionale"],
+        "aggregationsMin": 1,
+        "maxRowCount": 10,
+        "minResultRows": 1,
+        "sqlIncludes": ["GROUP BY"],
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "join-select-organization-name",
+      "question": "Mostrami 3 contratti (CIG) del mese ingest 2025-06 con denominazione amministrazione appaltante via join organizzazione.",
+      "expect": {
+        "objectId": "contract",
+        "mode": "rows",
+        "maxAttempts": 2,
+        "joinsInclude": [{ "relationshipId": "organization_has_contracts" }],
+        "filtersIncludeMonths": ["2025-06"],
+        "selectIncludesAny": ["denominazione_amministrazione_appaltante", "organization."],
+        "maxRowCount": 3,
+        "minResultRows": 1,
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "complex-multi-constraint",
+      "question": "Nel mese di ingest giugno 2025, quanti contratti hanno oggetto gara che contiene servizi e sezione regionale compilata?",
+      "expect": {
+        "objectId": "contract",
+        "mode": "count",
+        "maxAttempts": 2,
+        "filtersIncludeMonths": ["2025-06"],
+        "filtersInclude": [
+          { "propertyId": "oggetto_gara", "op": "contains", "value": "servizi" }
+        ],
+        "countMin": 0,
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "contains-subject",
+      "question": "Quanti contratti del 2025-06 hanno un oggetto gara che contiene la parola servizi?",
+      "expect": {
+        "objectId": "contract",
+        "mode": "count",
+        "maxAttempts": 2,
+        "filtersInclude": [
+          { "propertyId": "source_year_month", "op": "eq", "value": "2025-06" },
+          { "propertyId": "oggetto_gara", "op": "contains", "value": "servizi" }
+        ],
+        "countMin": 0,
+        "minProvenanceRows": 1
+      }
+    },
+    {
+      "id": "reject-unknown-property",
+      "optional": true,
+      "question": "Quanti contratti hanno il campo crm_customer_id valorizzato?",
+      "expect": {
+        "shouldFail": true,
+        "failType": "SemanticPlanValidationError"
+      }
+    }
+  ]
+}

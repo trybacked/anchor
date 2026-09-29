@@ -17,10 +17,17 @@ Question → translate (LLM) → SemanticQueryPlan JSON
 import { createSemanticChatEngine } from "@trybacked/semantic-chat";
 import { createOntologyQueryRuntime } from "@trybacked/runtime";
 
+import { createVercelAiTranslatorFromEnv } from "@trybacked/semantic-chat/adapters/vercel-ai";
+
+const translate = createVercelAiTranslatorFromEnv(process.env);
+if (translate === undefined) {
+  throw new Error("Set AI_GATEWAY_API_KEY");
+}
+
 const engine = createSemanticChatEngine({
   ontology,
   queryRuntime,
-  translate: async ({ prompt }) => openAiChat(prompt), // return JSON string only
+  translate,
 });
 
 const answer = await engine.ask("Quanti contratti per il comune di Gerace?");

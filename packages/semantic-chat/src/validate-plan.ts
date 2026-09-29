@@ -53,6 +53,21 @@ export function validateObjectQueryAgainstOntology(
     const targetObject = filter.objectId ?? validated.objectId;
     assertPropertyExists(ontology, targetObject, filter.propertyId);
   }
+  const groupBy = validated.groupBy ?? [];
+  const aggregations = validated.aggregations ?? [];
+  if (groupBy.length > 0) {
+    if (aggregations.length === 0) {
+      throw new SemanticPlanValidationError(
+        "groupBy requires at least one aggregation (e.g. count).",
+      );
+    }
+    if (validated.mode === "count") {
+      throw new SemanticPlanValidationError(
+        'Use mode "rows" with groupBy and aggregations, not mode "count".',
+      );
+    }
+  }
+
   if (validated.textSearch !== undefined) {
     const searchObject = validated.textSearch.objectId ?? validated.objectId;
     assertObjectExists(ontology, searchObject);

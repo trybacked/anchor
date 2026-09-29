@@ -24,9 +24,9 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./adapters/openai-compatible": {
-      "types": "./dist/adapters/openai-compatible.d.ts",
-      "default": "./dist/adapters/openai-compatible.js"
+    "./adapters/vercel-ai": {
+      "types": "./dist/adapters/vercel-ai.d.ts",
+      "default": "./dist/adapters/vercel-ai.js"
     }
   },
   "scripts": {
@@ -38,10 +38,12 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "^4",
     "@trybacked/compiler": "workspace:*",
     "@trybacked/core": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/service": "workspace:*",
+    "ai": "^7",
     "zod": "^3.24.1"
   },
   "devDependencies": {

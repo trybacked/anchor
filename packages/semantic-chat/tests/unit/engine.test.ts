@@ -66,6 +66,24 @@ describe("semantic-chat engine", () => {
     expect(answer.result.sql).toContain("`backed`.`anac`.`contracts`");
   });
 
+  it("normalizes in and is_not_null operators", () => {
+    const normalized = normalizeSemanticQueryPlan({
+      objectQuery: {
+        entityId: "contract",
+        filters: [
+          { propertyId: "source_year_month", op: "in", value: ["2025-05", "2025-06"] },
+          { propertyId: "sezione_regionale", op: "is_not_null", value: null },
+        ],
+      },
+    });
+    expect(normalized.objectQuery.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ propertyId: "source_year_month", op: "in" }),
+        expect.objectContaining({ propertyId: "sezione_regionale", op: "is_not_null" }),
+      ]),
+    );
+  });
+
   it("normalizes legacy column and = operator", () => {
     const normalized = normalizeSemanticQueryPlan({
       objectQuery: {
