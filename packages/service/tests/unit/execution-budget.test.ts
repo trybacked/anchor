@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyQueryExecutionBudget,
+  assertAggregateRowBudget,
   QueryExecutionBudgetError,
 } from "../../src/execution-budget.js";
 
@@ -20,6 +21,16 @@ describe("applyQueryExecutionBudget", () => {
         "semantic_chat",
       ),
     ).toThrow(QueryExecutionBudgetError);
+  });
+
+  it("allows aggregate limits within semantic_chat cap", () => {
+    expect(() => assertAggregateRowBudget([20, 15], "semantic_chat")).not.toThrow();
+  });
+
+  it("rejects aggregate limits above semantic_chat cap", () => {
+    expect(() => assertAggregateRowBudget([40, 15], "semantic_chat")).toThrow(
+      QueryExecutionBudgetError,
+    );
   });
 
   it("skips row limit for count mode", () => {

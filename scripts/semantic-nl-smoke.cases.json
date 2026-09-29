@@ -136,6 +136,17 @@
       }
     },
     {
+      "id": "template-document-search",
+      "optional": true,
+      "question": "Cosa dicono i documenti sulla manutenzione dell'ascensore? Mostra contratti del mese ingest giugno 2025 collegati.",
+      "expect": {
+        "route": "template",
+        "templateId": "search-then-filter",
+        "maxAttempts": 2,
+        "minProvenanceRows": 0
+      }
+    },
+    {
       "id": "reject-unknown-property",
       "optional": true,
       "question": "Quanti contratti hanno il campo crm_customer_id valorizzato?",

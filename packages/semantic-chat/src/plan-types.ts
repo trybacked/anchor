@@ -93,7 +93,42 @@ export const SemanticQueryPlanSchema = z.object({
   objectSet: ObjectSetDefinitionSchema.optional(),
 });
 
+/** Flat shape for structured LLM output (single query vs versioned template). */
+export const RoutedSemanticPlanSchema = z
+  .object({
+    route: z.enum(["single", "template"]),
+    reasoning: z.string().optional(),
+    objectQuery: ObjectQueryRequestSchema.optional(),
+    objectSet: ObjectSetDefinitionSchema.optional(),
+    templateId: z.string().min(1).optional(),
+    params: z.record(z.union([z.string(), z.number()])).optional(),
+  })
+  .superRefine((plan, context) => {
+    if (plan.route === "single") {
+      if (plan.objectQuery === undefined) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'route "single" requires objectQuery',
+        });
+      }
+      return;
+    }
+    if (plan.templateId === undefined || plan.templateId.length === 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'route "template" requires templateId',
+      });
+    }
+    if (plan.params === undefined || Object.keys(plan.params).length === 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'route "template" requires params',
+      });
+    }
+  });
+
 export type RowFilter = z.infer<typeof RowFilterSchema>;
 export type ObjectQueryRequest = z.infer<typeof ObjectQueryRequestSchema>;
 export type ObjectSetDefinition = z.infer<typeof ObjectSetDefinitionSchema>;
 export type SemanticQueryPlan = z.infer<typeof SemanticQueryPlanSchema>;
+export type RoutedSemanticPlan = z.infer<typeof RoutedSemanticPlanSchema>;

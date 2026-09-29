@@ -14,6 +14,9 @@ import {
 import { loadPublishedOntology } from "@trybacked/registry";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
+import { createSemanticChatEngine, renderAnswer } from "@trybacked/semantic-chat";
+import { createVercelAiTranslatorFromEnv } from "@trybacked/semantic-chat/adapters/vercel-ai";
+import type { SemanticAskHandler } from "@trybacked/mcp";
 import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { ANSI, wrap } from "../ui/ansi.js";
@@ -51,6 +54,21 @@ export const deployCommand: CommandHandler = async () => {
   const model = readModelYaml(root);
   const ontology = loadPublishedOntology(root);
   const queryRuntime = await buildQueryRuntime(root);
+  let semanticAsk: SemanticAskHandler | undefined;
+  if (ontology !== null && queryRuntime !== undefined) {
+    const translator = createVercelAiTranslatorFromEnv(process.env);
+    if (translator !== undefined) {
+      const engine = createSemanticChatEngine({
+        ontology,
+        queryRuntime,
+        translate: translator,
+      });
+      semanticAsk = async (body) => {
+        const answer = await engine.ask(body.question, { evidence: body.evidence });
+        return { ...answer, text: renderAnswer(answer) };
+      };
+    }
+  }
   const warehouseTools =
     queryRuntime !== undefined
       ? [
@@ -58,6 +76,7 @@ export const deployCommand: CommandHandler = async () => {
           ...(queryRuntime.chunkSearch !== undefined ? [MCP_TOOL_NAMES.searchDocuments] : []),
           ...(queryRuntime.entityProfile !== undefined ? [MCP_TOOL_NAMES.getEntityProfile] : []),
           ...(queryRuntime.graphTraverse !== undefined ? [MCP_TOOL_NAMES.traverseGraph] : []),
+          ...(semanticAsk !== undefined ? [MCP_TOOL_NAMES.askSemantic] : []),
         ]
       : [];
   const toolNames = [...MCP_SURFACE_TOOLS, ...warehouseTools];
@@ -75,5 +94,6 @@ export const deployCommand: CommandHandler = async () => {
   await runStdioMcpServerUntilClose(model, {
     ...(ontology !== null ? { ontology } : {}),
     ...(queryRuntime !== undefined ? { queryRuntime } : {}),
+    ...(semanticAsk !== undefined ? { semanticAsk } : {}),
   });
 };

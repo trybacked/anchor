@@ -24,13 +24,31 @@ function defaultRowLimit(profile: ExecutionBudgetProfile): number {
   }
 }
 
-function maxRowLimit(profile: ExecutionBudgetProfile): number {
+export function maxRowLimitForProfile(profile: ExecutionBudgetProfile): number {
   switch (profile) {
     case "semantic_chat":
       return SEMANTIC_CHAT_MAX_ROW_LIMIT;
     case "api":
     case "mcp":
       return MAX_WAREHOUSE_ROW_LIMIT;
+  }
+}
+
+function maxRowLimit(profile: ExecutionBudgetProfile): number {
+  return maxRowLimitForProfile(profile);
+}
+
+/** Ensures summed row/chunk limits across template steps stay within profile cap. */
+export function assertAggregateRowBudget(
+  rowLimits: number[],
+  profile: ExecutionBudgetProfile,
+): void {
+  const cap = maxRowLimitForProfile(profile);
+  const sum = rowLimits.reduce((total, limit) => total + limit, 0);
+  if (sum > cap) {
+    throw new QueryExecutionBudgetError(
+      `Combined row limits ${String(sum)} exceed maximum ${String(cap)} for ${profile}.`,
+    );
   }
 }
 

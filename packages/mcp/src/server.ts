@@ -6,9 +6,11 @@ import type { McpSurfaceTool } from "./constants.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";
 import {
+  askSemanticToolForContext,
   MCP_TOOL_DEFINITIONS,
   QUERY_OBJECTS_TOOL_DEFINITION,
   warehouseReaderToolsForRuntime,
+  type SemanticAskHandler,
   type ToolContext,
   type ToolDefinition,
 } from "./tools.js";
@@ -24,6 +26,7 @@ export interface ModelMcpServerOptions {
   searchModelOptions?: SearchModelOptions;
   queryRuntime?: OntologyQueryRuntime;
   ontology?: Ontology | undefined;
+  semanticAsk?: SemanticAskHandler | undefined;
 }
 
 function jsonContent(data: unknown): {
@@ -83,11 +86,13 @@ export function createModelMcpServer(
       ? { searchModelOptions: options.searchModelOptions }
       : {}),
     ...(options.queryRuntime !== undefined ? { queryRuntime: options.queryRuntime } : {}),
+    ...(options.semanticAsk !== undefined ? { semanticAsk: options.semanticAsk } : {}),
   };
   const tools: ToolDefinition[] = [
     ...MCP_TOOL_DEFINITIONS,
     ...(options.queryRuntime !== undefined ? [QUERY_OBJECTS_TOOL_DEFINITION] : []),
     ...warehouseReaderToolsForRuntime(options.queryRuntime),
+    ...askSemanticToolForContext(options.semanticAsk),
   ];
 
   for (const tool of tools) {

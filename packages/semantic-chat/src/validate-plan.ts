@@ -2,8 +2,18 @@ import { ObjectQuerySchema, type ObjectQuery } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
 import {
   applyQueryExecutionBudget,
+  assertAggregateRowBudget,
   QueryExecutionBudgetError,
 } from "@trybacked/service";
+import {
+  collectTemplateRowLimits,
+  instantiatePlanTemplate,
+  type InstantiatedPlan,
+  type TemplateParamValues,
+} from "./instantiate-template.js";
+import type { RoutedSemanticPlan, SemanticQueryPlan } from "./plan-types.js";
+import { normalizeSemanticQueryPlan } from "./normalize.js";
+import type { PlanTemplateRegistry } from "./template-registry.js";
 
 export class SemanticPlanValidationError extends Error {
   constructor(message: string) {
@@ -85,4 +95,76 @@ export function validateObjectQueryAgainstOntology(
     }
     throw error;
   }
+}
+
+function routedPlanToSemanticPlan(plan: RoutedSemanticPlan): SemanticQueryPlan {
+  if (plan.objectQuery === undefined) {
+    throw new SemanticPlanValidationError('route "single" requires objectQuery.');
+  }
+  return {
+    ...(plan.reasoning !== undefined ? { reasoning: plan.reasoning } : {}),
+    objectQuery: plan.objectQuery,
+    ...(plan.objectSet !== undefined ? { objectSet: plan.objectSet } : {}),
+  };
+}
+
+export type ValidatedTemplateExecution = {
+  route: "template";
+  templateId: string;
+  instantiated: InstantiatedPlan;
+};
+
+export type ValidatedRoutedPlan =
+  | { route: "single"; semanticPlan: SemanticQueryPlan }
+  | ValidatedTemplateExecution;
+
+/** Validate LLM routed plan: single object query or known template + params. */
+export function validateRoutedPlan(
+  ontology: Ontology,
+  registry: PlanTemplateRegistry,
+  plan: RoutedSemanticPlan,
+): ValidatedRoutedPlan {
+  if (plan.route === "single") {
+    const semanticPlan = routedPlanToSemanticPlan(plan);
+    return { route: "single", semanticPlan };
+  }
+
+  const templateId = plan.templateId;
+  if (templateId === undefined) {
+    throw new SemanticPlanValidationError('route "template" requires templateId.');
+  }
+  const template = registry.get(templateId);
+  if (template === undefined) {
+    throw new SemanticPlanValidationError(`Unknown plan template "${templateId}".`);
+  }
+
+  const params = plan.params ?? {};
+  let instantiated: InstantiatedPlan;
+  try {
+    instantiated = instantiatePlanTemplate(template, params as TemplateParamValues);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new SemanticPlanValidationError(message);
+  }
+
+  try {
+    assertAggregateRowBudget(collectTemplateRowLimits(instantiated.steps), "semantic_chat");
+  } catch (error) {
+    if (error instanceof QueryExecutionBudgetError) {
+      throw new SemanticPlanValidationError(error.message);
+    }
+    throw error;
+  }
+
+  for (const step of instantiated.steps) {
+    if (step.type !== "objectQuery") {
+      continue;
+    }
+    validateObjectQueryAgainstOntology(
+      ontology,
+      normalizeSemanticQueryPlan({ objectQuery: step.query }).objectQuery,
+    );
+  }
+
+  return { route: "template", templateId, instantiated };
 }

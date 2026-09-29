@@ -6,11 +6,17 @@ import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
 import { entityNotFoundMessage } from "./errors.js";
 import type { SearchModelOptions } from "./mapping.js";
 
+export type SemanticAskHandler = (body: {
+  question: string;
+  evidence?: boolean | undefined;
+}) => Promise<unknown>;
+
 export interface ToolContext {
   model: SemanticModel;
   ontology?: Ontology | undefined;
   searchModelOptions?: SearchModelOptions;
   queryRuntime?: OntologyQueryRuntime;
+  semanticAsk?: SemanticAskHandler | undefined;
 }
 
 export type ToolResult =
@@ -294,6 +300,37 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
 ];
+
+export const ASK_SEMANTIC_TOOL_DEFINITION: ToolDefinition = {
+  name: TOOL_NAMES.askSemantic,
+  title: "Ask semantic",
+  description:
+    "Natural-language question → routed semantic plan (single warehouse query or document search template). " +
+    "Returns rows/count, SQL, provenance, and execution steps. Requires AI Gateway configuration.",
+  inputSchema: {
+    question: z.string().min(1).describe("Italian or English NL question"),
+    evidence: z
+      .boolean()
+      .optional()
+      .describe("When true, attach document chunk evidence to row provenance when available"),
+  },
+  handler: async (context, args) => {
+    if (context.semanticAsk === undefined) {
+      return { error: "Semantic chat is not configured (missing ontology, warehouse, or LLM)." };
+    }
+    const result = await context.semanticAsk({
+      question: readToolString(args, "question"),
+      ...(args["evidence"] === true ? { evidence: true } : {}),
+    });
+    return result as Record<string, unknown>;
+  },
+};
+
+export function askSemanticToolForContext(
+  semanticAsk: SemanticAskHandler | undefined,
+): ToolDefinition[] {
+  return semanticAsk === undefined ? [] : [ASK_SEMANTIC_TOOL_DEFINITION];
+}
 
 export function warehouseReaderToolsForRuntime(
   queryRuntime: OntologyQueryRuntime | undefined,

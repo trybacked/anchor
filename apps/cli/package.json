@@ -51,6 +51,7 @@
     "@trybacked/provider-databricks": "workspace:*",
     "@trybacked/registry": "workspace:*",
     "@trybacked/runtime": "workspace:*",
+    "@trybacked/semantic-chat": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {

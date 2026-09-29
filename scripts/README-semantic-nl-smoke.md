@@ -1,6 +1,6 @@
 # Semantic NL smoke
 
-End-to-end check: **Italian question → Vercel AI Gateway → SemanticQueryPlan → validate → Databricks**.
+End-to-end check: **Italian question → Vercel AI Gateway → routed plan (`single` | `template`) → validate → Databricks** (templates: document search then contract filter).
 
 ## Run
 
@@ -60,3 +60,4 @@ Add entries to `cases.json`. Useful `expect` fields:
 - `groupByIncludes`, `aggregationsMin`, `selectIncludesAny`, `sqlIncludes`
 - `countEquals`, `countMin`, `maxRowCount`
 - `shouldFail` + `failType` for negative tests
+- `route`, `templateId` for plan-template cases (optional until `docs.*` is loaded)

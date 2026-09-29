@@ -56,6 +56,8 @@ export type {
 } from "./contracts.js";
 export {
   applyQueryExecutionBudget,
+  assertAggregateRowBudget,
+  maxRowLimitForProfile,
   QueryExecutionBudgetError,
   type ExecutionBudgetProfile,
 } from "./execution-budget.js";

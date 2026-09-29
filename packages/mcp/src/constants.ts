@@ -17,6 +17,7 @@ export const TOOL_NAMES = {
   searchDocuments: "search_documents",
   getEntityProfile: "get_entity_profile",
   traverseGraph: "traverse_graph",
+  askSemantic: "ask_semantic",
 } as const;
 export const MCP_SURFACE_TOOLS = [
   TOOL_NAMES.listEntities,

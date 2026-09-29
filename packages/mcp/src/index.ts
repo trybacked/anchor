@@ -35,5 +35,5 @@ export {
   QUERY_OBJECTS_TOOL_DEFINITION,
   WAREHOUSE_READER_TOOL_DEFINITIONS,
 } from "./tools.js";
-export type { ToolContext, ToolDefinition } from "./tools.js";
+export type { SemanticAskHandler, ToolContext, ToolDefinition } from "./tools.js";
 export { entityNotFoundMessage } from "./errors.js";

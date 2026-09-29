@@ -17,6 +17,7 @@ const ontology: Ontology = {
       properties: [
         { id: "cig", name: "CIG", type: "string", role: "primary_key" },
         { id: "oggetto_gara", name: "Subject", type: "string", role: "attribute" },
+        { id: "source_year_month", name: "Month", type: "string", role: "attribute" },
         { id: "document_id", name: "Document", type: "string", role: "attribute" },
         { id: "page_start", name: "Page start", type: "integer", role: "attribute" },
       ],
@@ -55,6 +56,7 @@ describe("semantic-chat engine", () => {
     });
 
     expect(answer.result.rowCount).toBe(1);
+    expect(answer.route).toBe("single");
     expect(answer.ontologyVersion).toBe(1);
     expect(answer.parameterNames.length).toBeGreaterThan(0);
     expect(answer.provenance[0]?.entity.objectId).toBe("contract");
@@ -96,6 +98,42 @@ describe("semantic-chat engine", () => {
       op: "eq",
       value: "X",
     });
+  });
+
+  it("executes search-then-filter template with chunk search and object query", async () => {
+    const runtime: OntologyQueryRuntime = {
+      chunkSearch: async () => [
+        { documentId: "doc-1", text: "manutenzione ascensore" },
+        { documentId: "doc-2", text: "ascensore" },
+      ],
+      queryObjects: async () => ({
+        objectId: "contract",
+        columns: ["cig"],
+        rows: [{ cig: "C1" }],
+        rowCount: 1,
+        sql: "SELECT cig FROM contracts WHERE document_id IN (:doc0, :doc1)",
+      }),
+    };
+    const engine = createSemanticChatEngine({
+      ontology,
+      queryRuntime: runtime,
+      translate: async () => {
+        throw new Error("should not run");
+      },
+    });
+
+    const answer = await engine.executePlan({
+      kind: "template",
+      templateId: "search-then-filter",
+      params: { query: "ascensore", month: "2025-06" },
+    });
+
+    expect(answer.route).toBe("template");
+    expect(answer.templateId).toBe("search-then-filter");
+    expect(answer.steps).toHaveLength(2);
+    expect(answer.steps[0]?.type).toBe("chunkSearch");
+    expect(answer.steps[1]?.documentIds).toEqual(["doc-1", "doc-2"]);
+    expect(answer.result.rowCount).toBe(1);
   });
 
   it("builds row provenance without document columns", () => {

@@ -85,17 +85,22 @@ function applyDocumentIdFilters(
   if (query.documentIds === undefined || query.documentIds.length === 0) {
     return [];
   }
-  if (query.documentIds.length > 1) {
-    throw new Error(
-      "Multiple documentIds require separate queries (compiler supports AND filters only).",
-    );
+  if (query.documentIds.length === 1) {
+    return [
+      {
+        objectId,
+        propertyId: "document_id",
+        op: "eq",
+        value: query.documentIds[0] ?? "",
+      },
+    ];
   }
   return [
     {
       objectId,
       propertyId: "document_id",
-      op: "eq",
-      value: query.documentIds[0] ?? "",
+      op: "in",
+      value: [...query.documentIds],
     },
   ];
 }

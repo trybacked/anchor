@@ -138,6 +138,13 @@ function assertCase(expectation, answer, error) {
     return failures;
   }
 
+  if (expectation.route !== undefined && answer.route !== expectation.route) {
+    failures.push(`route ${String(answer.route)} !== ${expectation.route}`);
+  }
+  if (expectation.templateId !== undefined && answer.templateId !== expectation.templateId) {
+    failures.push(`templateId ${String(answer.templateId)} !== ${expectation.templateId}`);
+  }
+
   const query = answer.plan.objectQuery;
   if (expectation.objectId !== undefined && query.objectId !== expectation.objectId) {
     failures.push(`objectId ${query.objectId} !== ${expectation.objectId}`);

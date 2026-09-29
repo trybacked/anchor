@@ -170,7 +170,19 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
       "/v1/search/chunks": { post: { operationId: "chunkSearch", tags: ["chunk-search"], responses: { "200": { description: "Matching chunks" }, "503": { description: "Unavailable" } } } },
       "/v1/profile/entities": { post: { operationId: "entityProfile", tags: ["entity-profile-reader"], responses: { "200": { description: "Profile" }, "503": { description: "Unavailable" } } } },
       "/v1/graph/traverse": { post: { operationId: "graphTraverse", tags: ["graph-traverse"], responses: { "200": { description: "Joined rows" }, "503": { description: "Unavailable" } } } },
-      "/v1/chat/ask": { post: { operationId: "semanticAsk", tags: ["semantic-chat"], responses: { "200": { description: "Answer with provenance" }, "503": { description: "Unavailable" } } } },
+      "/v1/chat/ask": {
+        post: {
+          operationId: "semanticAsk",
+          tags: ["semantic-chat"],
+          responses: {
+            "200": {
+              description:
+                "NL answer with route (single|template), execution steps, SQL, rows/count, and provenance",
+            },
+            "503": { description: "Unavailable" },
+          },
+        },
+      },
     },
   };
 }

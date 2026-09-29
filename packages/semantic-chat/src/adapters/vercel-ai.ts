@@ -1,10 +1,11 @@
 import { gateway, createGatewayProvider } from "@ai-sdk/gateway";
 import { generateObject } from "ai";
 import type { SemanticQueryTranslator } from "../engine.js";
-import { SemanticQueryPlanSchema } from "../plan-types.js";
+import { RoutedSemanticPlanSchema } from "../plan-types.js";
 
 const TRANSLATION_SYSTEM =
-  "Translate the user question into JSON matching SemanticQueryPlan. " +
+  "Translate the user question into JSON matching the routed semantic plan schema. " +
+  "Use route single for warehouse queries; route template only for document-archive search flows. " +
   "Use only ontology object and relationship ids from the context. " +
   "Prefer mode count for how-many questions; keep row limits small.";
 
@@ -44,7 +45,7 @@ export function createVercelAiTranslator(options: VercelAiTranslatorOptions): Se
   return async ({ prompt, ontologyContext }) => {
     const result = await generateObject({
       model,
-      schema: SemanticQueryPlanSchema,
+      schema: RoutedSemanticPlanSchema,
       temperature: 0,
       system: TRANSLATION_SYSTEM,
       prompt: `${ontologyContext}\n\n${prompt}`,
