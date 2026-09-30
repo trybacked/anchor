@@ -37,7 +37,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp src/tenant/*.yaml dist/tenant/",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
@@ -52,6 +52,7 @@
     "@trybacked/registry": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/semantic-chat": "workspace:*",
+    "yaml": "^2.7.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

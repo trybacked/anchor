@@ -5,6 +5,7 @@ import {
   dispatchAnchorCommand,
   UnknownAnchorCommandError,
 } from "./anchor-commands.js";
+import { tenantCreateCommand } from "./commands/tenant-create.js";
 import { printCliVersion } from "./commands/version.js";
 import { formatCliCommand, isHelpFlag, isVersionFlag, SERVICES } from "./config.js";
 import { loadWorkspaceDotEnv } from "./env.js";
@@ -55,6 +56,20 @@ async function main(): Promise<void> {
 
   if (isVersionFlag(first)) {
     printCliVersion();
+    return;
+  }
+
+  if (first === "tenant") {
+    if (second === undefined || isHelpFlag(second)) {
+      getUi().log("Usage: backed tenant create <tenant-id>");
+      return;
+    }
+    if (second === "create") {
+      await tenantCreateCommand(rest);
+      return;
+    }
+    getUi().writeError(`Unknown tenant subcommand: ${second}`);
+    process.exitCode = 1;
     return;
   }
 
