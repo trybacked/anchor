@@ -5,6 +5,7 @@ import {
 } from "@trybacked/service";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { getRequestContext } from "./request-context.js";
 
 export type AuditLogOptions = {
   logPath?: string | undefined;
@@ -23,11 +24,14 @@ export function createAuditLogHook(options: AuditLogOptions = {}): AnchorOperati
   }
 
   return (event) => {
+    const requestUser = getRequestContext()?.user;
+    const enriched: AnchorOperationAuditEvent =
+      requestUser !== undefined ? { ...event, user: requestUser } : event;
     if (options.logPath !== undefined) {
-      appendFileSync(options.logPath, formatAuditLine(event), "utf8");
+      appendFileSync(options.logPath, formatAuditLine(enriched), "utf8");
     }
     if (options.logPath === undefined || mirrorStderr) {
-      writeAuditJsonLine(event);
+      writeAuditJsonLine(enriched);
     }
   };
 }

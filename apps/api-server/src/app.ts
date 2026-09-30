@@ -12,6 +12,7 @@ import {
 import { Hono } from "hono";
 import { z } from "zod";
 import { createBearerAuthMiddleware } from "./auth.js";
+import { runWithRequestContext } from "./request-context.js";
 
 const EntityIdParamSchema = z.object({ id: z.string().min(1) });
 const ListRelationsQuerySchema = z.object({ entityId: z.string().optional() });
@@ -51,6 +52,11 @@ export function createAnchorApiApp(
   const v1 = new Hono();
   if (auth !== undefined) {
     v1.use("*", auth);
+    v1.use("*", async (c, next) => {
+      const headerUser = c.req.header("X-Backed-User")?.trim();
+      const user = headerUser !== undefined && headerUser.length > 0 ? headerUser : undefined;
+      return runWithRequestContext({ user }, () => next());
+    });
   }
 
   v1.get("/model/entities", (c) => c.json(getService().listEntities()));

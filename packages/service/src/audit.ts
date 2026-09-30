@@ -13,6 +13,7 @@ export type AnchorOperationAuditEvent = {
   durationMs: number;
   sqlHash?: string | undefined;
   principal?: string | undefined;
+  user?: string | undefined;
 };
 
 export type AnchorOperationAuditHook = (event: AnchorOperationAuditEvent) => void;
