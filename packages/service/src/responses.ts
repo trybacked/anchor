@@ -1,7 +1,13 @@
 import type { EntityProfileResult } from "@trybacked/runtime";
 import type { RowProvenance } from "./provenance.js";
 import type { QueryObjectsToolPayload } from "./response-cap.js";
-import type { EntityDetail, EntitySummary, RelationSummary, SearchMatch } from "./schemas.js";
+import type {
+  DefinitionResult,
+  EntityDetail,
+  EntitySummary,
+  RelationSummary,
+  SearchMatch,
+} from "./schemas.js";
 
 export type HealthResponse = {
   ok: true;
@@ -32,6 +38,39 @@ export type EntitySearchResponse = {
 export type ListEntitiesResponse = EntitySummary[];
 export type ListRelationsResponse = RelationSummary[];
 export type GetEntityResponse = EntityDetail;
+
+export type SemanticAskStep = {
+  id: string;
+  type: "chunkSearch" | "objectQuery";
+  rowCount?: number | undefined;
+  documentIds?: string[] | undefined;
+  sql?: string | undefined;
+};
+
+export type SemanticAskResult = {
+  objectId: string;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  mode: "rows" | "count";
+  sql: string;
+};
+
+export type SemanticAskResponse = {
+  text: string;
+  question: string;
+  route: "single" | "template";
+  templateId?: string | undefined;
+  plan: Record<string, unknown>;
+  result: SemanticAskResult;
+  provenance: RowProvenance[];
+  ontologyVersion: number;
+  parameterNames: string[];
+  attempts: number;
+  steps: SemanticAskStep[];
+};
+
+export type GetDefinitionResponse = DefinitionResult;
 
 export class AnchorApiError extends Error {
   readonly status: number;

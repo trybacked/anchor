@@ -13,6 +13,7 @@ import {
   createAnchorService,
   type AnchorOperationAuditHook,
   type AnchorService,
+  type SemanticAskResponse,
 } from "@trybacked/service";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -90,7 +91,12 @@ export async function createWorkspaceService(
         capabilities: () => ({ ...service.capabilities(), semanticChat: true }),
         semanticAsk: async (body: { question: string; evidence?: boolean | undefined }) => {
           const answer = await engine.ask(body.question, { evidence: body.evidence });
-          return { ...answer, text: renderAnswer(answer) };
+          const response: SemanticAskResponse = {
+            ...answer,
+            plan: answer.plan,
+            text: renderAnswer(answer),
+          };
+          return response;
         },
       }),
     };

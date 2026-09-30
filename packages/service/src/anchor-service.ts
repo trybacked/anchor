@@ -113,7 +113,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
       const started = Date.now();
       try {
         const mode = parsed.data.mode;
-        let query = applyQueryExecutionBudget(parsed.data, executionProfile);
+        const query = applyQueryExecutionBudget(parsed.data, executionProfile);
         const result = await queryRuntime.queryObjects(query);
         auditOperation(options, {
           operation: "objectQuery",

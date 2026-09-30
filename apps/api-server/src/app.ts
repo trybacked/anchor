@@ -8,6 +8,7 @@ import {
   ObjectQueryBodySchema,
   SearchModelBodySchema,
   type AnchorService,
+  type SemanticAskResponse,
 } from "@trybacked/service";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -129,7 +130,7 @@ export function createAnchorApiApp(
 
   v1.post("/chat/ask", zValidator("json", SemanticAskBodySchema), async (c) => {
     const service = getService() as AnchorService & {
-      semanticAsk?: (body: { question: string; evidence?: boolean }) => Promise<unknown>;
+      semanticAsk?: (body: { question: string; evidence?: boolean }) => Promise<SemanticAskResponse>;
     };
     if (service.semanticAsk === undefined) {
       return c.json(
