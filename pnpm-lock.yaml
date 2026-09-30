@@ -119,6 +119,31 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
+  apps/gateway:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.14.4
+        version: 1.19.17(hono@4.13.5)
+      '@hono/zod-validator':
+        specifier: ^0.5.0
+        version: 0.5.0(hono@4.13.5)(zod@3.25.76)
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      hono:
+        specifier: ^4.13.5
+        version: 4.13.5
+      yaml:
+        specifier: ^2.7.0
+        version: 2.9.0
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
+
   packages/anchor:
     dependencies:
       '@trybacked/service':

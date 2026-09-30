@@ -1,0 +1,5 @@
+users:
+  - username: demo
+    passwordHash: "scrypt$16384$8$1$REPLACE_SALT$REPLACE_HASH"
+    tenants:
+      - gerace

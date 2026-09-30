@@ -1,0 +1,132 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { createGatewayApp } from "../../src/app.js";
+import type { GatewayConfig } from "../../src/config.js";
+import { hashPassword } from "../../src/password.js";
+import { createSessionToken } from "../../src/session.js";
+
+function writeRegistry(dir: string): string {
+  const path = join(dir, "tenants.yaml");
+  writeFileSync(
+    path,
+    `enrollment:
+  host: https://example.databricks.com
+  profile: DEFAULT
+  warehouse_id: wh
+shared_spaces: {}
+tenants:
+  gerace:
+    catalog: backed_gerace
+    mcp: backed-gerace
+    shared: []
+  backed:
+    catalog: backed
+    mcp: backed-backed
+    shared: []
+`,
+    "utf8",
+  );
+  return path;
+}
+
+function baseConfig(dir: string, registryPath: string): GatewayConfig {
+  return {
+    host: "127.0.0.1",
+    port: 8790,
+    sessionSecret: "s".repeat(32),
+    sessionTtlSeconds: 3600,
+    cookieSecure: false,
+    tenantsRegistryPath: registryPath,
+    usersFilePath: join(dir, "users.yaml"),
+    multiTenant: true,
+    rateLimitPerMinute: 100,
+    upstreams: { gerace: "http://127.0.0.1:8797", backed: "http://127.0.0.1:8798" },
+    upstreamTokens: { gerace: "token-gerace", backed: "token-backed" },
+  };
+}
+
+describe("gateway routing", () => {
+  it("returns 403 for tenant not in user list", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gw-"));
+    const registryPath = writeRegistry(dir);
+    const config = baseConfig(dir, registryPath);
+    const token = await createSessionToken(config.sessionSecret, { username: "u", tenants: ["gerace"] }, 3600);
+    const fetchImpl: typeof fetch = async () =>
+      new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    const app = createGatewayApp({
+      config,
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
+      proxyDeps: { fetchImpl },
+    });
+    const response = await app.request("/t/backed/v1/model/entities", {
+      headers: { Cookie: `backed_session=${token}` },
+    });
+    expect(response.status).toBe(403);
+  });
+
+  it("proxies authorized tenant", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gw-"));
+    const registryPath = writeRegistry(dir);
+    const config = baseConfig(dir, registryPath);
+    const token = await createSessionToken(config.sessionSecret, { username: "u", tenants: ["gerace"] }, 3600);
+    let proxied = false;
+    const fetchImpl: typeof fetch = async (input) => {
+      proxied = String(input).includes("/v1/model/entities");
+      return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
+    };
+    const app = createGatewayApp({
+      config,
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
+      proxyDeps: { fetchImpl },
+    });
+    const response = await app.request("/t/gerace/v1/model/entities", {
+      headers: { Cookie: `backed_session=${token}` },
+    });
+    expect(response.status).toBe(200);
+    expect(proxied).toBe(true);
+  });
+
+  it("single mode serves /v1 without tenant prefix", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gw-"));
+    const registryPath = writeRegistry(dir);
+    const config: GatewayConfig = {
+      ...baseConfig(dir, registryPath),
+      multiTenant: false,
+      defaultUpstream: "http://127.0.0.1:8799",
+      defaultUpstreamToken: "single-token",
+    };
+    const token = await createSessionToken(config.sessionSecret, { username: "u", tenants: [] }, 3600);
+    let proxied = false;
+    const fetchImpl: typeof fetch = async (input) => {
+      proxied = String(input).endsWith("/v1/model/entities");
+      return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
+    };
+    const app = createGatewayApp({
+      config,
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: [] }],
+      proxyDeps: { fetchImpl },
+    });
+    const response = await app.request("/v1/model/entities", {
+      headers: { Cookie: `backed_session=${token}` },
+    });
+    expect(response.status).toBe(200);
+    expect(proxied).toBe(true);
+  });
+
+  it("multi mode does not expose /v1 at root", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gw-"));
+    const registryPath = writeRegistry(dir);
+    const config = baseConfig(dir, registryPath);
+    const token = await createSessionToken(config.sessionSecret, { username: "u", tenants: ["gerace"] }, 3600);
+    const app = createGatewayApp({
+      config,
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
+    });
+    const response = await app.request("/v1/model/entities", {
+      headers: { Cookie: `backed_session=${token}` },
+    });
+    expect(response.status).toBe(404);
+  });
+});
