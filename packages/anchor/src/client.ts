@@ -1,22 +1,32 @@
-import type { ObjectQueryBody } from "@trybacked/service";
-import type {
-  ChunkSearchResponse,
-  EntityProfileResponse,
-  EntitySearchResponse,
-  GetEntityResponse,
-  GraphTraverseResponse,
-  HealthResponse,
-  ListEntitiesResponse,
-  ListRelationsResponse,
-  ObjectQueryResponse,
-  SearchMatch,
+import {
+  AnchorApiError,
+  type ChunkSearchBody,
+  type EntityProfileBody,
+  type EntitySearchBody,
+  type GetDefinitionResponse,
+  type GraphTraverseBody,
+  type ObjectQueryBody,
+  type ChunkSearchResponse,
+  type EntityProfileResponse,
+  type EntitySearchResponse,
+  type GetEntityResponse,
+  type GraphTraverseResponse,
+  type HealthResponse,
+  type ListEntitiesResponse,
+  type ListRelationsResponse,
+  type ObjectQueryResponse,
+  type SearchMatch,
+  type SemanticAskResponse,
 } from "@trybacked/service";
-import { AnchorApiError } from "@trybacked/service";
 
 export type AnchorClientOptions = {
   baseUrl: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
+  /** Pass `"include"` when the gateway sets session cookies (same-site or CORS with credentials). */
+  credentials?: "omit" | "same-origin" | "include";
+  /** Called before throwing on HTTP 401 or 403 (e.g. redirect to login). */
+  onUnauthorized?: (error: AnchorApiError) => void;
 };
 
 async function requestJson<T>(
@@ -31,11 +41,13 @@ async function requestJson<T>(
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...options.headers,
   };
-  const response = await fetchFn(`${options.baseUrl.replace(/\/$/, "")}${path}`, {
+  const init: RequestInit = {
     method,
     headers,
+    ...(options.credentials !== undefined ? { credentials: options.credentials } : {}),
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
+  };
+  const response = await fetchFn(`${options.baseUrl.replace(/\/$/, "")}${path}`, init);
   const payload: unknown = await response.json();
   if (!response.ok) {
     const message =
@@ -45,7 +57,11 @@ async function requestJson<T>(
       typeof payload.error === "string"
         ? payload.error
         : `HTTP ${String(response.status)}`;
-    throw new AnchorApiError(response.status, message);
+    const error = new AnchorApiError(response.status, message);
+    if ((response.status === 401 || response.status === 403) && options.onUnauthorized !== undefined) {
+      options.onUnauthorized(error);
+    }
+    throw error;
   }
   return payload as T;
 }
@@ -69,40 +85,28 @@ export function createAnchorClient(options: AnchorClientOptions) {
       requestJson<SearchMatch[]>(options, "POST", "/v1/model/search", { query }),
 
     getDefinition: (term: string) =>
-      requestJson<unknown>(options, "POST", "/v1/model/definitions", { term }),
+      requestJson<GetDefinitionResponse>(options, "POST", "/v1/model/definitions", { term }),
 
     objectQuery: (body: ObjectQueryBody) =>
       requestJson<ObjectQueryResponse>(options, "POST", "/v1/query/objects", body),
 
-    entitySearch: (body: { query: string; kinds?: ("entity" | "property" | "relation" | "rule")[] }) =>
+    entitySearch: (body: EntitySearchBody) =>
       requestJson<EntitySearchResponse>(options, "POST", "/v1/search/entities", body),
 
-    chunkSearch: (body: {
-      query: string;
-      limit?: number;
-      minScore?: number;
-      documentIds?: string[];
-    }) => requestJson<ChunkSearchResponse>(options, "POST", "/v1/search/chunks", body),
+    chunkSearch: (body: ChunkSearchBody) =>
+      requestJson<ChunkSearchResponse>(options, "POST", "/v1/search/chunks", body),
 
-    entityProfile: (body: {
-      name: string;
-      matchLimit?: number;
-      factLimit?: number;
-      documentLimit?: number;
-    }) => requestJson<EntityProfileResponse>(options, "POST", "/v1/profile/entities", body),
+    entityProfile: (body: EntityProfileBody) =>
+      requestJson<EntityProfileResponse>(options, "POST", "/v1/profile/entities", body),
 
-    graphTraverse: (body: {
-      relationId: string;
-      value: string | number;
-      direction?: "forward" | "reverse";
-      depth?: number;
-      limit: number;
-      mode?: "rows" | "count";
-    }) => requestJson<GraphTraverseResponse>(options, "POST", "/v1/graph/traverse", body),
+    graphTraverse: (body: GraphTraverseBody) =>
+      requestJson<GraphTraverseResponse>(options, "POST", "/v1/graph/traverse", body),
 
     ask: (body: { question: string; evidence?: boolean }) =>
-      requestJson<{ text: string } & Record<string, unknown>>(options, "POST", "/v1/chat/ask", body),
+      requestJson<SemanticAskResponse>(options, "POST", "/v1/chat/ask", body),
   };
 }
 
 export type AnchorClient = ReturnType<typeof createAnchorClient>;
+
+export { AnchorApiError };

@@ -21,17 +21,21 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@trybacked/service": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
   }
 }
