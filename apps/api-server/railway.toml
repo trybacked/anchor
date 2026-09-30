@@ -1,0 +1,10 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "anchor/apps/api-server/Dockerfile"
+watchPatterns = ["anchor/apps/api-server/**", "anchor/packages/**"]
+
+[deploy]
+healthcheckPath = "/health/live"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

@@ -11,7 +11,12 @@ describe("Anchor API app", () => {
   const service = createAnchorService({ model: readModelYaml(fixtureRoot) });
   const app = createAnchorApiApp(() => service, { apiToken: "test-token-secret" });
 
-  it("allows health without auth", async () => {
+  it("allows liveness without auth", async () => {
+    const response = await app.request("/health/live");
+    expect(response.status).toBe(200);
+  });
+
+  it("allows readiness health without auth", async () => {
     const response = await app.request("/health");
     expect(response.status).toBe(200);
   });

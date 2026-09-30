@@ -11,7 +11,33 @@ pnpm --filter @trybacked/api-server start
 ```
 
 - **OpenAPI:** `GET /openapi.json`
-- **Health:** `GET /health`
+- **Health:** `GET /health/live` (liveness) · `GET /health` / `GET /health/ready` (capabilities)
+
+### Production / Docker
+
+Build from the **backed repo root** (parent of `anchor/`):
+
+```bash
+docker build -f anchor/apps/api-server/Dockerfile -t backed-anchor-api .
+```
+
+Compose (auto-restart, health check, persistent audit log volume):
+
+```bash
+export ANCHOR_API_ENV_FILE="$HOME/.config/backed/gerace.env"   # ANCHOR_API_TOKEN + Databricks
+export ANCHOR_WORKSPACE_HOST="$(pwd)/ontology/gerace"
+docker compose -f anchor/apps/api-server/docker-compose.yml up -d --build
+curl -s "http://127.0.0.1:${ANCHOR_API_PORT:-8787}/health/live"
+```
+
+| Variable | Purpose |
+| -------- | ------- |
+| `HOST` / `ANCHOR_API_HOST` | Bind address (use `0.0.0.0` in containers) |
+| `PORT` / `ANCHOR_API_PORT` | HTTP port (default `8787`) |
+| `ANCHOR_AUDIT_LOG_PATH` | Append-only JSONL audit log (default in image: `/var/log/anchor/audit.jsonl`) |
+| `ANCHOR_AUDIT_LOG_STDERR` | Set `0` to disable mirroring audit lines to stderr |
+
+Railway: see [`railway.toml`](./railway.toml) (`healthcheckPath=/health/live`, restart on failure).
 
 ### Object query limits
 

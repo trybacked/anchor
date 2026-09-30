@@ -33,9 +33,17 @@ export function createAnchorApiApp(
   const auth =
     options.apiToken !== undefined ? createBearerAuthMiddleware(options.apiToken) : undefined;
 
+  app.get("/health/live", (c) => c.json({ ok: true as const }));
+
   app.get("/health", (c) => {
     const service = getService();
     return c.json({ ok: true as const, capabilities: service.capabilities() });
+  });
+
+  app.get("/health/ready", (c) => {
+    const service = getService();
+    const capabilities = service.capabilities();
+    return c.json({ ok: true as const, capabilities });
   });
 
   app.get("/openapi.json", (c) => c.json(buildOpenApiDocument(Boolean(options.apiToken))));
