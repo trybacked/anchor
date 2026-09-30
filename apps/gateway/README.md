@@ -21,7 +21,7 @@ ANCHOR_API_PORT=8798 ANCHOR_WORKSPACE_ROOT=../ontology/backed scripts/anchor-api
 2. Create `apps/gateway/users.yaml` from [`users.example.yaml`](./users.example.yaml) and hash a password:
 
 ```bash
-pnpm --filter @trybacked/gateway hash-password 'your-password'
+pnpm --filter @backed/gateway hash-password 'your-password'
 ```
 
 3. Export gateway env (from repo root):
@@ -33,7 +33,7 @@ export GATEWAY_USERS_FILE="$(pwd)/anchor/apps/gateway/users.yaml"
 export GATEWAY_UPSTREAMS="gerace=http://127.0.0.1:8797,backed=http://127.0.0.1:8798"
 export GATEWAY_TENANT_TOKEN_GERACE="<same as gerace ANCHOR_API_TOKEN>"
 export GATEWAY_TENANT_TOKEN_BACKED="<same as backed ANCHOR_API_TOKEN>"
-pnpm --filter @trybacked/gateway build && pnpm --filter @trybacked/gateway start
+pnpm --filter @backed/gateway build && pnpm --filter @backed/gateway start
 ```
 
 4. Login and query:

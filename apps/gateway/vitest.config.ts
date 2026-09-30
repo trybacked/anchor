@@ -2,7 +2,8 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    name: "gateway-unit",
-    include: ["tests/unit/**/*.test.ts"],
+    name: "gateway",
+    include: ["tests/unit/**/*.test.ts", "tests/e2e/**/*.test.ts"],
+    testTimeout: 30_000,
   },
 });
