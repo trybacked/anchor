@@ -170,20 +170,92 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
         }
       : {}),
     paths: {
-      "/health": { get: { operationId: "health", security: [], responses: { "200": { description: "OK" } } } },
-      "/openapi.json": {
-        get: { operationId: "openApi", security: [], responses: { "200": { description: "OpenAPI document" } } },
+      "/health": {
+        get: { operationId: "health", security: [], responses: { "200": { description: "OK" } } },
       },
-      "/v1/model/entities": { get: { operationId: "listEntities", tags: ["model"], responses: { "200": { description: "Entities" } } } },
-      "/v1/model/entities/{id}": { get: { operationId: "getEntity", tags: ["model"], responses: { "200": { description: "Entity" }, "404": { description: "Not found" } } } },
-      "/v1/model/relations": { get: { operationId: "listRelations", tags: ["model"], responses: { "200": { description: "Relations" } } } },
-      "/v1/model/search": { post: { operationId: "searchModel", tags: ["model"], responses: { "200": { description: "Matches" } } } },
-      "/v1/model/definitions": { post: { operationId: "getDefinition", tags: ["model"], responses: { "200": { description: "Definition" } } } },
-      "/v1/query/objects": { post: { operationId: "objectQuery", tags: ["object-query-reader"], responses: { "200": { description: "Rows or count" } } } },
-      "/v1/search/entities": { post: { operationId: "entitySearch", tags: ["entity-search"], responses: { "200": { description: "Matches" } } } },
-      "/v1/search/chunks": { post: { operationId: "chunkSearch", tags: ["chunk-search"], responses: { "200": { description: "Matching chunks" }, "503": { description: "Unavailable" } } } },
-      "/v1/profile/entities": { post: { operationId: "entityProfile", tags: ["entity-profile-reader"], responses: { "200": { description: "Profile" }, "503": { description: "Unavailable" } } } },
-      "/v1/graph/traverse": { post: { operationId: "graphTraverse", tags: ["graph-traverse"], responses: { "200": { description: "Joined rows" }, "503": { description: "Unavailable" } } } },
+      "/openapi.json": {
+        get: {
+          operationId: "openApi",
+          security: [],
+          responses: { "200": { description: "OpenAPI document" } },
+        },
+      },
+      "/v1/model/entities": {
+        get: {
+          operationId: "listEntities",
+          tags: ["model"],
+          responses: { "200": { description: "Entities" } },
+        },
+      },
+      "/v1/model/entities/{id}": {
+        get: {
+          operationId: "getEntity",
+          tags: ["model"],
+          responses: { "200": { description: "Entity" }, "404": { description: "Not found" } },
+        },
+      },
+      "/v1/model/relations": {
+        get: {
+          operationId: "listRelations",
+          tags: ["model"],
+          responses: { "200": { description: "Relations" } },
+        },
+      },
+      "/v1/model/search": {
+        post: {
+          operationId: "searchModel",
+          tags: ["model"],
+          responses: { "200": { description: "Matches" } },
+        },
+      },
+      "/v1/model/definitions": {
+        post: {
+          operationId: "getDefinition",
+          tags: ["model"],
+          responses: { "200": { description: "Definition" } },
+        },
+      },
+      "/v1/query/objects": {
+        post: {
+          operationId: "objectQuery",
+          tags: ["object-query-reader"],
+          responses: { "200": { description: "Rows or count" } },
+        },
+      },
+      "/v1/search/entities": {
+        post: {
+          operationId: "entitySearch",
+          tags: ["entity-search"],
+          responses: { "200": { description: "Matches" } },
+        },
+      },
+      "/v1/search/chunks": {
+        post: {
+          operationId: "chunkSearch",
+          tags: ["chunk-search"],
+          responses: {
+            "200": { description: "Matching chunks" },
+            "503": { description: "Unavailable" },
+          },
+        },
+      },
+      "/v1/profile/entities": {
+        post: {
+          operationId: "entityProfile",
+          tags: ["entity-profile-reader"],
+          responses: { "200": { description: "Profile" }, "503": { description: "Unavailable" } },
+        },
+      },
+      "/v1/graph/traverse": {
+        post: {
+          operationId: "graphTraverse",
+          tags: ["graph-traverse"],
+          responses: {
+            "200": { description: "Joined rows" },
+            "503": { description: "Unavailable" },
+          },
+        },
+      },
       "/v1/chat/ask": {
         post: {
           operationId: "semanticAsk",

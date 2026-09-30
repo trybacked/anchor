@@ -5,7 +5,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { createAnchorApiApp } from "../../src/app.js";
 
-const fixtureRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../../fixtures/pmi-minimal");
+const fixtureRoot = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../../fixtures/pmi-minimal",
+);
 
 describe("Anchor API app", () => {
   const service = createAnchorService({ model: readModelYaml(fixtureRoot) });

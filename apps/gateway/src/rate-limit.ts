@@ -14,8 +14,7 @@ export function createRateLimiter(options: {
   return (key: string): RateLimitResult => {
     const nowMs = nowFn();
     const existing = buckets.get(key);
-    const bucket =
-      existing ?? { tokens: options.capacity, lastRefillMs: nowMs };
+    const bucket = existing ?? { tokens: options.capacity, lastRefillMs: nowMs };
     const elapsedSeconds = (nowMs - bucket.lastRefillMs) / 1000;
     const refilled = Math.min(
       options.capacity,

@@ -115,5 +115,11 @@ export async function handleSingleModeProxy(
   }
   const url = new URL(c.req.url);
   const user = c.get("user");
-  return forwardToUpstream(upstream, user.username, c.req.raw, `${url.pathname}${url.search}`, deps);
+  return forwardToUpstream(
+    upstream,
+    user.username,
+    c.req.raw,
+    `${url.pathname}${url.search}`,
+    deps,
+  );
 }

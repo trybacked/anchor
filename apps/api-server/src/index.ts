@@ -18,17 +18,14 @@ const { root, service } = await createWorkspaceService(config.workspaceRoot, {
 
 const app = createAnchorApiApp(() => service, { apiToken: config.apiToken });
 
-const server = serve(
-  { fetch: app.fetch, port: config.port, hostname: config.host },
-  (info) => {
-    const host = info.address === "::" ? "0.0.0.0" : info.address;
-    console.error(`Anchor API listening on http://${host}:${String(info.port)} (workspace: ${root})`);
-    console.error("Health: /health/live · /health/ready · OpenAPI: /openapi.json");
-    if (config.auditLogPath !== undefined) {
-      console.error(`Audit log: ${config.auditLogPath}`);
-    }
-  },
-);
+const server = serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => {
+  const host = info.address === "::" ? "0.0.0.0" : info.address;
+  console.error(`Anchor API listening on http://${host}:${String(info.port)} (workspace: ${root})`);
+  console.error("Health: /health/live · /health/ready · OpenAPI: /openapi.json");
+  if (config.auditLogPath !== undefined) {
+    console.error(`Audit log: ${config.auditLogPath}`);
+  }
+});
 
 function shutdown(signal: string): void {
   console.error(`Anchor API received ${signal}, shutting down`);

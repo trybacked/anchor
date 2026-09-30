@@ -4,10 +4,10 @@ User-facing HTTP entry for the future workshop: authenticates operators, routes 
 
 ## Modes
 
-| Mode | Flag | Routes |
-| ---- | ---- | ------ |
-| Multi-comune | `WORKSHOP_MULTI_TENANT=true` (default) | `POST /login`, `ALL /t/{tenantId}/v1/*` |
-| Single client | `WORKSHOP_MULTI_TENANT=false` | `POST /login`, `ALL /v1/*` → default upstream |
+| Mode          | Flag                                   | Routes                                        |
+| ------------- | -------------------------------------- | --------------------------------------------- |
+| Multi-comune  | `WORKSHOP_MULTI_TENANT=true` (default) | `POST /login`, `ALL /t/{tenantId}/v1/*`       |
+| Single client | `WORKSHOP_MULTI_TENANT=false`          | `POST /login`, `ALL /v1/*` → default upstream |
 
 ## Quick start (dev)
 

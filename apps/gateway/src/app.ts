@@ -14,7 +14,9 @@ export type CreateGatewayAppOptions = {
   proxyDeps?: ProxyDeps;
 };
 
-export function createGatewayApp(options: CreateGatewayAppOptions): Hono<{ Variables: GatewayVariables }> {
+export function createGatewayApp(
+  options: CreateGatewayAppOptions,
+): Hono<{ Variables: GatewayVariables }> {
   const { config } = options;
   const users = options.users ?? loadUsersFile(config.usersFilePath);
   const proxyDeps = options.proxyDeps ?? {};
@@ -24,7 +26,10 @@ export function createGatewayApp(options: CreateGatewayAppOptions): Hono<{ Varia
     refillPerSecond: config.rateLimitPerMinute / 60,
   });
 
-  const rateLimitMiddleware: MiddlewareHandler<{ Variables: GatewayVariables }> = async (c, next) => {
+  const rateLimitMiddleware: MiddlewareHandler<{ Variables: GatewayVariables }> = async (
+    c,
+    next,
+  ) => {
     const user = c.get("user");
     const result = rateLimit(user.username);
     if (!result.allowed) {

@@ -23,7 +23,11 @@ describe("auth routes", () => {
   const users = [{ username: "demo", passwordHash: hashPassword("pass"), tenants: ["gerace"] }];
 
   it("login sets session cookie", async () => {
-    const app = createGatewayApp({ config, users, proxyDeps: { fetchImpl: async () => new Response("{}") } });
+    const app = createGatewayApp({
+      config,
+      users,
+      proxyDeps: { fetchImpl: async () => new Response("{}") },
+    });
     const response = await app.request("/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

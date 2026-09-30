@@ -48,7 +48,10 @@ function parseUpstreams(raw: string | undefined): Record<string, string> {
       throw new Error(`Invalid GATEWAY_UPSTREAMS segment "${trimmed}" — expected tenantId=url`);
     }
     const tenantId = trimmed.slice(0, eq).trim();
-    const baseUrl = trimmed.slice(eq + 1).trim().replace(/\/+$/, "");
+    const baseUrl = trimmed
+      .slice(eq + 1)
+      .trim()
+      .replace(/\/+$/, "");
     map[tenantId] = baseUrl;
   }
   return map;
@@ -85,7 +88,9 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
   if (multiTenant) {
     for (const tenantId of Object.keys(upstreams)) {
       if (upstreamTokens[tenantId] === undefined) {
-        throw new Error(`Missing env GATEWAY_TENANT_TOKEN_${tenantId.toUpperCase()} for upstream "${tenantId}".`);
+        throw new Error(
+          `Missing env GATEWAY_TENANT_TOKEN_${tenantId.toUpperCase()} for upstream "${tenantId}".`,
+        );
       }
     }
   } else {
@@ -93,7 +98,9 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
       throw new Error("GATEWAY_DEFAULT_UPSTREAM is required when WORKSHOP_MULTI_TENANT=false.");
     }
     if (defaultUpstreamToken === undefined || defaultUpstreamToken.length === 0) {
-      throw new Error("GATEWAY_DEFAULT_UPSTREAM_TOKEN is required when WORKSHOP_MULTI_TENANT=false.");
+      throw new Error(
+        "GATEWAY_DEFAULT_UPSTREAM_TOKEN is required when WORKSHOP_MULTI_TENANT=false.",
+      );
     }
   }
 

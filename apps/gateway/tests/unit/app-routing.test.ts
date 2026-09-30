@@ -52,7 +52,11 @@ describe("gateway routing", () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
     const config = baseConfig(dir, registryPath);
-    const token = await createSessionToken(config.sessionSecret, { username: "u", tenants: ["gerace"] }, 3600);
+    const token = await createSessionToken(
+      config.sessionSecret,
+      { username: "u", tenants: ["gerace"] },
+      3600,
+    );
     const fetchImpl: typeof fetch = async () =>
       new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
     const app = createGatewayApp({
@@ -70,7 +74,11 @@ describe("gateway routing", () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
     const config = baseConfig(dir, registryPath);
-    const token = await createSessionToken(config.sessionSecret, { username: "u", tenants: ["gerace"] }, 3600);
+    const token = await createSessionToken(
+      config.sessionSecret,
+      { username: "u", tenants: ["gerace"] },
+      3600,
+    );
     let proxied = false;
     const fetchImpl: typeof fetch = async (input) => {
       proxied = String(input).includes("/v1/model/entities");
@@ -97,7 +105,11 @@ describe("gateway routing", () => {
       defaultUpstream: "http://127.0.0.1:8799",
       defaultUpstreamToken: "single-token",
     };
-    const token = await createSessionToken(config.sessionSecret, { username: "u", tenants: [] }, 3600);
+    const token = await createSessionToken(
+      config.sessionSecret,
+      { username: "u", tenants: [] },
+      3600,
+    );
     let proxied = false;
     const fetchImpl: typeof fetch = async (input) => {
       proxied = String(input).endsWith("/v1/model/entities");
@@ -119,7 +131,11 @@ describe("gateway routing", () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
     const config = baseConfig(dir, registryPath);
-    const token = await createSessionToken(config.sessionSecret, { username: "u", tenants: ["gerace"] }, 3600);
+    const token = await createSessionToken(
+      config.sessionSecret,
+      { username: "u", tenants: ["gerace"] },
+      3600,
+    );
     const app = createGatewayApp({
       config,
       users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
