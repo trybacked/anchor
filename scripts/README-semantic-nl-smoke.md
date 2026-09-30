@@ -4,6 +4,17 @@ End-to-end check: **Italian question → Vercel AI Gateway → routed plan (`sin
 
 ## Run
 
+### LLM baseline gate (≥90% plan correctness)
+
+```bash
+pnpm build
+pnpm smoke:semantic-nl-baseline
+# CI gate: exits 1 if required-case plan pass rate < 90%
+pnpm smoke:semantic-nl-baseline -- --json /tmp/nl-baseline.json --min-plan-rate 0.9
+```
+
+Reports **plan** vs **E2E** pass rates on `semantic-nl-smoke.cases.json` (required cases only for the gate). Optional cases are advisory.
+
 ### Benchmark (50 questions)
 
 ```bash
