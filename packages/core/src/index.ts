@@ -244,3 +244,13 @@ export type {
   ValidationResult,
   ValidationSeverity,
 } from "./ontology/index.js";
+export {
+  TenantsRegistrySchema,
+  ensureTenantInRegistry,
+  loadTenantsRegistry,
+  resolveBundleTarget,
+  resolveTenantCatalog,
+  saveTenantsRegistry,
+  validateTenantId,
+  type TenantsRegistry,
+} from "./tenants-registry.js";
