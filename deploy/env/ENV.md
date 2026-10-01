@@ -15,7 +15,7 @@ Legenda: **R** = obbligatorio, **O** = opzionale, **—** = non usato.
 
 ### Gateway (pubblico — MCP / login / API docs)
 
-Documentazione interattiva (Scalar): **`GET /docs`** dopo login WorkOS o sessione file; per tenant **`GET /docs/t/{tenantId}`**. OpenAPI JSON: **`GET /t/{tenantId}/openapi.json`** (sessione richiesta).
+Documentazione interattiva (Scalar): **`GET /docs`** e **`GET /docs/t/{tenantId}`** sono **pubbliche** (solo tenant presenti in registry). OpenAPI JSON: **`GET /t/{tenantId}/openapi.json`** (pubblico). Le chiamate **`/t/{tenantId}/v1/...`** richiedono login.
 
 | Variabile                      | R/O                | Locale | Railway | Note                                                                                     |
 | ------------------------------ | ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |

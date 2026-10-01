@@ -135,7 +135,7 @@ describe("gateway routing", () => {
     expect(proxied).toBe(true);
   });
 
-  it("redirects unauthenticated /docs to login", async () => {
+  it("serves public docs picker without session", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
     const config = baseConfig(dir, registryPath);
@@ -145,54 +145,46 @@ describe("gateway routing", () => {
       users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
     });
     const response = await app.request("/docs");
-    expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe("/login?next=/docs");
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("/docs/t/gerace");
+    expect(html).toContain("/docs/t/backed");
   });
 
-  it("serves Scalar docs for authorized tenant", async () => {
+  it("serves Scalar docs without login", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
     const config = baseConfig(dir, registryPath);
-    const token = await createSessionToken(
-      config.sessionSecret,
-      { username: "u", tenants: ["gerace"] },
-      3600,
-    );
     const app = createGatewayApp({
       config,
       registrySource: createFileRegistrySource(registryPath),
       users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
     });
-    const response = await app.request("/docs/t/gerace", {
-      headers: { Cookie: `backed_session=${token}` },
-    });
+    const response = await app.request("/docs/t/gerace");
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain("Scalar");
     expect(html).toContain("/t/gerace/openapi.json");
   });
 
-  it("docs tenant picker when user has multiple tenants", async () => {
+  it("serves openapi.json without session", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
     const config = baseConfig(dir, registryPath);
-    const token = await createSessionToken(
-      config.sessionSecret,
-      { username: "u", tenants: ["gerace", "backed"] },
-      3600,
-    );
+    const fetchImpl: typeof fetch = async () =>
+      new Response('{"openapi":"3.1.0"}', {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
     const app = createGatewayApp({
       config,
       registrySource: createFileRegistrySource(registryPath),
-      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace", "backed"] }],
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
+      proxyDeps: { fetchImpl },
     });
-    const response = await app.request("/docs", {
-      headers: { Cookie: `backed_session=${token}` },
-    });
+    const response = await app.request("/t/gerace/openapi.json");
     expect(response.status).toBe(200);
-    const html = await response.text();
-    expect(html).toContain("/docs/t/gerace");
-    expect(html).toContain("/docs/t/backed");
+    expect(await response.json()).toEqual({ openapi: "3.1.0" });
   });
 
   it("multi mode does not expose /v1 at root", async () => {

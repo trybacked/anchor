@@ -4,12 +4,17 @@ import { Hono } from "hono";
 import { registerAuthRoutes } from "./auth-routes.js";
 import { registerWorkOSAuthRoutes } from "./auth-workos.js";
 import type { GatewayConfig } from "./config.js";
-import { createDocsAuthMiddleware, registerDocsRoutes } from "./docs-routes.js";
-import { handleDefaultTenantProxy, handleTenantProxy, type ProxyDeps } from "./proxy.js";
+import { registerDocsRoutes } from "./docs-routes.js";
+import {
+  forwardToPlatform,
+  handleDefaultTenantProxy,
+  handleTenantProxy,
+  type ProxyDeps,
+} from "./proxy.js";
 import { createRateLimiter } from "./rate-limit.js";
 import { createRequireAuthMiddleware } from "./require-auth.js";
 import type { GatewayVariables } from "./types.js";
-import { countConfiguredTenants } from "./upstreams.js";
+import { assertTenantInRegistry, countConfiguredTenants } from "./upstreams.js";
 import { loadUsersFile, type UserRecord } from "./users.js";
 
 export type CreateGatewayAppOptions = {
@@ -71,7 +76,22 @@ export function createGatewayApp(
     return c.json(user);
   });
 
-  registerDocsRoutes(app, registrySource, createDocsAuthMiddleware(config));
+  registerDocsRoutes(app, config, registrySource);
+
+  app.get("/t/:tenantId/openapi.json", async (c) => {
+    const tenantId = c.req.param("tenantId");
+    if (!(await assertTenantInRegistry(registrySource, tenantId))) {
+      return c.json({ error: "Tenant not found" }, 404);
+    }
+    return forwardToPlatform(
+      config,
+      tenantId,
+      "public-docs",
+      c.req.raw,
+      "/openapi.json",
+      proxyDeps,
+    );
+  });
 
   app.all("/t/:tenantId/*", requireAuth, rateLimitMiddleware, async (c) => {
     const tenantId = c.req.param("tenantId");

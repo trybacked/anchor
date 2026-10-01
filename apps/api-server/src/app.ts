@@ -284,8 +284,8 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
       version: "0.1.0",
       description:
         "HTTP API for ontology discovery, governed object queries, document archive search, and semantic chat. " +
-        "On the public gateway, prefix every path with `/t/{tenantId}` and authenticate with your platform session cookie; " +
-        "the gateway adds upstream credentials. In Try it out, leave bearer empty when using the docs UI on the gateway.",
+        "On the public gateway, browse `/docs` without signing in. API calls use `/t/{tenantId}/…` with a platform session cookie; " +
+        "the gateway adds upstream credentials.",
     },
     tags: [
       { name: "model", description: "Ontology entities, relations, and definitions" },

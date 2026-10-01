@@ -1,10 +1,7 @@
 import { Scalar } from "@scalar/hono-api-reference";
 import type { TenantRegistrySource } from "@trybacked/core";
-import type { MiddlewareHandler } from "hono";
 import type { Hono } from "hono";
-import { getCookie } from "hono/cookie";
 import type { GatewayConfig } from "./config.js";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry } from "./upstreams.js";
 
@@ -16,16 +13,12 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-export async function listDocsTenantsForUser(
-  source: TenantRegistrySource,
-  tenantIds: string[],
-): Promise<string[]> {
+export async function listRegisteredTenantIds(source: TenantRegistrySource): Promise<string[]> {
   const snapshot = await source.load();
-  const registered = new Set(Object.keys(snapshot.registry.tenants));
-  return tenantIds.filter((id) => registered.has(id)).sort((a, b) => a.localeCompare(b));
+  return Object.keys(snapshot.registry.tenants).sort((a, b) => a.localeCompare(b));
 }
 
-function renderTenantPickerPage(username: string, tenants: string[]): string {
+function renderTenantPickerPage(tenants: string[]): string {
   const cards = tenants
     .map(
       (tenantId) => `
@@ -84,11 +77,6 @@ function renderTenantPickerPage(username: string, tenants: string[]): string {
       margin: 0 0 2rem;
       max-width: 52ch;
     }
-    .signed-in {
-      font-size: 0.875rem;
-      color: var(--muted);
-      margin-bottom: 1.5rem;
-    }
     .grid {
       display: grid;
       gap: 0.75rem;
@@ -126,42 +114,28 @@ function renderTenantPickerPage(username: string, tenants: string[]): string {
     <p class="eyebrow">Backed Platform</p>
     <h1>API documentation</h1>
     <p class="lead">
-      Interactive reference powered by Scalar. Choose a tenant workspace — requests run through the gateway with your session.
+      Public interactive reference (Scalar). Browse endpoints without signing in; use
+      <a href="/login" style="color: var(--accent);">login</a> for Try it out against live data.
     </p>
-    <p class="signed-in">Signed in as <strong>${escapeHtml(username)}</strong></p>
     <div class="grid">${cards}</div>
   </main>
 </body>
 </html>`;
 }
 
-export function createDocsAuthMiddleware(config: GatewayConfig): MiddlewareHandler<{
-  Variables: GatewayVariables;
-}> {
-  return async (c, next) => {
-    const token = getCookie(c, SESSION_COOKIE_NAME);
-    if (token === undefined || token.length === 0) {
-      return c.redirect("/login?next=/docs");
-    }
-    const user = await verifySessionToken(config.sessionSecret, token);
-    if (user === undefined) {
-      return c.redirect("/login?next=/docs");
-    }
-    c.set("user", user);
-    return next();
-  };
-}
-
 export function registerDocsRoutes(
   app: Hono<{ Variables: GatewayVariables }>,
+  config: GatewayConfig,
   registrySource: TenantRegistrySource,
-  docsAuth: MiddlewareHandler<{ Variables: GatewayVariables }>,
 ): void {
-  app.get("/docs", docsAuth, async (c) => {
-    const user = c.get("user");
-    const tenants = await listDocsTenantsForUser(registrySource, user.tenants);
+  app.get("/docs", async (c) => {
+    const tenants = await listRegisteredTenantIds(registrySource);
     if (tenants.length === 0) {
-      return c.json({ error: "No tenant workspaces available for your account" }, 404);
+      return c.json({ error: "No tenant workspaces published yet" }, 404);
+    }
+    const defaultTenant = config.defaultTenant;
+    if (defaultTenant !== undefined && tenants.includes(defaultTenant)) {
+      return c.redirect(`/docs/t/${defaultTenant}`);
     }
     if (tenants.length === 1) {
       const onlyTenant = tenants[0];
@@ -169,15 +143,11 @@ export function registerDocsRoutes(
         return c.redirect(`/docs/t/${onlyTenant}`);
       }
     }
-    return c.html(renderTenantPickerPage(user.username, tenants));
+    return c.html(renderTenantPickerPage(tenants));
   });
 
-  app.get("/docs/t/:tenantId", docsAuth, async (c, next) => {
+  app.get("/docs/t/:tenantId", async (c, next) => {
     const tenantId = c.req.param("tenantId");
-    const user = c.get("user");
-    if (!user.tenants.includes(tenantId)) {
-      return c.json({ error: "Forbidden" }, 403);
-    }
     if (!(await assertTenantInRegistry(registrySource, tenantId))) {
       return c.json({ error: "Tenant not found" }, 404);
     }
