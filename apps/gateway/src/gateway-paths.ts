@@ -2,6 +2,12 @@
 
 export const TENANT_PATH_PREFIX = "/t";
 
+/** Scalar when no workspace is published yet; not a proxy tenant id. */
+export const DOCS_PLATFORM_PATH = "/docs/platform";
+
+/** `X-Backed-Tenant` value when fetching platform `/openapi.json` upstream (not a registry tenant). */
+export const PLATFORM_OPENAPI_UPSTREAM_TENANT = "platform";
+
 export function tenantBasePath(tenantId: string): string {
   return `${TENANT_PATH_PREFIX}/${tenantId}`;
 }
@@ -22,6 +28,3 @@ export const GATEWAY_AUTH_PATHS = {
   docs: "/docs",
   platformOpenApi: "/openapi.json",
 } as const;
-
-export const REFERENCE_DOCS_PROXY_ERROR =
-  "The reference docs tenant cannot call live data. Open /docs, pick your workspace, sign in, then use Try it out.";

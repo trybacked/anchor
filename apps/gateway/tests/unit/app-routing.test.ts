@@ -149,7 +149,7 @@ describe("gateway routing", () => {
     expect(response.headers.get("location")).toBe("/docs");
   });
 
-  it("redirects /docs to reference when registry has no tenants", async () => {
+  it("redirects /docs to platform browse when registry has no tenants", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     writeFileSync(
       join(dir, "tenants.yaml"),
@@ -171,7 +171,31 @@ tenants: {}
     });
     const response = await app.request("/docs");
     expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe("/docs/t/reference");
+    expect(response.headers.get("location")).toBe("/docs/platform");
+  });
+
+  it("redirects legacy /docs/t/reference to platform browse", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gw-"));
+    writeFileSync(
+      join(dir, "tenants.yaml"),
+      `enrollment:
+  host: https://example.databricks.com
+  profile: DEFAULT
+  warehouse_id: wh
+shared_spaces: {}
+tenants: {}
+`,
+      "utf8",
+    );
+    const registryPath = join(dir, "tenants.yaml");
+    const app = createGatewayApp({
+      config: baseConfig(dir, registryPath),
+      registrySource: createFileRegistrySource(registryPath),
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
+    });
+    const response = await app.request("/docs/t/reference");
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("/docs/platform");
   });
 
   it("serves public docs picker without session", async () => {

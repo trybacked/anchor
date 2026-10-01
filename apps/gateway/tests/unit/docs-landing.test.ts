@@ -34,9 +34,9 @@ function gatewayConfig(overrides: Partial<GatewayConfig> = {}): GatewayConfig {
 }
 
 describe("resolveDocsLanding", () => {
-  it("returns reference when the registry is empty", async () => {
+  it("returns platform browse when the registry is empty", async () => {
     const landing = await resolveDocsLanding(mockRegistrySource(emptyRegistry()), gatewayConfig());
-    expect(landing).toEqual({ kind: "reference" });
+    expect(landing).toEqual({ kind: "platform" });
   });
 
   it("returns the sole tenant when only one is published", async () => {

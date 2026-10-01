@@ -4,19 +4,13 @@ import type { Hono } from "hono";
 import type { GatewayConfig } from "./config.js";
 import { canOpenTenantDocs, resolveDocsLanding } from "./docs-landing.js";
 import { renderDocsTenantPickerPage } from "./docs-picker-page.js";
-import {
-  isPublicDocsReferenceTenant,
-  PUBLIC_DOCS_REFERENCE_TENANT,
-} from "./docs-reference-tenant.js";
-import { scalarConfigForTenant } from "./docs-scalar.js";
-import { docsPathForTenant, GATEWAY_AUTH_PATHS } from "./gateway-paths.js";
+import { scalarConfigForPlatform, scalarConfigForTenant } from "./docs-scalar.js";
+import { DOCS_PLATFORM_PATH, docsPathForTenant, GATEWAY_AUTH_PATHS } from "./gateway-paths.js";
 import { resolvePublicOrigin } from "./public-origin.js";
 import type { GatewayVariables } from "./types.js";
 
-export {
-  PUBLIC_DOCS_REFERENCE_TENANT,
-  isPublicDocsReferenceTenant,
-} from "./docs-reference-tenant.js";
+/** Legacy URL from the removed synthetic `reference` tenant id. */
+const LEGACY_REFERENCE_DOCS_PATH = "/docs/t/reference";
 
 export function registerDocsRoutes(
   app: Hono<{ Variables: GatewayVariables }>,
@@ -28,8 +22,8 @@ export function registerDocsRoutes(
     switch (landing.kind) {
       case "tenant":
         return c.redirect(docsPathForTenant(landing.tenantId));
-      case "reference":
-        return c.redirect(docsPathForTenant(PUBLIC_DOCS_REFERENCE_TENANT));
+      case "platform":
+        return c.redirect(DOCS_PLATFORM_PATH);
       case "picker":
         return c.html(renderDocsTenantPickerPage(landing.tenants));
       default: {
@@ -39,14 +33,20 @@ export function registerDocsRoutes(
     }
   });
 
+  app.get(LEGACY_REFERENCE_DOCS_PATH, (c) => c.redirect(DOCS_PLATFORM_PATH));
+
+  app.get(DOCS_PLATFORM_PATH, async (c, next) => {
+    const landing = await resolveDocsLanding(registrySource, config);
+    if (landing.kind !== "platform") {
+      return c.redirect(GATEWAY_AUTH_PATHS.docs);
+    }
+    const scalar = Scalar(() => scalarConfigForPlatform(resolvePublicOrigin(c, config)));
+    // @ts-expect-error — Scalar Context env typing is wider than our GatewayVariables app.
+    return scalar(c, next);
+  });
+
   app.get("/docs/t/:tenantId", async (c, next) => {
     const tenantId = c.req.param("tenantId");
-    if (isPublicDocsReferenceTenant(tenantId)) {
-      const landing = await resolveDocsLanding(registrySource, config);
-      if (landing.kind !== "reference") {
-        return c.redirect(GATEWAY_AUTH_PATHS.docs);
-      }
-    }
     if (!(await canOpenTenantDocs(registrySource, tenantId))) {
       return c.json({ error: "Tenant not found" }, 404);
     }
