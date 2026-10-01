@@ -1,9 +1,11 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   AUTH_SCHEME,
-  PLATFORM_API_CATALOG,
+  openApiParametersForRoute,
+  openApiTagsFromRoutes,
   type PlatformApiRouteSpec,
-} from "./platform-api-catalog.js";
+} from "./platform-api-route-meta.js";
+import { platformApiRouteSpecs } from "./platform-api-routes.js";
 
 const securedOperation = [{ [AUTH_SCHEME]: [] }];
 const publicOperation: never[] = [];
@@ -22,9 +24,12 @@ function jsonRequestBodyFromSpec(
   };
 }
 
-function buildComponents(secured: boolean): Record<string, unknown> {
+function buildComponents(
+  secured: boolean,
+  routes: PlatformApiRouteSpec[],
+): Record<string, unknown> {
   const schemas = Object.fromEntries(
-    PLATFORM_API_CATALOG.flatMap((route) => {
+    routes.flatMap((route) => {
       if (route.jsonBody === undefined) {
         return [];
       }
@@ -59,23 +64,25 @@ function buildComponents(secured: boolean): Record<string, unknown> {
 function operationFromSpec(spec: PlatformApiRouteSpec, secured: boolean): Record<string, unknown> {
   const opSecurity =
     spec.public === true ? publicOperation : secured ? securedOperation : publicOperation;
+  const parameters = openApiParametersForRoute(spec);
   return {
     operationId: spec.operationId,
     summary: spec.summary,
     ...(spec.tags !== undefined ? { tags: spec.tags } : {}),
     security: opSecurity,
-    ...(spec.parameters !== undefined ? { parameters: spec.parameters } : {}),
+    ...(parameters !== undefined ? { parameters } : {}),
     ...(spec.jsonBody !== undefined ? { requestBody: jsonRequestBodyFromSpec(spec.jsonBody) } : {}),
     responses: spec.responses,
   };
 }
 
 export function buildOpenApiDocument(secured: boolean): Record<string, unknown> {
-  const components = buildComponents(secured);
+  const routes = platformApiRouteSpecs();
+  const components = buildComponents(secured, routes);
   const opSecurity = secured ? securedOperation : publicOperation;
 
   const paths: Record<string, Record<string, unknown>> = {};
-  for (const spec of PLATFORM_API_CATALOG) {
+  for (const spec of routes) {
     const operation = operationFromSpec(spec, secured);
     const existing = paths[spec.path] ?? {};
     paths[spec.path] = { ...existing, [spec.method]: operation };
@@ -92,16 +99,7 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
         "Requests carry a tenant: direct platform calls send `X-Backed-Tenant`, " +
         "while the public gateway derives it from the request path and injects it for you.",
     },
-    tags: [
-      { name: "model", description: "Ontology entities, relations, and definitions" },
-      { name: "object-query-reader", description: "Curated warehouse object queries" },
-      { name: "entity-search", description: "Entity text search across the model" },
-      { name: "documents", description: "Document metadata and PDF preview" },
-      { name: "chunk-search", description: "Semantic search over document chunks" },
-      { name: "entity-profile-reader", description: "Enriched entity profiles" },
-      { name: "graph-traverse", description: "Multi-hop graph traversal" },
-      { name: "semantic-chat", description: "Natural-language answers over governed data" },
-    ],
+    tags: openApiTagsFromRoutes(routes),
     ...(secured ? { components, security: opSecurity } : { components }),
     paths,
   };

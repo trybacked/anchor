@@ -1,8 +1,8 @@
 import type { AnchorService } from "@trybacked/service";
 import { Hono } from "hono";
 import { createBearerAuthMiddleware } from "./auth.js";
-import { createPlatformHandlers } from "./platform-api-handlers.js";
-import { registerPlatformApiCatalog } from "./platform-api-register.js";
+import { buildOpenApiDocument } from "./openapi-document.js";
+import { registerPlatformApiRoutes } from "./platform-api-register.js";
 import { runWithRequestContext } from "./request-context.js";
 import type { TenantRuntimeRegistry } from "./tenant-runtime-registry.js";
 import { OntologyNotPublishedError, TenantNotFoundError } from "./tenant-runtime-registry.js";
@@ -60,11 +60,11 @@ export function createAnchorApiApp(
     });
   }
 
-  registerPlatformApiCatalog(
-    app,
-    v1,
-    createPlatformHandlers({ getService, platformRegistry, openApiSecured }),
-  );
+  registerPlatformApiRoutes(app, v1, {
+    getService,
+    platformRegistry,
+    serveOpenApiDocument: () => buildOpenApiDocument(openApiSecured),
+  });
 
   app.route("/v1", v1);
 

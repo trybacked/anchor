@@ -1,4 +1,5 @@
 import { isPublicDocsReferenceTenant } from "./docs-reference-tenant.js";
+import { GATEWAY_AUTH_PATHS, tenantOpenApiPath } from "./gateway-paths.js";
 
 export function scalarConfigForTenant(
   tenantId: string,
@@ -6,16 +7,16 @@ export function scalarConfigForTenant(
 ): Record<string, unknown> {
   const isReference = isPublicDocsReferenceTenant(tenantId);
   const titleSuffix = isReference ? "Platform" : tenantId;
+  const openApiUrl = isReference ? GATEWAY_AUTH_PATHS.platformOpenApi : tenantOpenApiPath(tenantId);
   return {
     pageTitle: `Backed API · ${titleSuffix}`,
-    url: isReference ? "/openapi.json" : `/t/${tenantId}/openapi.json`,
+    url: openApiUrl,
     baseServerURL: publicOrigin,
     theme: "default",
     layout: "modern",
     metaData: {
       title: `Backed API · ${titleSuffix}`,
-      description:
-        "Sign in at /login on this host before Try it out. POST bodies include examples; auth is the backed_session cookie, not Bearer.",
+      description: `Sign in at ${GATEWAY_AUTH_PATHS.login} on this host before Try it out. POST bodies include examples; auth is the backed_session cookie, not Bearer.`,
     },
     customCss: `
           .light-mode { --scalar-color-accent: #5b8def; }

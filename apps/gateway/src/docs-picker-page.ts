@@ -1,3 +1,5 @@
+import { docsPathForTenant, GATEWAY_AUTH_PATHS } from "./gateway-paths.js";
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -10,7 +12,7 @@ export function renderDocsTenantPickerPage(tenantIds: string[]): string {
   const cards = tenantIds
     .map(
       (tenantId) => `
-        <a class="tenant-card" href="/docs/t/${escapeHtml(tenantId)}">
+        <a class="tenant-card" href="${escapeHtml(docsPathForTenant(tenantId))}">
           <span class="tenant-id">${escapeHtml(tenantId)}</span>
           <span class="tenant-cta">Open API reference →</span>
         </a>`,
@@ -114,9 +116,9 @@ export function renderDocsTenantPickerPage(tenantIds: string[]): string {
     <h1>API documentation</h1>
     <p class="lead">
       Public interactive reference (Scalar). Browse endpoints without signing in; use
-      <a href="/login" style="color: var(--accent);">login</a> for Try it out.
+      <a href="${GATEWAY_AUTH_PATHS.login}" style="color: var(--accent);">login</a> for Try it out.
     </p>
-    <form method="post" action="/logout">
+    <form method="post" action="${GATEWAY_AUTH_PATHS.logout}">
       <button type="submit" class="linklike">Sign out to refresh your workspace list</button>
     </form>
     <div class="grid">${cards}</div>

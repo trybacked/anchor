@@ -7,32 +7,32 @@
   },
   "tags": [
     {
-      "name": "model",
-      "description": "Ontology entities, relations, and definitions"
-    },
-    {
-      "name": "object-query-reader",
-      "description": "Curated warehouse object queries"
-    },
-    {
-      "name": "entity-search",
-      "description": "Entity text search across the model"
+      "name": "chunk-search",
+      "description": "Semantic search over document chunks"
     },
     {
       "name": "documents",
       "description": "Document metadata and PDF preview"
     },
     {
-      "name": "chunk-search",
-      "description": "Semantic search over document chunks"
-    },
-    {
       "name": "entity-profile-reader",
       "description": "Enriched entity profiles"
     },
     {
+      "name": "entity-search",
+      "description": "Entity text search across the model"
+    },
+    {
       "name": "graph-traverse",
       "description": "Multi-hop graph traversal"
+    },
+    {
+      "name": "model",
+      "description": "Ontology entities, relations, and definitions"
+    },
+    {
+      "name": "object-query-reader",
+      "description": "Curated warehouse object queries"
     },
     {
       "name": "semantic-chat",
@@ -565,11 +565,10 @@
           {
             "name": "entityId",
             "in": "query",
-            "required": false,
             "schema": {
-              "type": "string"
-            },
-            "description": "Filter relations to those touching this entity id"
+              "type": "string",
+              "minLength": 1
+            }
           }
         ],
         "responses": {
@@ -765,7 +764,8 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "minimum": 1,
+              "exclusiveMinimum": true,
+              "minimum": 0,
               "default": 1
             }
           },
@@ -773,6 +773,7 @@
             "name": "format",
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": ["json", "file"]
             }
           }
@@ -816,7 +817,7 @@
         },
         "responses": {
           "200": {
-            "description": "Matching chunks"
+            "description": "OK"
           },
           "503": {
             "description": "Unavailable"
@@ -842,7 +843,7 @@
                 "$ref": "#/components/schemas/EntityProfileBody"
               },
               "example": {
-                "name": "Comune di Gerace",
+                "name": "Example organization",
                 "matchLimit": 3
               }
             }
@@ -850,7 +851,7 @@
         },
         "responses": {
           "200": {
-            "description": "Profile"
+            "description": "OK"
           },
           "503": {
             "description": "Unavailable"
@@ -887,7 +888,7 @@
         },
         "responses": {
           "200": {
-            "description": "Joined rows"
+            "description": "OK"
           },
           "503": {
             "description": "Unavailable"
@@ -913,7 +914,7 @@
                 "$ref": "#/components/schemas/SemanticAskBody"
               },
               "example": {
-                "question": "Quanti contratti a giugno 2025?",
+                "question": "How many contracts in June 2025?",
                 "evidence": true
               }
             }

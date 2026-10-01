@@ -10,6 +10,7 @@ import {
   PUBLIC_DOCS_REFERENCE_TENANT,
 } from "./docs-reference-tenant.js";
 import { registerDocsRoutes } from "./docs-routes.js";
+import { GATEWAY_AUTH_PATHS, TENANT_OPENAPI_ROUTE } from "./gateway-paths.js";
 import { normalizeTrailingSlashMiddleware } from "./normalize-trailing-slash.js";
 import { adaptOpenApiResponse } from "./openapi-gateway.js";
 import {
@@ -83,13 +84,13 @@ export function createGatewayApp(
 
   app.get("/logout", (c) => {
     clearSessionCookies(c, config);
-    return c.redirect("/login");
+    return c.redirect(GATEWAY_AUTH_PATHS.login);
   });
 
   app.post("/logout", (c) => {
     clearSessionCookies(c, config);
     return (c.req.header("Accept") ?? "").includes("text/html")
-      ? c.redirect("/login")
+      ? c.redirect(GATEWAY_AUTH_PATHS.login)
       : c.json({ ok: true as const });
   });
 
@@ -117,9 +118,11 @@ export function createGatewayApp(
       resolvePublicOrigin(c, config),
     );
 
-  app.get("/openapi.json", async (c) => serveOpenApi(c, PUBLIC_DOCS_REFERENCE_TENANT));
+  app.get(GATEWAY_AUTH_PATHS.platformOpenApi, async (c) =>
+    serveOpenApi(c, PUBLIC_DOCS_REFERENCE_TENANT),
+  );
 
-  app.get("/t/:tenantId/openapi.json", async (c) => {
+  app.get(TENANT_OPENAPI_ROUTE, async (c) => {
     const tenantId = c.req.param("tenantId");
     if (
       !isPublicDocsReferenceTenant(tenantId) &&

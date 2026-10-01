@@ -9,6 +9,7 @@ import {
   PUBLIC_DOCS_REFERENCE_TENANT,
 } from "./docs-reference-tenant.js";
 import { scalarConfigForTenant } from "./docs-scalar.js";
+import { docsPathForTenant, GATEWAY_AUTH_PATHS } from "./gateway-paths.js";
 import { resolvePublicOrigin } from "./public-origin.js";
 import type { GatewayVariables } from "./types.js";
 
@@ -26,9 +27,9 @@ export function registerDocsRoutes(
     const landing = await resolveDocsLanding(registrySource, config);
     switch (landing.kind) {
       case "tenant":
-        return c.redirect(`/docs/t/${landing.tenantId}`);
+        return c.redirect(docsPathForTenant(landing.tenantId));
       case "reference":
-        return c.redirect(`/docs/t/${PUBLIC_DOCS_REFERENCE_TENANT}`);
+        return c.redirect(docsPathForTenant(PUBLIC_DOCS_REFERENCE_TENANT));
       case "picker":
         return c.html(renderDocsTenantPickerPage(landing.tenants));
       default: {
@@ -43,7 +44,7 @@ export function registerDocsRoutes(
     if (isPublicDocsReferenceTenant(tenantId)) {
       const landing = await resolveDocsLanding(registrySource, config);
       if (landing.kind !== "reference") {
-        return c.redirect("/docs");
+        return c.redirect(GATEWAY_AUTH_PATHS.docs);
       }
     }
     if (!(await canOpenTenantDocs(registrySource, tenantId))) {

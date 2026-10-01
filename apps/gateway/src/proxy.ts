@@ -2,6 +2,7 @@ import type { TenantRegistrySource } from "@trybacked/core";
 import type { Context } from "hono";
 import type { GatewayConfig } from "./config.js";
 import { isPublicDocsReferenceTenant } from "./docs-reference-tenant.js";
+import { REFERENCE_DOCS_PROXY_ERROR } from "./gateway-paths.js";
 import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry, resolvePlatformUpstream } from "./upstreams.js";
 
@@ -104,13 +105,7 @@ export async function handleTenantProxy(
   deps: ProxyDeps,
 ): Promise<Response> {
   if (isPublicDocsReferenceTenant(tenantId)) {
-    return c.json(
-      {
-        error:
-          "The reference docs tenant cannot call live data. Open /docs, pick your workspace (e.g. gerace), sign in, then use Try it out.",
-      },
-      400,
-    );
+    return c.json({ error: REFERENCE_DOCS_PROXY_ERROR }, 400);
   }
   const user = c.get("user");
   if (!user.tenants.includes(tenantId)) {

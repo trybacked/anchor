@@ -1,4 +1,5 @@
 import { SESSION_COOKIE_NAME } from "./cookies.js";
+import { tenantBasePath } from "./gateway-paths.js";
 import {
   PLATFORM_PUBLIC_HEALTH_PREFIX,
   type OpenApiDocument,
@@ -65,7 +66,7 @@ export function adaptOpenApiDocumentForGateway(
     ...doc,
     info: withGatewayNote(doc.info, tenantId),
     servers: [{ url: origin, description: `Gateway · tenant ${tenantId}` }],
-    paths: tenantScopedPaths(doc.paths ?? {}, `/t/${tenantId}`),
+    paths: tenantScopedPaths(doc.paths ?? {}, tenantBasePath(tenantId)),
     components: {
       ...doc.components,
       securitySchemes: cookieSecuritySchemes(doc.components?.securitySchemes),
