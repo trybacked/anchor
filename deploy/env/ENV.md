@@ -15,7 +15,7 @@ Legenda: **R** = obbligatorio, **O** = opzionale, **—** = non usato.
 
 ### Gateway (pubblico — MCP / login / API docs)
 
-Documentazione interattiva (Scalar): **`GET /docs`**, **`GET /docs/platform`** (browse piattaforma, senza prefisso tenant) e **`GET /docs/t/{tenantId}`** sono **pubbliche**. Se il registry non ha ancora tenant pubblicati, **`/docs`** reindirizza a **`/docs/platform`**. **`/docs/t/reference`** reindirizza a **`/docs/platform`** (compatibilità). OpenAPI: **`GET /openapi.json`** (browse piattaforma) o **`GET /t/{tenantId}/openapi.json`**. Le chiamate **`/t/{tenantId}/v1/...`** richiedono login.
+Documentazione interattiva (Scalar): **`GET /docs`**, **`GET /docs/platform`** (browse piattaforma, sempre disponibile, senza prefisso tenant) e **`GET /docs/t/{tenantId}`** sono **pubbliche**. Se il registry non ha ancora tenant pubblicati, **`/docs`** reindirizza a **`/docs/platform`**; con più tenant mostra un picker. **`/docs/t/reference`** reindirizza a **`/docs/platform`** (compatibilità). OpenAPI: **`GET /openapi.json`** (browse piattaforma) o **`GET /t/{tenantId}/openapi.json`**. Le chiamate **`/t/{tenantId}/v1/...`** richiedono login.
 
 **Health:** sul gateway usare **`GET /health`** e **`GET /health/live`** (senza prefisso tenant). Il documento OpenAPI adattato per Scalar **non** include `/health*` sotto `/t/{tenant}`: lì il proxy richiede sessione anche se platform-api le espone come pubbliche.
 

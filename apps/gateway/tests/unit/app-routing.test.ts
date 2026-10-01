@@ -214,6 +214,22 @@ tenants: {}
     expect(html).toContain("/docs/t/backed");
   });
 
+  it("serves platform Scalar docs at /docs/platform when tenants exist", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gw-"));
+    const registryPath = writeRegistry(dir);
+    const config = baseConfig(dir, registryPath);
+    const app = createGatewayApp({
+      config,
+      registrySource: createFileRegistrySource(registryPath),
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
+    });
+    const response = await app.request("/docs/platform");
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("Scalar");
+    expect(html).toContain("/openapi.json");
+  });
+
   it("serves Scalar docs without login", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
