@@ -26,12 +26,19 @@ const SESSION_COOKIE_SCHEME = {
     "the browser attaches the cookie automatically once you are signed in.",
 } as const;
 
-function prefixPaths(paths: Record<string, unknown>, prefix: string): Record<string, unknown> {
+/**
+ * The gateway document describes tenant-scoped operations only. Liveness probes are not
+ * tenant-scoped — the gateway serves its own at /health, and the proxy would answer 401 for
+ * paths the platform document declares public.
+ */
+function tenantScopedPaths(
+  paths: Record<string, unknown>,
+  prefix: string,
+): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(paths).map(([path, item]) => [
-      path.startsWith(prefix) ? path : `${prefix}${path}`,
-      item,
-    ]),
+    Object.entries(paths)
+      .filter(([path]) => !path.startsWith("/health"))
+      .map(([path, item]) => [path.startsWith(prefix) ? path : `${prefix}${path}`, item]),
   );
 }
 
@@ -66,7 +73,7 @@ export function adaptOpenApiDocumentForGateway(
     ...doc,
     info: withGatewayNote(doc.info, tenantId),
     servers: [{ url: origin, description: `Gateway · tenant ${tenantId}` }],
-    paths: prefixPaths(doc.paths ?? {}, `/t/${tenantId}`),
+    paths: tenantScopedPaths(doc.paths ?? {}, `/t/${tenantId}`),
     components: {
       ...doc.components,
       securitySchemes: cookieSecuritySchemes(doc.components?.securitySchemes),
