@@ -456,10 +456,10 @@
     }
   ],
   "paths": {
-    "/health": {
+    "/health/live": {
       "get": {
-        "operationId": "health",
-        "summary": "Gateway / platform liveness",
+        "operationId": "healthLive",
+        "summary": "Liveness probe",
         "security": [],
         "responses": {
           "200": {
@@ -468,10 +468,10 @@
         }
       }
     },
-    "/health/live": {
+    "/health": {
       "get": {
-        "operationId": "healthLive",
-        "summary": "Liveness probe",
+        "operationId": "health",
+        "summary": "Gateway / platform liveness",
         "security": [],
         "responses": {
           "200": {
