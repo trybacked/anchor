@@ -141,11 +141,11 @@ export function createDocsAuthMiddleware(config: GatewayConfig): MiddlewareHandl
   return async (c, next) => {
     const token = getCookie(c, SESSION_COOKIE_NAME);
     if (token === undefined || token.length === 0) {
-      return c.redirect("/login");
+      return c.redirect("/login?next=/docs");
     }
     const user = await verifySessionToken(config.sessionSecret, token);
     if (user === undefined) {
-      return c.redirect("/login");
+      return c.redirect("/login?next=/docs");
     }
     c.set("user", user);
     return next();

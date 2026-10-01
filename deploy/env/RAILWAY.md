@@ -19,7 +19,7 @@ Config build: imposta **`RAILWAY_DOCKERFILE_PATH`** per servizio (es. `apps/gate
 ## Checklist post-deploy
 
 1. Imposta **BACKED_DATABRICKS_HOST**, **TOKEN**, **WAREHOUSE_ID** su `cloud`, `provisioner`, `platform-api` (output di `backed platform bootstrap`).
-2. WorkOS Dashboard: redirect **`https://api.backed.app/callback`** (path gateway, non `/auth/callback`).
+2. WorkOS Dashboard → app AuthKit **「backed」** (`WORKOS_CLIENT_ID` sul servizio **api**): redirect **`https://api.backed.app/callback`** (path gateway Hono, **non** `/auth/callback` Carta). Se manca, AuthKit mostra *Couldn't sign in*.
 3. CLI remota:
    ```bash
    export BACKED_CONTROL_PLANE_URL=https://cloud.backed.app

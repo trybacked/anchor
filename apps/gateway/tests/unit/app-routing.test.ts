@@ -146,7 +146,7 @@ describe("gateway routing", () => {
     });
     const response = await app.request("/docs");
     expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe("/login");
+    expect(response.headers.get("location")).toBe("/login?next=/docs");
   });
 
   it("serves Scalar docs for authorized tenant", async () => {

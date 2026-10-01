@@ -6,6 +6,17 @@ import { createSessionToken, SESSION_COOKIE_NAME } from "./session.js";
 import type { GatewayVariables } from "./types.js";
 
 const OAUTH_STATE_COOKIE = "backed_oauth_state";
+const OAUTH_RETURN_COOKIE = "backed_oauth_return";
+
+function safeReturnPath(value: string | undefined): string | undefined {
+  if (value === undefined || value.length === 0) {
+    return undefined;
+  }
+  if (!value.startsWith("/") || value.startsWith("//")) {
+    return undefined;
+  }
+  return value;
+}
 
 async function fetchTenantsFromControlPlane(
   config: GatewayConfig,
@@ -40,6 +51,16 @@ export function registerWorkOSAuthRoutes(
   const redirectUri = config.workosRedirectUri ?? "";
 
   app.get("/login", (c) => {
+    const returnPath = safeReturnPath(c.req.query("next"));
+    if (returnPath !== undefined) {
+      setCookie(c, OAUTH_RETURN_COOKIE, returnPath, {
+        httpOnly: true,
+        secure: config.cookieSecure,
+        sameSite: "Lax",
+        path: "/",
+        maxAge: 600,
+      });
+    }
     const state = crypto.randomUUID();
     setCookie(c, OAUTH_STATE_COOKIE, state, {
       httpOnly: true,
@@ -64,10 +85,16 @@ export function registerWorkOSAuthRoutes(
     if (code === undefined || state === undefined || savedState !== state) {
       return c.json({ error: "Invalid OAuth callback" }, 400);
     }
-    const auth = await workos.userManagement.authenticateWithCode({
-      clientId,
-      code,
-    });
+    let auth;
+    try {
+      auth = await workos.userManagement.authenticateWithCode({
+        clientId,
+        code,
+      });
+    } catch (error) {
+      console.error("WorkOS authenticateWithCode failed:", error);
+      return c.redirect("/login?error=auth");
+    }
     const memberships = await workos.userManagement.listOrganizationMemberships({
       userId: auth.user.id,
     });
@@ -88,6 +115,8 @@ export function registerWorkOSAuthRoutes(
       path: "/",
       maxAge: config.sessionTtlSeconds,
     });
-    return c.redirect("/");
+    const returnPath =
+      safeReturnPath(getCookie(c, OAUTH_RETURN_COOKIE)) ?? "/docs";
+    return c.redirect(returnPath);
   });
 }
