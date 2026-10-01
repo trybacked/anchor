@@ -134,7 +134,8 @@ function renderTenantPickerPage(tenants: string[]): string {
     <h1>API documentation</h1>
     <p class="lead">
       Public interactive reference (Scalar). Browse endpoints without signing in; use
-      <a href="/login" style="color: var(--accent);">login</a> for Try it out against live data.
+      <a href="/login" style="color: var(--accent);">login</a> for Try it out;
+      <a href="/logout" style="color: var(--accent);">logout</a> to refresh your session.
     </p>
     <div class="grid">${cards}</div>
   </main>

@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import type { Hono } from "hono";
-import { deleteCookie, setCookie } from "hono/cookie";
+import { setCookie } from "hono/cookie";
 import { z } from "zod";
 import type { GatewayConfig } from "./config.js";
 import { createSessionToken, SESSION_COOKIE_NAME } from "./session.js";
@@ -32,10 +32,5 @@ export function registerAuthRoutes(
       maxAge: config.sessionTtlSeconds,
     });
     return c.json({ username: user.username, tenants: user.tenants });
-  });
-
-  app.post("/logout", (c) => {
-    deleteCookie(c, SESSION_COOKIE_NAME, { path: "/" });
-    return c.json({ ok: true });
   });
 }

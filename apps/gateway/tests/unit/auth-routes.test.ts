@@ -48,6 +48,33 @@ describe("auth routes", () => {
     expect(setCookie).toContain("backed_session=");
   });
 
+  it("GET /logout clears session and redirects to login", async () => {
+    const app = createGatewayApp({
+      config,
+      registrySource,
+      users,
+      proxyDeps: { fetchImpl: async () => new Response("{}") },
+    });
+    const login = await app.request("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "demo", password: "pass" }),
+    });
+    const sessionCookie = login.headers.get("set-cookie") ?? "";
+    const response = await app.request("/logout", {
+      headers: { Cookie: sessionCookie.split(";")[0] ?? "" },
+    });
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("/login");
+  });
+
+  it("POST /logout returns ok", async () => {
+    const app = createGatewayApp({ config, registrySource, users });
+    const response = await app.request("/logout", { method: "POST" });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+  });
+
   it("rejects bad password", async () => {
     const app = createGatewayApp({ config, registrySource, users });
     const response = await app.request("/login", {

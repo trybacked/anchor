@@ -15,7 +15,7 @@ const server = serve({ fetch: app.fetch, port: config.port, hostname: config.hos
   console.error(
     `Backed gateway listening on http://${host}:${String(info.port)} (platform upstream)`,
   );
-  console.error("Health: /health/live · Docs: /docs · Auth: GET|POST /login");
+  console.error("Health: /health/live · Docs: /docs · Auth: GET /login · GET|POST /logout");
 });
 
 function shutdown(signal: string): void {

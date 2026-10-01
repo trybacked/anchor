@@ -3,6 +3,7 @@ import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { registerAuthRoutes } from "./auth-routes.js";
 import { registerWorkOSAuthRoutes } from "./auth-workos.js";
+import { handleLogout } from "./logout.js";
 import type { GatewayConfig } from "./config.js";
 import {
   isPublicDocsReferenceTenant,
@@ -79,6 +80,9 @@ export function createGatewayApp(
   } else {
     registerAuthRoutes(app, config, () => users);
   }
+
+  app.get("/logout", (c) => handleLogout(c, config));
+  app.post("/logout", (c) => handleLogout(c, config));
 
   app.get("/me", requireAuth, (c) => {
     const user = c.get("user");
