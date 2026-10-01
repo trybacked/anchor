@@ -5,6 +5,7 @@ import {
   dispatchAnchorCommand,
   UnknownAnchorCommandError,
 } from "./anchor-commands.js";
+import { platformBootstrapCommand, platformStatusCommand } from "./commands/platform-bootstrap.js";
 import { tenantCreateCommand } from "./commands/tenant-create.js";
 import { printCliVersion } from "./commands/version.js";
 import { formatCliCommand, isHelpFlag, isVersionFlag, SERVICES } from "./config.js";
@@ -56,6 +57,24 @@ async function main(): Promise<void> {
 
   if (isVersionFlag(first)) {
     printCliVersion();
+    return;
+  }
+
+  if (first === "platform") {
+    if (second === undefined || isHelpFlag(second)) {
+      getUi().log("Usage: backed platform bootstrap | status");
+      return;
+    }
+    if (second === "bootstrap") {
+      platformBootstrapCommand(rest);
+      return;
+    }
+    if (second === "status") {
+      await platformStatusCommand(rest);
+      return;
+    }
+    getUi().writeError(`Unknown platform subcommand: ${second}`);
+    process.exitCode = 1;
     return;
   }
 

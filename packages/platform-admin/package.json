@@ -1,0 +1,30 @@
+{
+  "name": "@trybacked/platform-admin",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Cloud-safe Databricks tenant provisioning (REST only, no local CLI)",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp -r src/assets dist/assets",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@trybacked/core": "workspace:*",
+    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/registry": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}

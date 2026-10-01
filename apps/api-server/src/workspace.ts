@@ -1,5 +1,6 @@
 import { readModelYaml, workspacePaths } from "@trybacked/core";
 import {
+  createDatabricksFilesClient,
   createDatabricksSqlClient,
   databricksConfigFromEnv,
   hasDatabricksEnv,
@@ -7,16 +8,11 @@ import {
 import { loadPublishedOntology } from "@trybacked/registry";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
-import { createSemanticChatEngine, renderAnswer } from "@trybacked/semantic-chat";
-import { createVercelAiTranslatorFromEnv } from "@trybacked/semantic-chat/adapters/vercel-ai";
-import {
-  createAnchorService,
-  type AnchorOperationAuditHook,
-  type AnchorService,
-  type SemanticAskResponse,
-} from "@trybacked/service";
+import type { AnchorOperationAuditHook, AnchorService } from "@trybacked/service";
+import { createAnchorService } from "@trybacked/service";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { createAnchorServiceForModel } from "./service-factory.js";
 
 export function findWorkspaceRoot(startDir: string = process.cwd()): string {
   let directory = resolve(startDir);
@@ -46,13 +42,16 @@ export async function buildQueryRuntime(root: string): Promise<OntologyQueryRunt
   if (ontology === null || !hasDatabricksEnv(process.env)) {
     return undefined;
   }
-  const client = createDatabricksSqlClient(databricksConfigFromEnv(process.env));
+  const databricksConfig = databricksConfigFromEnv(process.env);
+  const client = createDatabricksSqlClient(databricksConfig);
+  const filesClient = createDatabricksFilesClient(databricksConfig);
   const model = readModelYaml(root);
   const built = await buildQueryRuntimeFromEnv({
     ontology,
     model,
     executor: (sql, parameters) => client.execute(sql, parameters),
     env: process.env,
+    readVolumeFile: (path, init) => filesClient.readFile(path, init),
   });
   return built.runtime;
 }
@@ -66,41 +65,30 @@ export async function createWorkspaceService(
 }> {
   const workspaceRoot = root ?? findWorkspaceRoot();
   loadWorkspaceEnv(workspaceRoot);
-  const queryRuntime = await buildQueryRuntime(workspaceRoot);
   const model = readModelYaml(workspaceRoot);
   const ontology = loadPublishedOntology(workspaceRoot);
+
+  if (ontology !== null && hasDatabricksEnv(process.env)) {
+    const catalog = process.env["BACKED_DATABRICKS_CATALOG"]?.trim();
+    const service = await createAnchorServiceForModel({
+      model,
+      ontology,
+      databricksConfig: databricksConfigFromEnv(process.env),
+      env: process.env,
+      ...(catalog !== undefined && catalog.length > 0 ? { catalog } : {}),
+      ...(audit?.onOperation !== undefined ? { onOperation: audit.onOperation } : {}),
+      ...(audit?.auditPrincipal !== undefined ? { auditPrincipal: audit.auditPrincipal } : {}),
+    });
+    return { root: workspaceRoot, service };
+  }
+
   const service = createAnchorService({
     model,
     executionProfile: "api",
     ...(ontology !== null ? { ontology } : {}),
-    ...(queryRuntime !== undefined ? { queryRuntime } : {}),
     ...(audit?.onOperation !== undefined ? { onOperation: audit.onOperation } : {}),
     ...(audit?.auditPrincipal !== undefined ? { auditPrincipal: audit.auditPrincipal } : {}),
   });
-
-  const translator = createVercelAiTranslatorFromEnv(process.env);
-  if (ontology !== null && queryRuntime !== undefined && translator !== undefined) {
-    const engine = createSemanticChatEngine({
-      ontology,
-      queryRuntime,
-      translate: translator,
-    });
-    return {
-      root: workspaceRoot,
-      service: Object.assign(service, {
-        capabilities: () => ({ ...service.capabilities(), semanticChat: true }),
-        semanticAsk: async (body: { question: string; evidence?: boolean | undefined }) => {
-          const answer = await engine.ask(body.question, { evidence: body.evidence });
-          const response: SemanticAskResponse = {
-            ...answer,
-            plan: answer.plan,
-            text: renderAnswer(answer),
-          };
-          return response;
-        },
-      }),
-    };
-  }
 
   return { root: workspaceRoot, service };
 }

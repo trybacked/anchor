@@ -15,6 +15,13 @@ export {
 export type { CreateDatabricksDatasetProviderOptions } from "./databricks-dataset-provider.js";
 export { createDatabricksSqlClient } from "./sql-client.js";
 export type { DatabricksSqlClient, SqlParameter, SqlParameterValue, SqlRow } from "./sql-client.js";
+export { createDatabricksFilesClient, normalizeDatabricksVolumePath } from "./files-client.js";
+export type {
+  DatabricksBlobStore,
+  DatabricksFileReadResult,
+  DatabricksFilesClient,
+} from "./files-client.js";
+export { createDatabricksBlobStore } from "./files-client.js";
 
 /** Provider + SQL client from `BACKED_DATABRICKS_*` environment variables. */
 export function createDatabricksProviderFromEnv(

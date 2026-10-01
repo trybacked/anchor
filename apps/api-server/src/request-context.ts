@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 export type RequestContext = {
   user?: string | undefined;
+  tenant?: string | undefined;
 };
 
 const storage = new AsyncLocalStorage<RequestContext>();

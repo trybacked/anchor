@@ -21,11 +21,7 @@ export {
   buildRelationPath,
   resolveRelationPath,
 } from "./graph-traverse.js";
-export type {
-  TraverseDirection,
-  RelationHop,
-  RelationPathSegment,
-} from "./graph-traverse.js";
+export type { TraverseDirection, RelationHop, RelationPathSegment } from "./graph-traverse.js";
 export {
   DOC_TYPE_TABLE_PREFIX,
   DOC_TYPE_UNKNOWN_SLUG,
@@ -254,3 +250,12 @@ export {
   validateTenantId,
   type TenantsRegistry,
 } from "./tenants-registry.js";
+export {
+  createFileRegistrySource,
+  createHttpRegistrySource,
+  createRegistrySourceFromEnv,
+  resolveRegistrySourceFromEnv,
+  type RegistrySourceMode,
+  type TenantRegistrySnapshot,
+  type TenantRegistrySource,
+} from "./tenant-registry-source.js";

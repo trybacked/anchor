@@ -1,18 +1,20 @@
-import { initUi } from "../ui/index.js";
 import { provisionTenant } from "../tenant/provision.js";
 import { validateTenantId } from "../tenant/registry.js";
 import type { CommandHandler } from "../types.js";
+import { initUi } from "../ui/index.js";
 
 function parseTenantCreateArgs(args: string[]): {
   tenantId: string;
   dryRun: boolean;
   skipBundle: boolean;
+  remote: boolean;
   shared: string[];
   help: boolean;
 } {
   let tenantId = "";
   let dryRun = false;
   let skipBundle = false;
+  let remote = false;
   const shared: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index] ?? "";
@@ -20,7 +22,7 @@ function parseTenantCreateArgs(args: string[]): {
       continue;
     }
     if (arg === "--help" || arg === "-h") {
-      return { tenantId: "", dryRun: false, skipBundle: false, shared: [], help: true };
+      return { tenantId: "", dryRun: false, skipBundle: false, remote: false, shared: [], help: true };
     }
     if (arg === "--dry-run") {
       dryRun = true;
@@ -28,6 +30,10 @@ function parseTenantCreateArgs(args: string[]): {
     }
     if (arg === "--skip-bundle") {
       skipBundle = true;
+      continue;
+    }
+    if (arg === "--remote") {
+      remote = true;
       continue;
     }
     if (arg === "--shared") {
@@ -46,7 +52,7 @@ function parseTenantCreateArgs(args: string[]): {
       tenantId = arg;
     }
   }
-  return { tenantId, dryRun, skipBundle, shared, help: false };
+  return { tenantId, dryRun, skipBundle, remote, shared, help: false };
 }
 
 export const tenantCreateCommand: CommandHandler = async (args) => {
@@ -61,8 +67,12 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
   }
 
   if (parsed.help) {
-    ui.log("Usage: backed tenant create <tenant-id> [--shared anac] [--dry-run] [--skip-bundle]");
-    ui.log("  Provisions UC catalog, bundle deploy, SP token, env file, ontology bootstrap, tenants.yaml.");
+    ui.log(
+      "Usage: backed tenant create <tenant-id> [--shared anac] [--dry-run] [--skip-bundle] [--remote]",
+    );
+    ui.log(
+      "  Provisions UC catalog, bundle deploy, SP token, env file, ontology bootstrap, tenants.yaml.",
+    );
     ui.log("  Requires databricks CLI + admin profile from tenants.yaml enrollment.");
     return;
   }
@@ -83,6 +93,37 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
 
   const sharedSpaceKeys = parsed.shared.length > 0 ? parsed.shared : ["anac"];
 
+  if (parsed.remote) {
+    ui.heading(`Tenant ${parsed.tenantId} (remote)`);
+    try {
+      const {
+        createOrganizationRemote,
+        readControlPlaneClientFromEnv,
+        waitForJobRemote,
+      } = await import("../tenant/control-plane-client.js");
+      const client = readControlPlaneClientFromEnv();
+      const created = await createOrganizationRemote(client, {
+        tenantId: parsed.tenantId,
+        shared: sharedSpaceKeys,
+      });
+      ui.detail(`Job ${created.job.id} (${created.job.status})`);
+      const job = await waitForJobRemote(client, created.job.id);
+      if (job.status === "failed") {
+        throw new Error(job.error ?? "Provisioning job failed");
+      }
+      ui.writeSuccess(`Organization ${parsed.tenantId} provisioned (${job.status})`);
+      const oboToken = job.result?.tenantOboToken;
+      if (typeof oboToken === "string" && oboToken.length > 0) {
+        ui.log("Tenant OBO token (store securely, shown once):");
+        ui.log(oboToken);
+      }
+    } catch (error) {
+      ui.writeError(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    }
+    return;
+  }
+
   if (parsed.dryRun) {
     ui.heading("Dry run");
     ui.log(`Tenant: ${parsed.tenantId}`);
@@ -101,12 +142,17 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     });
     ui.writeSuccess(`Catalog ${result.catalog} · SP ${result.servicePrincipalAppId}`);
     ui.detail(`Env: ${ui.path(result.envFile)}`);
-    ui.detail(`Ontology: ${ui.path(result.ontologyDir)} (publication v${String(result.publicationVersion)})`);
+    ui.detail(
+      `Ontology: ${ui.path(result.ontologyDir)} (publication v${String(result.publicationVersion)})`,
+    );
     if (result.registryUpdated) {
       ui.detail("Updated tenants.yaml");
     }
     ui.blank();
-    ui.log("Next: ./scripts/sync-claude-mcp-runtime.sh and register MCP " + ui.command(`backed-${parsed.tenantId}`));
+    ui.log(
+      "Next: ./scripts/sync-claude-mcp-runtime.sh and register MCP " +
+        ui.command(`backed-${parsed.tenantId}`),
+    );
   } catch (error) {
     ui.writeError(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

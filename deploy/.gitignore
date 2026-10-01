@@ -1,0 +1,4 @@
+.env
+users.yaml
+tenants/*.env
+!tenants/*.env.example

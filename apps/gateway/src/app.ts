@@ -1,15 +1,19 @@
+import type { TenantRegistrySource } from "@trybacked/core";
 import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { registerAuthRoutes } from "./auth-routes.js";
-import { countConfiguredTenants, type GatewayConfig } from "./config.js";
-import { handleSingleModeProxy, handleTenantProxy, type ProxyDeps } from "./proxy.js";
+import { registerWorkOSAuthRoutes } from "./auth-workos.js";
+import type { GatewayConfig } from "./config.js";
+import { handleDefaultTenantProxy, handleTenantProxy, type ProxyDeps } from "./proxy.js";
 import { createRateLimiter } from "./rate-limit.js";
 import { createRequireAuthMiddleware } from "./require-auth.js";
 import type { GatewayVariables } from "./types.js";
+import { countConfiguredTenants } from "./upstreams.js";
 import { loadUsersFile, type UserRecord } from "./users.js";
 
 export type CreateGatewayAppOptions = {
   config: GatewayConfig;
+  registrySource: TenantRegistrySource;
   users?: UserRecord[];
   proxyDeps?: ProxyDeps;
 };
@@ -17,7 +21,7 @@ export type CreateGatewayAppOptions = {
 export function createGatewayApp(
   options: CreateGatewayAppOptions,
 ): Hono<{ Variables: GatewayVariables }> {
-  const { config } = options;
+  const { config, registrySource } = options;
   const users = options.users ?? loadUsersFile(config.usersFilePath);
   const proxyDeps = options.proxyDeps ?? {};
   const requireAuth = createRequireAuthMiddleware(config);
@@ -45,29 +49,34 @@ export function createGatewayApp(
 
   app.get("/health/live", (c) => c.json({ ok: true as const }));
 
-  app.get("/health", (c) =>
+  app.get("/health", async (c) =>
     c.json({
       ok: true as const,
-      mode: config.multiTenant ? ("multi" as const) : ("single" as const),
-      tenants: countConfiguredTenants(config),
+      mode: "platform" as const,
+      authMode: config.authMode,
+      tenants: await countConfiguredTenants(registrySource),
     }),
   );
 
-  registerAuthRoutes(app, config, () => users);
+  if (config.authMode === "workos") {
+    registerWorkOSAuthRoutes(app, config);
+  } else {
+    registerAuthRoutes(app, config, () => users);
+  }
 
   app.get("/me", requireAuth, (c) => {
     const user = c.get("user");
     return c.json(user);
   });
 
-  if (config.multiTenant) {
-    app.all("/t/:tenantId/*", requireAuth, rateLimitMiddleware, async (c) => {
-      const tenantId = c.req.param("tenantId");
-      return handleTenantProxy(c, config, tenantId, proxyDeps);
-    });
-  } else {
+  app.all("/t/:tenantId/*", requireAuth, rateLimitMiddleware, async (c) => {
+    const tenantId = c.req.param("tenantId");
+    return handleTenantProxy(c, config, registrySource, tenantId, proxyDeps);
+  });
+
+  if (config.defaultTenant !== undefined) {
     app.all("/v1/*", requireAuth, rateLimitMiddleware, async (c) => {
-      return handleSingleModeProxy(c, config, proxyDeps);
+      return handleDefaultTenantProxy(c, config, registrySource, proxyDeps);
     });
   }
 

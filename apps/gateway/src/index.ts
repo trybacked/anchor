@@ -1,14 +1,19 @@
 import { serve } from "@hono/node-server";
+import { createRegistrySourceFromEnv } from "@trybacked/core";
 import { createGatewayApp } from "./app.js";
 import { readGatewayConfig } from "./config.js";
 
 const config = readGatewayConfig(process.env);
-const app = createGatewayApp({ config });
+const registrySource = createRegistrySourceFromEnv({
+  ...process.env,
+  GATEWAY_TENANTS_REGISTRY: config.tenantsRegistryPath,
+});
+const app = createGatewayApp({ config, registrySource });
 
 const server = serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => {
   const host = info.address === "::" ? "0.0.0.0" : info.address;
   console.error(
-    `Backed gateway listening on http://${host}:${String(info.port)} (mode: ${config.multiTenant ? "multi" : "single"})`,
+    `Backed gateway listening on http://${host}:${String(info.port)} (platform upstream)`,
   );
   console.error("Health: /health/live · Auth: POST /login");
 });

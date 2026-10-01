@@ -24,6 +24,24 @@ export function readPublicationRecord(root: string): PublicationRecord | null {
   }
 }
 
+/** Builds a publication record without touching the filesystem. */
+export function buildPublicationRecord(
+  model: SemanticModel,
+  options: { ontologyId: string; version: number; now?: Date },
+): PublicationRecord {
+  const now = options.now ?? new Date();
+  const ontology = markOntologyPublished(
+    semanticModelToOntology(model, { ontologyId: options.ontologyId, version: options.version }),
+    now.toISOString(),
+  );
+  return PublicationRecordSchema.parse({
+    version: options.version,
+    publishedAt: now.toISOString(),
+    runId: model.metadata.runId,
+    ontology,
+  });
+}
+
 /** Publishes a reviewed model as the next ontology version. */
 export function publishSemanticModel(
   root: string,
@@ -33,15 +51,10 @@ export function publishSemanticModel(
   const now = options.now ?? new Date();
   const previous = readPublicationRecord(root);
   const version = (previous?.version ?? 0) + 1;
-  const ontology = markOntologyPublished(
-    semanticModelToOntology(model, { ontologyId: options.ontologyId, version }),
-    now.toISOString(),
-  );
-  const record = PublicationRecordSchema.parse({
+  const record = buildPublicationRecord(model, {
+    ontologyId: options.ontologyId,
     version,
-    publishedAt: now.toISOString(),
-    runId: model.metadata.runId,
-    ontology,
+    now,
   });
   const filePath = publicationPath(root);
   mkdirSync(path.dirname(filePath), { recursive: true });

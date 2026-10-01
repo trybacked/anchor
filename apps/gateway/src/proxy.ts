@@ -1,7 +1,8 @@
+import type { TenantRegistrySource } from "@trybacked/core";
 import type { Context } from "hono";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayVariables } from "./types.js";
-import { resolveDefaultUpstream, resolveTenantUpstream, type TenantUpstream } from "./upstreams.js";
+import { assertTenantInRegistry, resolvePlatformUpstream } from "./upstreams.js";
 
 const HOP_BY_HOP = new Set([
   "connection",
@@ -30,18 +31,21 @@ function copyForwardHeaders(source: Headers): Headers {
   return headers;
 }
 
-export async function forwardToUpstream(
-  upstream: TenantUpstream,
+export async function forwardToPlatform(
+  config: GatewayConfig,
+  tenantId: string,
   username: string,
   request: Request,
   upstreamPath: string,
   deps: ProxyDeps = {},
 ): Promise<Response> {
   const fetchFn = deps.fetchImpl ?? fetch;
+  const upstream = resolvePlatformUpstream(config);
   const url = new URL(upstreamPath, `${upstream.baseUrl}/`);
   const headers = copyForwardHeaders(request.headers);
   headers.set("Authorization", `Bearer ${upstream.token}`);
   headers.set("X-Backed-User", username);
+  headers.set("X-Backed-Tenant", tenantId);
 
   const init: RequestInit = {
     method: request.method,
@@ -54,9 +58,18 @@ export async function forwardToUpstream(
   try {
     const upstreamResponse = await fetchFn(url, init);
     const responseHeaders = new Headers();
-    const contentType = upstreamResponse.headers.get("content-type");
-    if (contentType !== null) {
-      responseHeaders.set("content-type", contentType);
+    for (const name of [
+      "content-type",
+      "content-length",
+      "content-range",
+      "accept-ranges",
+      "content-disposition",
+      "x-backed-document-page",
+    ]) {
+      const value = upstreamResponse.headers.get(name);
+      if (value !== null) {
+        responseHeaders.set(name, value);
+      }
     }
     return new Response(upstreamResponse.body, {
       status: upstreamResponse.status,
@@ -85,6 +98,7 @@ export function tenantPathFromRequest(pathname: string, tenantId: string): strin
 export async function handleTenantProxy(
   c: Context<{ Variables: GatewayVariables }>,
   config: GatewayConfig,
+  registrySource: TenantRegistrySource,
   tenantId: string,
   deps: ProxyDeps,
 ): Promise<Response> {
@@ -92,8 +106,7 @@ export async function handleTenantProxy(
   if (!user.tenants.includes(tenantId)) {
     return c.json({ error: "Forbidden" }, 403);
   }
-  const upstream = resolveTenantUpstream(config, tenantId);
-  if (upstream === undefined) {
+  if (!(await assertTenantInRegistry(registrySource, tenantId))) {
     return c.json({ error: "Tenant not found" }, 404);
   }
   const upstreamPath = tenantPathFromRequest(c.req.path, tenantId);
@@ -101,22 +114,37 @@ export async function handleTenantProxy(
     return c.json({ error: "Bad path" }, 400);
   }
   const query = new URL(c.req.url).search;
-  return forwardToUpstream(upstream, user.username, c.req.raw, `${upstreamPath}${query}`, deps);
+  return forwardToPlatform(
+    config,
+    tenantId,
+    user.username,
+    c.req.raw,
+    `${upstreamPath}${query}`,
+    deps,
+  );
 }
 
-export async function handleSingleModeProxy(
+export async function handleDefaultTenantProxy(
   c: Context<{ Variables: GatewayVariables }>,
   config: GatewayConfig,
+  registrySource: TenantRegistrySource,
   deps: ProxyDeps,
 ): Promise<Response> {
-  const upstream = resolveDefaultUpstream(config);
-  if (upstream === undefined) {
-    return c.json({ error: "Upstream not configured" }, 503);
+  const defaultTenant = config.defaultTenant;
+  if (defaultTenant === undefined) {
+    return c.json({ error: "Default tenant not configured" }, 503);
+  }
+  const user = c.get("user");
+  if (!user.tenants.includes(defaultTenant)) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+  if (!(await assertTenantInRegistry(registrySource, defaultTenant))) {
+    return c.json({ error: "Tenant not found" }, 404);
   }
   const url = new URL(c.req.url);
-  const user = c.get("user");
-  return forwardToUpstream(
-    upstream,
+  return forwardToPlatform(
+    config,
+    defaultTenant,
     user.username,
     c.req.raw,
     `${url.pathname}${url.search}`,

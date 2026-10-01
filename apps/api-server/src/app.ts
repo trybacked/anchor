@@ -14,9 +14,30 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { createBearerAuthMiddleware } from "./auth.js";
 import { runWithRequestContext } from "./request-context.js";
+import type { TenantRuntimeRegistry } from "./tenant-runtime-registry.js";
+import { OntologyNotPublishedError, TenantNotFoundError } from "./tenant-runtime-registry.js";
+
+type AnchorApiVariables = {
+  anchorService: AnchorService;
+};
 
 const EntityIdParamSchema = z.object({ id: z.string().min(1) });
+const DocumentIdParamSchema = z.object({ id: z.string().min(1) });
 const ListRelationsQuerySchema = z.object({ entityId: z.string().optional() });
+const DocumentPreviewQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional().default(1),
+  format: z.enum(["json", "file"]).optional(),
+});
+
+function documentErrorStatus(message: string): 400 | 404 | 503 {
+  if (message.includes("not found")) {
+    return 404;
+  }
+  if (message.includes("unavailable")) {
+    return 503;
+  }
+  return 400;
+}
 
 const SemanticAskBodySchema = z.object({
   question: z.string().min(1),
@@ -25,46 +46,97 @@ const SemanticAskBodySchema = z.object({
 
 export type CreateAnchorApiAppOptions = {
   apiToken?: string | undefined;
+  platform?: { registry: TenantRuntimeRegistry } | undefined;
 };
 
 export function createAnchorApiApp(
   getService: () => AnchorService,
   options: CreateAnchorApiAppOptions = {},
-): Hono {
-  const app = new Hono();
+): Hono<{ Variables: AnchorApiVariables }> {
+  const app = new Hono<{ Variables: AnchorApiVariables }>();
   const auth =
     options.apiToken !== undefined ? createBearerAuthMiddleware(options.apiToken) : undefined;
 
   app.get("/health/live", (c) => c.json({ ok: true as const }));
 
-  app.get("/health", (c) => {
+  app.get("/health", async (c) => {
+    if (options.platform !== undefined) {
+      return c.json({
+        ok: true as const,
+        mode: "platform" as const,
+        tenants: await options.platform.registry.listTenantIds(),
+        cachedTenants: options.platform.registry.cachedTenantIds(),
+      });
+    }
     const service = getService();
-    return c.json({ ok: true as const, capabilities: service.capabilities() });
+    return c.json({
+      ok: true as const,
+      mode: "workspace" as const,
+      capabilities: service.capabilities(),
+    });
   });
 
-  app.get("/health/ready", (c) => {
+  app.get("/health/ready", async (c) => {
+    if (options.platform !== undefined) {
+      return c.json({
+        ok: true as const,
+        mode: "platform" as const,
+        tenants: await options.platform.registry.listTenantIds(),
+      });
+    }
     const service = getService();
     const capabilities = service.capabilities();
-    return c.json({ ok: true as const, capabilities });
+    return c.json({ ok: true as const, mode: "workspace" as const, capabilities });
   });
 
   app.get("/openapi.json", (c) => c.json(buildOpenApiDocument(Boolean(options.apiToken))));
 
-  const v1 = new Hono();
+  const v1 = new Hono<{ Variables: AnchorApiVariables }>();
+  const serviceFor = (c: { get: (key: "anchorService") => AnchorService }) =>
+    c.get("anchorService");
+
   if (auth !== undefined) {
     v1.use("*", auth);
+  }
+
+  if (options.platform !== undefined) {
+    const platformRegistry = options.platform.registry;
     v1.use("*", async (c, next) => {
       const headerUser = c.req.header("X-Backed-User")?.trim();
       const user = headerUser !== undefined && headerUser.length > 0 ? headerUser : undefined;
+      const tenant = c.req.header("X-Backed-Tenant")?.trim();
+      if (tenant === undefined || tenant.length === 0) {
+        return c.json({ error: "Missing X-Backed-Tenant header" }, 400);
+      }
+      try {
+        const anchorService = await platformRegistry.resolve(tenant);
+        c.set("anchorService", anchorService);
+        // eslint-disable-next-line @typescript-eslint/return-await -- ALS wrapper; Hono next() return type is not a Thenable
+        return runWithRequestContext({ user, tenant }, () => next());
+      } catch (error) {
+        if (error instanceof TenantNotFoundError) {
+          return c.json({ error: error.message }, 404);
+        }
+        if (error instanceof OntologyNotPublishedError) {
+          return c.json({ error: error.message }, 503);
+        }
+        throw error;
+      }
+    });
+  } else {
+    v1.use("*", async (c, next) => {
+      const headerUser = c.req.header("X-Backed-User")?.trim();
+      const user = headerUser !== undefined && headerUser.length > 0 ? headerUser : undefined;
+      c.set("anchorService", getService());
       return runWithRequestContext({ user }, () => next());
     });
   }
 
-  v1.get("/model/entities", (c) => c.json(getService().listEntities()));
+  v1.get("/model/entities", (c) => c.json(serviceFor(c).listEntities()));
 
   v1.get("/model/entities/:id", zValidator("param", EntityIdParamSchema), (c) => {
     const { id } = c.req.valid("param");
-    const result = getService().getEntity(id);
+    const result = serviceFor(c).getEntity(id);
     if ("error" in result) {
       return c.json({ error: result.error }, 404);
     }
@@ -73,22 +145,22 @@ export function createAnchorApiApp(
 
   v1.get("/model/relations", zValidator("query", ListRelationsQuerySchema), (c) => {
     const { entityId } = c.req.valid("query");
-    return c.json(getService().listRelations(entityId));
+    return c.json(serviceFor(c).listRelations(entityId));
   });
 
   v1.post("/model/search", zValidator("json", SearchModelBodySchema), async (c) => {
     const { query } = c.req.valid("json");
-    return c.json(await getService().searchModel(query));
+    return c.json(await serviceFor(c).searchModel(query));
   });
 
   v1.post("/model/definitions", zValidator("json", GetDefinitionBodySchema), (c) => {
     const { term } = c.req.valid("json");
-    return c.json(getService().getDefinition(term));
+    return c.json(serviceFor(c).getDefinition(term));
   });
 
   v1.post("/query/objects", zValidator("json", ObjectQueryBodySchema), async (c) => {
     const body = c.req.valid("json");
-    const result = await getService().objectQuery(body);
+    const result = await serviceFor(c).objectQuery(body);
     if ("error" in result) {
       const status = result.error.includes("unavailable") ? 503 : 400;
       return c.json({ error: result.error }, status);
@@ -98,11 +170,61 @@ export function createAnchorApiApp(
 
   v1.post("/search/entities", zValidator("json", EntitySearchBodySchema), async (c) => {
     const body = c.req.valid("json");
-    return c.json(await getService().entitySearch(body));
+    return c.json(await serviceFor(c).entitySearch(body));
   });
 
+  v1.get("/documents/:id", zValidator("param", DocumentIdParamSchema), async (c) => {
+    const { id } = c.req.valid("param");
+    const result = await serviceFor(c).getDocument(id);
+    if ("error" in result) {
+      return c.json({ error: result.error }, documentErrorStatus(result.error));
+    }
+    return c.json(result);
+  });
+
+  v1.get(
+    "/documents/:id/preview",
+    zValidator("param", DocumentIdParamSchema),
+    zValidator("query", DocumentPreviewQuerySchema),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { page, format } = c.req.valid("query");
+      const accept = c.req.header("accept") ?? "";
+      const wantsJson =
+        format === "json" || (format !== "file" && accept.includes("application/json"));
+      if (wantsJson) {
+        const descriptor = await serviceFor(c).describeDocumentPreview(id, page);
+        if ("error" in descriptor) {
+          return c.json({ error: descriptor.error }, documentErrorStatus(descriptor.error));
+        }
+        return c.json(descriptor);
+      }
+      const range = c.req.header("range") ?? undefined;
+      const preview = await serviceFor(c).readDocumentPreview(id, { page, range });
+      if ("error" in preview) {
+        return c.json({ error: preview.error }, documentErrorStatus(preview.error));
+      }
+      const { file } = preview;
+      const headers: Record<string, string> = {
+        "content-type": file.contentType,
+        "content-disposition": `inline; filename="${file.filename.replaceAll('"', "")}"`,
+        "x-backed-document-page": String(page),
+      };
+      if (file.contentLength !== undefined) {
+        headers["content-length"] = String(file.contentLength);
+      }
+      if (file.contentRange !== undefined) {
+        headers["content-range"] = file.contentRange;
+      }
+      if (file.acceptRanges !== undefined) {
+        headers["accept-ranges"] = file.acceptRanges;
+      }
+      return new Response(file.data, { status: file.status, headers });
+    },
+  );
+
   v1.post("/search/chunks", zValidator("json", ChunkSearchBodySchema), async (c) => {
-    const result = await getService().chunkSearch(c.req.valid("json"));
+    const result = await serviceFor(c).chunkSearch(c.req.valid("json"));
     if ("error" in result) {
       const status = result.error.includes("unavailable") ? 503 : 400;
       return c.json({ error: result.error }, status);
@@ -111,7 +233,7 @@ export function createAnchorApiApp(
   });
 
   v1.post("/profile/entities", zValidator("json", EntityProfileBodySchema), async (c) => {
-    const result = await getService().entityProfile(c.req.valid("json"));
+    const result = await serviceFor(c).entityProfile(c.req.valid("json"));
     if ("error" in result) {
       const status = result.error.includes("unavailable") ? 503 : 400;
       return c.json({ error: result.error }, status);
@@ -120,7 +242,7 @@ export function createAnchorApiApp(
   });
 
   v1.post("/graph/traverse", zValidator("json", GraphTraverseBodySchema), async (c) => {
-    const result = await getService().graphTraverse(c.req.valid("json"));
+    const result = await serviceFor(c).graphTraverse(c.req.valid("json"));
     if ("error" in result) {
       const status = result.error.includes("unavailable") ? 503 : 400;
       return c.json({ error: result.error }, status);
@@ -129,8 +251,11 @@ export function createAnchorApiApp(
   });
 
   v1.post("/chat/ask", zValidator("json", SemanticAskBodySchema), async (c) => {
-    const service = getService() as AnchorService & {
-      semanticAsk?: (body: { question: string; evidence?: boolean }) => Promise<SemanticAskResponse>;
+    const service = serviceFor(c) as AnchorService & {
+      semanticAsk?: (body: {
+        question: string;
+        evidence?: boolean;
+      }) => Promise<SemanticAskResponse>;
     };
     if (service.semanticAsk === undefined) {
       return c.json(
@@ -228,6 +353,34 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
           operationId: "entitySearch",
           tags: ["entity-search"],
           responses: { "200": { description: "Matches" } },
+        },
+      },
+      "/v1/documents/{id}": {
+        get: {
+          operationId: "getDocument",
+          tags: ["documents"],
+          responses: {
+            "200": { description: "Document metadata" },
+            "404": { description: "Not found" },
+            "503": { description: "Unavailable" },
+          },
+        },
+      },
+      "/v1/documents/{id}/preview": {
+        get: {
+          operationId: "getDocumentPreview",
+          tags: ["documents"],
+          parameters: [
+            { name: "page", in: "query", schema: { type: "integer", minimum: 1 } },
+            { name: "format", in: "query", schema: { enum: ["json", "file"] } },
+          ],
+          responses: {
+            "200": {
+              description: "PDF bytes or JSON preview descriptor (Accept: application/json)",
+            },
+            "404": { description: "Not found" },
+            "503": { description: "Unavailable" },
+          },
         },
       },
       "/v1/search/chunks": {

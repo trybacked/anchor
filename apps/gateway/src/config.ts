@@ -1,5 +1,6 @@
-import { loadTenantsRegistry } from "@trybacked/core";
 import { z } from "zod";
+
+const GatewayAuthModeSchema = z.enum(["file", "workos"]);
 
 const GatewayConfigSchema = z.object({
   host: z.string().min(1),
@@ -9,15 +10,20 @@ const GatewayConfigSchema = z.object({
   cookieSecure: z.boolean(),
   tenantsRegistryPath: z.string().min(1),
   usersFilePath: z.string().min(1),
-  multiTenant: z.boolean(),
+  authMode: GatewayAuthModeSchema,
+  workosApiKey: z.string().min(1).optional(),
+  workosClientId: z.string().min(1).optional(),
+  workosRedirectUri: z.string().url().optional(),
+  controlPlaneUrl: z.string().url().optional(),
+  controlPlaneInternalToken: z.string().min(1).optional(),
   rateLimitPerMinute: z.number().int().positive(),
-  upstreams: z.record(z.string().min(1)),
-  upstreamTokens: z.record(z.string().min(1)),
-  defaultUpstream: z.string().min(1).optional(),
-  defaultUpstreamToken: z.string().min(1).optional(),
+  platformUpstream: z.string().min(1),
+  platformToken: z.string().min(1),
+  defaultTenant: z.string().min(1).optional(),
 });
 
 export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
+export type GatewayAuthMode = z.infer<typeof GatewayAuthModeSchema>;
 
 function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value.trim().length === 0) {
@@ -33,79 +39,44 @@ function parseBoolean(value: string | undefined, defaultValue: boolean): boolean
   return defaultValue;
 }
 
-function parseUpstreams(raw: string | undefined): Record<string, string> {
-  const map: Record<string, string> = {};
-  if (raw === undefined || raw.trim().length === 0) {
-    return map;
-  }
-  for (const segment of raw.split(",")) {
-    const trimmed = segment.trim();
-    if (trimmed.length === 0) {
-      continue;
-    }
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) {
-      throw new Error(`Invalid GATEWAY_UPSTREAMS segment "${trimmed}" — expected tenantId=url`);
-    }
-    const tenantId = trimmed.slice(0, eq).trim();
-    const baseUrl = trimmed
-      .slice(eq + 1)
-      .trim()
-      .replace(/\/+$/, "");
-    map[tenantId] = baseUrl;
-  }
-  return map;
-}
-
-function collectUpstreamTokens(
-  env: NodeJS.ProcessEnv,
-  tenantIds: string[],
-): Record<string, string> {
-  const tokens: Record<string, string> = {};
-  for (const tenantId of tenantIds) {
-    const envKey = `GATEWAY_TENANT_TOKEN_${tenantId.toUpperCase()}`;
-    const token = env[envKey]?.trim();
-    if (token !== undefined && token.length > 0) {
-      tokens[tenantId] = token;
-    }
-  }
-  return tokens;
-}
-
 export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
   const sessionSecret = env["GATEWAY_SESSION_SECRET"]?.trim();
   if (sessionSecret === undefined || sessionSecret.length === 0) {
     throw new Error("GATEWAY_SESSION_SECRET is required (min 32 characters).");
   }
 
-  const multiTenant = parseBoolean(env["WORKSHOP_MULTI_TENANT"], true);
-  const upstreams = parseUpstreams(env["GATEWAY_UPSTREAMS"]);
-  const upstreamTokens = collectUpstreamTokens(env, Object.keys(upstreams));
+  const platformUpstream = env["GATEWAY_PLATFORM_UPSTREAM"]?.trim().replace(/\/+$/, "");
+  const platformToken = env["GATEWAY_PLATFORM_TOKEN"]?.trim();
+  if (platformUpstream === undefined || platformUpstream.length === 0) {
+    throw new Error("GATEWAY_PLATFORM_UPSTREAM is required (e.g. http://platform-api:8787).");
+  }
+  if (platformToken === undefined || platformToken.length === 0) {
+    throw new Error("GATEWAY_PLATFORM_TOKEN is required (must match ANCHOR_API_TOKEN).");
+  }
 
-  const defaultUpstream = env["GATEWAY_DEFAULT_UPSTREAM"]?.trim().replace(/\/+$/, "");
-  const defaultUpstreamToken = env["GATEWAY_DEFAULT_UPSTREAM_TOKEN"]?.trim();
+  const defaultTenant = env["GATEWAY_DEFAULT_TENANT"]?.trim();
+  const nodeEnv = env["NODE_ENV"] ?? "development";
+  const cookieSecure = parseBoolean(env["GATEWAY_COOKIE_SECURE"], nodeEnv === "production");
+  const authModeRaw = (env["GATEWAY_AUTH_MODE"] ?? "file").trim().toLowerCase();
+  const authMode = authModeRaw === "workos" ? "workos" : "file";
+  const workosApiKey = env["WORKOS_API_KEY"]?.trim();
+  const workosClientId = env["WORKOS_CLIENT_ID"]?.trim();
+  const workosRedirectUri = env["WORKOS_REDIRECT_URI"]?.trim();
+  const controlPlaneUrl = env["BACKED_CONTROL_PLANE_URL"]?.trim();
+  const controlPlaneInternalToken = env["CONTROL_PLANE_INTERNAL_TOKEN"]?.trim();
 
-  if (multiTenant) {
-    for (const tenantId of Object.keys(upstreams)) {
-      if (upstreamTokens[tenantId] === undefined) {
-        throw new Error(
-          `Missing env GATEWAY_TENANT_TOKEN_${tenantId.toUpperCase()} for upstream "${tenantId}".`,
-        );
-      }
-    }
-  } else {
-    if (defaultUpstream === undefined || defaultUpstream.length === 0) {
-      throw new Error("GATEWAY_DEFAULT_UPSTREAM is required when WORKSHOP_MULTI_TENANT=false.");
-    }
-    if (defaultUpstreamToken === undefined || defaultUpstreamToken.length === 0) {
+  if (authMode === "workos") {
+    if (workosApiKey === undefined || workosClientId === undefined || workosRedirectUri === undefined) {
       throw new Error(
-        "GATEWAY_DEFAULT_UPSTREAM_TOKEN is required when WORKSHOP_MULTI_TENANT=false.",
+        "GATEWAY_AUTH_MODE=workos requires WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_REDIRECT_URI.",
+      );
+    }
+    if (controlPlaneUrl === undefined || controlPlaneInternalToken === undefined) {
+      throw new Error(
+        "GATEWAY_AUTH_MODE=workos requires BACKED_CONTROL_PLANE_URL and CONTROL_PLANE_INTERNAL_TOKEN.",
       );
     }
   }
-
-  const nodeEnv = env["NODE_ENV"] ?? "development";
-  const cookieSecure = parseBoolean(env["GATEWAY_COOKIE_SECURE"], nodeEnv === "production");
 
   return GatewayConfigSchema.parse({
     host: env["GATEWAY_HOST"] ?? env["HOST"] ?? "127.0.0.1",
@@ -115,35 +86,15 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
     cookieSecure,
     tenantsRegistryPath: env["GATEWAY_TENANTS_REGISTRY"] ?? "../tenants.yaml",
     usersFilePath: env["GATEWAY_USERS_FILE"] ?? "users.yaml",
-    multiTenant,
+    authMode,
     rateLimitPerMinute: Number(env["GATEWAY_RATE_LIMIT_PER_MINUTE"] ?? 60),
-    upstreams,
-    upstreamTokens,
-    ...(defaultUpstream !== undefined && defaultUpstream.length > 0 ? { defaultUpstream } : {}),
-    ...(defaultUpstreamToken !== undefined && defaultUpstreamToken.length > 0
-      ? { defaultUpstreamToken }
-      : {}),
+    platformUpstream,
+    platformToken,
+    ...(defaultTenant !== undefined && defaultTenant.length > 0 ? { defaultTenant } : {}),
+    ...(workosApiKey !== undefined ? { workosApiKey } : {}),
+    ...(workosClientId !== undefined ? { workosClientId } : {}),
+    ...(workosRedirectUri !== undefined ? { workosRedirectUri } : {}),
+    ...(controlPlaneUrl !== undefined ? { controlPlaneUrl } : {}),
+    ...(controlPlaneInternalToken !== undefined ? { controlPlaneInternalToken } : {}),
   });
-}
-
-export function countConfiguredTenants(config: GatewayConfig): number {
-  const registry = loadTenantsRegistry(config.tenantsRegistryPath);
-  const registryIds = new Set(Object.keys(registry.tenants));
-  if (config.multiTenant) {
-    let count = 0;
-    for (const tenantId of Object.keys(config.upstreams)) {
-      if (registryIds.has(tenantId)) {
-        count += 1;
-      } else {
-        console.error(`Gateway upstream "${tenantId}" is not listed in tenants registry.`);
-      }
-    }
-    for (const tenantId of registryIds) {
-      if (config.upstreams[tenantId] === undefined) {
-        console.error(`Tenant "${tenantId}" in registry has no GATEWAY_UPSTREAMS entry.`);
-      }
-    }
-    return count;
-  }
-  return 1;
 }
