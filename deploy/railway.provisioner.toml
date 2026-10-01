@@ -1,0 +1,15 @@
+# Railway service: provisioner (no public HTTP — do not use apps/control-plane/railway.toml here).
+# Set in dashboard: provisioner → Settings → Config file path = deploy/railway.provisioner.toml
+# Or disable HTTP health check manually on that service.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/control-plane/Dockerfile"
+watchPatterns = ["anchor/apps/control-plane/**", "anchor/packages/**"]
+
+[deploy]
+startCommand = "node dist/worker.js"
+healthcheckPath = "/health/live"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

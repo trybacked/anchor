@@ -1,6 +1,8 @@
+import "./worker-health.js";
 import { resolveTenantCatalog } from "@trybacked/core";
 import { provisionTenantCloud } from "@trybacked/platform-admin";
 import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
+import { applyControlPlaneSchema } from "./apply-schema.js";
 import { readControlPlaneConfig } from "./config.js";
 import { createPool } from "./db/pool.js";
 import {
@@ -98,8 +100,13 @@ async function loop(): Promise<void> {
   }
 }
 
-console.error("Control plane worker started");
-loop().catch((error: unknown) => {
+async function main(): Promise<void> {
+  await applyControlPlaneSchema(pool);
+  console.error("Control plane worker started");
+  await loop();
+}
+
+main().catch((error: unknown) => {
   console.error(error);
   process.exit(1);
 });

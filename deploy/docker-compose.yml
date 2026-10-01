@@ -51,6 +51,7 @@ services:
       dockerfile: apps/control-plane/Dockerfile
     restart: unless-stopped
     command: ["node", "dist/worker.js"]
+    # worker.js applies schema on start and serves GET /health/live for healthchecks
     environment:
       DATABASE_URL: "postgresql://backed:${POSTGRES_PASSWORD:-backed-local-dev}@postgres:5432/backed_control"
       CONTROL_PLANE_ADMIN_TOKEN: "${CONTROL_PLANE_ADMIN_TOKEN}"
