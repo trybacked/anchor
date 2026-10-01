@@ -84,7 +84,7 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
 
   return GatewayConfigSchema.parse({
     host: env["GATEWAY_HOST"] ?? env["HOST"] ?? "127.0.0.1",
-    port: Number(env["GATEWAY_PORT"] ?? env["PORT"] ?? 8790),
+    port: Number(env["PORT"] ?? env["GATEWAY_PORT"] ?? 8790),
     sessionSecret,
     sessionTtlSeconds: Number(env["GATEWAY_SESSION_TTL_SECONDS"] ?? 28800),
     cookieSecure,

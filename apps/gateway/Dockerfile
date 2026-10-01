@@ -14,7 +14,6 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ENV GATEWAY_PORT=8790
 COPY --from=build /deploy /app
 USER node
 EXPOSE 8790

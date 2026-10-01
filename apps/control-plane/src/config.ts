@@ -54,7 +54,7 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
 
   return ControlPlaneConfigSchema.parse({
     host: env["CONTROL_PLANE_HOST"] ?? env["HOST"] ?? "0.0.0.0",
-    port: Number(env["CONTROL_PLANE_PORT"] ?? env["PORT"] ?? 8791),
+    port: Number(env["PORT"] ?? env["CONTROL_PLANE_PORT"] ?? 8791),
     databaseUrl,
     adminToken,
     internalToken,

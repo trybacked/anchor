@@ -35,7 +35,7 @@ export function readApiConfig(env: NodeJS.ProcessEnv): ApiConfig {
     throw new Error("ANCHOR_API_TOKEN is required to start the Anchor API server.");
   }
   const host = env["ANCHOR_API_HOST"] ?? env["HOST"] ?? "127.0.0.1";
-  const port = Number(env["ANCHOR_API_PORT"] ?? env["PORT"] ?? 8787);
+  const port = Number(env["PORT"] ?? env["ANCHOR_API_PORT"] ?? 8787);
   const workspaceRoot = env["ANCHOR_WORKSPACE_ROOT"]?.trim();
   const hasWorkspace = workspaceRoot !== undefined && workspaceRoot.length > 0;
   const platformMode = !hasWorkspace;
