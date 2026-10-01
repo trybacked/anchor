@@ -1,35 +1,27 @@
-import { loadTenantsRegistry } from "@trybacked/core";
+import type { TenantRegistrySource } from "@trybacked/core";
 import type { GatewayConfig } from "./config.js";
 
-export type TenantUpstream = {
-  tenantId: string;
+export type PlatformUpstream = {
   baseUrl: string;
   token: string;
 };
 
-export function resolveTenantUpstream(
-  config: GatewayConfig,
-  tenantId: string,
-): TenantUpstream | undefined {
-  const baseUrl = config.upstreams[tenantId];
-  const token = config.upstreamTokens[tenantId];
-  if (baseUrl === undefined || token === undefined) {
-    return undefined;
-  }
-  const registry = loadTenantsRegistry(config.tenantsRegistryPath);
-  if (registry.tenants[tenantId] === undefined) {
-    return undefined;
-  }
-  return { tenantId, baseUrl, token };
+export function resolvePlatformUpstream(config: GatewayConfig): PlatformUpstream {
+  return {
+    baseUrl: config.platformUpstream,
+    token: config.platformToken,
+  };
 }
 
-export function resolveDefaultUpstream(config: GatewayConfig): TenantUpstream | undefined {
-  if (config.defaultUpstream === undefined || config.defaultUpstreamToken === undefined) {
-    return undefined;
-  }
-  return {
-    tenantId: "default",
-    baseUrl: config.defaultUpstream,
-    token: config.defaultUpstreamToken,
-  };
+export async function assertTenantInRegistry(
+  source: TenantRegistrySource,
+  tenantId: string,
+): Promise<boolean> {
+  const snapshot = await source.load();
+  return snapshot.registry.tenants[tenantId] !== undefined;
+}
+
+export async function countConfiguredTenants(source: TenantRegistrySource): Promise<number> {
+  const snapshot = await source.load();
+  return Object.keys(snapshot.registry.tenants).length;
 }
