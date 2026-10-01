@@ -22,7 +22,14 @@ function parseTenantCreateArgs(args: string[]): {
       continue;
     }
     if (arg === "--help" || arg === "-h") {
-      return { tenantId: "", dryRun: false, skipBundle: false, remote: false, shared: [], help: true };
+      return {
+        tenantId: "",
+        dryRun: false,
+        skipBundle: false,
+        remote: false,
+        shared: [],
+        help: true,
+      };
     }
     if (arg === "--dry-run") {
       dryRun = true;
@@ -96,11 +103,8 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
   if (parsed.remote) {
     ui.heading(`Tenant ${parsed.tenantId} (remote)`);
     try {
-      const {
-        createOrganizationRemote,
-        readControlPlaneClientFromEnv,
-        waitForJobRemote,
-      } = await import("../tenant/control-plane-client.js");
+      const { createOrganizationRemote, readControlPlaneClientFromEnv, waitForJobRemote } =
+        await import("../tenant/control-plane-client.js");
       const client = readControlPlaneClientFromEnv();
       const created = await createOrganizationRemote(client, {
         tenantId: parsed.tenantId,

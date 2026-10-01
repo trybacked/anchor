@@ -44,7 +44,9 @@
     "/v1/model/entities": {
       "get": {
         "operationId": "listEntities",
-        "tags": ["model"],
+        "tags": [
+          "model"
+        ],
         "responses": {
           "200": {
             "description": "Entities"
@@ -55,7 +57,9 @@
     "/v1/model/entities/{id}": {
       "get": {
         "operationId": "getEntity",
-        "tags": ["model"],
+        "tags": [
+          "model"
+        ],
         "responses": {
           "200": {
             "description": "Entity"
@@ -69,7 +73,9 @@
     "/v1/model/relations": {
       "get": {
         "operationId": "listRelations",
-        "tags": ["model"],
+        "tags": [
+          "model"
+        ],
         "responses": {
           "200": {
             "description": "Relations"
@@ -80,7 +86,9 @@
     "/v1/model/search": {
       "post": {
         "operationId": "searchModel",
-        "tags": ["model"],
+        "tags": [
+          "model"
+        ],
         "responses": {
           "200": {
             "description": "Matches"
@@ -91,7 +99,9 @@
     "/v1/model/definitions": {
       "post": {
         "operationId": "getDefinition",
-        "tags": ["model"],
+        "tags": [
+          "model"
+        ],
         "responses": {
           "200": {
             "description": "Definition"
@@ -102,7 +112,9 @@
     "/v1/query/objects": {
       "post": {
         "operationId": "objectQuery",
-        "tags": ["object-query-reader"],
+        "tags": [
+          "object-query-reader"
+        ],
         "responses": {
           "200": {
             "description": "Rows or count"
@@ -113,7 +125,9 @@
     "/v1/search/entities": {
       "post": {
         "operationId": "entitySearch",
-        "tags": ["entity-search"],
+        "tags": [
+          "entity-search"
+        ],
         "responses": {
           "200": {
             "description": "Matches"
@@ -121,10 +135,70 @@
         }
       }
     },
+    "/v1/documents/{id}": {
+      "get": {
+        "operationId": "getDocument",
+        "tags": [
+          "documents"
+        ],
+        "responses": {
+          "200": {
+            "description": "Document metadata"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/preview": {
+      "get": {
+        "operationId": "getDocumentPreview",
+        "tags": [
+          "documents"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "json",
+                "file"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF bytes or JSON preview descriptor (Accept: application/json)"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        }
+      }
+    },
     "/v1/search/chunks": {
       "post": {
         "operationId": "chunkSearch",
-        "tags": ["chunk-search"],
+        "tags": [
+          "chunk-search"
+        ],
         "responses": {
           "200": {
             "description": "Matching chunks"
@@ -138,7 +212,9 @@
     "/v1/profile/entities": {
       "post": {
         "operationId": "entityProfile",
-        "tags": ["entity-profile-reader"],
+        "tags": [
+          "entity-profile-reader"
+        ],
         "responses": {
           "200": {
             "description": "Profile"
@@ -152,7 +228,9 @@
     "/v1/graph/traverse": {
       "post": {
         "operationId": "graphTraverse",
-        "tags": ["graph-traverse"],
+        "tags": [
+          "graph-traverse"
+        ],
         "responses": {
           "200": {
             "description": "Joined rows"
@@ -166,10 +244,12 @@
     "/v1/chat/ask": {
       "post": {
         "operationId": "semanticAsk",
-        "tags": ["semantic-chat"],
+        "tags": [
+          "semantic-chat"
+        ],
         "responses": {
           "200": {
-            "description": "Answer with provenance"
+            "description": "NL answer with route (single|template), execution steps, SQL, rows/count, and provenance"
           },
           "503": {
             "description": "Unavailable"

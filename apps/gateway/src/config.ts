@@ -66,7 +66,11 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
   const controlPlaneInternalToken = env["CONTROL_PLANE_INTERNAL_TOKEN"]?.trim();
 
   if (authMode === "workos") {
-    if (workosApiKey === undefined || workosClientId === undefined || workosRedirectUri === undefined) {
+    if (
+      workosApiKey === undefined ||
+      workosClientId === undefined ||
+      workosRedirectUri === undefined
+    ) {
       throw new Error(
         "GATEWAY_AUTH_MODE=workos requires WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_REDIRECT_URI.",
       );

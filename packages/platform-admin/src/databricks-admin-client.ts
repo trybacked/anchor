@@ -124,9 +124,7 @@ export async function grantTokenCanUse(
     "PATCH",
     "/api/2.0/permissions/authorization/tokens",
     {
-      access_control_list: [
-        { service_principal_name: applicationId, permission_level: "CAN_USE" },
-      ],
+      access_control_list: [{ service_principal_name: applicationId, permission_level: "CAN_USE" }],
     },
     deps,
   );

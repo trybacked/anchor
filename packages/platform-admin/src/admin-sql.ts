@@ -17,10 +17,7 @@ export function createAdminSqlClient(config: DatabricksProviderConfig): AdminSql
   };
 }
 
-export async function ensureRegistryVolume(
-  admin: AdminSqlClient,
-  catalog: string,
-): Promise<void> {
+export async function ensureRegistryVolume(admin: AdminSqlClient, catalog: string): Promise<void> {
   await admin.execute(`CREATE SCHEMA IF NOT EXISTS \`${catalog}\`.\`backed\``);
   await admin.execute(`CREATE VOLUME IF NOT EXISTS \`${catalog}\`.\`backed\`.\`registry\``);
 }
@@ -40,9 +37,7 @@ export async function grantTenantCatalogToPrincipal(
   catalog: string,
   applicationId: string,
 ): Promise<void> {
-  await admin.execute(
-    `GRANT ALL PRIVILEGES ON CATALOG \`${catalog}\` TO \`${applicationId}\``,
-  );
+  await admin.execute(`GRANT ALL PRIVILEGES ON CATALOG \`${catalog}\` TO \`${applicationId}\``);
 }
 
 export async function grantSharedSpacesToPrincipal(
@@ -79,9 +74,7 @@ export async function grantPlatformPrincipalOnTenant(
   platformPrincipal: string,
   sharedKeys: string[],
 ): Promise<void> {
-  await admin.execute(
-    `GRANT USE CATALOG ON CATALOG \`${catalog}\` TO \`${platformPrincipal}\``,
-  );
+  await admin.execute(`GRANT USE CATALOG ON CATALOG \`${catalog}\` TO \`${platformPrincipal}\``);
   await admin.execute(
     `GRANT USE SCHEMA ON SCHEMA \`${catalog}\`.\`backed\` TO \`${platformPrincipal}\``,
   );

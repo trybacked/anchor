@@ -42,8 +42,14 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
   if (enrollmentHost === undefined || enrollmentHost.length === 0) {
     throw new Error("CONTROL_PLANE_ENROLLMENT_HOST or BACKED_DATABRICKS_HOST is required.");
   }
-  if (databricksHost === undefined || databricksToken === undefined || databricksWarehouseId === undefined) {
-    throw new Error("BACKED_DATABRICKS_HOST, BACKED_DATABRICKS_TOKEN, BACKED_DATABRICKS_WAREHOUSE_ID required.");
+  if (
+    databricksHost === undefined ||
+    databricksToken === undefined ||
+    databricksWarehouseId === undefined
+  ) {
+    throw new Error(
+      "BACKED_DATABRICKS_HOST, BACKED_DATABRICKS_TOKEN, BACKED_DATABRICKS_WAREHOUSE_ID required.",
+    );
   }
 
   return ControlPlaneConfigSchema.parse({
@@ -59,17 +65,18 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
     enrollmentProfile: env["CONTROL_PLANE_ENROLLMENT_PROFILE"]?.trim() ?? "DEFAULT",
     enrollmentBundleTarget: env["CONTROL_PLANE_ENROLLMENT_BUNDLE_TARGET"]?.trim(),
     platformPrincipal: env["BACKED_PLATFORM_PRINCIPAL"]?.trim(),
-    sharedSpacesJson: env["CONTROL_PLANE_SHARED_SPACES_JSON"]?.trim() ?? '{"anac":{"catalog":"backed","schema":"anac"}}',
+    sharedSpacesJson:
+      env["CONTROL_PLANE_SHARED_SPACES_JSON"]?.trim() ??
+      '{"anac":{"catalog":"backed","schema":"anac"}}',
     databricksHost,
     databricksToken,
     databricksWarehouseId,
   });
 }
 
-export function buildEnrollmentRegistry(config: ControlPlaneConfig): Pick<
-  TenantsRegistry,
-  "enrollment" | "shared_spaces"
-> {
+export function buildEnrollmentRegistry(
+  config: ControlPlaneConfig,
+): Pick<TenantsRegistry, "enrollment" | "shared_spaces"> {
   const sharedRaw = JSON.parse(config.sharedSpacesJson) as unknown;
   const host = config.enrollmentHost.startsWith("http")
     ? config.enrollmentHost

@@ -38,7 +38,7 @@ services:
       BACKED_DATABRICKS_TOKEN: "${BACKED_DATABRICKS_TOKEN}"
       BACKED_DATABRICKS_WAREHOUSE_ID: "${BACKED_DATABRICKS_WAREHOUSE_ID}"
       BACKED_PLATFORM_PRINCIPAL: "${BACKED_PLATFORM_PRINCIPAL:-}"
-      CONTROL_PLANE_SHARED_SPACES_JSON: "${CONTROL_PLANE_SHARED_SPACES_JSON:-{\"anac\":{\"catalog\":\"backed\",\"schema\":\"anac\"}}}"
+      CONTROL_PLANE_SHARED_SPACES_JSON: '${CONTROL_PLANE_SHARED_SPACES_JSON:-{"anac":{"catalog":"backed","schema":"anac"}}}'
     env_file:
       - .env
     depends_on:
@@ -59,7 +59,7 @@ services:
       BACKED_DATABRICKS_TOKEN: "${BACKED_DATABRICKS_TOKEN}"
       BACKED_DATABRICKS_WAREHOUSE_ID: "${BACKED_DATABRICKS_WAREHOUSE_ID}"
       BACKED_PLATFORM_PRINCIPAL: "${BACKED_PLATFORM_PRINCIPAL:-}"
-      CONTROL_PLANE_SHARED_SPACES_JSON: "${CONTROL_PLANE_SHARED_SPACES_JSON:-{\"anac\":{\"catalog\":\"backed\",\"schema\":\"anac\"}}}"
+      CONTROL_PLANE_SHARED_SPACES_JSON: '${CONTROL_PLANE_SHARED_SPACES_JSON:-{"anac":{"catalog":"backed","schema":"anac"}}}'
     env_file:
       - .env
     depends_on:

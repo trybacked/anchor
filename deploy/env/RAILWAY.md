@@ -4,14 +4,14 @@ Repo sorgente: **[trybacked/anchor](https://github.com/trybacked/anchor)** (root
 
 ## Mapping servizi (nomi legacy → ruolo)
 
-| Servizio Railway | Ruolo anchor | Dominio / rete |
-| ---------------- | ------------ | -------------- |
-| **api** | Gateway (MCP + WorkOS) | `api.backed.app` (pubblico) |
-| **cloud** | Control-plane API | `cloud.backed.app` (opzionale; anche `control-plane.railway.internal:8791`) |
-| **platform-api** | Platform API | Solo privato `platform-api.railway.internal:8787` |
-| **provisioner** | Worker provisioning | Nessuna HTTP |
-| **Postgres** | DB control-plane | `${{Postgres.DATABASE_URL}}` |
-| **console** / **web** | App legacy | Non toccati da questo stack |
+| Servizio Railway      | Ruolo anchor           | Dominio / rete                                                              |
+| --------------------- | ---------------------- | --------------------------------------------------------------------------- |
+| **api**               | Gateway (MCP + WorkOS) | `api.backed.app` (pubblico)                                                 |
+| **cloud**             | Control-plane API      | `cloud.backed.app` (opzionale; anche `control-plane.railway.internal:8791`) |
+| **platform-api**      | Platform API           | Solo privato `platform-api.railway.internal:8787`                           |
+| **provisioner**       | Worker provisioning    | Nessuna HTTP                                                                |
+| **Postgres**          | DB control-plane       | `${{Postgres.DATABASE_URL}}`                                                |
+| **console** / **web** | App legacy             | Non toccati da questo stack                                                 |
 
 Config build: imposta **`RAILWAY_DOCKERFILE_PATH`** per servizio (es. `apps/gateway/Dockerfile`) — Railway altrimenti usa Railpack sul monorepo. Opzionale: `apps/*/railway.toml` con `builder = "DOCKERFILE"`.
 

@@ -23,7 +23,8 @@
     "smoke:semantic-nl-baseline": "node scripts/semantic-nl-baseline.mjs",
     "generate:schema": "pnpm --filter @trybacked/core run generate:schema",
     "deploy:check": "node deploy/scripts/check-stack.mjs",
-    "deploy:smoke": "bash deploy/scripts/smoke-stack.sh"
+    "deploy:smoke": "bash deploy/scripts/smoke-stack.sh",
+    "check:ci": "pnpm lint && pnpm format:check && pnpm build && pnpm typecheck && pnpm generate:schema && pnpm --filter @trybacked/api-server generate:openapi && git diff --exit-code schema/anchor-schema-v1.json apps/api-server/openapi.json && pnpm test:coverage"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",

@@ -23,8 +23,7 @@ export function createGatewayApp(
 ): Hono<{ Variables: GatewayVariables }> {
   const { config, registrySource } = options;
   const users =
-    options.users ??
-    (config.authMode === "file" ? loadUsersFile(config.usersFilePath) : []);
+    options.users ?? (config.authMode === "file" ? loadUsersFile(config.usersFilePath) : []);
   const proxyDeps = options.proxyDeps ?? {};
   const requireAuth = createRequireAuthMiddleware(config);
   const rateLimit = createRateLimiter({

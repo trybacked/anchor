@@ -36,7 +36,11 @@ export function readControlPlaneClientFromEnv(
 
 export async function createOrganizationRemote(
   client: ControlPlaneClientOptions,
-  input: { tenantId: string; shared?: string[] | undefined; workosOrganizationId?: string | undefined },
+  input: {
+    tenantId: string;
+    shared?: string[] | undefined;
+    workosOrganizationId?: string | undefined;
+  },
 ): Promise<CreateOrganizationResponse> {
   const fetchFn = client.fetchImpl ?? fetch;
   const response = await fetchFn(`${normalizeBaseUrl(client.baseUrl)}/v1/organizations`, {
@@ -60,7 +64,10 @@ export async function createOrganizationRemote(
   return (await response.json()) as CreateOrganizationResponse;
 }
 
-export async function getJobRemote(client: ControlPlaneClientOptions, jobId: string): Promise<JobResponse> {
+export async function getJobRemote(
+  client: ControlPlaneClientOptions,
+  jobId: string,
+): Promise<JobResponse> {
   const fetchFn = client.fetchImpl ?? fetch;
   const response = await fetchFn(`${normalizeBaseUrl(client.baseUrl)}/v1/jobs/${jobId}`, {
     headers: { Authorization: `Bearer ${client.adminToken}` },

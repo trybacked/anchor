@@ -52,8 +52,7 @@ export async function provisionTenantCloud(
   const warehouseId = registry.enrollment.warehouse_id;
   const admin = createAdminSqlClient(adminConfig);
   const ontologyStore =
-    options.ontologyStore ??
-    createVolumeOntologyStore(createDatabricksBlobStore(adminConfig));
+    options.ontologyStore ?? createVolumeOntologyStore(createDatabricksBlobStore(adminConfig));
 
   await createTenantCatalog(admin, catalog, tenantId);
   await ensureRegistryVolume(admin, catalog);
@@ -86,12 +85,7 @@ export async function provisionTenantCloud(
 
   let tenantOboToken: string | undefined;
   if (options.issueTenantOboToken === true) {
-    tenantOboToken = await createOboToken(
-      adminConfig,
-      applicationId,
-      `backed ${tenantId}`,
-      deps,
-    );
+    tenantOboToken = await createOboToken(adminConfig, applicationId, `backed ${tenantId}`, deps);
   }
 
   return {

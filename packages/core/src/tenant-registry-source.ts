@@ -109,8 +109,7 @@ export function createRegistrySourceFromEnv(env: NodeJS.ProcessEnv): TenantRegis
   const resolved = resolveRegistrySourceFromEnv(env);
   if (resolved.mode === "http") {
     const ttlRaw = env["BACKED_REGISTRY_TTL_SECONDS"]?.trim();
-    const ttlSeconds =
-      ttlRaw !== undefined && ttlRaw.length > 0 ? Number(ttlRaw) : undefined;
+    const ttlSeconds = ttlRaw !== undefined && ttlRaw.length > 0 ? Number(ttlRaw) : undefined;
     return createHttpRegistrySource({
       url: resolved.httpUrl ?? "",
       token: resolved.httpToken ?? "",

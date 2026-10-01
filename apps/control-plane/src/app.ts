@@ -81,10 +81,7 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       try {
         validateTenantId(body.tenantId);
       } catch (error) {
-        return c.json(
-          { error: error instanceof Error ? error.message : "Invalid tenant id" },
-          400,
-        );
+        return c.json({ error: error instanceof Error ? error.message : "Invalid tenant id" }, 400);
       }
       const existing = await getOrganizationByTenantId(pool, body.tenantId);
       if (existing !== undefined) {
@@ -96,7 +93,10 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
         sharedSpaces: shared,
         workosOrganizationId: body.workosOrganizationId,
       });
-      const job = await enqueueJob(pool, org.id, "create_tenant", { tenantId: body.tenantId, shared });
+      const job = await enqueueJob(pool, org.id, "create_tenant", {
+        tenantId: body.tenantId,
+        shared,
+      });
       return c.json({ organization: org, job }, 201);
     },
   );

@@ -70,8 +70,7 @@ async function processJob(): Promise<boolean> {
     return false;
   }
   try {
-    const tenantId =
-      typeof job.payload.tenantId === "string" ? job.payload.tenantId : undefined;
+    const tenantId = typeof job.payload.tenantId === "string" ? job.payload.tenantId : undefined;
     if (tenantId === undefined) {
       throw new Error("Job payload missing tenantId");
     }
