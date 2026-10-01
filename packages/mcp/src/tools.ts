@@ -1,9 +1,12 @@
 import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
-import { createAnchorService } from "@trybacked/service";
+import {
+  createAnchorService,
+  isServiceErrorResult,
+  type ServiceErrorResult,
+} from "@trybacked/service";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
-import { entityNotFoundMessage } from "./errors.js";
 import type { SearchModelOptions } from "./mapping.js";
 
 export type SemanticAskHandler = (body: {
@@ -33,13 +36,8 @@ function readToolString(args: Record<string, unknown>, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-function isErrorResult(result: unknown): result is { error: string } {
-  return (
-    typeof result === "object" &&
-    result !== null &&
-    "error" in result &&
-    typeof result.error === "string"
-  );
+function isErrorResult(result: unknown): result is ServiceErrorResult {
+  return isServiceErrorResult(result);
 }
 
 export interface ToolDefinition {
@@ -79,7 +77,7 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
       const id = readToolString(args, "id");
       const result = serviceFromContext(context).getEntity(id);
       if (isErrorResult(result)) {
-        return { error: entityNotFoundMessage(id) };
+        return result;
       }
       return result;
     },

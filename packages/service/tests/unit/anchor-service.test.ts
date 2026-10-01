@@ -24,12 +24,16 @@ describe("createAnchorService", () => {
   it("returns error result for object query without runtime", async () => {
     const service = createAnchorService({ model: readModelYaml(fixtureRoot) });
     const result = await service.objectQuery({ objectId: "customer", filters: [] });
-    expect(result).toMatchObject({ error: expect.stringContaining("unavailable") });
+    expect(result).toMatchObject({
+      error: { code: "unavailable", message: expect.stringContaining("unavailable") },
+    });
   });
 
   it("returns unavailable for chunk search without document readers", async () => {
     const service = createAnchorService({ model: readModelYaml(fixtureRoot) });
     const result = await service.chunkSearch({ query: "test" });
-    expect(result).toMatchObject({ error: expect.stringContaining("unavailable") });
+    expect(result).toMatchObject({
+      error: { code: "unavailable", message: expect.stringContaining("unavailable") },
+    });
   });
 });

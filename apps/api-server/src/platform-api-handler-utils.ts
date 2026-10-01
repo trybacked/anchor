@@ -1,18 +1,24 @@
+import {
+  isServiceErrorResult,
+  serviceErrorHttpStatus,
+  serviceErrorMessage,
+  type ServiceErrorResult,
+} from "@trybacked/service";
 import type { z } from "zod";
 import type { PlatformHandlerContext } from "./platform-api-types.js";
 
-export function documentErrorStatus(message: string): 400 | 404 | 503 {
-  if (message.includes("not found")) {
-    return 404;
-  }
-  if (message.includes("unavailable")) {
-    return 503;
-  }
-  return 400;
+export function jsonServiceErrorResponse(
+  c: PlatformHandlerContext,
+  result: ServiceErrorResult,
+): Response {
+  return c.json({ error: serviceErrorMessage(result) }, serviceErrorHttpStatus(result.error.code));
 }
 
-export function serviceErrorStatus(message: string): 400 | 503 {
-  return message.includes("unavailable") ? 503 : 400;
+export function respondIfServiceError(c: PlatformHandlerContext, result: unknown): Response | null {
+  if (!isServiceErrorResult(result)) {
+    return null;
+  }
+  return jsonServiceErrorResponse(c, result);
 }
 
 export async function readJsonBody<T extends z.ZodTypeAny>(

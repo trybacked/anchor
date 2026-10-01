@@ -2,6 +2,14 @@ export { hashSql, writeAuditJsonLine } from "./audit.js";
 export type { AnchorOperationAuditEvent, AnchorOperationAuditHook } from "./audit.js";
 export { createAnchorService } from "./anchor-service.js";
 export type { AnchorService, AnchorServiceOptions, ServiceErrorResult } from "./anchor-service.js";
+export {
+  isServiceErrorResult,
+  serviceError,
+  serviceErrorHttpStatus,
+  serviceErrorMessage,
+  SERVICE_ERROR_CODES,
+} from "./service-error.js";
+export type { ServiceError, ServiceErrorCode } from "./service-error.js";
 export { listEntities, getEntity, listRelations, searchModel, getDefinition } from "./mapping.js";
 export type { SearchModelOptions } from "./mapping.js";
 export type {

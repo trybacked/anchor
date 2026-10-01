@@ -1,3 +1,4 @@
+import { serviceError } from "@trybacked/service";
 import { z } from "zod";
 import { describe, expect, it } from "vitest";
 import { postJsonRoute, postServiceJsonRoute } from "../../src/platform-api-route-factory.js";
@@ -48,7 +49,7 @@ describe("platform-api route factory", () => {
         responses: { "200": { description: "OK" }, "503": { description: "Unavailable" } },
       },
       async (_service, body) =>
-        body.q === "fail" ? { error: "feature unavailable" } : { ok: true },
+        body.q === "fail" ? serviceError("unavailable", "feature unavailable") : { ok: true },
     );
 
     const service = {} as never;

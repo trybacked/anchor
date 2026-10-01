@@ -1,4 +1,5 @@
 import { GetDefinitionBodySchema, SearchModelBodySchema } from "@trybacked/service";
+import { respondIfServiceError } from "../platform-api-handler-utils.js";
 import { platformRoute, postJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import { EntityIdParamSchema, ListRelationsQuerySchema } from "../platform-api-schemas.js";
@@ -28,8 +29,9 @@ export const platformApiModelRoutes: RouteFactory[] = [
     () => (c) => {
       const { id } = EntityIdParamSchema.parse(c.req.param());
       const result = c.get("anchorService").getEntity(id);
-      if ("error" in result) {
-        return c.json({ error: result.error }, 404);
+      const errorResponse = respondIfServiceError(c, result);
+      if (errorResponse !== null) {
+        return errorResponse;
       }
       return c.json(result);
     },

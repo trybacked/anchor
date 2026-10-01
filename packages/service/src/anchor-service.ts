@@ -35,6 +35,9 @@ import type {
   DocumentPreviewResponse,
   GetDocumentResponse,
 } from "./responses.js";
+import { serviceError, type ServiceErrorResult } from "./service-error.js";
+
+export type { ServiceErrorResult } from "./service-error.js";
 
 export type AnchorServiceOptions = {
   model: SemanticModel;
@@ -45,8 +48,6 @@ export type AnchorServiceOptions = {
   auditPrincipal?: string | undefined;
   executionProfile?: ExecutionBudgetProfile | undefined;
 };
-
-export type ServiceErrorResult = { error: string };
 
 function auditOperation(
   options: AnchorServiceOptions,
@@ -80,7 +81,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
     getEntity: (id: string) => {
       const detail = getEntity(model, id);
       if (detail === null) {
-        return { error: `Entity "${id}" not found.` } satisfies ServiceErrorResult;
+        return serviceError("not_found", `Entity "${id}" not found.`);
       }
       return detail;
     },
@@ -102,15 +103,17 @@ export function createAnchorService(options: AnchorServiceOptions) {
 
     objectQuery: async (input: ObjectQueryBody | Record<string, unknown>) => {
       if (queryRuntime === undefined) {
-        return {
-          error: "Object queries are unavailable: no published ontology or warehouse.",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "unavailable",
+          "Object queries are unavailable: no published ontology or warehouse.",
+        );
       }
       const parsed = ObjectQuerySchema.safeParse(input);
       if (!parsed.success) {
-        return {
-          error: `Invalid query: ${parsed.error.issues[0]?.message ?? "bad input"}`,
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "bad_request",
+          `Invalid query: ${parsed.error.issues[0]?.message ?? "bad input"}`,
+        );
       }
       const started = Date.now();
       try {
@@ -147,7 +150,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
           error instanceof ObjectQueryCompileError ||
           error instanceof QueryExecutionBudgetError
         ) {
-          return { error: error.message } satisfies ServiceErrorResult;
+          return serviceError("bad_request", error.message);
         }
         throw error;
       }
@@ -155,10 +158,10 @@ export function createAnchorService(options: AnchorServiceOptions) {
 
     chunkSearch: async (body: ChunkSearchBody) => {
       if (queryRuntime?.chunkSearch === undefined) {
-        return {
-          error:
-            "Document chunk search is unavailable: docs.documents and docs.document_elements must exist in the warehouse (run docs_refresh).",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "unavailable",
+          "Document chunk search is unavailable: docs.documents and docs.document_elements must exist in the warehouse (run docs_refresh).",
+        );
       }
       const started = Date.now();
       try {
@@ -173,18 +176,19 @@ export function createAnchorService(options: AnchorServiceOptions) {
           provenance: buildChunkSearchProvenance(rows),
         };
       } catch (error) {
-        return {
-          error: error instanceof Error ? error.message : "Chunk search failed.",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "bad_request",
+          error instanceof Error ? error.message : "Chunk search failed.",
+        );
       }
     },
 
     entityProfile: async (body: EntityProfileBody) => {
       if (queryRuntime?.entityProfile === undefined) {
-        return {
-          error:
-            "Entity profiles are unavailable: docs tables missing or warehouse not configured (BACKED_DATABRICKS_CATALOG, BACKED_DOCUMENTS_SCHEMA).",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "unavailable",
+          "Entity profiles are unavailable: docs tables missing or warehouse not configured (BACKED_DATABRICKS_CATALOG, BACKED_DOCUMENTS_SCHEMA).",
+        );
       }
       const started = Date.now();
       try {
@@ -202,22 +206,23 @@ export function createAnchorService(options: AnchorServiceOptions) {
               : emptyProvenanceWhenNoOntology(),
         };
       } catch (error) {
-        return {
-          error: error instanceof Error ? error.message : "Entity profile lookup failed.",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "bad_request",
+          error instanceof Error ? error.message : "Entity profile lookup failed.",
+        );
       }
     },
 
     getDocument: async (documentId: string): Promise<GetDocumentResponse | ServiceErrorResult> => {
       if (queryRuntime?.documentAccess === undefined) {
-        return {
-          error:
-            "Document metadata is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "unavailable",
+          "Document metadata is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+        );
       }
       const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
       if (metadata === null) {
-        return { error: `Document "${documentId}" not found.` } satisfies ServiceErrorResult;
+        return serviceError("not_found", `Document "${documentId}" not found.`);
       }
       return metadata;
     },
@@ -227,32 +232,33 @@ export function createAnchorService(options: AnchorServiceOptions) {
       page: number,
     ): Promise<DocumentPreviewResponse | ServiceErrorResult> => {
       if (queryRuntime?.documentAccess === undefined) {
-        return {
-          error:
-            "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "unavailable",
+          "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+        );
       }
       const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
       if (metadata === null) {
-        return { error: `Document "${documentId}" not found.` } satisfies ServiceErrorResult;
+        return serviceError("not_found", `Document "${documentId}" not found.`);
       }
       if (page < 1) {
-        return { error: "Query parameter page must be >= 1." } satisfies ServiceErrorResult;
+        return serviceError("bad_request", "Query parameter page must be >= 1.");
       }
       if (metadata.pageCount > 0 && page > metadata.pageCount) {
-        return {
-          error: `Page ${String(page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "bad_request",
+          `Page ${String(page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
+        );
       }
       if (!hasDocumentPreview) {
-        return {
-          error:
-            "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "unavailable",
+          "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
+        );
       }
       const descriptor = await queryRuntime.documentAccess.describePreview(documentId, page);
       if (descriptor === null) {
-        return { error: `Document "${documentId}" not found.` } satisfies ServiceErrorResult;
+        return serviceError("not_found", `Document "${documentId}" not found.`);
       }
       return descriptor;
     },
@@ -263,28 +269,29 @@ export function createAnchorService(options: AnchorServiceOptions) {
     ): Promise<ServiceErrorResult | { page: number; file: DocumentPreviewFile }> => {
       const described = await (async () => {
         if (queryRuntime?.documentAccess === undefined) {
-          return {
-            error:
-              "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
-          } satisfies ServiceErrorResult;
+          return serviceError(
+            "unavailable",
+            "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+          );
         }
         const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
         if (metadata === null) {
-          return { error: `Document "${documentId}" not found.` } satisfies ServiceErrorResult;
+          return serviceError("not_found", `Document "${documentId}" not found.`);
         }
         if (options.page < 1) {
-          return { error: "Query parameter page must be >= 1." } satisfies ServiceErrorResult;
+          return serviceError("bad_request", "Query parameter page must be >= 1.");
         }
         if (metadata.pageCount > 0 && options.page > metadata.pageCount) {
-          return {
-            error: `Page ${String(options.page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
-          } satisfies ServiceErrorResult;
+          return serviceError(
+            "bad_request",
+            `Page ${String(options.page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
+          );
         }
         if (!hasDocumentPreview) {
-          return {
-            error:
-              "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
-          } satisfies ServiceErrorResult;
+          return serviceError(
+            "unavailable",
+            "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
+          );
         }
         return null;
       })();
@@ -293,9 +300,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
       }
       const access = queryRuntime?.documentAccess;
       if (access === undefined) {
-        return {
-          error: "Document preview is unavailable.",
-        } satisfies ServiceErrorResult;
+        return serviceError("unavailable", "Document preview is unavailable.");
       }
       try {
         const file = await access.readOriginalFile(documentId, {
@@ -312,18 +317,19 @@ export function createAnchorService(options: AnchorServiceOptions) {
         };
         return { file: previewFile, page: options.page };
       } catch (error) {
-        return {
-          error: error instanceof Error ? error.message : "Document preview failed.",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "bad_request",
+          error instanceof Error ? error.message : "Document preview failed.",
+        );
       }
     },
 
     graphTraverse: async (body: GraphTraverseBody) => {
       if (queryRuntime?.graphTraverse === undefined) {
-        return {
-          error:
-            "Graph traverse is unavailable: configure warehouse catalog and published ontology mappings.",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "unavailable",
+          "Graph traverse is unavailable: configure warehouse catalog and published ontology mappings.",
+        );
       }
       const started = Date.now();
       try {
@@ -338,9 +344,10 @@ export function createAnchorService(options: AnchorServiceOptions) {
           provenance: buildGraphTraverseProvenance(rows),
         };
       } catch (error) {
-        return {
-          error: error instanceof Error ? error.message : "Graph traverse failed.",
-        } satisfies ServiceErrorResult;
+        return serviceError(
+          "bad_request",
+          error instanceof Error ? error.message : "Graph traverse failed.",
+        );
       }
     },
 

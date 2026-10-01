@@ -1,4 +1,5 @@
-import { documentErrorStatus } from "../platform-api-handler-utils.js";
+import { isServiceErrorResult } from "@trybacked/service";
+import { jsonServiceErrorResponse, respondIfServiceError } from "../platform-api-handler-utils.js";
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import { DocumentIdParamSchema, DocumentPreviewQuerySchema } from "../platform-api-schemas.js";
@@ -21,8 +22,9 @@ export const platformApiDocumentRoutes: RouteFactory[] = [
     () => async (c) => {
       const { id } = DocumentIdParamSchema.parse(c.req.param());
       const result = await c.get("anchorService").getDocument(id);
-      if ("error" in result) {
-        return c.json({ error: result.error }, documentErrorStatus(result.error));
+      const errorResponse = respondIfServiceError(c, result);
+      if (errorResponse !== null) {
+        return errorResponse;
       }
       return c.json(result);
     },
@@ -51,15 +53,15 @@ export const platformApiDocumentRoutes: RouteFactory[] = [
       const service = c.get("anchorService");
       if (wantsJson) {
         const descriptor = await service.describeDocumentPreview(id, page);
-        if ("error" in descriptor) {
-          return c.json({ error: descriptor.error }, documentErrorStatus(descriptor.error));
+        if (isServiceErrorResult(descriptor)) {
+          return jsonServiceErrorResponse(c, descriptor);
         }
         return c.json(descriptor);
       }
       const range = c.req.header("range") ?? undefined;
       const preview = await service.readDocumentPreview(id, { page, range });
-      if ("error" in preview) {
-        return c.json({ error: preview.error }, documentErrorStatus(preview.error));
+      if (isServiceErrorResult(preview)) {
+        return jsonServiceErrorResponse(c, preview);
       }
       const { file } = preview;
       const headers: Record<string, string> = {
