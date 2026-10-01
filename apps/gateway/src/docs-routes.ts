@@ -4,6 +4,7 @@ import type { Hono } from "hono";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayVariables } from "./types.js";
 import { GATEWAY_OPENAPI_SESSION_SCHEME } from "./openapi-gateway.js";
+import { resolvePublicOrigin } from "./public-origin.js";
 import { assertTenantInRegistry } from "./upstreams.js";
 
 /** Synthetic tenant id for public API reference when the registry has no published workspaces yet. */
@@ -141,11 +142,11 @@ function renderTenantPickerPage(tenants: string[]): string {
 </html>`;
 }
 
-function scalarConfigForTenant(tenantId: string, requestUrl: string): Record<string, unknown> {
+function scalarConfigForTenant(tenantId: string, publicOrigin: string): Record<string, unknown> {
   const isReference = isPublicDocsReferenceTenant(tenantId);
   const openApiUrl = isReference ? "/openapi.json" : `/t/${tenantId}/openapi.json`;
-  // Paths in gateway OpenAPI are prefixed with `/t/{tenantId}`; server URL is the gateway origin only.
-  const baseServerURL = new URL(requestUrl).origin;
+  // Paths in gateway OpenAPI are prefixed with `/t/{tenantId}`; server URL is the public HTTPS origin.
+  const baseServerURL = publicOrigin.replace(/\/$/, "");
   const titleSuffix = isReference ? "Platform" : tenantId;
   return {
     pageTitle: `Backed API · ${titleSuffix}`,
@@ -208,7 +209,7 @@ export function registerDocsRoutes(
     if (!(await canOpenTenantDocs(registrySource, tenantId))) {
       return c.json({ error: "Tenant not found" }, 404);
     }
-    const scalar = Scalar(() => scalarConfigForTenant(tenantId, c.req.url));
+    const scalar = Scalar(() => scalarConfigForTenant(tenantId, resolvePublicOrigin(c, config)));
     // Scalar middleware is typed against Hono's default Env; gateway Variables are compatible at runtime.
     // @ts-expect-error — Scalar Context env typing is wider than our GatewayVariables app.
     return scalar(c, next);

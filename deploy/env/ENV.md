@@ -23,6 +23,7 @@ Documentazione interattiva (Scalar): **`GET /docs`** e **`GET /docs/t/{tenantId}
 | `GATEWAY_PLATFORM_UPSTREAM`    | R                  | ✓      | ✓       | Locale: `http://platform-api:8787`. Railway: `http://platform-api.railway.internal:8787` |
 | `GATEWAY_PLATFORM_TOKEN`       | R                  | ✓      | ✓       | **Deve coincidere con** `ANCHOR_API_TOKEN`                                               |
 | `GATEWAY_COOKIE_SECURE`        | O                  | ✓      | ✓       | `1` in produzione                                                                        |
+| `GATEWAY_PUBLIC_ORIGIN`        | O                  | —      | ✓       | Es. `https://api.backed.app` — Try it out in `/docs` (evita mixed content). Se assente, derivato da `WORKOS_REDIRECT_URI` o header `X-Forwarded-*`. |
 | `GATEWAY_AUTH_MODE`            | R                  | ✓      | ✓       | `file` (locale) o `workos` (Railway)                                                     |
 | `GATEWAY_USERS_FILE`           | R se file          | ✓      | —       | Solo auth file                                                                           |
 | `GATEWAY_TENANTS_REGISTRY`     | R se file registry | ✓      | —       | Mount `tenants.yaml`                                                                     |

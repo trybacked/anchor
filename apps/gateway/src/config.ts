@@ -20,6 +20,8 @@ const GatewayConfigSchema = z.object({
   platformUpstream: z.string().min(1),
   platformToken: z.string().min(1),
   defaultTenant: z.string().min(1).optional(),
+  /** Canonical browser origin (e.g. https://api.backed.app) for docs Try it out behind TLS proxies. */
+  publicOrigin: z.string().url().optional(),
 });
 
 export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
@@ -82,6 +84,14 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
     }
   }
 
+  const publicOriginExplicit = env["GATEWAY_PUBLIC_ORIGIN"]?.trim().replace(/\/+$/, "");
+  const publicOriginFromRedirect =
+    workosRedirectUri !== undefined ? new URL(workosRedirectUri).origin : undefined;
+  const publicOrigin =
+    publicOriginExplicit !== undefined && publicOriginExplicit.length > 0
+      ? publicOriginExplicit
+      : publicOriginFromRedirect;
+
   return GatewayConfigSchema.parse({
     host: env["GATEWAY_HOST"] ?? env["HOST"] ?? "127.0.0.1",
     port: Number(env["PORT"] ?? env["GATEWAY_PORT"] ?? 8790),
@@ -100,5 +110,6 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
     ...(workosRedirectUri !== undefined ? { workosRedirectUri } : {}),
     ...(controlPlaneUrl !== undefined ? { controlPlaneUrl } : {}),
     ...(controlPlaneInternalToken !== undefined ? { controlPlaneInternalToken } : {}),
+    ...(publicOrigin !== undefined && publicOrigin.length > 0 ? { publicOrigin } : {}),
   });
 }

@@ -20,6 +20,7 @@ import { createRateLimiter } from "./rate-limit.js";
 import { createRequireAuthMiddleware } from "./require-auth.js";
 import type { GatewayVariables } from "./types.js";
 import { forwardGatewayOpenApi } from "./openapi-gateway.js";
+import { resolvePublicOrigin } from "./public-origin.js";
 import { assertTenantInRegistry, countConfiguredTenants } from "./upstreams.js";
 import { loadUsersFile, type UserRecord } from "./users.js";
 
@@ -98,7 +99,7 @@ export function createGatewayApp(
           proxyDeps,
         ),
       PUBLIC_DOCS_REFERENCE_TENANT,
-      c.req.url,
+      resolvePublicOrigin(c, config),
     ),
   );
 
@@ -121,7 +122,7 @@ export function createGatewayApp(
           proxyDeps,
         ),
       tenantId,
-      c.req.url,
+      resolvePublicOrigin(c, config),
     );
   });
 
