@@ -7,7 +7,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.js
 COPY packages ./packages
 COPY apps/control-plane ./apps/control-plane
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @trybacked/control-plane build
+RUN pnpm turbo build --filter=@trybacked/control-plane...
 RUN pnpm deploy --filter @trybacked/control-plane --prod /deploy
 
 FROM node:22-bookworm-slim

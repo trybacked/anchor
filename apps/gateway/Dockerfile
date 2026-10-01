@@ -7,7 +7,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.js
 COPY packages ./packages
 COPY apps/gateway ./apps/gateway
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @trybacked/gateway build
+RUN pnpm turbo build --filter=@trybacked/gateway...
 RUN pnpm deploy --filter @trybacked/gateway --prod /deploy
 
 FROM node:22-bookworm-slim

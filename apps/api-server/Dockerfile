@@ -7,7 +7,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.js
 COPY packages ./packages
 COPY apps/api-server ./apps/api-server
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @trybacked/api-server build
+RUN pnpm turbo build --filter=@trybacked/api-server...
 RUN pnpm deploy --filter @trybacked/api-server --prod /deploy
 
 FROM node:22-bookworm-slim
