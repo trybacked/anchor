@@ -15,7 +15,7 @@ Legenda: **R** = obbligatorio, **O** = opzionale, **—** = non usato.
 
 ### Gateway (pubblico — MCP / login / API docs)
 
-Documentazione interattiva (Scalar): **`GET /docs`** e **`GET /docs/t/{tenantId}`** sono **pubbliche** (solo tenant presenti in registry). OpenAPI JSON: **`GET /t/{tenantId}/openapi.json`** (pubblico). Le chiamate **`/t/{tenantId}/v1/...`** richiedono login.
+Documentazione interattiva (Scalar): **`GET /docs`** e **`GET /docs/t/{tenantId}`** sono **pubbliche**. Se il registry non ha ancora tenant pubblicati, **`/docs`** reindirizza a **`/docs/t/reference`**. OpenAPI: **`GET /openapi.json`** o **`GET /t/{tenantId}/openapi.json`**. Le chiamate **`/t/{tenantId}/v1/...`** richiedono login.
 
 | Variabile                      | R/O                | Locale | Railway | Note                                                                                     |
 | ------------------------------ | ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |

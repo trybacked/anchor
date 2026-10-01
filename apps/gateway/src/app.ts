@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { registerAuthRoutes } from "./auth-routes.js";
 import { registerWorkOSAuthRoutes } from "./auth-workos.js";
 import type { GatewayConfig } from "./config.js";
-import { registerDocsRoutes } from "./docs-routes.js";
+import { isPublicDocsReferenceTenant, registerDocsRoutes } from "./docs-routes.js";
 import {
   forwardToPlatform,
   handleDefaultTenantProxy,
@@ -78,9 +78,16 @@ export function createGatewayApp(
 
   registerDocsRoutes(app, config, registrySource);
 
+  app.get("/openapi.json", async (c) =>
+    forwardToPlatform(config, "reference", "public-docs", c.req.raw, "/openapi.json", proxyDeps),
+  );
+
   app.get("/t/:tenantId/openapi.json", async (c) => {
     const tenantId = c.req.param("tenantId");
-    if (!(await assertTenantInRegistry(registrySource, tenantId))) {
+    if (
+      !isPublicDocsReferenceTenant(tenantId) &&
+      !(await assertTenantInRegistry(registrySource, tenantId))
+    ) {
       return c.json({ error: "Tenant not found" }, 404);
     }
     return forwardToPlatform(

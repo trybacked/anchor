@@ -5,6 +5,23 @@ import type { GatewayConfig } from "./config.js";
 import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry } from "./upstreams.js";
 
+/** Synthetic tenant id for public API reference when the registry has no published workspaces yet. */
+export const PUBLIC_DOCS_REFERENCE_TENANT = "reference";
+
+export function isPublicDocsReferenceTenant(tenantId: string): boolean {
+  return tenantId === PUBLIC_DOCS_REFERENCE_TENANT;
+}
+
+async function canOpenTenantDocs(
+  registrySource: TenantRegistrySource,
+  tenantId: string,
+): Promise<boolean> {
+  if (isPublicDocsReferenceTenant(tenantId)) {
+    return true;
+  }
+  return assertTenantInRegistry(registrySource, tenantId);
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -123,6 +140,29 @@ function renderTenantPickerPage(tenants: string[]): string {
 </html>`;
 }
 
+function scalarConfigForTenant(tenantId: string, requestUrl: string): Record<string, unknown> {
+  const isReference = isPublicDocsReferenceTenant(tenantId);
+  const openApiUrl = isReference ? "/openapi.json" : `/t/${tenantId}/openapi.json`;
+  const baseServerURL = new URL(`/t/${tenantId}`, requestUrl).href.replace(/\/$/, "");
+  const titleSuffix = isReference ? "Platform" : tenantId;
+  return {
+    pageTitle: `Backed API · ${titleSuffix}`,
+    url: openApiUrl,
+    baseServerURL,
+    theme: "default",
+    layout: "modern",
+    metaData: {
+      title: `Backed API · ${titleSuffix}`,
+      description:
+        "Backed platform HTTP API — ontology, warehouse queries, documents, and semantic chat.",
+    },
+    customCss: `
+          .light-mode { --scalar-color-accent: #5b8def; }
+          .dark-mode { --scalar-color-accent: #7ba3f7; }
+        `,
+  };
+}
+
 export function registerDocsRoutes(
   app: Hono<{ Variables: GatewayVariables }>,
   config: GatewayConfig,
@@ -131,7 +171,7 @@ export function registerDocsRoutes(
   app.get("/docs", async (c) => {
     const tenants = await listRegisteredTenantIds(registrySource);
     if (tenants.length === 0) {
-      return c.json({ error: "No tenant workspaces published yet" }, 404);
+      return c.redirect(`/docs/t/${PUBLIC_DOCS_REFERENCE_TENANT}`);
     }
     const defaultTenant = config.defaultTenant;
     if (defaultTenant !== undefined && tenants.includes(defaultTenant)) {
@@ -148,26 +188,10 @@ export function registerDocsRoutes(
 
   app.get("/docs/t/:tenantId", async (c, next) => {
     const tenantId = c.req.param("tenantId");
-    if (!(await assertTenantInRegistry(registrySource, tenantId))) {
+    if (!(await canOpenTenantDocs(registrySource, tenantId))) {
       return c.json({ error: "Tenant not found" }, 404);
     }
-    const baseServerURL = new URL(`/t/${tenantId}`, c.req.url).href.replace(/\/$/, "");
-    const scalar = Scalar(() => ({
-      pageTitle: `Backed API · ${tenantId}`,
-      url: `/t/${tenantId}/openapi.json`,
-      baseServerURL,
-      theme: "default",
-      layout: "modern",
-      metaData: {
-        title: `Backed API · ${tenantId}`,
-        description:
-          "Backed platform HTTP API — ontology, warehouse queries, documents, and semantic chat.",
-      },
-      customCss: `
-          .light-mode { --scalar-color-accent: #5b8def; }
-          .dark-mode { --scalar-color-accent: #7ba3f7; }
-        `,
-    }));
+    const scalar = Scalar(() => scalarConfigForTenant(tenantId, c.req.url));
     // Scalar middleware is typed against Hono's default Env; gateway Variables are compatible at runtime.
     // @ts-expect-error — Scalar Context env typing is wider than our GatewayVariables app.
     return scalar(c, next);
