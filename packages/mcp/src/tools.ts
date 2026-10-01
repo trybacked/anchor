@@ -1,10 +1,6 @@
 import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
-import {
-  createAnchorService,
-  isServiceErrorResult,
-  type ServiceErrorResult,
-} from "@trybacked/service";
+import { createAnchorService, serviceError } from "@trybacked/service";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";
@@ -34,10 +30,6 @@ export type ToolResult =
 function readToolString(args: Record<string, unknown>, key: string): string {
   const value = args[key];
   return typeof value === "string" ? value : "";
-}
-
-function isErrorResult(result: unknown): result is ServiceErrorResult {
-  return isServiceErrorResult(result);
 }
 
 export interface ToolDefinition {
@@ -75,11 +67,7 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     inputSchema: { id: z.string().min(1).describe("Entity id, e.g. 'customer'") },
     handler: (context, args) => {
       const id = readToolString(args, "id");
-      const result = serviceFromContext(context).getEntity(id);
-      if (isErrorResult(result)) {
-        return result;
-      }
-      return result;
+      return serviceFromContext(context).getEntity(id);
     },
   },
   {
@@ -215,7 +203,7 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
   handler: async (context, args) => {
     const { objectId } = args;
     if (typeof objectId !== "string" || objectId.length === 0) {
-      return { error: "Invalid query: objectId is required" };
+      return serviceError("bad_request", "Invalid query: objectId is required");
     }
     return serviceFromContext(context).objectQuery(args);
   },
@@ -290,10 +278,10 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
       const value = args["value"];
       const limit = args["limit"];
       if (typeof limit !== "number") {
-        return { error: "Invalid traverse: limit is required" };
+        return serviceError("bad_request", "Invalid traverse: limit is required");
       }
       if (typeof value !== "string" && typeof value !== "number") {
-        return { error: "Invalid traverse: value is required" };
+        return serviceError("bad_request", "Invalid traverse: value is required");
       }
       return serviceFromContext(context).graphTraverse({
         relationId,
@@ -323,7 +311,10 @@ export const ASK_SEMANTIC_TOOL_DEFINITION: ToolDefinition = {
   },
   handler: async (context, args) => {
     if (context.semanticAsk === undefined) {
-      return { error: "Semantic chat is not configured (missing ontology, warehouse, or LLM)." };
+      return serviceError(
+        "unavailable",
+        "Semantic chat is not configured (missing ontology, warehouse, or LLM).",
+      );
     }
     const result = await context.semanticAsk({
       question: readToolString(args, "question"),

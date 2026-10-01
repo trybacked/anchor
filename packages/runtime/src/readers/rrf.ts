@@ -5,7 +5,6 @@ export type RankedRow = {
   row: Record<string, unknown>;
 };
 
-/** Reciprocal rank fusion across ordered result lists (same id = same chunk row). */
 export function reciprocalRankFusion(
   lists: RankedRow[][],
   limit: number,

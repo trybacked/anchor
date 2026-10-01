@@ -1,7 +1,6 @@
 import {
   isServiceErrorResult,
   serviceErrorHttpStatus,
-  serviceErrorMessage,
   type ServiceErrorResult,
 } from "@trybacked/service";
 import type { z } from "zod";
@@ -11,7 +10,7 @@ export function jsonServiceErrorResponse(
   c: PlatformHandlerContext,
   result: ServiceErrorResult,
 ): Response {
-  return c.json({ error: serviceErrorMessage(result) }, serviceErrorHttpStatus(result.error.code));
+  return c.json({ error: result.error.message }, serviceErrorHttpStatus(result.error.code));
 }
 
 export function respondIfServiceError(c: PlatformHandlerContext, result: unknown): Response | null {

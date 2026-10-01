@@ -1,5 +1,6 @@
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { HTTP_OK } from "../platform-api-route-meta.js";
+import { buildPlatformHealthSnapshot } from "./health-snapshot.js";
 
 export const platformApiHealthRoutes: RouteFactory[] = [
   platformRoute(
@@ -22,21 +23,8 @@ export const platformApiHealthRoutes: RouteFactory[] = [
       public: true,
       responses: HTTP_OK,
     },
-    (deps) => async (c) => {
-      if (deps.platformRegistry !== undefined) {
-        return c.json({
-          ok: true as const,
-          mode: "platform" as const,
-          tenants: await deps.platformRegistry.listTenantIds(),
-          cachedTenants: deps.platformRegistry.cachedTenantIds(),
-        });
-      }
-      return c.json({
-        ok: true as const,
-        mode: "workspace" as const,
-        capabilities: deps.getService().capabilities(),
-      });
-    },
+    (deps) => async (c) =>
+      c.json(await buildPlatformHealthSnapshot(deps, { includeCachedTenants: true })),
   ),
   platformRoute(
     {
@@ -47,20 +35,8 @@ export const platformApiHealthRoutes: RouteFactory[] = [
       public: true,
       responses: HTTP_OK,
     },
-    (deps) => async (c) => {
-      if (deps.platformRegistry !== undefined) {
-        return c.json({
-          ok: true as const,
-          mode: "platform" as const,
-          tenants: await deps.platformRegistry.listTenantIds(),
-        });
-      }
-      return c.json({
-        ok: true as const,
-        mode: "workspace" as const,
-        capabilities: deps.getService().capabilities(),
-      });
-    },
+    (deps) => async (c) =>
+      c.json(await buildPlatformHealthSnapshot(deps, { includeCachedTenants: false })),
   ),
   platformRoute(
     {

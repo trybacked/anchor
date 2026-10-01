@@ -1,12 +1,6 @@
-/**
- * Provider-agnostic dataset access contract.
- * Anchor core depends on this interface only — not on DuckDB, warehouses, or ingest.
- */
-
 export type DatasetIdentifier = {
-  /** Stable id within the provider (table name, dataset FQN, etc.). */
   id: string;
-  /** Optional human label. */
+
   name?: string;
 };
 
@@ -16,7 +10,7 @@ export type Dataset = DatasetIdentifier & {
 
 export type DatasetColumn = {
   name: string;
-  /** Provider-native or normalized logical type name. */
+
   type: string;
   nullable: boolean;
   primaryKeyCandidate?: boolean;
@@ -56,7 +50,6 @@ export type DatasetSample = {
   rows: unknown[][];
 };
 
-/** Adapter implemented by DuckDB, Postgres, Databricks, etc. */
 export interface DatasetProvider {
   listDatasets(): Promise<Dataset[]>;
   getSchema(dataset: DatasetIdentifier): Promise<DatasetSchema>;

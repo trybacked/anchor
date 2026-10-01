@@ -67,6 +67,64 @@ function buildElementTypeFilter(
   return conditions.length > 0 ? ` AND ${conditions.join(" AND ")}` : "";
 }
 
+async function fetchSemanticRankedList(options: {
+  executor: SqlStatementExecutor;
+  selectColumns: string;
+  vectorSearchIndex: string;
+  query: string;
+  semLimit: number;
+  minScore: number;
+  documentIds: string[] | undefined;
+  excludeTypes: string[];
+}): Promise<RankedRow[] | undefined> {
+  const {
+    executor,
+    selectColumns,
+    vectorSearchIndex,
+    query,
+    semLimit,
+    minScore,
+    documentIds,
+    excludeTypes,
+  } = options;
+  try {
+    const semanticSql = `SELECT ${selectColumns}, score
+FROM vector_search(
+  index => :vsIndex,
+  query_text => :vsQuery,
+  num_results => :vsLimit
+)`;
+    const semanticRows = await executor(semanticSql, [
+      { name: "vsIndex", value: vectorSearchIndex },
+      { name: "vsQuery", value: query },
+      { name: "vsLimit", value: semLimit },
+    ]);
+    const filtered = semanticRows.filter((row) => {
+      const score = row["score"];
+      if (typeof score === "number" && score < minScore) {
+        return false;
+      }
+      if (documentIds !== undefined && documentIds.length > 0) {
+        const documentId = row["document_id"];
+        return typeof documentId === "string" && documentIds.includes(documentId);
+      }
+      if (excludeTypes.length > 0) {
+        const elementType = row["element_type"];
+        if (typeof elementType === "string" && excludeTypes.includes(elementType)) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return filtered.map((row, rank) => ({
+      id: elementRowId(row),
+      row: { ...row, semanticRank: rank + 1 },
+    }));
+  } catch {
+    return undefined;
+  }
+}
+
 export function createChunkSearchReader(options: {
   executor: SqlStatementExecutor;
   documents: DocumentsDatasetResolver;
@@ -116,44 +174,19 @@ LIMIT :kwLimit`;
     );
 
     if (vectorSearchIndex !== undefined && vectorSearchIndex.length > 0) {
-      try {
-        const semLimit = limit * 3;
-        const semanticSql = `SELECT ${selectColumns}, score
-FROM vector_search(
-  index => :vsIndex,
-  query_text => :vsQuery,
-  num_results => :vsLimit
-)`;
-        const semanticRows = await executor(semanticSql, [
-          { name: "vsIndex", value: vectorSearchIndex },
-          { name: "vsQuery", value: input.query },
-          { name: "vsLimit", value: semLimit },
-        ]);
-        const filtered = semanticRows.filter((row) => {
-          const score = row["score"];
-          if (typeof score === "number" && score < minScore) {
-            return false;
-          }
-          if (input.documentIds !== undefined && input.documentIds.length > 0) {
-            const documentId = row["document_id"];
-            return typeof documentId === "string" && input.documentIds.includes(documentId);
-          }
-          if (excludeTypes.length > 0) {
-            const elementType = row["element_type"];
-            if (typeof elementType === "string" && excludeTypes.includes(elementType)) {
-              return false;
-            }
-          }
-          return true;
-        });
-        lists.push(
-          filtered.map((row, rank) => ({
-            id: elementRowId(row),
-            row: { ...row, semanticRank: rank + 1 },
-          })),
-        );
-      } catch {
-        // Index missing or vector_search unavailable — keyword-only.
+      const semLimit = limit * 3;
+      const semanticList = await fetchSemanticRankedList({
+        executor,
+        selectColumns,
+        vectorSearchIndex,
+        query: input.query,
+        semLimit,
+        minScore,
+        documentIds: input.documentIds,
+        excludeTypes,
+      });
+      if (semanticList !== undefined) {
+        lists.push(semanticList);
       }
     }
 

@@ -23,7 +23,6 @@ export type {
 } from "./files-client.js";
 export { createDatabricksBlobStore } from "./files-client.js";
 
-/** Provider + SQL client from `BACKED_DATABRICKS_*` environment variables. */
 export function createDatabricksProviderFromEnv(
   env: Record<string, string | undefined> = process.env,
 ) {

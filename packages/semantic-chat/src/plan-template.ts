@@ -44,7 +44,6 @@ export class PlanTemplateStructureError extends Error {
   }
 }
 
-/** Cross-field checks beyond Zod shape (param names, consumes → prior chunkSearch). */
 export function assertPlanTemplateStructure(template: PlanTemplate): void {
   const paramNames = new Set(template.params.map((param) => param.name));
   const stepIds = new Set<string>();

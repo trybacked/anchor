@@ -2,7 +2,6 @@ import { compileObjectQuery } from "@trybacked/compiler";
 import type { ObjectQuery } from "@trybacked/compiler";
 import type { Ontology, OntologyObject } from "@trybacked/core";
 
-/** First-class provenance chain: entity → row → document → page. */
 export type DocumentProvenance = {
   documentId: string;
   page?: number | undefined;

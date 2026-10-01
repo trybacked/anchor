@@ -3,7 +3,6 @@ import {
   isServiceErrorResult,
   serviceError,
   serviceErrorHttpStatus,
-  serviceErrorMessage,
 } from "../../src/service-error.js";
 
 describe("serviceError", () => {
@@ -16,7 +15,7 @@ describe("serviceError", () => {
   it("recognizes structured error results", () => {
     const result = serviceError("unavailable", "offline");
     expect(isServiceErrorResult(result)).toBe(true);
-    expect(serviceErrorMessage(result)).toBe("offline");
+    expect(result.error.message).toBe("offline");
     expect(isServiceErrorResult({ error: "legacy" })).toBe(false);
   });
 });

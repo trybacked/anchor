@@ -1,6 +1,5 @@
 import type { MiddlewareHandler } from "hono";
 
-/** Redirect `/path/` → `/path` so Hono routes match without duplicate handlers. */
 export const normalizeTrailingSlashMiddleware: MiddlewareHandler = async (c, next) => {
   const url = new URL(c.req.url);
   if (url.pathname.length > 1 && url.pathname.endsWith("/")) {

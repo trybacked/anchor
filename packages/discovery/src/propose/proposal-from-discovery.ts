@@ -130,11 +130,6 @@ export type ProposalFromDiscoveryOptions = {
   reviewConfidenceThreshold?: number;
 };
 
-/**
- * Converts a deterministic discovery report into a review proposal.
- * Elements below the review confidence threshold get a question;
- * elements at or above it are auto-confirmed by `applyReview`.
- */
 export function proposalFromDiscovery(
   discovery: DiscoveryReport,
   options: ProposalFromDiscoveryOptions,

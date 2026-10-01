@@ -1,7 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
-/** Minimal HTTP liveness for Railway (provisioner has no public API). */
 export function startWorkerHealthServer(): void {
   const port = Number(process.env.PORT ?? process.env.CONTROL_PLANE_PORT ?? 8791);
   const host = process.env.HOST ?? "0.0.0.0";

@@ -6,7 +6,6 @@ export {
   isServiceErrorResult,
   serviceError,
   serviceErrorHttpStatus,
-  serviceErrorMessage,
   SERVICE_ERROR_CODES,
 } from "./service-error.js";
 export type { ServiceError, ServiceErrorCode } from "./service-error.js";

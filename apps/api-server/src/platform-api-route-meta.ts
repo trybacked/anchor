@@ -15,7 +15,7 @@ export type JsonBodySpec<Name extends string, Schema extends z.ZodTypeAny = z.Zo
 export type PlatformApiRouteSpec = {
   operationId: string;
   method: HttpMethod;
-  /** Public URL path (OpenAPI syntax, e.g. `/v1/model/entities/{id}`). */
+
   path: string;
   summary: string;
   tags?: string[];

@@ -23,7 +23,6 @@ export const ROUTED_SEMANTIC_PLAN_JSON_SHAPE = `{
   "params": { "<paramName>": "<value>" }
 }`;
 
-/** @deprecated Use ROUTED_SEMANTIC_PLAN_JSON_SHAPE */
 export const SEMANTIC_QUERY_PLAN_JSON_SHAPE = ROUTED_SEMANTIC_PLAN_JSON_SHAPE;
 
 function formatTemplateCatalog(registry: PlanTemplateRegistry): string {

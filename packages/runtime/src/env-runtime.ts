@@ -18,7 +18,7 @@ export type BuildQueryRuntimeFromEnvOptions = {
   model: SemanticModel;
   executor: SqlStatementExecutor;
   env: NodeJS.ProcessEnv;
-  /** Overrides BACKED_DATABRICKS_CATALOG for docs tables and capability probe. */
+
   catalog?: string | undefined;
   readVolumeFile?: VolumeFileReader | undefined;
 };

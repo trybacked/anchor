@@ -20,7 +20,7 @@ const GatewayConfigSchema = z.object({
   platformUpstream: z.string().min(1),
   platformToken: z.string().min(1),
   defaultTenant: z.string().min(1).optional(),
-  /** Canonical browser origin (e.g. https://api.backed.app) for docs Try it out behind TLS proxies. */
+
   publicOrigin: z.string().url().optional(),
 });
 
@@ -92,8 +92,6 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
         ? new URL(workosRedirectUri).origin
         : undefined;
 
-  // Behind a TLS-terminating proxy the request URL is plain HTTP, so the browser-facing origin
-  // cannot be inferred: docs would emit http:// server URLs and the browser would block them.
   if (cookieSecure && publicOrigin === undefined) {
     throw new Error(
       "GATEWAY_PUBLIC_ORIGIN is required when cookies are secure (e.g. https://api.backed.app).",

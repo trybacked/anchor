@@ -1,14 +1,5 @@
 #!/usr/bin/env node
-/**
- * NL planner smoke test (real LLM via Vercel AI Gateway).
- *
- * Usage:
- *   pnpm build && pnpm smoke:semantic-nl
- *   pnpm smoke:semantic-nl -- --workspace /path/to/ontology/gerace
- *
- * Env: AI_GATEWAY_API_KEY, optional SEMANTIC_CHAT_MODEL / SEMANTIC_MODEL,
- *      BACKED_DATABRICKS_* (tenant), ANCHOR_WORKSPACE_ROOT or --workspace.
- */
+
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

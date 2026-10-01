@@ -16,12 +16,10 @@ import type {
 } from "./query.js";
 import { compileExistsSemiJoin, queryUsesPhysicalJoins } from "./semi-join.js";
 
-/** Quotes one identifier segment with backticks (Databricks / Spark SQL). */
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
 }
 
-/** Quotes a dataset id, treating dots as catalog/schema/table separators. */
 function quoteDatasetId(datasetId: string): string {
   return datasetId.split(".").map(quoteIdentifier).join(".");
 }
@@ -233,11 +231,6 @@ function resolveSelectColumns(
   return { selectList: selectParts.join(", "), columns };
 }
 
-/**
- * Compiles an ontology object query into one parameterized SELECT.
- * Columns and the backing table come from the published mappings;
- * filter values are bound as named parameters, never inlined.
- */
 export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): CompiledObjectQuery {
   const query = ObjectQuerySchema.parse(input);
   const rootObject = resolveObject(ontology, query.objectId);

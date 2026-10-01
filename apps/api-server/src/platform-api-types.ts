@@ -13,3 +13,5 @@ export type PlatformHandlerDeps = {
   platformRegistry: TenantRuntimeRegistry | undefined;
   serveOpenApiDocument: () => Record<string, unknown>;
 };
+
+export type PlatformRouteHandler = (c: PlatformHandlerContext) => Response | Promise<Response>;

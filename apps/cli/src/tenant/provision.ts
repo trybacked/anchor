@@ -118,10 +118,14 @@ function writeTenantEnvFile(options: {
     "",
   ].join("\n");
   writeFileSync(options.envFile, body, "utf8");
+  chmodEnvFileBestEffort(options.envFile);
+}
+
+function chmodEnvFileBestEffort(path: string): void {
   try {
-    chmodSync(options.envFile, 0o600);
+    chmodSync(path, 0o600);
   } catch {
-    // best effort
+    return;
   }
 }
 

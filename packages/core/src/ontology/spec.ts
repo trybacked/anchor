@@ -1,4 +1,3 @@
-/** Canonical ontology specification (provider-independent). Complements model.yaml v1. */
 import { z } from "zod";
 import { ConfidenceSchema, ElementStatusSchema } from "../model.js";
 import { OntologyLifecycleStageSchema } from "./lifecycle.js";

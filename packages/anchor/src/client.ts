@@ -25,9 +25,9 @@ export type AnchorClientOptions = {
   baseUrl: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
-  /** Pass `"include"` when the gateway sets session cookies (same-site or CORS with credentials). */
+
   credentials?: "omit" | "same-origin" | "include";
-  /** Called before throwing on HTTP 401 or 403 (e.g. redirect to login). */
+
   onUnauthorized?: (error: AnchorApiError) => void;
 };
 
@@ -71,7 +71,6 @@ async function requestJson<T>(
   return payload as T;
 }
 
-/** Thin HTTP client aligned with apps/api-server OpenAPI operationIds. */
 export function createAnchorClient(options: AnchorClientOptions) {
   return {
     health: () => requestJson<HealthResponse>(options, "GET", "/health"),

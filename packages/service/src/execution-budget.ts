@@ -38,7 +38,6 @@ function maxRowLimit(profile: ExecutionBudgetProfile): number {
   return maxRowLimitForProfile(profile);
 }
 
-/** Ensures summed row/chunk limits across template steps stay within profile cap. */
 export function assertAggregateRowBudget(
   rowLimits: number[],
   profile: ExecutionBudgetProfile,
@@ -52,10 +51,6 @@ export function assertAggregateRowBudget(
   }
 }
 
-/**
- * Clamps and validates an object query before warehouse execution.
- * Count mode skips row limits; rows mode always gets an explicit capped LIMIT.
- */
 export function applyQueryExecutionBudget(
   query: ObjectQuery,
   profile: ExecutionBudgetProfile,

@@ -6,11 +6,6 @@ import {
   type OpenApiInfo,
 } from "./openapi-types.js";
 
-/**
- * Gateway OpenAPI for browsers: security schemes become the session cookie. Tenant docs also
- * prefix paths with `/t/{tenantId}` so Scalar Try it out hits the proxy.
- */
-
 const SESSION_COOKIE_SCHEME = {
   type: "apiKey",
   in: "cookie",
@@ -109,7 +104,6 @@ export function adaptOpenApiDocumentForGateway(
   };
 }
 
-/** Passes non-JSON and error responses through untouched. */
 export async function adaptOpenApiResponse(
   upstream: Response,
   target: GatewayOpenApiTarget,

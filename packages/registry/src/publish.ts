@@ -13,7 +13,6 @@ import {
   updateOntologyRegistry,
 } from "./registry.js";
 
-/** Reads the active publication record, or null when absent. */
 export function readPublicationRecord(root: string): PublicationRecord | null {
   const filePath = publicationPath(root);
   try {
@@ -24,7 +23,6 @@ export function readPublicationRecord(root: string): PublicationRecord | null {
   }
 }
 
-/** Builds a publication record without touching the filesystem. */
 export function buildPublicationRecord(
   model: SemanticModel,
   options: { ontologyId: string; version: number; now?: Date },
@@ -42,7 +40,6 @@ export function buildPublicationRecord(
   });
 }
 
-/** Publishes a reviewed model as the next ontology version. */
 export function publishSemanticModel(
   root: string,
   model: SemanticModel,
@@ -64,12 +61,10 @@ export function publishSemanticModel(
   return record;
 }
 
-/** Restores a previous publication version as active. */
 export function rollbackPublication(root: string, version: number): PublicationRecord {
   return restorePublicationVersion(root, version);
 }
 
-/** Loads the currently published ontology, or null when nothing is published. */
 export function loadPublishedOntology(root: string): PublicationRecord["ontology"] | null {
   const record = readPublicationRecord(root);
   return record?.ontology ?? null;

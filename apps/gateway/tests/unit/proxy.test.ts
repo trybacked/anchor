@@ -53,4 +53,17 @@ describe("proxy", () => {
     expect(seenUser).toBe("demo");
     expect(seenTenant).toBe("gerace");
   });
+
+  it("omits tenant header when tenant id is undefined", async () => {
+    let seenTenant: string | null = "unset";
+    const fetchImpl: typeof fetch = async (_input, init) => {
+      seenTenant = init?.headers instanceof Headers ? init.headers.get("x-backed-tenant") : null;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    };
+    const request = new Request("http://gateway/v1/health", { method: "GET" });
+    await forwardToPlatform(platformConfig, undefined, "demo", request, "/v1/health", {
+      fetchImpl,
+    });
+    expect(seenTenant).toBeNull();
+  });
 });

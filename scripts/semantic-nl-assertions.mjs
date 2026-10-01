@@ -1,5 +1,3 @@
-/** Shared assertions for semantic NL smoke / baseline (plan shape vs full E2E). */
-
 export function filterValueMatches(actual, expected) {
   if (Array.isArray(expected)) {
     if (!Array.isArray(actual)) {
@@ -61,18 +59,11 @@ const EXECUTION_ONLY_KEYS = new Set([
   "sqlIncludes",
 ]);
 
-/**
- * Structural NL→plan checks (route, filters, joins, limits in plan).
- * Does not require warehouse counts or row payloads.
- */
 export function assertPlanShape(expectation, answer, error) {
   const failures = assertCase(expectation, answer, error, { planOnly: true });
   return failures;
 }
 
-/**
- * Full end-to-end: plan shape + execution + counts + SQL.
- */
 export function assertCase(expectation, answer, error, options = {}) {
   const planOnly = options.planOnly === true;
   const failures = [];

@@ -43,21 +43,12 @@ export const AuditLogSchema = z.object({
   events: z.array(AuditEventSchema),
 });
 
-/**
- *
- */
 export type AuditAction = z.infer<typeof AuditActionSchema>;
-/**
- *
- */
+
 export type AuditActor = z.infer<typeof AuditActorSchema>;
-/**
- *
- */
+
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
-/**
- *
- */
+
 export type AuditLog = z.infer<typeof AuditLogSchema>;
 
 export const EMPTY_AUDIT_LOG: AuditLog = { version: 1, events: [] };
@@ -81,16 +72,10 @@ function auditEventId(runId: string, questionId: string, action: AuditAction): s
   return `${runId}:${questionId}:${action}`;
 }
 
-/**
- *
- */
 export type BuildReviewAuditEventsOptions = {
   actor?: AuditActor;
 };
 
-/**
- *
- */
 export function buildReviewAuditEvents(
   proposal: Proposal,
   review: Review,
@@ -134,9 +119,6 @@ function verdictKey(kind: string, targetId: string): string {
   return `${kind}:${targetId}`;
 }
 
-/**
- *
- */
 export function buildAutoConfirmAuditEvents(
   proposal: Proposal,
   review: Review,
@@ -192,9 +174,6 @@ export function buildAutoConfirmAuditEvents(
   return events;
 }
 
-/**
- *
- */
 export function buildRollbackAuditEvent(input: {
   runId: string;
   recordedAt: string;
@@ -216,9 +195,6 @@ export function buildRollbackAuditEvent(input: {
   return event;
 }
 
-/**
- *
- */
 export function buildPublishAuditEvent(input: {
   runId: string;
   recordedAt: string;
@@ -239,9 +215,6 @@ export function buildPublishAuditEvent(input: {
   return event;
 }
 
-/**
- *
- */
 export function mergeAuditLogs(...logs: AuditLog[]): AuditLog {
   const events = logs.flatMap((log) => log.events);
   events.sort((left, right) => left.recordedAt.localeCompare(right.recordedAt));

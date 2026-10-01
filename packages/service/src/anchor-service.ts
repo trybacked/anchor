@@ -34,8 +34,9 @@ import type {
   DocumentPreviewFile,
   DocumentPreviewResponse,
   GetDocumentResponse,
+  SemanticAskResponse,
 } from "./responses.js";
-import { serviceError, type ServiceErrorResult } from "./service-error.js";
+import { isServiceErrorResult, serviceError, type ServiceErrorResult } from "./service-error.js";
 
 export type { ServiceErrorResult } from "./service-error.js";
 
@@ -74,6 +75,40 @@ export function createAnchorService(options: AnchorServiceOptions) {
     queryRuntime !== undefined &&
     queryRuntime.documentAccess !== undefined &&
     queryRuntime.volumeFileAccess === true;
+
+  type DocumentPreviewAccess = NonNullable<OntologyQueryRuntime["documentAccess"]>;
+
+  const documentPreviewGate = async (
+    documentId: string,
+    page: number,
+  ): Promise<ServiceErrorResult | { access: DocumentPreviewAccess }> => {
+    if (queryRuntime?.documentAccess === undefined) {
+      return serviceError(
+        "unavailable",
+        "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+      );
+    }
+    const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
+    if (metadata === null) {
+      return serviceError("not_found", `Document "${documentId}" not found.`);
+    }
+    if (page < 1) {
+      return serviceError("bad_request", "Query parameter page must be >= 1.");
+    }
+    if (metadata.pageCount > 0 && page > metadata.pageCount) {
+      return serviceError(
+        "bad_request",
+        `Page ${String(page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
+      );
+    }
+    if (!hasDocumentPreview) {
+      return serviceError(
+        "unavailable",
+        "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
+      );
+    }
+    return { access: queryRuntime.documentAccess };
+  };
 
   return {
     listEntities: () => listEntities(model),
@@ -231,32 +266,11 @@ export function createAnchorService(options: AnchorServiceOptions) {
       documentId: string,
       page: number,
     ): Promise<DocumentPreviewResponse | ServiceErrorResult> => {
-      if (queryRuntime?.documentAccess === undefined) {
-        return serviceError(
-          "unavailable",
-          "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
-        );
+      const gate = await documentPreviewGate(documentId, page);
+      if (isServiceErrorResult(gate)) {
+        return gate;
       }
-      const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
-      if (metadata === null) {
-        return serviceError("not_found", `Document "${documentId}" not found.`);
-      }
-      if (page < 1) {
-        return serviceError("bad_request", "Query parameter page must be >= 1.");
-      }
-      if (metadata.pageCount > 0 && page > metadata.pageCount) {
-        return serviceError(
-          "bad_request",
-          `Page ${String(page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
-        );
-      }
-      if (!hasDocumentPreview) {
-        return serviceError(
-          "unavailable",
-          "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
-        );
-      }
-      const descriptor = await queryRuntime.documentAccess.describePreview(documentId, page);
+      const descriptor = await gate.access.describePreview(documentId, page);
       if (descriptor === null) {
         return serviceError("not_found", `Document "${documentId}" not found.`);
       }
@@ -267,43 +281,12 @@ export function createAnchorService(options: AnchorServiceOptions) {
       documentId: string,
       options: { page: number; range?: string | undefined },
     ): Promise<ServiceErrorResult | { page: number; file: DocumentPreviewFile }> => {
-      const described = await (async () => {
-        if (queryRuntime?.documentAccess === undefined) {
-          return serviceError(
-            "unavailable",
-            "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
-          );
-        }
-        const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
-        if (metadata === null) {
-          return serviceError("not_found", `Document "${documentId}" not found.`);
-        }
-        if (options.page < 1) {
-          return serviceError("bad_request", "Query parameter page must be >= 1.");
-        }
-        if (metadata.pageCount > 0 && options.page > metadata.pageCount) {
-          return serviceError(
-            "bad_request",
-            `Page ${String(options.page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
-          );
-        }
-        if (!hasDocumentPreview) {
-          return serviceError(
-            "unavailable",
-            "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
-          );
-        }
-        return null;
-      })();
-      if (described !== null) {
-        return described;
-      }
-      const access = queryRuntime?.documentAccess;
-      if (access === undefined) {
-        return serviceError("unavailable", "Document preview is unavailable.");
+      const gate = await documentPreviewGate(documentId, options.page);
+      if (isServiceErrorResult(gate)) {
+        return gate;
       }
       try {
-        const file = await access.readOriginalFile(documentId, {
+        const file = await gate.access.readOriginalFile(documentId, {
           range: options.range,
         });
         const previewFile: DocumentPreviewFile = {
@@ -365,4 +348,8 @@ export function createAnchorService(options: AnchorServiceOptions) {
   };
 }
 
-export type AnchorService = ReturnType<typeof createAnchorService>;
+export type AnchorServiceBase = ReturnType<typeof createAnchorService>;
+
+export type AnchorService = AnchorServiceBase & {
+  semanticAsk?: (body: { question: string; evidence?: boolean }) => Promise<SemanticAskResponse>;
+};

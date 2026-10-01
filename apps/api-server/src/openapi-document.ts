@@ -6,7 +6,7 @@ import {
   openApiTagsFromRoutes,
   type PlatformApiRouteSpec,
 } from "./platform-api-route-meta.js";
-import { platformApiRouteSpecs } from "./platform-api-routes.js";
+import { platformApiRouteSpecs } from "./platform-api-routes/index.js";
 
 const securedOperation = [{ [AUTH_SCHEME]: [] }];
 const publicOperation: never[] = [];

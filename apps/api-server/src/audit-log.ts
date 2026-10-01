@@ -9,7 +9,7 @@ import { getRequestContext } from "./request-context.js";
 
 export type AuditLogOptions = {
   logPath?: string | undefined;
-  /** When true (default), also emit audit lines to stderr (e.g. docker logs). */
+
   mirrorStderr?: boolean | undefined;
 };
 

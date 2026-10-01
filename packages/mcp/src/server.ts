@@ -2,11 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
-import {
-  isServiceErrorResult,
-  serviceErrorMessage,
-  type ServiceErrorResult,
-} from "@trybacked/service";
+import { isServiceErrorResult } from "@trybacked/service";
 import type { McpSurfaceTool } from "./constants.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";
@@ -56,32 +52,13 @@ function errorContent(text: string): {
   };
 }
 
-function isToolErrorResult(result: unknown): result is { error: string } | ServiceErrorResult {
-  if (isServiceErrorResult(result)) {
-    return true;
-  }
-  if (typeof result !== "object" || result === null || !("error" in result)) {
-    return false;
-  }
-  return typeof result.error === "string";
-}
-
-function toolErrorText(result: { error: string } | ServiceErrorResult): string {
-  if (isServiceErrorResult(result)) {
-    return serviceErrorMessage(result);
-  }
-  return result.error;
-}
-
 async function withUsage<T>(
   operation: McpSurfaceTool,
   usageRecorder: ServeUsageRecorder | undefined,
   handler: () => T | Promise<T>,
 ): Promise<T> {
   if (usageRecorder !== undefined) {
-    void usageRecorder.record(operation).catch(() => {
-      // Metering must not block or fail local MCP tools.
-    });
+    void usageRecorder.record(operation).catch(() => {});
   }
   return handler();
 }
@@ -119,8 +96,8 @@ export function createModelMcpServer(
       async (args) =>
         withUsage(tool.name, usageRecorder, async () => {
           const result = await tool.handler(toolContext, args);
-          if (isToolErrorResult(result)) {
-            return errorContent(toolErrorText(result));
+          if (isServiceErrorResult(result)) {
+            return errorContent(result.error.message);
           }
           return jsonContent(result);
         }),

@@ -1,6 +1,5 @@
 import type { Ontology } from "@trybacked/core";
 
-/** Compact ontology summary for the translation LLM (no warehouse data). */
 export function buildOntologyContextForTranslation(ontology: Ontology): string {
   const objects = ontology.objects.map((object) => ({
     id: object.id,

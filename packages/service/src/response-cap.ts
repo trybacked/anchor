@@ -1,6 +1,5 @@
 import type { RowProvenance } from "./provenance.js";
 
-/** Stay under typical MCP client limits (~1MB), with headroom for JSON framing. */
 export const MCP_TOOL_RESULT_MAX_BYTES = 900_000;
 
 export const MCP_DEFAULT_OBJECT_QUERY_LIMIT = 15;

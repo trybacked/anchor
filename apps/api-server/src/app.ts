@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { createBearerAuthMiddleware } from "./auth.js";
 import { buildOpenApiDocument } from "./openapi-document.js";
 import { registerPlatformApiRoutes } from "./platform-api-register.js";
-import { runWithRequestContext } from "./request-context.js";
+import { withRequestContext } from "./request-context.js";
 import type { TenantRuntimeRegistry } from "./tenant-runtime-registry.js";
 import { OntologyNotPublishedError, TenantNotFoundError } from "./tenant-runtime-registry.js";
 
@@ -39,8 +39,9 @@ export function createAnchorApiApp(
       try {
         const anchorService = await platformRegistry.resolve(tenant);
         c.set("anchorService", anchorService);
-        // eslint-disable-next-line @typescript-eslint/return-await -- ALS wrapper; Hono next() return type is not a Thenable
-        return runWithRequestContext({ user, tenant }, () => next());
+
+        await withRequestContext({ user, tenant }, () => next());
+        return;
       } catch (error) {
         if (error instanceof TenantNotFoundError) {
           return c.json({ error: error.message }, 404);
@@ -56,7 +57,8 @@ export function createAnchorApiApp(
       const headerUser = c.req.header("X-Backed-User")?.trim();
       const user = headerUser !== undefined && headerUser.length > 0 ? headerUser : undefined;
       c.set("anchorService", getService());
-      return runWithRequestContext({ user }, () => next());
+      await withRequestContext({ user }, () => next());
+      return;
     });
   }
 

@@ -17,22 +17,15 @@ export const RUN_ARTIFACTS = {
   review: "review.json",
   diff: "diff.json",
 } as const;
-/**
- *
- */
+
 export type RunArtifactName = keyof typeof RUN_ARTIFACTS;
 export const WorkspaceConfigSchema = z.object({
-  /** Ontology identifier; defaults to the workspace folder name when omitted. */
   ontologyId: z.string().min(1).optional(),
 });
-/**
- *
- */
+
 export type WorkspaceConfig = z.infer<typeof WorkspaceConfigSchema>;
 export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {};
-/**
- *
- */
+
 export interface WorkspacePaths {
   root: string;
   backedDir: string;
@@ -42,7 +35,7 @@ export interface WorkspacePaths {
   runDir: (runId: string) => string;
   artifactPath: (runId: string, artifact: RunArtifactName) => string;
 }
-/** Resolves standard `.backed/` workspace paths for a project root. */
+
 export function workspacePaths(root: string): WorkspacePaths {
   const backedDir = path.join(root, BACKED_DIR_NAME);
   const runsDir = path.join(backedDir, RUNS_DIR_NAME);
@@ -56,7 +49,7 @@ export function workspacePaths(root: string): WorkspacePaths {
     artifactPath: (runId, artifact) => path.join(runsDir, runId, RUN_ARTIFACTS[artifact]),
   };
 }
-/** Creates a time-sortable run identifier with a random suffix. */
+
 export function createRunId(now: Date = new Date()): string {
   const timestamp = now
     .toISOString()

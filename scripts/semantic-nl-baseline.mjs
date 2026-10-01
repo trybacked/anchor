@@ -1,12 +1,5 @@
 #!/usr/bin/env node
-/**
- * Live LLM baseline: NL → routed plan correctness on semantic-nl-smoke.cases.json.
- *
- *   pnpm build && pnpm smoke:semantic-nl-baseline
- *   pnpm smoke:semantic-nl-baseline -- --json /tmp/nl-baseline.json --min-plan-rate 0.9
- *
- * Exit 1 when required-case plan pass rate is below --min-plan-rate (default 0.9).
- */
+
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

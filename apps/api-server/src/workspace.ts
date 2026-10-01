@@ -30,10 +30,8 @@ export function findWorkspaceRoot(startDir: string = process.cwd()): string {
 
 export function loadWorkspaceEnv(root: string): void {
   const envPath = join(root, ".env");
-  try {
+  if (existsSync(envPath)) {
     process.loadEnvFile(envPath);
-  } catch {
-    // optional
   }
 }
 

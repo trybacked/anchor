@@ -36,7 +36,6 @@ function normalizeFilterOp(op: RowFilter["op"]): NonNullable<ObjectQuery["filter
   return mapped as NonNullable<ObjectQuery["filters"]>[number]["op"];
 }
 
-/** LLM sometimes emits "contract.foo" for root properties; strip when it matches the query root. */
 function normalizeRootPropertyId(propertyId: string, rootObjectId: string): string {
   const prefix = `${rootObjectId}.`;
   if (propertyId.startsWith(prefix)) {
@@ -135,7 +134,6 @@ export type NormalizedSemanticQueryPlan = {
   attempts?: number | undefined;
 };
 
-/** Map LLM plan types to compiler {@link ObjectQuery} (deterministic, no LLM). */
 export function normalizeSemanticQueryPlan(plan: SemanticQueryPlan): NormalizedSemanticQueryPlan {
   const merged = mergeObjectSet(plan.objectQuery, plan.objectSet);
   const objectId = merged.entityId;

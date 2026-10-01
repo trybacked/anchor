@@ -135,7 +135,6 @@ function instantiateObjectQuery(
   };
 }
 
-/** Pure: template + param values → executable steps (no LLM). */
 export function instantiatePlanTemplate(
   template: PlanTemplate,
   params: TemplateParamValues,
@@ -171,7 +170,6 @@ export function instantiatePlanTemplate(
   return { templateId: template.id, steps };
 }
 
-/** Row limits that count toward aggregate semantic_chat budget (chunk limits + row-mode query limits). */
 export function collectTemplateRowLimits(steps: InstantiatedPlanStep[]): number[] {
   const limits: number[] = [];
   for (const step of steps) {

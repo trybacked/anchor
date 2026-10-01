@@ -92,21 +92,19 @@ export type ObjectQueryFilter = z.infer<typeof ObjectQueryFilterSchema>;
 export type ObjectQueryJoin = z.infer<typeof ObjectQueryJoinSchema>;
 export type ObjectQueryTextSearch = z.infer<typeof ObjectQueryTextSearchSchema>;
 export type ObjectQueryAggregation = z.infer<typeof ObjectQueryAggregationSchema>;
-/** Pre-parse query payload (`mode` and `filters` optional; defaults applied in compile). */
+
 export type ObjectQuery = z.input<typeof ObjectQuerySchema>;
 
-/** Named parameter bound to the compiled statement. */
 export type SqlParameter = {
   name: string;
   value: string | number | boolean;
 };
 
-/** Parameterized SQL statement produced by the compiler. */
 export type CompiledObjectQuery = {
   objectId: string;
   sql: string;
   parameters: SqlParameter[];
   columns: string[];
-  /** Objects present in FROM/JOIN (root first). */
+
   joinedObjectIds?: string[];
 };

@@ -96,6 +96,8 @@ describe("query_objects tool", () => {
       { model: EMPTY_MODEL, queryRuntime },
       { objectId: "" },
     );
-    expect(result).toEqual({ error: expect.stringContaining("Invalid query") });
+    expect(result).toMatchObject({
+      error: { code: "bad_request", message: expect.stringContaining("Invalid query") },
+    });
   });
 });

@@ -9,5 +9,4 @@ export const MAX_PROFILE_MATCH_LIMIT = 10;
 export const DEFAULT_PROFILE_FACT_LIMIT = 15;
 export const DEFAULT_PROFILE_DOCUMENT_LIMIT = 15;
 
-/** Element types skipped by default in chunk search (noise). */
 export const DEFAULT_EXCLUDED_ELEMENT_TYPES = ["page_header", "page_footer"] as const;

@@ -125,7 +125,6 @@ export function compileObjectFilter(
   return `${column} ${FILTER_OP_SQL[filter.op]} :${name}`;
 }
 
-/** OR of contains predicates across string columns (full-text lite). */
 export function compileTextSearch(
   object: OntologyObject,
   tableAlias: string,

@@ -24,17 +24,14 @@ export type OntologyRegistryEntry = z.infer<typeof OntologyRegistryEntrySchema>;
 
 export type OntologyRegistry = z.infer<typeof OntologyRegistrySchema>;
 
-/** Resolves the registry file path inside `.backed/`. */
 export function registryPath(root: string): string {
   return path.join(root, BACKED_DIR_NAME, REGISTRY_FILE_NAME);
 }
 
-/** Resolves the archive path for one publication version. */
 export function publicationArchivePath(root: string, version: number): string {
   return path.join(root, BACKED_DIR_NAME, PUBLICATIONS_DIR_NAME, `v${String(version)}.json`);
 }
 
-/** Reads the registry, or null when missing or invalid. */
 export function readOntologyRegistry(root: string): OntologyRegistry | null {
   const filePath = registryPath(root);
   if (!existsSync(filePath)) {
@@ -47,7 +44,6 @@ export function readOntologyRegistry(root: string): OntologyRegistry | null {
   }
 }
 
-/** Reads one archived publication version, or null when absent. */
 export function readPublicationByVersion(root: string, version: number): PublicationRecord | null {
   const archived = publicationArchivePath(root, version);
   if (existsSync(archived)) {
@@ -68,7 +64,6 @@ function readPublicationRecordFromPath(filePath: string): PublicationRecord | nu
   }
 }
 
-/** Lists publication versions sorted ascending. */
 export function listPublicationVersions(root: string): OntologyRegistryEntry[] {
   const registry = readOntologyRegistry(root);
   if (registry !== null) {
@@ -87,14 +82,12 @@ export function listPublicationVersions(root: string): OntologyRegistryEntry[] {
   ];
 }
 
-/** Archives one publication record under `publications/vN.json`. */
 export function archivePublicationRecord(root: string, record: PublicationRecord): void {
   const archivePath = publicationArchivePath(root, record.version);
   mkdirSync(path.dirname(archivePath), { recursive: true });
   writeFileSync(archivePath, `${JSON.stringify(record, null, 2)}\n`, "utf-8");
 }
 
-/** Adds a publication entry to the registry and sets the current version. */
 export function updateOntologyRegistry(
   root: string,
   record: PublicationRecord,
@@ -120,7 +113,6 @@ export function updateOntologyRegistry(
   return registry;
 }
 
-/** Restores an archived publication version as the active publication. */
 export function restorePublicationVersion(root: string, version: number): PublicationRecord {
   const record = readPublicationByVersion(root, version);
   if (record === null) {

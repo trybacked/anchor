@@ -1,4 +1,3 @@
-import { Scalar } from "@scalar/hono-api-reference";
 import type { TenantRegistrySource } from "@trybacked/core";
 import type { Hono } from "hono";
 import type { GatewayConfig } from "./config.js";
@@ -7,9 +6,9 @@ import { renderDocsTenantPickerPage } from "./docs-picker-page.js";
 import { scalarConfigForPlatform, scalarConfigForTenant } from "./docs-scalar.js";
 import { DOCS_PLATFORM_PATH, docsPathForTenant, GATEWAY_AUTH_PATHS } from "./gateway-paths.js";
 import { resolvePublicOrigin } from "./public-origin.js";
+import { scalarMiddleware } from "./scalar-middleware.js";
 import type { GatewayVariables } from "./types.js";
 
-/** Legacy URL from the removed synthetic `reference` tenant id. */
 const LEGACY_REFERENCE_DOCS_PATH = "/docs/t/reference";
 
 export function registerDocsRoutes(
@@ -40,9 +39,7 @@ export function registerDocsRoutes(
     if (landing.kind !== "platform") {
       return c.redirect(GATEWAY_AUTH_PATHS.docs);
     }
-    const scalar = Scalar(() => scalarConfigForPlatform(resolvePublicOrigin(c, config)));
-    // @ts-expect-error — Scalar Context env typing is wider than our GatewayVariables app.
-    return scalar(c, next);
+    return scalarMiddleware(() => scalarConfigForPlatform(resolvePublicOrigin(c, config)))(c, next);
   });
 
   app.get("/docs/t/:tenantId", async (c, next) => {
@@ -50,8 +47,9 @@ export function registerDocsRoutes(
     if (!(await canOpenTenantDocs(registrySource, tenantId))) {
       return c.json({ error: "Tenant not found" }, 404);
     }
-    const scalar = Scalar(() => scalarConfigForTenant(tenantId, resolvePublicOrigin(c, config)));
-    // @ts-expect-error — Scalar Context env typing is wider than our GatewayVariables app.
-    return scalar(c, next);
+    return scalarMiddleware(() => scalarConfigForTenant(tenantId, resolvePublicOrigin(c, config)))(
+      c,
+      next,
+    );
   });
 }

@@ -26,10 +26,9 @@ export const MCP_SURFACE_TOOLS = [
   TOOL_NAMES.searchModel,
   TOOL_NAMES.getDefinition,
 ] as const;
-/** Registered only when a query runtime (published ontology + executor) is provided. */
+
 export const MCP_QUERY_TOOL = TOOL_NAMES.queryObjects;
 
-/** Archive / graph readers — registered when document schema readers are configured on the runtime. */
 export const MCP_WAREHOUSE_READER_TOOLS = [
   TOOL_NAMES.searchDocuments,
   TOOL_NAMES.getEntityProfile,

@@ -16,11 +16,10 @@ export type LlmUsageRecord = {
 };
 
 export type VercelAiTranslatorOptions = {
-  /** Gateway model slug, e.g. openai/gpt-4o-mini */
   modelId: string;
-  /** Defaults to AI Gateway env (AI_GATEWAY_API_KEY). */
+
   apiKey?: string | undefined;
-  /** Called after each Gateway completion (including repair retries). */
+
   usageSink?: ((usage: LlmUsageRecord) => void) | undefined;
 };
 
@@ -45,8 +44,6 @@ export function createVercelAiTranslator(
       : gateway(options.modelId);
 
   return async ({ prompt, ontologyContext }) => {
-    // generateObject remains the stable structured-output path for this adapter until we migrate to generateText + output.
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- AI SDK migration tracked separately
     const result = await generateObject({
       model,
       schema: RoutedSemanticPlanSchema,
@@ -59,12 +56,6 @@ export function createVercelAiTranslator(
   };
 }
 
-/**
- * Semantic chat via Vercel AI SDK + AI Gateway (one API key for all providers).
- *
- * Required: AI_GATEWAY_API_KEY (https://vercel.com/docs/ai-gateway)
- * Optional: SEMANTIC_CHAT_MODEL or SEMANTIC_MODEL (default openai/gpt-4o-mini)
- */
 export function createVercelAiTranslatorFromEnv(
   env: NodeJS.ProcessEnv,
 ): SemanticQueryTranslator | undefined {

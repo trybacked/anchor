@@ -1,8 +1,6 @@
 import { ObjectQuerySchema } from "@trybacked/compiler";
 import { z } from "zod";
 
-/** HTTP / SDK shared request bodies (OpenAPI components). */
-
 export const ListRelationsQuerySchema = z.object({
   entityId: z.string().min(1).optional(),
 });

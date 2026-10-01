@@ -4,7 +4,6 @@ function apiBaseUrl(host: string): string {
   return `https://${host}`;
 }
 
-/** Normalize paths from warehouse (`/Volumes/...` or `dbfs:/Volumes/...`). */
 export function normalizeDatabricksVolumePath(path: string): string {
   const trimmed = path.trim();
   if (trimmed.startsWith("dbfs:")) {

@@ -41,7 +41,6 @@ function assertPropertyExists(ontology: Ontology, objectId: string, propertyId: 
   }
 }
 
-/** Validate normalized query against published ontology and execution budget (deterministic). */
 export function validateObjectQueryAgainstOntology(
   ontology: Ontology,
   query: ObjectQuery,
@@ -120,7 +119,6 @@ export type ValidatedTemplateExecution = {
 export type ValidatedRoutedPlan =
   { route: "single"; semanticPlan: SemanticQueryPlan } | ValidatedTemplateExecution;
 
-/** Validate LLM routed plan: single object query or known template + params. */
 export function validateRoutedPlan(
   ontology: Ontology,
   registry: PlanTemplateRegistry,

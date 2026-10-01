@@ -33,7 +33,7 @@ function copyForwardHeaders(source: Headers): Headers {
 
 export async function forwardToPlatform(
   config: GatewayConfig,
-  tenantId: string,
+  tenantId: string | undefined,
   username: string,
   request: Request,
   upstreamPath: string,
@@ -45,7 +45,9 @@ export async function forwardToPlatform(
   const headers = copyForwardHeaders(request.headers);
   headers.set("Authorization", `Bearer ${upstream.token}`);
   headers.set("X-Backed-User", username);
-  headers.set("X-Backed-Tenant", tenantId);
+  if (tenantId !== undefined) {
+    headers.set("X-Backed-Tenant", tenantId);
+  }
 
   const init: RequestInit = {
     method: request.method,

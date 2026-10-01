@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildOpenApiDocument } from "../../src/openapi-document.js";
-import { platformApiRouteSpecs } from "../../src/platform-api-routes.js";
+import { platformApiRouteSpecs } from "../../src/platform-api-routes/index.js";
 
 describe("platformApiRouteSpecs", () => {
   it("stays aligned with the generated OpenAPI paths", () => {

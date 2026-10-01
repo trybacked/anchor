@@ -8,7 +8,6 @@ import type { DocumentAccessReader, VolumeFileReader } from "./readers/document-
 import type { EntityProfileInput, EntityProfileResult } from "./readers/entity-profile.js";
 import type { GraphTraverseInput } from "./readers/graph-traverse.js";
 
-/** Executes one parameterized statement against the backing warehouse. */
 export type SqlStatementExecutor = (
   sql: string,
   parameters: SqlParameter[],
@@ -41,15 +40,10 @@ export type OntologyQueryRuntime = {
   documentAccess?: DocumentAccessReader | undefined;
   readers?: WarehouseReaders | undefined;
   warehouseCapabilities?: WarehouseTableCapabilities | undefined;
-  /** True when Databricks Files API (or another volume reader) is wired for raw file bytes. */
+
   volumeFileAccess?: boolean | undefined;
 };
 
-/**
- * Binds a published ontology to a SQL executor.
- * The compiler resolves mappings; the executor (e.g. Databricks) runs the statement.
- * When `model` is provided and docs tables are probed, document readers are attached.
- */
 export function createOntologyQueryRuntime(
   options: OntologyQueryRuntimeOptions,
 ): OntologyQueryRuntime {

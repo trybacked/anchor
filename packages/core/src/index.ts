@@ -1,9 +1,3 @@
-/**
- * @packageDocumentation
- * Anchor ontology contract: ontology spec, dataset provider interface, workspace layout,
- * review workflow, and model.yaml v1 serialization used by internal packages.
- */
-/** Published npm package name. */
 export const PACKAGE_NAME = "@trybacked/core" as const;
 export {
   MODEL_FORMAT_VERSION,

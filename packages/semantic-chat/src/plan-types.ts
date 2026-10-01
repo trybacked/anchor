@@ -1,7 +1,6 @@
 import { SEMANTIC_CHAT_MAX_ROW_LIMIT } from "@trybacked/core";
 import { z } from "zod";
 
-/** Legacy row filter operators (LLM may emit these or compiler-native names). */
 export const ROW_FILTER_OPS = [
   "=",
   "!=",
@@ -65,7 +64,6 @@ export const TimeRangeSchema = z.object({
   to: z.string().optional(),
 });
 
-/** LLM-facing object query (entityId mirrors historic ObjectQueryRequest). */
 export const ObjectQueryRequestSchema = z.object({
   entityId: z.string().min(1),
   joins: z.array(z.object({ relationshipId: z.string().min(1) })).optional(),
@@ -87,7 +85,6 @@ export const ObjectQueryRequestSchema = z.object({
     .optional(),
 });
 
-/** Optional scope / object set (historic ObjectSetDefinition). */
 export const ObjectSetDefinitionSchema = z.object({
   entityId: z.string().min(1),
   filters: z.array(RowFilterSchema).default([]),
@@ -102,7 +99,6 @@ export const SemanticQueryPlanSchema = z.object({
   objectSet: ObjectSetDefinitionSchema.optional(),
 });
 
-/** Flat shape for structured LLM output (single query vs versioned template). */
 export const RoutedSemanticPlanSchema = z
   .object({
     route: z.enum(["single", "template"]),

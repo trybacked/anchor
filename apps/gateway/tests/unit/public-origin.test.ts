@@ -22,7 +22,7 @@ function configWith(overrides: Partial<GatewayConfig> = {}): GatewayConfig {
 
 function originFor(config: GatewayConfig): Promise<Response> {
   const app = new Hono();
-  // @ts-expect-error — bare Hono env is narrower than GatewayVariables; only c.req is used.
+
   app.get("/", (c) => c.text(resolvePublicOrigin(c, config)));
   return app.request("http://127.0.0.1:8790/");
 }

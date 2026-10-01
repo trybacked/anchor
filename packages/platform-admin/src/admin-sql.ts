@@ -67,6 +67,20 @@ export async function grantSharedSpacesToPrincipal(
   }
 }
 
+async function grantReadDocsRawVolumeIfPresent(
+  admin: AdminSqlClient,
+  catalog: string,
+  platformPrincipal: string,
+): Promise<void> {
+  try {
+    await admin.execute(
+      `GRANT READ VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
+    );
+  } catch {
+    return;
+  }
+}
+
 export async function grantPlatformPrincipalOnTenant(
   admin: AdminSqlClient,
   registry: TenantsRegistry,
@@ -81,13 +95,7 @@ export async function grantPlatformPrincipalOnTenant(
   await admin.execute(
     `GRANT READ VOLUME ON VOLUME \`${catalog}\`.\`backed\`.\`registry\` TO \`${platformPrincipal}\``,
   );
-  try {
-    await admin.execute(
-      `GRANT READ VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
-    );
-  } catch {
-    // optional volume
-  }
+  await grantReadDocsRawVolumeIfPresent(admin, catalog, platformPrincipal);
   for (const key of sharedKeys) {
     const space = registry.shared_spaces[key];
     if (space === undefined) {

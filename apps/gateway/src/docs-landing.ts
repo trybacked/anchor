@@ -7,7 +7,6 @@ export async function listRegisteredTenantIds(source: TenantRegistrySource): Pro
   return Object.keys(snapshot.registry.tenants).sort((a, b) => a.localeCompare(b));
 }
 
-/** Where `/docs` sends a visitor; platform browse is only for an empty registry. */
 export type DocsLanding =
   | { kind: "tenant"; tenantId: string }
   | { kind: "platform" }

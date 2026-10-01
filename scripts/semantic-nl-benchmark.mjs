@@ -1,10 +1,5 @@
 #!/usr/bin/env node
-/**
- * Run N Italian NL questions (default 50) and print latency + token usage stats.
- *
- *   pnpm build && pnpm smoke:semantic-nl-benchmark
- *   pnpm smoke:semantic-nl-benchmark -- --count 50 --json /tmp/benchmark.json
- */
+
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

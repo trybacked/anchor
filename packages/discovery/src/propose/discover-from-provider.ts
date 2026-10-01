@@ -9,7 +9,6 @@ import { discoverFromProfile, type DiscoverFromProfileOptions } from "./discover
 
 const INFRA_TABLES = new Set<string>(PIPELINE_INFRA_DATASET_TABLE_NAMES);
 
-/** Builds a minimal profile from provider metadata (no FK overlap analysis). */
 export async function profileFromDatasetProvider(
   provider: DatasetProvider,
 ): Promise<ProfileReport> {

@@ -1,12 +1,6 @@
-/** URL prefixes and paths for the public gateway (docs, auth, tenant proxy). */
-
 export const TENANT_PATH_PREFIX = "/t";
 
-/** Scalar when no workspace is published yet; not a proxy tenant id. */
 export const DOCS_PLATFORM_PATH = "/docs/platform";
-
-/** `X-Backed-Tenant` value when fetching platform `/openapi.json` upstream (not a registry tenant). */
-export const PLATFORM_OPENAPI_UPSTREAM_TENANT = "platform";
 
 export function tenantBasePath(tenantId: string): string {
   return `${TENANT_PATH_PREFIX}/${tenantId}`;

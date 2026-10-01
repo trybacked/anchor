@@ -10,7 +10,7 @@ export type JoinPlanStep = {
 export type JoinPlan = {
   rootObjectId: string;
   steps: JoinPlanStep[];
-  /** Ontology object id → SQL table alias (o0 is always root). */
+
   objectAliases: Map<string, string>;
 };
 

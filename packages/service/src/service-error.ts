@@ -45,7 +45,3 @@ export function serviceErrorHttpStatus(code: ServiceErrorCode): 400 | 404 | 503 
     }
   }
 }
-
-export function serviceErrorMessage(result: ServiceErrorResult): string {
-  return result.error.message;
-}

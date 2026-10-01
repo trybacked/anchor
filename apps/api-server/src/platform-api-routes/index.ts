@@ -1,6 +1,6 @@
 import type { RouteFactory } from "../platform-api-route-factory.js";
 import type { PlatformApiRouteSpec } from "../platform-api-route-meta.js";
-import type { PlatformHandlerContext, PlatformHandlerDeps } from "../platform-api-types.js";
+import type { PlatformHandlerDeps, PlatformRouteHandler } from "../platform-api-types.js";
 import { platformApiDocumentRoutes } from "./documents.js";
 import { platformApiHealthRoutes } from "./health.js";
 import { platformApiModelRoutes } from "./model.js";
@@ -13,11 +13,10 @@ export type {
   AnchorApiVariables,
   PlatformHandlerContext,
   PlatformHandlerDeps,
+  PlatformRouteHandler,
 } from "../platform-api-types.js";
 
-type RouteHandler = (c: PlatformHandlerContext) => Response | Promise<Response>;
-
-export type PlatformApiRoute = PlatformApiRouteSpec & { handle: RouteHandler };
+export type PlatformApiRoute = PlatformApiRouteSpec & { handle: PlatformRouteHandler };
 
 const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
   ...platformApiHealthRoutes,
@@ -30,7 +29,6 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
   ...platformApiSemanticChatRoutes,
 ];
 
-/** Route metadata shared by OpenAPI generation (no handlers). */
 export function platformApiRouteSpecs(): PlatformApiRouteSpec[] {
   return PLATFORM_API_ROUTE_FACTORIES.map((factory) => factory.meta);
 }

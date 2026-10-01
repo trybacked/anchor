@@ -6,11 +6,7 @@ import { registerWorkOSAuthRoutes } from "./auth-workos.js";
 import type { GatewayConfig } from "./config.js";
 import { clearSessionCookies } from "./cookies.js";
 import { registerDocsRoutes } from "./docs-routes.js";
-import {
-  GATEWAY_AUTH_PATHS,
-  PLATFORM_OPENAPI_UPSTREAM_TENANT,
-  TENANT_OPENAPI_ROUTE,
-} from "./gateway-paths.js";
+import { GATEWAY_AUTH_PATHS, TENANT_OPENAPI_ROUTE } from "./gateway-paths.js";
 import { normalizeTrailingSlashMiddleware } from "./normalize-trailing-slash.js";
 import { adaptOpenApiResponse } from "./openapi-gateway.js";
 import {
@@ -101,48 +97,27 @@ export function createGatewayApp(
 
   registerDocsRoutes(app, config, registrySource);
 
-  const fetchPlatformOpenApi = () =>
-    forwardToPlatform(
-      config,
-      PLATFORM_OPENAPI_UPSTREAM_TENANT,
-      "public-docs",
-      new Request("http://gateway/openapi.json"),
-      "/openapi.json",
-      proxyDeps,
-    );
+  const fetchPublicOpenApi = (request: Request) =>
+    forwardToPlatform(config, undefined, "public-docs", request, "/openapi.json", proxyDeps);
 
-  const serveOpenApi = async (
+  const adaptPublicOpenApi = async (
     c: Context<{ Variables: GatewayVariables }>,
     target: Parameters<typeof adaptOpenApiResponse>[1],
-    upstreamTenantId: string,
   ): Promise<Response> =>
     adaptOpenApiResponse(
-      await forwardToPlatform(
-        config,
-        upstreamTenantId,
-        "public-docs",
-        c.req.raw,
-        "/openapi.json",
-        proxyDeps,
-      ),
+      await fetchPublicOpenApi(c.req.raw),
       target,
       resolvePublicOrigin(c, config),
     );
 
-  app.get(GATEWAY_AUTH_PATHS.platformOpenApi, async (c) =>
-    adaptOpenApiResponse(
-      await fetchPlatformOpenApi(),
-      { kind: "platform" },
-      resolvePublicOrigin(c, config),
-    ),
-  );
+  app.get(GATEWAY_AUTH_PATHS.platformOpenApi, (c) => adaptPublicOpenApi(c, { kind: "platform" }));
 
   app.get(TENANT_OPENAPI_ROUTE, async (c) => {
     const tenantId = c.req.param("tenantId");
     if (!(await assertTenantInRegistry(registrySource, tenantId))) {
       return c.json({ error: "Tenant not found" }, 404);
     }
-    return serveOpenApi(c, { kind: "tenant", tenantId }, tenantId);
+    return adaptPublicOpenApi(c, { kind: "tenant", tenantId });
   });
 
   app.all("/t/:tenantId/*", requireAuth, rateLimitMiddleware, async (c) => {

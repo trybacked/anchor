@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/**
- * Preflight for anchor/deploy docker compose — no dependencies beyond Node 22.
- */
+
 import { readFileSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
