@@ -32,6 +32,11 @@ export const ChunkSearchBodySchema = z.object({
   documentIds: z.array(z.string()).optional(),
 });
 
+export const SemanticAskBodySchema = z.object({
+  question: z.string().min(1),
+  evidence: z.boolean().optional(),
+});
+
 export const EntityProfileBodySchema = z.object({
   name: z.string().min(1),
   matchLimit: z.number().int().positive().max(10).optional(),
@@ -79,6 +84,7 @@ export const GraphTraverseBodySchema = z.object({
 });
 
 export type ObjectQueryBody = z.infer<typeof ObjectQueryBodySchema>;
+export type SemanticAskBody = z.infer<typeof SemanticAskBodySchema>;
 export type EntitySearchBody = z.infer<typeof EntitySearchBodySchema>;
 export type ChunkSearchBody = z.infer<typeof ChunkSearchBodySchema>;
 export type EntityProfileBody = z.infer<typeof EntityProfileBodySchema>;

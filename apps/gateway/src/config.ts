@@ -85,12 +85,20 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
   }
 
   const publicOriginExplicit = env["GATEWAY_PUBLIC_ORIGIN"]?.trim().replace(/\/+$/, "");
-  const publicOriginFromRedirect =
-    workosRedirectUri !== undefined ? new URL(workosRedirectUri).origin : undefined;
   const publicOrigin =
     publicOriginExplicit !== undefined && publicOriginExplicit.length > 0
       ? publicOriginExplicit
-      : publicOriginFromRedirect;
+      : workosRedirectUri !== undefined
+        ? new URL(workosRedirectUri).origin
+        : undefined;
+
+  // Behind a TLS-terminating proxy the request URL is plain HTTP, so the browser-facing origin
+  // cannot be inferred: docs would emit http:// server URLs and the browser would block them.
+  if (cookieSecure && publicOrigin === undefined) {
+    throw new Error(
+      "GATEWAY_PUBLIC_ORIGIN is required when cookies are secure (e.g. https://api.backed.app).",
+    );
+  }
 
   return GatewayConfigSchema.parse({
     host: env["GATEWAY_HOST"] ?? env["HOST"] ?? "127.0.0.1",

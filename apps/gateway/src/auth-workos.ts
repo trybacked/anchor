@@ -1,12 +1,15 @@
 import { WorkOS } from "@workos-inc/node";
 import type { Hono } from "hono";
-import { getCookie, setCookie } from "hono/cookie";
+import { getCookie } from "hono/cookie";
 import type { GatewayConfig } from "./config.js";
-import { createSessionToken, SESSION_COOKIE_NAME } from "./session.js";
+import {
+  OAUTH_RETURN_COOKIE,
+  OAUTH_STATE_COOKIE,
+  setOAuthCookie,
+  setSessionCookie,
+} from "./cookies.js";
+import { createSessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";
-
-const OAUTH_STATE_COOKIE = "backed_oauth_state";
-const OAUTH_RETURN_COOKIE = "backed_oauth_return";
 
 function safeReturnPath(value: string | undefined): string | undefined {
   if (value === undefined || value.length === 0) {
@@ -53,22 +56,10 @@ export function registerWorkOSAuthRoutes(
   app.get("/login", (c) => {
     const returnPath = safeReturnPath(c.req.query("next"));
     if (returnPath !== undefined) {
-      setCookie(c, OAUTH_RETURN_COOKIE, returnPath, {
-        httpOnly: true,
-        secure: config.cookieSecure,
-        sameSite: "Lax",
-        path: "/",
-        maxAge: 600,
-      });
+      setOAuthCookie(c, config, OAUTH_RETURN_COOKIE, returnPath);
     }
     const state = crypto.randomUUID();
-    setCookie(c, OAUTH_STATE_COOKIE, state, {
-      httpOnly: true,
-      secure: config.cookieSecure,
-      sameSite: "Lax",
-      path: "/",
-      maxAge: 600,
-    });
+    setOAuthCookie(c, config, OAUTH_STATE_COOKIE, state);
     const url = workos.userManagement.getAuthorizationUrl({
       clientId,
       redirectUri,
@@ -108,13 +99,7 @@ export function registerWorkOSAuthRoutes(
       { username, tenants },
       config.sessionTtlSeconds,
     );
-    setCookie(c, SESSION_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: config.cookieSecure,
-      sameSite: "Lax",
-      path: "/",
-      maxAge: config.sessionTtlSeconds,
-    });
+    setSessionCookie(c, config, token);
     const returnPath = safeReturnPath(getCookie(c, OAUTH_RETURN_COOKIE)) ?? "/docs";
     return c.redirect(returnPath);
   });

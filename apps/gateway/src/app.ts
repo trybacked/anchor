@@ -1,27 +1,27 @@
 import type { TenantRegistrySource } from "@trybacked/core";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { registerAuthRoutes } from "./auth-routes.js";
 import { registerWorkOSAuthRoutes } from "./auth-workos.js";
-import { handleLogout } from "./logout.js";
 import type { GatewayConfig } from "./config.js";
+import { clearSessionCookies } from "./cookies.js";
 import {
   isPublicDocsReferenceTenant,
   PUBLIC_DOCS_REFERENCE_TENANT,
   registerDocsRoutes,
 } from "./docs-routes.js";
 import { normalizeTrailingSlashMiddleware } from "./normalize-trailing-slash.js";
+import { adaptOpenApiResponse } from "./openapi-gateway.js";
 import {
   forwardToPlatform,
   handleDefaultTenantProxy,
   handleTenantProxy,
   type ProxyDeps,
 } from "./proxy.js";
+import { resolvePublicOrigin } from "./public-origin.js";
 import { createRateLimiter } from "./rate-limit.js";
 import { createRequireAuthMiddleware } from "./require-auth.js";
 import type { GatewayVariables } from "./types.js";
-import { forwardGatewayOpenApi } from "./openapi-gateway.js";
-import { resolvePublicOrigin } from "./public-origin.js";
 import { assertTenantInRegistry, countConfiguredTenants } from "./upstreams.js";
 import { loadUsersFile, type UserRecord } from "./users.js";
 
@@ -81,8 +81,17 @@ export function createGatewayApp(
     registerAuthRoutes(app, config, () => users);
   }
 
-  app.get("/logout", (c) => handleLogout(c, config));
-  app.post("/logout", (c) => handleLogout(c, config));
+  app.get("/logout", (c) => {
+    clearSessionCookies(c, config);
+    return c.redirect("/login");
+  });
+
+  app.post("/logout", (c) => {
+    clearSessionCookies(c, config);
+    return (c.req.header("Accept") ?? "").includes("text/html")
+      ? c.redirect("/login")
+      : c.json({ ok: true as const });
+  });
 
   app.get("/me", requireAuth, (c) => {
     const user = c.get("user");
@@ -91,21 +100,24 @@ export function createGatewayApp(
 
   registerDocsRoutes(app, config, registrySource);
 
-  app.get("/openapi.json", async (c) =>
-    forwardGatewayOpenApi(
-      () =>
-        forwardToPlatform(
-          config,
-          "reference",
-          "public-docs",
-          c.req.raw,
-          "/openapi.json",
-          proxyDeps,
-        ),
-      PUBLIC_DOCS_REFERENCE_TENANT,
+  const serveOpenApi = async (
+    c: Context<{ Variables: GatewayVariables }>,
+    tenantId: string,
+  ): Promise<Response> =>
+    adaptOpenApiResponse(
+      await forwardToPlatform(
+        config,
+        tenantId,
+        "public-docs",
+        c.req.raw,
+        "/openapi.json",
+        proxyDeps,
+      ),
+      tenantId,
       resolvePublicOrigin(c, config),
-    ),
-  );
+    );
+
+  app.get("/openapi.json", async (c) => serveOpenApi(c, PUBLIC_DOCS_REFERENCE_TENANT));
 
   app.get("/t/:tenantId/openapi.json", async (c) => {
     const tenantId = c.req.param("tenantId");
@@ -115,19 +127,7 @@ export function createGatewayApp(
     ) {
       return c.json({ error: "Tenant not found" }, 404);
     }
-    return forwardGatewayOpenApi(
-      () =>
-        forwardToPlatform(
-          config,
-          tenantId,
-          "public-docs",
-          c.req.raw,
-          "/openapi.json",
-          proxyDeps,
-        ),
-      tenantId,
-      resolvePublicOrigin(c, config),
-    );
+    return serveOpenApi(c, tenantId);
   });
 
   app.all("/t/:tenantId/*", requireAuth, rateLimitMiddleware, async (c) => {

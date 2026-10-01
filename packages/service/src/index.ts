@@ -40,6 +40,7 @@ export {
   ChunkSearchBodySchema,
   EntityProfileBodySchema,
   GraphTraverseBodySchema,
+  SemanticAskBodySchema,
 } from "./contracts.js";
 export type {
   ObjectQueryBody,
@@ -47,6 +48,7 @@ export type {
   ChunkSearchBody,
   EntityProfileBody,
   GraphTraverseBody,
+  SemanticAskBody,
 } from "./contracts.js";
 export {
   applyQueryExecutionBudget,

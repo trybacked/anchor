@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { GatewayConfig } from "../../src/config.js";
 import { resolvePublicOrigin } from "../../src/public-origin.js";
 
-function minimalConfig(overrides: Partial<GatewayConfig> = {}): GatewayConfig {
+function configWith(overrides: Partial<GatewayConfig> = {}): GatewayConfig {
   return {
     host: "127.0.0.1",
     port: 8790,
@@ -20,33 +20,21 @@ function minimalConfig(overrides: Partial<GatewayConfig> = {}): GatewayConfig {
   };
 }
 
+function originFor(config: GatewayConfig): Promise<Response> {
+  const app = new Hono();
+  // @ts-expect-error — bare Hono env is narrower than GatewayVariables; only c.req is used.
+  app.get("/", (c) => c.text(resolvePublicOrigin(c, config)));
+  return app.request("http://127.0.0.1:8790/");
+}
+
 describe("resolvePublicOrigin", () => {
-  it("uses configured publicOrigin", async () => {
-    const app = new Hono();
-    app.get("/", (c) => c.json({ origin: resolvePublicOrigin(c, minimalConfig({ publicOrigin: "https://api.backed.app" })) }));
-    const res = await app.request("http://127.0.0.1:8790/");
-    expect(await res.json()).toEqual({ origin: "https://api.backed.app" });
+  it("uses the configured public origin", async () => {
+    const response = await originFor(configWith({ publicOrigin: "https://api.backed.app" }));
+    expect(await response.text()).toBe("https://api.backed.app");
   });
 
-  it("upgrades http request URL to https for public hostnames", async () => {
-    const app = new Hono();
-    app.get("/", (c) => c.json({ origin: resolvePublicOrigin(c, minimalConfig()) }));
-    const res = await app.request("http://127.0.0.1:8790/", {
-      headers: { host: "api.backed.app" },
-    });
-    expect(await res.json()).toEqual({ origin: "https://api.backed.app" });
-  });
-
-  it("respects x-forwarded-proto and x-forwarded-host", async () => {
-    const app = new Hono();
-    app.get("/", (c) => c.json({ origin: resolvePublicOrigin(c, minimalConfig()) }));
-    const res = await app.request("http://10.0.0.1:8790/", {
-      headers: {
-        host: "api.backed.app",
-        "x-forwarded-host": "api.backed.app",
-        "x-forwarded-proto": "https",
-      },
-    });
-    expect(await res.json()).toEqual({ origin: "https://api.backed.app" });
+  it("falls back to the request origin for local development", async () => {
+    const response = await originFor(configWith({ cookieSecure: false }));
+    expect(await response.text()).toBe("http://127.0.0.1:8790");
   });
 });

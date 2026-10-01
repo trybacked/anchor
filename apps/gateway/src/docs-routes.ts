@@ -2,9 +2,8 @@ import { Scalar } from "@scalar/hono-api-reference";
 import type { TenantRegistrySource } from "@trybacked/core";
 import type { Hono } from "hono";
 import type { GatewayConfig } from "./config.js";
-import type { GatewayVariables } from "./types.js";
-import { GATEWAY_OPENAPI_SESSION_SCHEME } from "./openapi-gateway.js";
 import { resolvePublicOrigin } from "./public-origin.js";
+import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry } from "./upstreams.js";
 
 /** Synthetic tenant id for public API reference when the registry has no published workspaces yet. */
@@ -35,6 +34,28 @@ function escapeHtml(value: string): string {
 export async function listRegisteredTenantIds(source: TenantRegistrySource): Promise<string[]> {
   const snapshot = await source.load();
   return Object.keys(snapshot.registry.tenants).sort((a, b) => a.localeCompare(b));
+}
+
+/** Where `/docs` sends a visitor; the public reference is only for an empty registry. */
+type DocsLanding =
+  | { kind: "tenant"; tenantId: string }
+  | { kind: "reference" }
+  | { kind: "picker"; tenants: string[] };
+
+async function resolveDocsLanding(
+  registrySource: TenantRegistrySource,
+  config: GatewayConfig,
+): Promise<DocsLanding> {
+  const tenants = await listRegisteredTenantIds(registrySource);
+  const defaultTenant = config.defaultTenant;
+  if (defaultTenant !== undefined && tenants.includes(defaultTenant)) {
+    return { kind: "tenant", tenantId: defaultTenant };
+  }
+  const [firstTenant] = tenants;
+  if (tenants.length === 1 && firstTenant !== undefined) {
+    return { kind: "tenant", tenantId: firstTenant };
+  }
+  return tenants.length === 0 ? { kind: "reference" } : { kind: "picker", tenants };
 }
 
 function renderTenantPickerPage(tenants: string[]): string {
@@ -126,6 +147,17 @@ function renderTenantPickerPage(tenants: string[]): string {
       color: var(--accent);
       white-space: nowrap;
     }
+    .linklike {
+      margin: 0 0 2rem;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.875rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -134,9 +166,11 @@ function renderTenantPickerPage(tenants: string[]): string {
     <h1>API documentation</h1>
     <p class="lead">
       Public interactive reference (Scalar). Browse endpoints without signing in; use
-      <a href="/login" style="color: var(--accent);">login</a> for Try it out;
-      <a href="/logout" style="color: var(--accent);">logout</a> to refresh your session.
+      <a href="/login" style="color: var(--accent);">login</a> for Try it out.
     </p>
+    <form method="post" action="/logout">
+      <button type="submit" class="linklike">Sign out to refresh your workspace list</button>
+    </form>
     <div class="grid">${cards}</div>
   </main>
 </body>
@@ -145,19 +179,14 @@ function renderTenantPickerPage(tenants: string[]): string {
 
 function scalarConfigForTenant(tenantId: string, publicOrigin: string): Record<string, unknown> {
   const isReference = isPublicDocsReferenceTenant(tenantId);
-  const openApiUrl = isReference ? "/openapi.json" : `/t/${tenantId}/openapi.json`;
-  // Paths in gateway OpenAPI are prefixed with `/t/{tenantId}`; server URL is the public HTTPS origin.
-  const baseServerURL = publicOrigin.replace(/\/$/, "");
   const titleSuffix = isReference ? "Platform" : tenantId;
   return {
     pageTitle: `Backed API · ${titleSuffix}`,
-    url: openApiUrl,
-    baseServerURL,
+    url: isReference ? "/openapi.json" : `/t/${tenantId}/openapi.json`,
+    // Paths in the gateway document already carry `/t/{tenantId}`, so the server is the origin.
+    baseServerURL: publicOrigin,
     theme: "default",
     layout: "modern",
-    authentication: {
-      preferredSecurityScheme: GATEWAY_OPENAPI_SESSION_SCHEME,
-    },
     metaData: {
       title: `Backed API · ${titleSuffix}`,
       description:
@@ -176,35 +205,28 @@ export function registerDocsRoutes(
   registrySource: TenantRegistrySource,
 ): void {
   app.get("/docs", async (c) => {
-    const tenants = await listRegisteredTenantIds(registrySource);
-    if (tenants.length === 0) {
-      return c.redirect(`/docs/t/${PUBLIC_DOCS_REFERENCE_TENANT}`);
-    }
-    const defaultTenant = config.defaultTenant;
-    if (defaultTenant !== undefined && tenants.includes(defaultTenant)) {
-      return c.redirect(`/docs/t/${defaultTenant}`);
-    }
-    if (tenants.length === 1) {
-      const onlyTenant = tenants[0];
-      if (onlyTenant !== undefined) {
-        return c.redirect(`/docs/t/${onlyTenant}`);
+    const landing = await resolveDocsLanding(registrySource, config);
+    switch (landing.kind) {
+      case "tenant":
+        return c.redirect(`/docs/t/${landing.tenantId}`);
+      case "reference":
+        return c.redirect(`/docs/t/${PUBLIC_DOCS_REFERENCE_TENANT}`);
+      case "picker":
+        return c.html(renderTenantPickerPage(landing.tenants));
+      default: {
+        const unhandled: never = landing;
+        return unhandled;
       }
     }
-    return c.html(renderTenantPickerPage(tenants));
   });
 
   app.get("/docs/t/:tenantId", async (c, next) => {
-    let tenantId = c.req.param("tenantId");
+    const tenantId = c.req.param("tenantId");
+    // The reference document describes no real workspace, so published tenants always win.
     if (isPublicDocsReferenceTenant(tenantId)) {
-      const registered = await listRegisteredTenantIds(registrySource);
-      if (registered.length > 0) {
-        const preferred =
-          config.defaultTenant !== undefined && registered.includes(config.defaultTenant)
-            ? config.defaultTenant
-            : registered[0];
-        if (preferred !== undefined) {
-          return c.redirect(`/docs/t/${preferred}`);
-        }
+      const landing = await resolveDocsLanding(registrySource, config);
+      if (landing.kind !== "reference") {
+        return c.redirect("/docs");
       }
     }
     if (!(await canOpenTenantDocs(registrySource, tenantId))) {

@@ -1,7 +1,8 @@
 import type { MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 import type { GatewayConfig } from "./config.js";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "./session.js";
+import { SESSION_COOKIE_NAME } from "./cookies.js";
+import { verifySessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";
 
 export function createRequireAuthMiddleware(config: GatewayConfig): MiddlewareHandler<{

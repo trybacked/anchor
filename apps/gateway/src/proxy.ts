@@ -1,7 +1,7 @@
 import type { TenantRegistrySource } from "@trybacked/core";
 import type { Context } from "hono";
-import { isPublicDocsReferenceTenant } from "./docs-routes.js";
 import type { GatewayConfig } from "./config.js";
+import { isPublicDocsReferenceTenant } from "./docs-routes.js";
 import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry, resolvePlatformUpstream } from "./upstreams.js";
 
@@ -117,9 +117,7 @@ export async function handleTenantProxy(
     return c.json(
       {
         error: "Forbidden",
-        message: `Your account is not linked to tenant "${tenantId}". Sign out and sign in again after an admin maps your WorkOS organization. GET /me lists tenants in your session.`,
-        allowedTenants: user.tenants,
-        requestedTenant: tenantId,
+        message: `Your session does not include tenant "${tenantId}". GET /me lists the tenants it does include; sign out and sign in again to pick up a new mapping.`,
       },
       403,
     );

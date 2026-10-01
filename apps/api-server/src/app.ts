@@ -5,8 +5,10 @@ import {
   EntitySearchBodySchema,
   GetDefinitionBodySchema,
   GraphTraverseBodySchema,
+  ListRelationsQuerySchema,
   ObjectQueryBodySchema,
   SearchModelBodySchema,
+  SemanticAskBodySchema,
   type AnchorService,
   type SemanticAskResponse,
 } from "@trybacked/service";
@@ -24,7 +26,6 @@ type AnchorApiVariables = {
 
 const EntityIdParamSchema = z.object({ id: z.string().min(1) });
 const DocumentIdParamSchema = z.object({ id: z.string().min(1) });
-const ListRelationsQuerySchema = z.object({ entityId: z.string().optional() });
 const DocumentPreviewQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
   format: z.enum(["json", "file"]).optional(),
@@ -39,11 +40,6 @@ function documentErrorStatus(message: string): 400 | 404 | 503 {
   }
   return 400;
 }
-
-const SemanticAskBodySchema = z.object({
-  question: z.string().min(1),
-  evidence: z.boolean().optional(),
-});
 
 export type CreateAnchorApiAppOptions = {
   apiToken?: string | undefined;
@@ -276,5 +272,3 @@ export function createAnchorApiApp(
 
   return app;
 }
-
-export { buildOpenApiDocument } from "./openapi-document.js";

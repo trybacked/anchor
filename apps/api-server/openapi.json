@@ -3,7 +3,7 @@
   "info": {
     "title": "Backed Platform API",
     "version": "0.1.0",
-    "description": "HTTP API for ontology discovery, governed object queries, document archive search, and semantic chat.\n\n**Public gateway (`api.backed.app`):** open `/docs` without signing in. To call live data, sign in at `/login` (WorkOS). Requests go to `/t/{tenantId}/v1/…`; the browser sends the `backed_session` cookie — **not** a Bearer token.\n\n**Try it out:** use `/docs/t/{your-tenant}` (e.g. `gerace`), log in on the same host, then send requests. Example bodies are prefilled below each POST."
+    "description": "HTTP API for ontology discovery, governed object queries, document archive search, and semantic chat. Every POST documents its JSON body with a prefilled example. Requests carry a tenant: direct platform calls send `X-Backed-Tenant`, while the public gateway derives it from the request path and injects it for you."
   },
   "tags": [
     {
@@ -443,16 +443,16 @@
       }
     },
     "securitySchemes": {
-      "bearerAuth": {
+      "backedAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Platform API token (`ANCHOR_API_TOKEN`). Used only when calling platform-api directly; the public gateway uses a session cookie instead."
+        "description": "Platform API token (`ANCHOR_API_TOKEN`). Used only when calling platform-api directly; the public gateway redefines this scheme as a session cookie."
       }
     }
   },
   "security": [
     {
-      "bearerAuth": []
+      "backedAuth": []
     }
   ],
   "paths": {
@@ -460,6 +460,30 @@
       "get": {
         "operationId": "health",
         "summary": "Gateway / platform liveness",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "healthLive",
+        "summary": "Liveness probe",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "healthReady",
+        "summary": "Readiness probe with tenant or capability snapshot",
         "security": [],
         "responses": {
           "200": {
@@ -487,7 +511,7 @@
         "tags": ["model"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "responses": {
@@ -504,7 +528,7 @@
         "tags": ["model"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "parameters": [
@@ -534,7 +558,7 @@
         "tags": ["model"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "parameters": [
@@ -562,7 +586,7 @@
         "tags": ["model"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "requestBody": {
@@ -592,7 +616,7 @@
         "tags": ["model"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "requestBody": {
@@ -622,7 +646,7 @@
         "tags": ["object-query-reader"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "requestBody": {
@@ -660,7 +684,7 @@
         "tags": ["entity-search"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "requestBody": {
@@ -691,7 +715,7 @@
         "tags": ["documents"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "parameters": [
@@ -724,7 +748,7 @@
         "tags": ["documents"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "parameters": [
@@ -741,7 +765,8 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "default": 1
             }
           },
           {
@@ -772,7 +797,7 @@
         "tags": ["chunk-search"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "requestBody": {
@@ -806,7 +831,7 @@
         "tags": ["entity-profile-reader"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "requestBody": {
@@ -840,7 +865,7 @@
         "tags": ["graph-traverse"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "requestBody": {
@@ -877,7 +902,7 @@
         "tags": ["semantic-chat"],
         "security": [
           {
-            "bearerAuth": []
+            "backedAuth": []
           }
         ],
         "requestBody": {

@@ -6,81 +6,73 @@ import {
   GraphTraverseBodySchema,
   ObjectQueryBodySchema,
   SearchModelBodySchema,
+  SemanticAskBodySchema,
 } from "@trybacked/service";
+import type { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import type { ZodTypeAny } from "zod";
-import { z } from "zod";
 
-const SemanticAskBodySchema = z.object({
-  question: z.string().min(1),
-  evidence: z.boolean().optional(),
-});
+/**
+ * Security scheme name is deliberately transport-neutral: the gateway serves this same document
+ * with the scheme redefined as a session cookie, keeping every operation requirement unchanged.
+ */
+const AUTH_SCHEME = "backedAuth";
 
-type JsonSchema = Record<string, unknown>;
+/** Request body components, keyed by the name used in `$ref`. */
+const BODY_SCHEMAS = {
+  SearchModelBody: SearchModelBodySchema,
+  GetDefinitionBody: GetDefinitionBodySchema,
+  ObjectQueryBody: ObjectQueryBodySchema,
+  EntitySearchBody: EntitySearchBodySchema,
+  ChunkSearchBody: ChunkSearchBodySchema,
+  EntityProfileBody: EntityProfileBodySchema,
+  GraphTraverseBody: GraphTraverseBodySchema,
+  SemanticAskBody: SemanticAskBodySchema,
+} satisfies Record<string, z.ZodType>;
 
-function schemaRef(name: string): JsonSchema {
-  return { $ref: `#/components/schemas/${name}` };
-}
+type BodySchemaName = keyof typeof BODY_SCHEMAS;
 
-function registerSchema(components: Record<string, JsonSchema>, name: string, schema: ZodTypeAny): void {
-  components[name] = zodToJsonSchema(schema, {
-    $refStrategy: "none",
-    target: "openApi3",
-  }) as JsonSchema;
-}
-
-function jsonRequestBody(
-  schemaRefName: string,
-  example: unknown,
-  description?: string,
+function jsonRequestBody<Name extends BodySchemaName>(
+  name: Name,
+  example: z.input<(typeof BODY_SCHEMAS)[Name]>,
 ): Record<string, unknown> {
   return {
     required: true,
-    description,
     content: {
       "application/json": {
-        schema: schemaRef(schemaRefName),
+        schema: { $ref: `#/components/schemas/${name}` },
         example,
       },
     },
   };
 }
 
-const OPENAPI_SCHEMAS: Array<{ name: string; schema: ZodTypeAny }> = [
-  { name: "SearchModelBody", schema: SearchModelBodySchema },
-  { name: "GetDefinitionBody", schema: GetDefinitionBodySchema },
-  { name: "ObjectQueryBody", schema: ObjectQueryBodySchema },
-  { name: "EntitySearchBody", schema: EntitySearchBodySchema },
-  { name: "ChunkSearchBody", schema: ChunkSearchBodySchema },
-  { name: "EntityProfileBody", schema: EntityProfileBodySchema },
-  { name: "GraphTraverseBody", schema: GraphTraverseBodySchema },
-  { name: "SemanticAskBody", schema: SemanticAskBodySchema },
-];
-
 function buildComponents(secured: boolean): Record<string, unknown> {
-  const schemas: Record<string, JsonSchema> = {};
-  for (const entry of OPENAPI_SCHEMAS) {
-    registerSchema(schemas, entry.name, entry.schema);
+  const schemas = Object.fromEntries(
+    Object.entries(BODY_SCHEMAS).map(([name, schema]) => [
+      name,
+      zodToJsonSchema(schema, { $refStrategy: "none", target: "openApi3" }),
+    ]),
+  );
+
+  if (!secured) {
+    return { schemas };
   }
 
-  const components: Record<string, unknown> = { schemas };
-
-  if (secured) {
-    components.securitySchemes = {
-      bearerAuth: {
+  return {
+    schemas,
+    securitySchemes: {
+      [AUTH_SCHEME]: {
         type: "http",
         scheme: "bearer",
         description:
           "Platform API token (`ANCHOR_API_TOKEN`). Used only when calling platform-api directly; " +
-          "the public gateway uses a session cookie instead.",
+          "the public gateway redefines this scheme as a session cookie.",
       },
-    };
-  }
-
-  return components;
+    },
+  };
 }
 
-const securedOperation = [{ bearerAuth: [] }];
+const securedOperation = [{ [AUTH_SCHEME]: [] }];
 const publicOperation: never[] = [];
 
 export function buildOpenApiDocument(secured: boolean): Record<string, unknown> {
@@ -93,11 +85,10 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
       title: "Backed Platform API",
       version: "0.1.0",
       description:
-        "HTTP API for ontology discovery, governed object queries, document archive search, and semantic chat.\n\n" +
-        "**Public gateway (`api.backed.app`):** open `/docs` without signing in. To call live data, sign in at `/login` " +
-        "(WorkOS). Requests go to `/t/{tenantId}/v1/…`; the browser sends the `backed_session` cookie — **not** a Bearer token.\n\n" +
-        "**Try it out:** use `/docs/t/{your-tenant}` (e.g. `gerace`), log in on the same host, then send requests. " +
-        "Example bodies are prefilled below each POST.",
+        "HTTP API for ontology discovery, governed object queries, document archive search, and semantic chat. " +
+        "Every POST documents its JSON body with a prefilled example. " +
+        "Requests carry a tenant: direct platform calls send `X-Backed-Tenant`, " +
+        "while the public gateway derives it from the request path and injects it for you.",
     },
     tags: [
       { name: "model", description: "Ontology entities, relations, and definitions" },
@@ -115,6 +106,22 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
         get: {
           operationId: "health",
           summary: "Gateway / platform liveness",
+          security: publicOperation,
+          responses: { "200": { description: "OK" } },
+        },
+      },
+      "/health/live": {
+        get: {
+          operationId: "healthLive",
+          summary: "Liveness probe",
+          security: publicOperation,
+          responses: { "200": { description: "OK" } },
+        },
+      },
+      "/health/ready": {
+        get: {
+          operationId: "healthReady",
+          summary: "Readiness probe with tenant or capability snapshot",
           security: publicOperation,
           responses: { "200": { description: "OK" } },
         },
@@ -233,7 +240,7 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
           security: opSecurity,
           parameters: [
             { name: "id", in: "path", required: true, schema: { type: "string" } },
-            { name: "page", in: "query", schema: { type: "integer", minimum: 1 } },
+            { name: "page", in: "query", schema: { type: "integer", minimum: 1, default: 1 } },
             { name: "format", in: "query", schema: { enum: ["json", "file"] } },
           ],
           responses: {

@@ -1,8 +1,6 @@
 import { sign, verify } from "hono/jwt";
 import type { GatewaySessionPayload, GatewayUser } from "./types.js";
 
-export const SESSION_COOKIE_NAME = "backed_session";
-
 export async function createSessionToken(
   secret: string,
   user: { username: string; tenants: string[] },

@@ -111,14 +111,10 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     requireAdmin(config),
     zValidator("json", PatchOrganizationWorkosSchema),
     async (c) => {
-      const tenantId = c.req.param("tenantId") ?? "";
-      if (tenantId.length === 0) {
-        return c.json({ error: "Missing tenantId" }, 400);
-      }
       const body = c.req.valid("json");
       const org = await updateOrganizationWorkosId(
         pool,
-        tenantId,
+        c.req.param("tenantId"),
         body.workosOrganizationId,
       );
       if (org === undefined) {
