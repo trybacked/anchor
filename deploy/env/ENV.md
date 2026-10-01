@@ -13,7 +13,9 @@ Due profili: **locale (Compose)** e **Railway (cloud)**. Stesso stack, meno file
 
 Legenda: **R** = obbligatorio, **O** = opzionale, **—** = non usato.
 
-### Gateway (pubblico — MCP / login)
+### Gateway (pubblico — MCP / login / API docs)
+
+Documentazione interattiva (Scalar): **`GET /docs`** dopo login WorkOS o sessione file; per tenant **`GET /docs/t/{tenantId}`**. OpenAPI JSON: **`GET /t/{tenantId}/openapi.json`** (sessione richiesta).
 
 | Variabile                      | R/O                | Locale | Railway | Note                                                                                     |
 | ------------------------------ | ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
