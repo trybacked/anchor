@@ -1,7 +1,7 @@
 import type { TenantRegistrySource } from "@trybacked/core";
 import type { Context } from "hono";
 import type { GatewayConfig } from "./config.js";
-import { isPublicDocsReferenceTenant } from "./docs-routes.js";
+import { isPublicDocsReferenceTenant } from "./docs-reference-tenant.js";
 import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry, resolvePlatformUpstream } from "./upstreams.js";
 

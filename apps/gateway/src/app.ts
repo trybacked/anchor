@@ -8,8 +8,8 @@ import { clearSessionCookies } from "./cookies.js";
 import {
   isPublicDocsReferenceTenant,
   PUBLIC_DOCS_REFERENCE_TENANT,
-  registerDocsRoutes,
-} from "./docs-routes.js";
+} from "./docs-reference-tenant.js";
+import { registerDocsRoutes } from "./docs-routes.js";
 import { normalizeTrailingSlashMiddleware } from "./normalize-trailing-slash.js";
 import { adaptOpenApiResponse } from "./openapi-gateway.js";
 import {

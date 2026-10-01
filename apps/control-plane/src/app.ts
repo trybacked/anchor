@@ -66,8 +66,8 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
   });
 
   app.get("/v1/organizations/:tenantId", requireAdmin(config), async (c) => {
-    const tenantId = c.req.param("tenantId") ?? "";
-    if (tenantId.length === 0) {
+    const tenantId = c.req.param("tenantId");
+    if (tenantId === undefined) {
       return c.json({ error: "Missing tenantId" }, 400);
     }
     const org = await getOrganizationByTenantId(pool, tenantId);
@@ -125,8 +125,8 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
   );
 
   app.post("/v1/organizations/:tenantId/ontology/sync", requireAdmin(config), async (c) => {
-    const tenantId = c.req.param("tenantId") ?? "";
-    if (tenantId.length === 0) {
+    const tenantId = c.req.param("tenantId");
+    if (tenantId === undefined) {
       return c.json({ error: "Missing tenantId" }, 400);
     }
     const org = await getOrganizationByTenantId(pool, tenantId);
@@ -138,8 +138,8 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
   });
 
   app.get("/v1/jobs/:jobId", requireAdmin(config), async (c) => {
-    const jobId = c.req.param("jobId") ?? "";
-    if (jobId.length === 0) {
+    const jobId = c.req.param("jobId");
+    if (jobId === undefined) {
       return c.json({ error: "Missing jobId" }, 400);
     }
     const job = await getJob(pool, jobId);

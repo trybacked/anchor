@@ -1,4 +1,9 @@
 import { SESSION_COOKIE_NAME } from "./cookies.js";
+import {
+  PLATFORM_PUBLIC_HEALTH_PREFIX,
+  type OpenApiDocument,
+  type OpenApiInfo,
+} from "./openapi-types.js";
 
 /**
  * The gateway serves the platform's own OpenAPI document, adapted for browser use:
@@ -7,15 +12,6 @@ import { SESSION_COOKIE_NAME } from "./cookies.js";
  * as a session cookie. Operation-level requirements reference the scheme by name, so renaming
  * nothing keeps them valid.
  */
-
-type OpenApiInfo = Record<string, unknown> & { description?: string };
-
-type OpenApiDoc = {
-  paths?: Record<string, unknown>;
-  servers?: Array<{ url: string; description?: string }>;
-  info?: OpenApiInfo;
-  components?: Record<string, unknown> & { securitySchemes?: Record<string, unknown> };
-};
 
 const SESSION_COOKIE_SCHEME = {
   type: "apiKey",
@@ -26,18 +22,13 @@ const SESSION_COOKIE_SCHEME = {
     "the browser attaches the cookie automatically once you are signed in.",
 } as const;
 
-/**
- * The gateway document describes tenant-scoped operations only. Liveness probes are not
- * tenant-scoped — the gateway serves its own at /health, and the proxy would answer 401 for
- * paths the platform document declares public.
- */
 function tenantScopedPaths(
   paths: Record<string, unknown>,
   prefix: string,
 ): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(paths)
-      .filter(([path]) => !path.startsWith("/health"))
+      .filter(([path]) => !path.startsWith(PLATFORM_PUBLIC_HEALTH_PREFIX))
       .map(([path, item]) => [path.startsWith(prefix) ? path : `${prefix}${path}`, item]),
   );
 }
@@ -55,7 +46,8 @@ function withGatewayNote(info: OpenApiInfo | undefined, tenantId: string): OpenA
   const note =
     `**Tenant \`${tenantId}\`.** Try it out calls \`/t/${tenantId}/v1/…\` on this gateway. ` +
     "Sign in at [/login](/login) on this host first, then send requests — no Bearer token, " +
-    "the `backed_session` cookie is enough. [/logout](/logout) refreshes a stale session.";
+    "the `backed_session` cookie is enough. [/logout](/logout) refreshes a stale session. " +
+    `Liveness probes: \`GET /health\` on this gateway (not under \`/t/${tenantId}\`).`;
   const description = info?.description;
   return {
     ...info,
@@ -65,10 +57,10 @@ function withGatewayNote(info: OpenApiInfo | undefined, tenantId: string): OpenA
 }
 
 export function adaptOpenApiDocumentForGateway(
-  doc: OpenApiDoc,
+  doc: OpenApiDocument,
   tenantId: string,
   origin: string,
-): OpenApiDoc {
+): OpenApiDocument {
   return {
     ...doc,
     info: withGatewayNote(doc.info, tenantId),
@@ -90,6 +82,6 @@ export async function adaptOpenApiResponse(
   if (!upstream.ok || !(upstream.headers.get("content-type") ?? "").includes("json")) {
     return upstream;
   }
-  const doc = (await upstream.json()) as OpenApiDoc;
+  const doc = (await upstream.json()) as OpenApiDocument;
   return Response.json(adaptOpenApiDocumentForGateway(doc, tenantId, origin));
 }
