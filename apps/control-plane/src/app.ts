@@ -14,6 +14,7 @@ import {
   listActiveOrganizations,
   listOrganizations,
   listTenantsForWorkosOrganizations,
+  updateOrganizationWorkosId,
 } from "./db/repositories.js";
 import { buildTenantsRegistry } from "./registry-builder.js";
 
@@ -25,6 +26,10 @@ const CreateOrganizationSchema = z.object({
 
 const ResolveTenantsSchema = z.object({
   workosOrganizationIds: z.array(z.string().min(1)),
+});
+
+const PatchOrganizationWorkosSchema = z.object({
+  workosOrganizationId: z.string().min(1),
 });
 
 export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool): Hono {
@@ -98,6 +103,28 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
         shared,
       });
       return c.json({ organization: org, job }, 201);
+    },
+  );
+
+  app.patch(
+    "/v1/organizations/:tenantId/workos",
+    requireAdmin(config),
+    zValidator("json", PatchOrganizationWorkosSchema),
+    async (c) => {
+      const tenantId = c.req.param("tenantId") ?? "";
+      if (tenantId.length === 0) {
+        return c.json({ error: "Missing tenantId" }, 400);
+      }
+      const body = c.req.valid("json");
+      const org = await updateOrganizationWorkosId(
+        pool,
+        tenantId,
+        body.workosOrganizationId,
+      );
+      if (org === undefined) {
+        return c.json({ error: "Not found" }, 404);
+      }
+      return c.json(org);
     },
   );
 

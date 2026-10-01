@@ -111,12 +111,11 @@ export function registerWorkOSAuthRoutes(
     setCookie(c, SESSION_COOKIE_NAME, token, {
       httpOnly: true,
       secure: config.cookieSecure,
-      sameSite: "Strict",
+      sameSite: "Lax",
       path: "/",
       maxAge: config.sessionTtlSeconds,
     });
-    const returnPath =
-      safeReturnPath(getCookie(c, OAUTH_RETURN_COOKIE)) ?? "/docs";
+    const returnPath = safeReturnPath(getCookie(c, OAUTH_RETURN_COOKIE)) ?? "/docs";
     return c.redirect(returnPath);
   });
 }

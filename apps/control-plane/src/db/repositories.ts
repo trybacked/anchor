@@ -76,6 +76,21 @@ export async function listActiveOrganizations(pool: pg.Pool): Promise<Organizati
   return result.rows;
 }
 
+export async function updateOrganizationWorkosId(
+  pool: pg.Pool,
+  tenantId: string,
+  workosOrganizationId: string,
+): Promise<OrganizationRow | undefined> {
+  const result = await pool.query<OrganizationRow>(
+    `UPDATE organizations
+     SET workos_organization_id = $2, updated_at = now()
+     WHERE tenant_id = $1
+     RETURNING *`,
+    [tenantId, workosOrganizationId],
+  );
+  return result.rows[0];
+}
+
 export async function updateOrganizationStatus(
   pool: pg.Pool,
   id: string,

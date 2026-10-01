@@ -114,7 +114,15 @@ export async function handleTenantProxy(
   }
   const user = c.get("user");
   if (!user.tenants.includes(tenantId)) {
-    return c.json({ error: "Forbidden" }, 403);
+    return c.json(
+      {
+        error: "Forbidden",
+        message: `Your account is not linked to tenant "${tenantId}". Sign out and sign in again after an admin maps your WorkOS organization. GET /me lists tenants in your session.`,
+        allowedTenants: user.tenants,
+        requestedTenant: tenantId,
+      },
+      403,
+    );
   }
   if (!(await assertTenantInRegistry(registrySource, tenantId))) {
     return c.json({ error: "Tenant not found" }, 404);
