@@ -157,11 +157,17 @@ export function assertCase(expectation, answer, error, options = {}) {
   }
 
   if (planOnly) {
-    if (expectation.maxRowCount !== undefined && query.limit !== undefined && query.limit > expectation.maxRowCount) {
+    if (
+      expectation.maxRowCount !== undefined &&
+      query.limit !== undefined &&
+      query.limit > expectation.maxRowCount
+    ) {
       failures.push(`plan limit ${String(query.limit)} > ${String(expectation.maxRowCount)}`);
     }
     if (!joinMatches(query.joins, expectation.joinsInclude)) {
-      failures.push(`joins ${JSON.stringify(query.joins)} missing ${JSON.stringify(expectation.joinsInclude)}`);
+      failures.push(
+        `joins ${JSON.stringify(query.joins)} missing ${JSON.stringify(expectation.joinsInclude)}`,
+      );
     }
     return failures;
   }
@@ -174,19 +180,31 @@ export function assertCase(expectation, answer, error, options = {}) {
       }
     }
   }
-  if (expectation.minResultRows !== undefined && answer.result.rowCount < expectation.minResultRows) {
+  if (
+    expectation.minResultRows !== undefined &&
+    answer.result.rowCount < expectation.minResultRows
+  ) {
     failures.push(
       `result rows ${String(answer.result.rowCount)} < min ${String(expectation.minResultRows)}`,
     );
   }
   if (!joinMatches(query.joins, expectation.joinsInclude)) {
-    failures.push(`joins ${JSON.stringify(query.joins)} missing ${JSON.stringify(expectation.joinsInclude)}`);
+    failures.push(
+      `joins ${JSON.stringify(query.joins)} missing ${JSON.stringify(expectation.joinsInclude)}`,
+    );
   }
   if (expectation.maxRowCount !== undefined && answer.result.rowCount > expectation.maxRowCount) {
-    failures.push(`rowCount ${String(answer.result.rowCount)} > ${String(expectation.maxRowCount)}`);
+    failures.push(
+      `rowCount ${String(answer.result.rowCount)} > ${String(expectation.maxRowCount)}`,
+    );
   }
-  if (expectation.minProvenanceRows !== undefined && answer.provenance.length < expectation.minProvenanceRows) {
-    failures.push(`provenance rows ${String(answer.provenance.length)} < ${String(expectation.minProvenanceRows)}`);
+  if (
+    expectation.minProvenanceRows !== undefined &&
+    answer.provenance.length < expectation.minProvenanceRows
+  ) {
+    failures.push(
+      `provenance rows ${String(answer.provenance.length)} < ${String(expectation.minProvenanceRows)}`,
+    );
   }
   if (expectation.countEquals !== undefined) {
     const count = parseCount(answer.result.rows);

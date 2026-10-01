@@ -80,10 +80,7 @@ function buildQuestions(count) {
   }
 
   for (const limit of [3, 5, 8, 10, 15]) {
-    push(
-      "rows-sample",
-      `Mostrami al massimo ${String(limit)} contratti del mese ingest 2025-06.`,
-    );
+    push("rows-sample", `Mostrami al massimo ${String(limit)} contratti del mese ingest 2025-06.`);
   }
 
   for (let variant = 0; variant < 6; variant += 1) {
@@ -111,10 +108,7 @@ function buildQuestions(count) {
     "complex",
     "Nel giugno 2025, quanti contratti con oggetto gara che contiene servizi e sezione regionale valorizzata?",
   );
-  push(
-    "complex",
-    "Quanti contratti nei mesi maggio e giugno 2025 insieme?",
-  );
+  push("complex", "Quanti contratti nei mesi maggio e giugno 2025 insieme?");
   push("text-ish", "Quanti contratti ingest 2025-06 con CIG che inizia per Z?");
   push("text-ish", "Organizzazioni in Lombardia: quante sono?");
 
@@ -173,9 +167,8 @@ async function main() {
     return;
   }
 
-  const { createVercelAiTranslator } = await import(
-    "../packages/semantic-chat/dist/adapters/vercel-ai.js"
-  );
+  const { createVercelAiTranslator } =
+    await import("../packages/semantic-chat/dist/adapters/vercel-ai.js");
   const instrumentedTranslate = createVercelAiTranslator({
     modelId,
     apiKey,

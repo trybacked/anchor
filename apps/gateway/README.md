@@ -1,38 +1,46 @@
 # Backed gateway
 
-User-facing HTTP entry for the future workshop: authenticates operators, routes to per-tenant Anchor API servers, and injects upstream bearer tokens (never exposed to the browser).
+User-facing HTTP entry: authenticates operators, enforces tenant RBAC from `users.yaml`, and proxies to the **platform api-server** with `Authorization`, `X-Backed-User`, and `X-Backed-Tenant`.
 
-## Modes
+## Routes
 
-| Mode          | Flag                                   | Routes                                        |
-| ------------- | -------------------------------------- | --------------------------------------------- |
-| Multi-comune  | `WORKSHOP_MULTI_TENANT=true` (default) | `POST /login`, `ALL /t/{tenantId}/v1/*`       |
-| Single client | `WORKSHOP_MULTI_TENANT=false`          | `POST /login`, `ALL /v1/*` → default upstream |
+| Route                    | Behavior                                      |
+| ------------------------ | --------------------------------------------- |
+| `POST /login`            | Session cookie                                |
+| `ALL /t/{tenantId}/v1/*` | Proxy to platform upstream                    |
+| `ALL /v1/*`              | Optional when `GATEWAY_DEFAULT_TENANT` is set |
+
+## Docker (platform stack)
+
+See [deploy/README.md](../../deploy/README.md) and `deploy/docker-compose.yml`.
 
 ## Quick start (dev)
 
-1. Set `ANCHOR_API_TOKEN` per tenant in `~/.config/backed/{tenant}.env` and run two API servers:
+1. Run platform api-server (no `ANCHOR_WORKSPACE_ROOT`):
 
 ```bash
-ANCHOR_API_PORT=8797 ANCHOR_WORKSPACE_ROOT=../ontology/gerace scripts/anchor-api.launcher.sh gerace
-ANCHOR_API_PORT=8798 ANCHOR_WORKSPACE_ROOT=../ontology/backed scripts/anchor-api.launcher.sh backed
+export ANCHOR_API_TOKEN=dev-secret
+export ANCHOR_TENANTS_REGISTRY="$(pwd)/tenants.yaml"
+export BACKED_DATABRICKS_HOST=...
+export BACKED_DATABRICKS_TOKEN=...
+export BACKED_DATABRICKS_WAREHOUSE_ID=...
+pnpm --filter @trybacked/api-server start
 ```
 
-2. Create `apps/gateway/users.yaml` from [`users.example.yaml`](./users.example.yaml) and hash a password:
+2. Create `users.yaml` from [`users.example.yaml`](./users.example.yaml) and hash a password:
 
 ```bash
 pnpm --filter @trybacked/gateway hash-password 'your-password'
 ```
 
-3. Export gateway env (from repo root):
+3. Gateway env:
 
 ```bash
 export GATEWAY_SESSION_SECRET="$(openssl rand -hex 32)"
 export GATEWAY_TENANTS_REGISTRY="$(pwd)/tenants.yaml"
 export GATEWAY_USERS_FILE="$(pwd)/anchor/apps/gateway/users.yaml"
-export GATEWAY_UPSTREAMS="gerace=http://127.0.0.1:8797,backed=http://127.0.0.1:8798"
-export GATEWAY_TENANT_TOKEN_GERACE="<same as gerace ANCHOR_API_TOKEN>"
-export GATEWAY_TENANT_TOKEN_BACKED="<same as backed ANCHOR_API_TOKEN>"
+export GATEWAY_PLATFORM_UPSTREAM="http://127.0.0.1:8787"
+export GATEWAY_PLATFORM_TOKEN="<same as ANCHOR_API_TOKEN>"
 pnpm --filter @trybacked/gateway build && pnpm --filter @trybacked/gateway start
 ```
 
@@ -45,10 +53,8 @@ curl -c /tmp/jar -X POST http://127.0.0.1:8790/login \
 curl -b /tmp/jar http://127.0.0.1:8790/t/gerace/v1/model/entities
 ```
 
-Single-client mode: set `WORKSHOP_MULTI_TENANT=false`, `GATEWAY_DEFAULT_UPSTREAM`, and `GATEWAY_DEFAULT_UPSTREAM_TOKEN` instead of `GATEWAY_UPSTREAMS`.
-
 ## Security notes
 
-- Only the gateway should be exposed publicly; api-server processes stay on a private network.
-- Upstream tokens live in gateway env (`GATEWAY_TENANT_TOKEN_*`), not in `tenants.yaml`.
+- Only the gateway should be exposed publicly; platform-api stays on a private network.
+- Platform token lives in gateway env (`GATEWAY_PLATFORM_TOKEN`), not in `tenants.yaml`.
 - Sessions use httpOnly cookies; set `GATEWAY_COOKIE_SECURE=1` behind HTTPS.

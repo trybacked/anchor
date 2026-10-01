@@ -118,9 +118,8 @@ async function main() {
   let llmCalls = 0;
   let inputTokens = 0;
   let outputTokens = 0;
-  const { createVercelAiTranslator } = await import(
-    "../packages/semantic-chat/dist/adapters/vercel-ai.js"
-  );
+  const { createVercelAiTranslator } =
+    await import("../packages/semantic-chat/dist/adapters/vercel-ai.js");
   const modelId =
     process.env["SEMANTIC_CHAT_MODEL"] ?? process.env["SEMANTIC_MODEL"] ?? "openai/gpt-4o-mini";
   const apiKey = process.env["AI_GATEWAY_API_KEY"]?.trim();
@@ -134,12 +133,18 @@ async function main() {
     },
   });
 
-  const engine = createSemanticChatEngine({ ontology, queryRuntime: runtime, translate: translator });
+  const engine = createSemanticChatEngine({
+    ontology,
+    queryRuntime: runtime,
+    translate: translator,
+  });
   const suite = JSON.parse(readFileSync(casesPath, "utf8"));
   const wallStart = Date.now();
 
   console.error(`Baseline · workspace ${workspace}`);
-  console.error(`Model: ${modelId} · target plan ≥${(minPlanRate * 100).toFixed(0)}% required cases\n`);
+  console.error(
+    `Model: ${modelId} · target plan ≥${(minPlanRate * 100).toFixed(0)}% required cases\n`,
+  );
 
   const caseResults = [];
   let requiredTotal = 0;

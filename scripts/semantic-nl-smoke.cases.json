@@ -9,9 +9,7 @@
         "objectId": "contract",
         "mode": "count",
         "maxAttempts": 2,
-        "filtersInclude": [
-          { "propertyId": "source_year_month", "op": "eq", "value": "2025-06" }
-        ],
+        "filtersInclude": [{ "propertyId": "source_year_month", "op": "eq", "value": "2025-06" }],
         "countEquals": 121416,
         "minProvenanceRows": 1
       }
@@ -35,9 +33,7 @@
         "mode": "rows",
         "maxAttempts": 2,
         "maxRowCount": 5,
-        "filtersInclude": [
-          { "propertyId": "source_year_month", "op": "eq", "value": "2025-06" }
-        ],
+        "filtersInclude": [{ "propertyId": "source_year_month", "op": "eq", "value": "2025-06" }],
         "minProvenanceRows": 1
       }
     },
@@ -50,7 +46,12 @@
         "maxAttempts": 2,
         "joinsInclude": [{ "relationshipId": "organization_has_contracts" }],
         "filtersInclude": [
-          { "objectId": "organization", "propertyId": "sezione_regionale", "op": "eq", "value": "Sicilia" }
+          {
+            "objectId": "organization",
+            "propertyId": "sezione_regionale",
+            "op": "eq",
+            "value": "Sicilia"
+          }
         ],
         "countMin": 0,
         "minProvenanceRows": 1
@@ -113,9 +114,7 @@
         "mode": "count",
         "maxAttempts": 2,
         "filtersIncludeMonths": ["2025-06"],
-        "filtersInclude": [
-          { "propertyId": "oggetto_gara", "op": "contains", "value": "servizi" }
-        ],
+        "filtersInclude": [{ "propertyId": "oggetto_gara", "op": "contains", "value": "servizi" }],
         "countMin": 0,
         "minProvenanceRows": 1
       }

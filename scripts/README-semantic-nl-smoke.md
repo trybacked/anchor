@@ -38,11 +38,11 @@ pnpm smoke:semantic-nl -- --workspace ../ontology/gerace
 
 ## Env
 
-| Variable | Required |
-|----------|----------|
-| `AI_GATEWAY_API_KEY` | yes |
+| Variable                                  | Required                          |
+| ----------------------------------------- | --------------------------------- |
+| `AI_GATEWAY_API_KEY`                      | yes                               |
 | `SEMANTIC_CHAT_MODEL` or `SEMANTIC_MODEL` | no (default `openai/gpt-4o-mini`) |
-| `BACKED_DATABRICKS_*` | yes (tenant, e.g. gerace) |
+| `BACKED_DATABRICKS_*`                     | yes (tenant, e.g. gerace)         |
 
 Loads `anchor/.env`, workspace `.env`, and `~/.config/backed/<tenant>.env`.
 
