@@ -65,12 +65,13 @@ Public URL: `http://127.0.0.1:${GATEWAY_PUBLIC_PORT:-8080}`.
 
 ## Commands
 
-| Action    | Command                                                                                              |
-| --------- | ---------------------------------------------------------------------------------------------------- |
-| Preflight | `pnpm deploy:check`                                                                                  |
-| Start     | `docker compose -f deploy/docker-compose.yml up -d --build`                                          |
-| Logs      | `docker compose -f deploy/docker-compose.yml logs -f gateway platform-api control-plane provisioner` |
-| Stop      | `docker compose -f deploy/docker-compose.yml down`                                                   |
+| Action             | Command                                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| Preflight          | `pnpm deploy:check`                                                                                  |
+| GitHub CI (locale) | `pnpm check:ci`                                                                                      |
+| Start              | `docker compose -f deploy/docker-compose.yml up -d --build`                                          |
+| Logs               | `docker compose -f deploy/docker-compose.yml logs -f gateway platform-api control-plane provisioner` |
+| Stop               | `docker compose -f deploy/docker-compose.yml down`                                                   |
 
 ## Token rule
 
