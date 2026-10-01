@@ -20,6 +20,7 @@
   "dependencies": {
     "@hono/node-server": "^1.14.4",
     "@hono/zod-validator": "^0.5.0",
+    "@scalar/hono-api-reference": "^0.12.8",
     "@trybacked/core": "workspace:*",
     "@workos-inc/node": "^7.71.0",
     "hono": "^4.13.5",

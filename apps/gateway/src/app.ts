@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { registerAuthRoutes } from "./auth-routes.js";
 import { registerWorkOSAuthRoutes } from "./auth-workos.js";
 import type { GatewayConfig } from "./config.js";
+import { createDocsAuthMiddleware, registerDocsRoutes } from "./docs-routes.js";
 import { handleDefaultTenantProxy, handleTenantProxy, type ProxyDeps } from "./proxy.js";
 import { createRateLimiter } from "./rate-limit.js";
 import { createRequireAuthMiddleware } from "./require-auth.js";
@@ -69,6 +70,8 @@ export function createGatewayApp(
     const user = c.get("user");
     return c.json(user);
   });
+
+  registerDocsRoutes(app, registrySource, createDocsAuthMiddleware(config));
 
   app.all("/t/:tenantId/*", requireAuth, rateLimitMiddleware, async (c) => {
     const tenantId = c.req.param("tenantId");

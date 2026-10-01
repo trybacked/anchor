@@ -280,11 +280,23 @@ export function buildOpenApiDocument(secured: boolean): Record<string, unknown> 
   return {
     openapi: "3.1.0",
     info: {
-      title: "Anchor API",
+      title: "Backed Platform API",
       version: "0.1.0",
       description:
-        "Single HTTP surface for ontology model tools, warehouse object queries, and archive search.",
+        "HTTP API for ontology discovery, governed object queries, document archive search, and semantic chat. " +
+        "On the public gateway, prefix every path with `/t/{tenantId}` and authenticate with your platform session cookie; " +
+        "the gateway adds upstream credentials. In Try it out, leave bearer empty when using the docs UI on the gateway.",
     },
+    tags: [
+      { name: "model", description: "Ontology entities, relations, and definitions" },
+      { name: "object-query-reader", description: "Curated warehouse object queries" },
+      { name: "entity-search", description: "Entity text search across the model" },
+      { name: "documents", description: "Document metadata and PDF preview" },
+      { name: "chunk-search", description: "Semantic search over document chunks" },
+      { name: "entity-profile-reader", description: "Enriched entity profiles" },
+      { name: "graph-traverse", description: "Multi-hop graph traversal" },
+      { name: "semantic-chat", description: "Natural-language answers over governed data" },
+    ],
     ...(secured
       ? {
           components: {

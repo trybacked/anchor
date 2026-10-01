@@ -1,0 +1,205 @@
+import { Scalar } from "@scalar/hono-api-reference";
+import type { TenantRegistrySource } from "@trybacked/core";
+import type { MiddlewareHandler } from "hono";
+import type { Hono } from "hono";
+import { getCookie } from "hono/cookie";
+import type { GatewayConfig } from "./config.js";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "./session.js";
+import type { GatewayVariables } from "./types.js";
+import { assertTenantInRegistry } from "./upstreams.js";
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+export async function listDocsTenantsForUser(
+  source: TenantRegistrySource,
+  tenantIds: string[],
+): Promise<string[]> {
+  const snapshot = await source.load();
+  const registered = new Set(Object.keys(snapshot.registry.tenants));
+  return tenantIds.filter((id) => registered.has(id)).sort((a, b) => a.localeCompare(b));
+}
+
+function renderTenantPickerPage(username: string, tenants: string[]): string {
+  const cards = tenants
+    .map(
+      (tenantId) => `
+        <a class="tenant-card" href="/docs/t/${escapeHtml(tenantId)}">
+          <span class="tenant-id">${escapeHtml(tenantId)}</span>
+          <span class="tenant-cta">Open API reference →</span>
+        </a>`,
+    )
+    .join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Backed API documentation</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0b0d10;
+      --surface: #141820;
+      --border: #252b36;
+      --text: #eef1f6;
+      --muted: #8b95a8;
+      --accent: #5b8def;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2744 0%, var(--bg) 55%);
+      color: var(--text);
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 4rem;
+    }
+    .eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.5rem;
+    }
+    h1 {
+      font-size: clamp(1.75rem, 4vw, 2.25rem);
+      font-weight: 600;
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    .lead {
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0 0 2rem;
+      max-width: 52ch;
+    }
+    .signed-in {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    .grid {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .tenant-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.15rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: inherit;
+      text-decoration: none;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .tenant-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .tenant-id {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+    .tenant-cta {
+      font-size: 0.875rem;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Backed Platform</p>
+    <h1>API documentation</h1>
+    <p class="lead">
+      Interactive reference powered by Scalar. Choose a tenant workspace — requests run through the gateway with your session.
+    </p>
+    <p class="signed-in">Signed in as <strong>${escapeHtml(username)}</strong></p>
+    <div class="grid">${cards}</div>
+  </main>
+</body>
+</html>`;
+}
+
+export function createDocsAuthMiddleware(config: GatewayConfig): MiddlewareHandler<{
+  Variables: GatewayVariables;
+}> {
+  return async (c, next) => {
+    const token = getCookie(c, SESSION_COOKIE_NAME);
+    if (token === undefined || token.length === 0) {
+      return c.redirect("/login");
+    }
+    const user = await verifySessionToken(config.sessionSecret, token);
+    if (user === undefined) {
+      return c.redirect("/login");
+    }
+    c.set("user", user);
+    return next();
+  };
+}
+
+export function registerDocsRoutes(
+  app: Hono<{ Variables: GatewayVariables }>,
+  registrySource: TenantRegistrySource,
+  docsAuth: MiddlewareHandler<{ Variables: GatewayVariables }>,
+): void {
+  app.get("/docs", docsAuth, async (c) => {
+    const user = c.get("user");
+    const tenants = await listDocsTenantsForUser(registrySource, user.tenants);
+    if (tenants.length === 0) {
+      return c.json({ error: "No tenant workspaces available for your account" }, 404);
+    }
+    if (tenants.length === 1) {
+      const onlyTenant = tenants[0];
+      if (onlyTenant !== undefined) {
+        return c.redirect(`/docs/t/${onlyTenant}`);
+      }
+    }
+    return c.html(renderTenantPickerPage(user.username, tenants));
+  });
+
+  app.get("/docs/t/:tenantId", docsAuth, async (c, next) => {
+    const tenantId = c.req.param("tenantId");
+    const user = c.get("user");
+    if (!user.tenants.includes(tenantId)) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    if (!(await assertTenantInRegistry(registrySource, tenantId))) {
+      return c.json({ error: "Tenant not found" }, 404);
+    }
+    const baseServerURL = new URL(`/t/${tenantId}`, c.req.url).href.replace(/\/$/, "");
+    const scalar = Scalar(() => ({
+      pageTitle: `Backed API · ${tenantId}`,
+      url: `/t/${tenantId}/openapi.json`,
+      baseServerURL,
+      theme: "default",
+      layout: "modern",
+      metaData: {
+        title: `Backed API · ${tenantId}`,
+        description:
+          "Backed platform HTTP API — ontology, warehouse queries, documents, and semantic chat.",
+      },
+      customCss: `
+          .light-mode { --scalar-color-accent: #5b8def; }
+          .dark-mode { --scalar-color-accent: #7ba3f7; }
+        `,
+    }));
+    // Scalar middleware is typed against Hono's default Env; gateway Variables are compatible at runtime.
+    // @ts-expect-error — Scalar Context env typing is wider than our GatewayVariables app.
+    return scalar(c, next);
+  });
+}
