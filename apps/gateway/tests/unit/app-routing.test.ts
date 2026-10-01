@@ -135,6 +135,20 @@ describe("gateway routing", () => {
     expect(proxied).toBe(true);
   });
 
+  it("redirects trailing slash on /docs/", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gw-"));
+    const registryPath = writeRegistry(dir);
+    const config = baseConfig(dir, registryPath);
+    const app = createGatewayApp({
+      config,
+      registrySource: createFileRegistrySource(registryPath),
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
+    });
+    const response = await app.request("/docs/");
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe("/docs");
+  });
+
   it("redirects /docs to reference when registry has no tenants", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     writeFileSync(

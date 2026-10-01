@@ -5,6 +5,7 @@ import { registerAuthRoutes } from "./auth-routes.js";
 import { registerWorkOSAuthRoutes } from "./auth-workos.js";
 import type { GatewayConfig } from "./config.js";
 import { isPublicDocsReferenceTenant, registerDocsRoutes } from "./docs-routes.js";
+import { normalizeTrailingSlashMiddleware } from "./normalize-trailing-slash.js";
 import {
   forwardToPlatform,
   handleDefaultTenantProxy,
@@ -53,6 +54,8 @@ export function createGatewayApp(
   };
 
   const app = new Hono<{ Variables: GatewayVariables }>();
+
+  app.use("*", normalizeTrailingSlashMiddleware);
 
   app.get("/health/live", (c) => c.json({ ok: true as const }));
 
