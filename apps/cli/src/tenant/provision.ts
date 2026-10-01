@@ -9,11 +9,8 @@ import { publishSemanticModel } from "@trybacked/registry";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  databricksJson,
-  executeAdminSql,
-  runDatabricksCliOrThrow,
-} from "./databricks-cli.js";
+import { executeAdminSql, runDatabricksCliOrThrow } from "./databricks-cli.js";
+import { ensureRegistryVolume, grantPlatformPrincipalOnTenant } from "./platform-grants.js";
 import {
   ensureTenantInRegistry,
   loadTenantsRegistry,
@@ -22,7 +19,9 @@ import {
   saveTenantsRegistry,
   type TenantsRegistry,
 } from "./registry.js";
+import { publishOntologyRemoteForRegistry } from "./remote-ontology.js";
 import { findBackedRepoRoot } from "./repo-root.js";
+import { createOboToken, ensureServicePrincipal } from "./service-principal.js";
 
 export type TenantCreateOptions = {
   tenantId: string;
@@ -41,12 +40,6 @@ export type TenantCreateResult = {
   servicePrincipalAppId: string;
   registryUpdated: boolean;
   publicationVersion: number;
-};
-
-type ServicePrincipalListItem = {
-  id?: string;
-  applicationId?: string;
-  displayName?: string;
 };
 
 function normalizeHost(hostUrl: string): string {
@@ -130,86 +123,6 @@ function writeTenantEnvFile(options: {
   } catch {
     // best effort
   }
-}
-
-async function ensureServicePrincipal(
-  profile: string,
-  spName: string,
-): Promise<{ applicationId: string; scimId: string }> {
-  const listed = databricksJson<ServicePrincipalListItem[] | { Resources?: ServicePrincipalListItem[] }>(
-    ["service-principals", "list"],
-    { profile, label: "service-principals list" },
-  );
-  const sps = Array.isArray(listed) ? listed : (listed.Resources ?? []);
-  const existing = sps.find((sp) => sp.displayName === spName);
-  let applicationId = existing?.applicationId;
-  if (applicationId === undefined || applicationId.length === 0) {
-    const created = databricksJson<{ applicationId: string; id: string }>(
-      ["service-principals", "create", "--display-name", spName],
-      { profile, label: "service-principals create" },
-    );
-    applicationId = created.applicationId;
-  }
-  const refreshed = databricksJson<ServicePrincipalListItem[] | { Resources?: ServicePrincipalListItem[] }>(
-    ["service-principals", "list"],
-    { profile },
-  );
-  const all = Array.isArray(refreshed) ? refreshed : (refreshed.Resources ?? []);
-  const match = all.find((sp) => sp.applicationId === applicationId);
-  const scimId = match?.id;
-  if (scimId === undefined || scimId.length === 0) {
-    throw new Error(`Could not resolve SCIM id for service principal ${spName}.`);
-  }
-
-  runDatabricksCliOrThrow(
-    [
-      "api",
-      "patch",
-      `/api/2.0/preview/scim/v2/ServicePrincipals/${scimId}`,
-      "--json",
-      JSON.stringify({
-        schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-        Operations: [
-          {
-            op: "add",
-            path: "entitlements",
-            value: [{ value: "databricks-sql-access" }],
-          },
-        ],
-      }),
-    ],
-    { profile, label: "SP SQL entitlement" },
-  );
-
-  return { applicationId, scimId };
-}
-
-async function createOboToken(profile: string, applicationId: string, tenantId: string): Promise<string> {
-  runDatabricksCliOrThrow(
-    [
-      "api",
-      "patch",
-      "/api/2.0/permissions/authorization/tokens",
-      "--json",
-      JSON.stringify({
-        access_control_list: [
-          { service_principal_name: applicationId, permission_level: "CAN_USE" },
-        ],
-      }),
-    ],
-    { profile, label: "token CAN_USE" },
-  );
-  const tokenResponse = databricksJson<{ token_value: string }>(
-    [
-      "token-management",
-      "create-obo-token",
-      applicationId,
-      "--comment",
-      `backed MCP ${tenantId}`,
-    ],
-    { profile, label: "create-obo-token" },
-  );
-  return tokenResponse.token_value;
 }
 
 function grantSharedSpaces(
@@ -320,6 +233,8 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
     statement: `CREATE CATALOG IF NOT EXISTS \`${catalog}\` COMMENT 'Backed tenant: ${options.tenantId}'`,
   });
 
+  await ensureRegistryVolume(profile, warehouseId, catalog);
+
   if (options.tenantId !== "backed") {
     writeTenantTargetFile(repoRoot, bundleTarget, hostUrl, catalog);
   }
@@ -332,14 +247,35 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
     });
   }
 
-  const { applicationId } = await ensureServicePrincipal(profile, spName);
+  const { applicationId } = ensureServicePrincipal(profile, spName);
 
   let token = readExistingToken(envFile);
   if (token === undefined) {
-    token = await createOboToken(profile, applicationId, options.tenantId);
+    token = createOboToken(profile, applicationId, options.tenantId);
   }
 
-  await Promise.all(grantSharedSpaces(profile, warehouseId, registry, catalog, applicationId, options.sharedSpaceKeys));
+  await Promise.all(
+    grantSharedSpaces(
+      profile,
+      warehouseId,
+      registry,
+      catalog,
+      applicationId,
+      options.sharedSpaceKeys,
+    ),
+  );
+
+  const platformPrincipal = registry.enrollment.platform_principal;
+  if (platformPrincipal !== undefined && platformPrincipal.length > 0) {
+    await grantPlatformPrincipalOnTenant({
+      profile,
+      warehouseId,
+      registry,
+      catalog,
+      platformPrincipal,
+      sharedKeys: options.sharedSpaceKeys,
+    });
+  }
 
   runDatabricksCliOrThrow(
     [
@@ -361,6 +297,8 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
   const model = loadBootstrapModel(options.tenantId);
   scaffoldOntology(ontologyDir, options.tenantId, catalog, model);
   const record = publishSemanticModel(ontologyDir, model, { ontologyId: options.tenantId });
+  const modelYaml = readFileSync(join(ontologyDir, "model.yaml"), "utf8");
+  await publishOntologyRemoteForRegistry(registry, catalog, record, modelYaml);
 
   const hadTenant = registry.tenants[options.tenantId] !== undefined;
   const updated = ensureTenantInRegistry(registry, options.tenantId, options.sharedSpaceKeys);

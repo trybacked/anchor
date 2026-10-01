@@ -3,12 +3,23 @@
 One HTTP service for product apps, workshops, and MCP bridges.
 
 ```bash
-# From an ontology workspace (model.yaml + optional .env for Databricks)
+# Platform mode (multi-tenant — default when ANCHOR_WORKSPACE_ROOT is unset)
+export ANCHOR_API_TOKEN=...
+export ANCHOR_TENANTS_REGISTRY=/path/to/tenants.yaml
+export BACKED_DATABRICKS_HOST=...
+export BACKED_DATABRICKS_TOKEN=...
+export BACKED_DATABRICKS_WAREHOUSE_ID=...
+pnpm --filter @trybacked/api-server start
+
+# Legacy single workspace (local MCP / dev)
 export ANCHOR_WORKSPACE_ROOT=/path/to/ontology/gerace
 export ANCHOR_API_PORT=8787
-pnpm --filter @trybacked/api-server build
 pnpm --filter @trybacked/api-server start
 ```
+
+Platform requests require `Authorization: Bearer <ANCHOR_API_TOKEN>`, `X-Backed-Tenant`, and optional `X-Backed-User` (gateway only). Ontologies load from `/Volumes/<catalog>/backed/registry/current.json`.
+
+See [docs/PLATFORM.md](../../../docs/PLATFORM.md).
 
 - **OpenAPI:** `GET /openapi.json`
 - **Health:** `GET /health/live` (liveness) · `GET /health` / `GET /health/ready` (capabilities)
@@ -30,12 +41,12 @@ docker compose -f anchor/apps/api-server/docker-compose.yml up -d --build
 curl -s "http://127.0.0.1:${ANCHOR_API_PORT:-8787}/health/live"
 ```
 
-| Variable | Purpose |
-| -------- | ------- |
-| `HOST` / `ANCHOR_API_HOST` | Bind address (use `0.0.0.0` in containers) |
-| `PORT` / `ANCHOR_API_PORT` | HTTP port (default `8787`) |
-| `ANCHOR_AUDIT_LOG_PATH` | Append-only JSONL audit log (default in image: `/var/log/anchor/audit.jsonl`) |
-| `ANCHOR_AUDIT_LOG_STDERR` | Set `0` to disable mirroring audit lines to stderr |
+| Variable                   | Purpose                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `HOST` / `ANCHOR_API_HOST` | Bind address (use `0.0.0.0` in containers)                                    |
+| `PORT` / `ANCHOR_API_PORT` | HTTP port (default `8787`)                                                    |
+| `ANCHOR_AUDIT_LOG_PATH`    | Append-only JSONL audit log (default in image: `/var/log/anchor/audit.jsonl`) |
+| `ANCHOR_AUDIT_LOG_STDERR`  | Set `0` to disable mirroring audit lines to stderr                            |
 
 Railway: see [`railway.toml`](./railway.toml) (`healthcheckPath=/health/live`, restart on failure).
 

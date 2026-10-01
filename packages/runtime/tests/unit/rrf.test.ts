@@ -5,8 +5,14 @@ describe("reciprocalRankFusion", () => {
   it("merges two ranked lists by id", () => {
     const merged = reciprocalRankFusion(
       [
-        [{ id: "a", row: { text: "alpha" } }, { id: "b", row: { text: "beta" } }],
-        [{ id: "b", row: { text: "beta" } }, { id: "c", row: { text: "gamma" } }],
+        [
+          { id: "a", row: { text: "alpha" } },
+          { id: "b", row: { text: "beta" } },
+        ],
+        [
+          { id: "b", row: { text: "beta" } },
+          { id: "c", row: { text: "gamma" } },
+        ],
       ],
       2,
     );

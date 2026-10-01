@@ -6,11 +6,15 @@ import {
   validateOntology,
 } from "@trybacked/core";
 import { listPublicationVersions, publishSemanticModel } from "@trybacked/registry";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { join } from "node:path";
 import { COMMANDS, formatCliCommand } from "../config.js";
 import { findWorkspaceRoot } from "../env.js";
 import { defaultReviewer } from "../reviewer.js";
+import { loadTenantsRegistry } from "../tenant/registry.js";
+import { canPublishRemoteOntology, publishOntologyRemote } from "../tenant/remote-ontology.js";
+import { findBackedRepoRoot } from "../tenant/repo-root.js";
 import type { CommandHandler } from "../types.js";
 import { initUi, type Ui } from "../ui/index.js";
 
@@ -22,12 +26,13 @@ function formatValidationErrors(ui: Ui, result: ReturnType<typeof validateOntolo
   }
 }
 
-export const syncCommand: CommandHandler = (args) => {
+export const syncCommand: CommandHandler = async (args) => {
   const ui = initUi();
   const root = findWorkspaceRoot(process.cwd());
   if (args.some((arg) => arg === "--help" || arg === "-h")) {
-    ui.log(`Usage: ${formatCliCommand(COMMANDS.SYNC)} [--status]`);
+    ui.log(`Usage: ${formatCliCommand(COMMANDS.SYNC)} [--status] [--local-only]`);
     ui.log("  Snapshot model.yaml into the local registry (.backed/, versioned).");
+    ui.log("  When BACKED_DATABRICKS_* is set, also publishes to the tenant UC registry volume.");
     ui.log("  Required before deploy can run query_objects on warehouse mappings.");
     return;
   }
@@ -61,7 +66,17 @@ export const syncCommand: CommandHandler = (args) => {
     return;
   }
 
+  const localOnly = args.some((arg) => arg === "--local-only");
   const record = publishSemanticModel(root, model, { ontologyId });
+  if (!localOnly && canPublishRemoteOntology()) {
+    const registry = loadTenantsRegistry(join(findBackedRepoRoot(), "tenants.yaml"));
+    const tenantEntry = registry.tenants[ontologyId];
+    if (tenantEntry !== undefined) {
+      const modelYaml = readFileSync(modelPath, "utf8");
+      await publishOntologyRemote(tenantEntry.catalog, record, modelYaml);
+      ui.detail(`Remote registry v${String(record.version)} → catalog ${tenantEntry.catalog}`);
+    }
+  }
   const actorId = defaultReviewer();
   appendAuditEvents(root, [
     buildPublishAuditEvent({

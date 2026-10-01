@@ -4,7 +4,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { createAnchorService } from "../../src/index.js";
 
-const fixtureRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../../fixtures/pmi-minimal");
+const fixtureRoot = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../../fixtures/pmi-minimal",
+);
 
 describe("createAnchorService", () => {
   it("lists entities from the semantic model", () => {

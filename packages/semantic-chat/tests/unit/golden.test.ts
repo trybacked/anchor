@@ -26,9 +26,7 @@ const goldenDir = join(dirname(fileURLToPath(import.meta.url)), "../golden");
 
 describe("semantic-chat golden plans", () => {
   it("executes count-contracts.json without LLM", async () => {
-    const fixture = JSON.parse(
-      readFileSync(join(goldenDir, "count-contracts.json"), "utf8"),
-    ) as {
+    const fixture = JSON.parse(readFileSync(join(goldenDir, "count-contracts.json"), "utf8")) as {
       plan: SemanticQueryPlan;
       expectObjectId: string;
       expectMode: "count" | "rows";

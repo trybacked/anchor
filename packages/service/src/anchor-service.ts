@@ -29,9 +29,12 @@ import {
   buildGraphTraverseProvenance,
   buildQueryExecutionProvenance,
 } from "./provenance.js";
-import {
-  capQueryObjectsPayload,
-} from "./response-cap.js";
+import { capQueryObjectsPayload } from "./response-cap.js";
+import type {
+  DocumentPreviewFile,
+  DocumentPreviewResponse,
+  GetDocumentResponse,
+} from "./responses.js";
 
 export type AnchorServiceOptions = {
   model: SemanticModel;
@@ -60,17 +63,16 @@ function emptyProvenanceWhenNoOntology(): [] {
 }
 
 export function createAnchorService(options: AnchorServiceOptions) {
-  const {
-    model,
-    ontology,
-    queryRuntime,
-    searchModelOptions,
-    executionProfile = "api",
-  } = options;
+  const { model, ontology, queryRuntime, searchModelOptions, executionProfile = "api" } = options;
 
   const hasChunkSearch = queryRuntime?.chunkSearch !== undefined;
   const hasEntityProfile = queryRuntime?.entityProfile !== undefined;
   const hasGraphTraverse = queryRuntime?.graphTraverse !== undefined;
+  const hasDocumentAccess = queryRuntime?.documentAccess !== undefined;
+  const hasDocumentPreview =
+    queryRuntime !== undefined &&
+    queryRuntime.documentAccess !== undefined &&
+    queryRuntime.volumeFileAccess === true;
 
   return {
     listEntities: () => listEntities(model),
@@ -141,7 +143,10 @@ export function createAnchorService(options: AnchorServiceOptions) {
           provenance: executionMeta.provenance,
         });
       } catch (error) {
-        if (error instanceof ObjectQueryCompileError || error instanceof QueryExecutionBudgetError) {
+        if (
+          error instanceof ObjectQueryCompileError ||
+          error instanceof QueryExecutionBudgetError
+        ) {
           return { error: error.message } satisfies ServiceErrorResult;
         }
         throw error;
@@ -203,6 +208,116 @@ export function createAnchorService(options: AnchorServiceOptions) {
       }
     },
 
+    getDocument: async (documentId: string): Promise<GetDocumentResponse | ServiceErrorResult> => {
+      if (queryRuntime?.documentAccess === undefined) {
+        return {
+          error:
+            "Document metadata is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+        } satisfies ServiceErrorResult;
+      }
+      const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
+      if (metadata === null) {
+        return { error: `Document "${documentId}" not found.` } satisfies ServiceErrorResult;
+      }
+      return metadata;
+    },
+
+    describeDocumentPreview: async (
+      documentId: string,
+      page: number,
+    ): Promise<DocumentPreviewResponse | ServiceErrorResult> => {
+      if (queryRuntime?.documentAccess === undefined) {
+        return {
+          error:
+            "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+        } satisfies ServiceErrorResult;
+      }
+      const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
+      if (metadata === null) {
+        return { error: `Document "${documentId}" not found.` } satisfies ServiceErrorResult;
+      }
+      if (page < 1) {
+        return { error: "Query parameter page must be >= 1." } satisfies ServiceErrorResult;
+      }
+      if (metadata.pageCount > 0 && page > metadata.pageCount) {
+        return {
+          error: `Page ${String(page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
+        } satisfies ServiceErrorResult;
+      }
+      if (!hasDocumentPreview) {
+        return {
+          error:
+            "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
+        } satisfies ServiceErrorResult;
+      }
+      const descriptor = await queryRuntime.documentAccess.describePreview(documentId, page);
+      if (descriptor === null) {
+        return { error: `Document "${documentId}" not found.` } satisfies ServiceErrorResult;
+      }
+      return descriptor;
+    },
+
+    readDocumentPreview: async (
+      documentId: string,
+      options: { page: number; range?: string | undefined },
+    ): Promise<ServiceErrorResult | { page: number; file: DocumentPreviewFile }> => {
+      const described = await (async () => {
+        if (queryRuntime?.documentAccess === undefined) {
+          return {
+            error:
+              "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+          } satisfies ServiceErrorResult;
+        }
+        const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
+        if (metadata === null) {
+          return { error: `Document "${documentId}" not found.` } satisfies ServiceErrorResult;
+        }
+        if (options.page < 1) {
+          return { error: "Query parameter page must be >= 1." } satisfies ServiceErrorResult;
+        }
+        if (metadata.pageCount > 0 && options.page > metadata.pageCount) {
+          return {
+            error: `Page ${String(options.page)} is out of range (document has ${String(metadata.pageCount)} pages).`,
+          } satisfies ServiceErrorResult;
+        }
+        if (!hasDocumentPreview) {
+          return {
+            error:
+              "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
+          } satisfies ServiceErrorResult;
+        }
+        return null;
+      })();
+      if (described !== null) {
+        return described;
+      }
+      const access = queryRuntime?.documentAccess;
+      if (access === undefined) {
+        return {
+          error: "Document preview is unavailable.",
+        } satisfies ServiceErrorResult;
+      }
+      try {
+        const file = await access.readOriginalFile(documentId, {
+          range: options.range,
+        });
+        const previewFile: DocumentPreviewFile = {
+          status: file.status,
+          data: file.data,
+          contentType: file.contentType,
+          filename: file.filename,
+          ...(file.contentLength !== undefined ? { contentLength: file.contentLength } : {}),
+          ...(file.contentRange !== undefined ? { contentRange: file.contentRange } : {}),
+          ...(file.acceptRanges !== undefined ? { acceptRanges: file.acceptRanges } : {}),
+        };
+        return { file: previewFile, page: options.page };
+      } catch (error) {
+        return {
+          error: error instanceof Error ? error.message : "Document preview failed.",
+        } satisfies ServiceErrorResult;
+      }
+    },
+
     graphTraverse: async (body: GraphTraverseBody) => {
       if (queryRuntime?.graphTraverse === undefined) {
         return {
@@ -236,6 +351,8 @@ export function createAnchorService(options: AnchorServiceOptions) {
       chunkSearch: hasChunkSearch,
       entityProfile: hasEntityProfile,
       graphTraverse: hasGraphTraverse,
+      documentMetadata: hasDocumentAccess,
+      documentPreview: hasDocumentPreview,
       provenance: ontology !== undefined,
     }),
   };

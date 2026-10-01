@@ -20,6 +20,7 @@ export const TenantsRegistrySchema = z.object({
     profile: z.string().min(1),
     bundle_target: z.string().min(1).optional(),
     warehouse_id: z.string().min(1),
+    platform_principal: z.string().min(1).optional(),
   }),
   shared_spaces: z.record(SharedSpaceSchema),
   tenants: z.record(TenantEntrySchema),
@@ -40,7 +41,10 @@ export function resolveTenantCatalog(tenantId: string): string {
   return tenantId === "backed" ? "backed" : `backed_${tenantId}`;
 }
 
-export function resolveBundleTarget(tenantId: string, enrollmentTarget: string | undefined): string {
+export function resolveBundleTarget(
+  tenantId: string,
+  enrollmentTarget: string | undefined,
+): string {
   if (tenantId === "backed") {
     return enrollmentTarget ?? "ff";
   }

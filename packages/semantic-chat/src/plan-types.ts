@@ -2,7 +2,16 @@ import { SEMANTIC_CHAT_MAX_ROW_LIMIT } from "@trybacked/core";
 import { z } from "zod";
 
 /** Legacy row filter operators (LLM may emit these or compiler-native names). */
-export const ROW_FILTER_OPS = ["=", "!=", ">", ">=", "<", "<=", "contains", "not_contains"] as const;
+export const ROW_FILTER_OPS = [
+  "=",
+  "!=",
+  ">",
+  ">=",
+  "<",
+  "<=",
+  "contains",
+  "not_contains",
+] as const;
 
 export const COMPILER_FILTER_OPS = [
   "eq",

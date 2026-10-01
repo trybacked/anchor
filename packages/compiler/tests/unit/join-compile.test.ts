@@ -144,7 +144,10 @@ describe("compileObjectQuery joins", () => {
     expect(() =>
       compileObjectQuery(procurementOntology, {
         objectId: "contract",
-        joins: [{ relationshipId: "organization_has_contracts" }, { relationshipId: "project_has_contracts" }],
+        joins: [
+          { relationshipId: "organization_has_contracts" },
+          { relationshipId: "project_has_contracts" },
+        ],
         filters: [],
       }),
     ).toThrow(/does not touch object/);

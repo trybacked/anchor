@@ -1,5 +1,9 @@
+import {
+  PlanTemplateStructureError,
+  type PlanTemplate,
+  type PlanTemplateParam,
+} from "./plan-template.js";
 import type { ObjectQueryRequest } from "./plan-types.js";
-import { PlanTemplateStructureError, type PlanTemplate, type PlanTemplateParam } from "./plan-template.js";
 
 const PLACEHOLDER_PATTERN = /\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g;
 
@@ -34,7 +38,7 @@ function coerceParamValue(param: PlanTemplateParam, raw: string | number): strin
     const parsed = Number(raw);
     if (Number.isNaN(parsed)) {
       throw new PlanTemplateStructureError(
-        `Parameter "${param.name}" must be a number, got "${String(raw)}".`,
+        `Parameter "${param.name}" must be a number, got ${JSON.stringify(raw)}.`,
       );
     }
     return parsed;
@@ -60,11 +64,15 @@ function substitutePlaceholdersInString(
   return input.replace(PLACEHOLDER_PATTERN, (_match, name: string) => {
     const spec = template.params.find((param) => param.name === name);
     if (spec === undefined) {
-      throw new PlanTemplateStructureError(`Unknown placeholder \${${name}} in template "${template.id}".`);
+      throw new PlanTemplateStructureError(
+        `Unknown placeholder \${${name}} in template "${template.id}".`,
+      );
     }
     const raw = params[name];
     if (raw === undefined) {
-      throw new PlanTemplateStructureError(`Unresolved placeholder \${${name}} in template "${template.id}".`);
+      throw new PlanTemplateStructureError(
+        `Unresolved placeholder \${${name}} in template "${template.id}".`,
+      );
     }
     const coerced = coerceParamValue(spec, raw);
     return String(coerced);
@@ -139,7 +147,9 @@ export function instantiatePlanTemplate(
     if (step.type === "chunkSearch") {
       const rawQuery = params[step.queryParam];
       if (rawQuery === undefined) {
-        throw new PlanTemplateStructureError(`Missing chunk search parameter "${step.queryParam}".`);
+        throw new PlanTemplateStructureError(
+          `Missing chunk search parameter "${step.queryParam}".`,
+        );
       }
       steps.push({
         type: "chunkSearch",

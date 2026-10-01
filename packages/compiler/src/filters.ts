@@ -81,7 +81,10 @@ export function compileObjectFilter(
     const placeholders = filter.value.map((entry, index) => {
       const name = `p${String(parameters.length)}_${String(index)}`;
       if (typeof entry !== "string" && typeof entry !== "number" && typeof entry !== "boolean") {
-        throw new ObjectQueryCompileError("invalid_filter", `Invalid value in "${filter.op}" list.`);
+        throw new ObjectQueryCompileError(
+          "invalid_filter",
+          `Invalid value in "${filter.op}" list.`,
+        );
       }
       parameters.push({ name, value: entry });
       return `:${name}`;
@@ -108,8 +111,15 @@ export function compileObjectFilter(
   }
 
   const name = `p${String(parameters.length)}`;
-  if (typeof filter.value !== "string" && typeof filter.value !== "number" && typeof filter.value !== "boolean") {
-    throw new ObjectQueryCompileError("invalid_filter", `Invalid value for operator "${filter.op}".`);
+  if (
+    typeof filter.value !== "string" &&
+    typeof filter.value !== "number" &&
+    typeof filter.value !== "boolean"
+  ) {
+    throw new ObjectQueryCompileError(
+      "invalid_filter",
+      `Invalid value for operator "${filter.op}".`,
+    );
   }
   parameters.push({ name, value: filter.value });
   return `${column} ${FILTER_OP_SQL[filter.op]} :${name}`;
@@ -131,7 +141,9 @@ export function compileTextSearch(
   const targets =
     propertyIds !== undefined && propertyIds.length > 0
       ? propertyIds
-      : object.properties.filter((property) => property.type === "string").map((property) => property.id);
+      : object.properties
+          .filter((property) => property.type === "string")
+          .map((property) => property.id);
 
   if (targets.length === 0) {
     throw new ObjectQueryCompileError(

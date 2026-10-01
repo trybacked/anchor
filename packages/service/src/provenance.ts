@@ -196,7 +196,9 @@ export function buildEntityProfileProvenance(
       entity: {
         objectId: match.objectId,
         objectName: match.objectName,
-        ...(object?.sourceDatasetId !== undefined ? { sourceDatasetId: object.sourceDatasetId } : {}),
+        ...(object?.sourceDatasetId !== undefined
+          ? { sourceDatasetId: object.sourceDatasetId }
+          : {}),
       },
       row: match.row,
       ...(documentProvenanceFromRow(match.row) !== undefined

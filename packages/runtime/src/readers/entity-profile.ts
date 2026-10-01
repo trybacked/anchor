@@ -67,10 +67,16 @@ function stringNameProperties(objectId: string, ontology: Ontology): string[] {
   if (object === undefined) {
     return [];
   }
-  return object.properties.filter((property) => property.type === "string").map((property) => property.id);
+  return object.properties
+    .filter((property) => property.type === "string")
+    .map((property) => property.id);
 }
 
-function pickDisplayName(objectId: string, row: Record<string, unknown>, ontology: Ontology): string {
+function pickDisplayName(
+  objectId: string,
+  row: Record<string, unknown>,
+  ontology: Ontology,
+): string {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
     return objectId;
@@ -87,7 +93,11 @@ function pickDisplayName(objectId: string, row: Record<string, unknown>, ontolog
   return object.name;
 }
 
-function primaryKeyValue(row: Record<string, unknown>, objectId: string, ontology: Ontology): string | number | null {
+function primaryKeyValue(
+  row: Record<string, unknown>,
+  objectId: string,
+  ontology: Ontology,
+): string | number | null {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   const keyProp = object?.properties.find((property) => property.role === "primary_key");
   const keyId = keyProp?.id ?? "id";
@@ -162,11 +172,22 @@ function groupDocumentHits(
 export function createEntityProfileReader(
   deps: EntityProfileDeps,
 ): (input: EntityProfileInput) => Promise<EntityProfileResult> {
-  const { ontology, model, executor, documents, entityProfilesAvailable, queryObjects, graphTraverse, chunkSearch } =
-    deps;
+  const {
+    ontology,
+    model,
+    executor,
+    documents,
+    entityProfilesAvailable,
+    queryObjects,
+    graphTraverse,
+    chunkSearch,
+  } = deps;
 
   return async (input) => {
-    const matchLimit = Math.min(input.matchLimit ?? DEFAULT_PROFILE_MATCH_LIMIT, MAX_PROFILE_MATCH_LIMIT);
+    const matchLimit = Math.min(
+      input.matchLimit ?? DEFAULT_PROFILE_MATCH_LIMIT,
+      MAX_PROFILE_MATCH_LIMIT,
+    );
     const documentLimit = input.documentLimit ?? DEFAULT_PROFILE_DOCUMENT_LIMIT;
     const factLimit = input.factLimit ?? DEFAULT_PROFILE_FACT_LIMIT;
 
@@ -210,7 +231,8 @@ export function createEntityProfileReader(
         continue;
       }
       const entityRelations = model.relations.filter(
-        (relation) => relation.fromEntity === match.objectId || relation.toEntity === match.objectId,
+        (relation) =>
+          relation.fromEntity === match.objectId || relation.toEntity === match.objectId,
       );
       for (const relation of entityRelations.slice(0, 8)) {
         const direction = relation.fromEntity === match.objectId ? "forward" : "reverse";

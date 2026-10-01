@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { instantiatePlanTemplate, collectTemplateRowLimits } from "../../src/instantiate-template.js";
+import {
+  instantiatePlanTemplate,
+  collectTemplateRowLimits,
+} from "../../src/instantiate-template.js";
 import { PlanTemplateStructureError } from "../../src/plan-template.js";
 import { SEARCH_THEN_FILTER_TEMPLATE } from "../../src/templates/search-then-filter.js";
 
@@ -28,9 +31,9 @@ describe("instantiate-template", () => {
   });
 
   it("throws on missing param", () => {
-    expect(() =>
-      instantiatePlanTemplate(SEARCH_THEN_FILTER_TEMPLATE, { query: "x" }),
-    ).toThrow(PlanTemplateStructureError);
+    expect(() => instantiatePlanTemplate(SEARCH_THEN_FILTER_TEMPLATE, { query: "x" })).toThrow(
+      PlanTemplateStructureError,
+    );
   });
 
   it("collects row limits for aggregate budget", () => {

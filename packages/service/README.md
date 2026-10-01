@@ -8,11 +8,11 @@ Single implementation of Anchor runtime capabilities used by:
 
 Capabilities:
 
-| Operation | Status |
-| --------- | ------ |
-| Model (`listEntities`, `getEntity`, …) | Implemented |
-| `objectQuery` (object-query-reader) | Requires published ontology + warehouse |
-| `entitySearch` | Implemented (filtered `searchModel`) |
-| `chunkSearch` | Document archive (requires catalog + `docs` schema) |
-| `entityProfile` | Precomputed `entity_profiles` lookup |
-| `graphTraverse` | Multi-hop joins on semantic relations |
+| Operation                              | Status                                              |
+| -------------------------------------- | --------------------------------------------------- |
+| Model (`listEntities`, `getEntity`, …) | Implemented                                         |
+| `objectQuery` (object-query-reader)    | Requires published ontology + warehouse             |
+| `entitySearch`                         | Implemented (filtered `searchModel`)                |
+| `chunkSearch`                          | Document archive (requires catalog + `docs` schema) |
+| `entityProfile`                        | Precomputed `entity_profiles` lookup                |
+| `graphTraverse`                        | Multi-hop joins on semantic relations               |

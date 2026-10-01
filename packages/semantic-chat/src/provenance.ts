@@ -1,14 +1,7 @@
 import type { RowProvenance } from "@trybacked/service";
 
-export type {
-  DocumentProvenance,
-  EntityProvenance,
-  RowProvenance,
-} from "@trybacked/service";
-export {
-  buildQueryExecutionProvenance,
-  buildRowProvenance,
-} from "@trybacked/service";
+export type { DocumentProvenance, EntityProvenance, RowProvenance } from "@trybacked/service";
+export { buildQueryExecutionProvenance, buildRowProvenance } from "@trybacked/service";
 
 export async function attachEvidenceToProvenance(options: {
   provenance: RowProvenance[];

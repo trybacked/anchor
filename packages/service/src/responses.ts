@@ -72,6 +72,37 @@ export type SemanticAskResponse = {
 
 export type GetDefinitionResponse = DefinitionResult;
 
+export type GetDocumentResponse = {
+  documentId: string;
+  filename: string;
+  docType: string;
+  pageCount: number;
+  folder?: string | undefined;
+  status: "ready";
+  contentType: string;
+  sourceModifiedAt?: string | undefined;
+  fileSizeBytes?: number | undefined;
+};
+
+export type DocumentPreviewResponse = {
+  kind: "volumeFile";
+  documentId: string;
+  page: number;
+  pageCount: number;
+  filename: string;
+  contentType: string;
+};
+
+export type DocumentPreviewFile = {
+  status: 200 | 206;
+  data: Uint8Array;
+  contentType: string;
+  filename: string;
+  contentLength?: number | undefined;
+  contentRange?: string | undefined;
+  acceptRanges?: string | undefined;
+};
+
 export class AnchorApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -84,8 +115,4 @@ export class AnchorApiError extends Error {
   }
 }
 
-export type {
-  DocumentProvenance,
-  EntityProvenance,
-  RowProvenance,
-} from "./provenance.js";
+export type { DocumentProvenance, EntityProvenance, RowProvenance } from "./provenance.js";

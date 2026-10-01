@@ -36,13 +36,17 @@ function readUsage(usage: {
   };
 }
 
-export function createVercelAiTranslator(options: VercelAiTranslatorOptions): SemanticQueryTranslator {
+export function createVercelAiTranslator(
+  options: VercelAiTranslatorOptions,
+): SemanticQueryTranslator {
   const model =
     options.apiKey !== undefined
       ? createGatewayProvider({ apiKey: options.apiKey })(options.modelId)
       : gateway(options.modelId);
 
   return async ({ prompt, ontologyContext }) => {
+    // generateObject remains the stable structured-output path for this adapter until we migrate to generateText + output.
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- AI SDK migration tracked separately
     const result = await generateObject({
       model,
       schema: RoutedSemanticPlanSchema,
@@ -64,8 +68,7 @@ export function createVercelAiTranslator(options: VercelAiTranslatorOptions): Se
 export function createVercelAiTranslatorFromEnv(
   env: NodeJS.ProcessEnv,
 ): SemanticQueryTranslator | undefined {
-  const modelId =
-    env["SEMANTIC_CHAT_MODEL"] ?? env["SEMANTIC_MODEL"] ?? "openai/gpt-4o-mini";
+  const modelId = env["SEMANTIC_CHAT_MODEL"] ?? env["SEMANTIC_MODEL"] ?? "openai/gpt-4o-mini";
   const apiKey = env["AI_GATEWAY_API_KEY"]?.trim();
   if (apiKey === undefined || apiKey.length === 0) {
     return undefined;

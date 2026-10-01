@@ -146,18 +146,14 @@ export function createGraphTraverseReader(options: {
         compileObjectFilter(object, aliasFor(targetObjectId), filter, parameters),
       );
     }
-    const extraWhere =
-      filterConditions.length > 0 ? ` AND ${filterConditions.join(" AND ")}` : "";
+    const extraWhere = filterConditions.length > 0 ? ` AND ${filterConditions.join(" AND ")}` : "";
 
     if (mode === "count") {
       const sql = `SELECT COUNT(*) AS ${quoteIdentifier("count")}
 FROM ${clause.fromClause}
 ${clause.joins.join("\n")}
 WHERE ${quoteIdentifier(aliasFor(startEntityId))}.${quoteIdentifier(startColumn)} = :startValue${extraWhere}`;
-      return executor(
-        sql,
-        [{ name: "startValue", value: input.value }, ...parameters],
-      );
+      return executor(sql, [{ name: "startValue", value: input.value }, ...parameters]);
     }
 
     const selectList = [...joined]

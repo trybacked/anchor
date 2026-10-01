@@ -6,6 +6,7 @@ import {
   SERVER_NAME,
   TOOL_NAMES as MCP_TOOL_NAMES,
 } from "@trybacked/mcp";
+import type { SemanticAskHandler } from "@trybacked/mcp";
 import {
   createDatabricksSqlClient,
   databricksConfigFromEnv,
@@ -16,7 +17,6 @@ import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { createSemanticChatEngine, renderAnswer } from "@trybacked/semantic-chat";
 import { createVercelAiTranslatorFromEnv } from "@trybacked/semantic-chat/adapters/vercel-ai";
-import type { SemanticAskHandler } from "@trybacked/mcp";
 import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { ANSI, wrap } from "../ui/ansi.js";

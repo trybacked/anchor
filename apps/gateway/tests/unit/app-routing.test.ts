@@ -1,6 +1,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createFileRegistrySource } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { createGatewayApp } from "../../src/app.js";
 import type { GatewayConfig } from "../../src/config.js";
@@ -40,10 +41,10 @@ function baseConfig(dir: string, registryPath: string): GatewayConfig {
     cookieSecure: false,
     tenantsRegistryPath: registryPath,
     usersFilePath: join(dir, "users.yaml"),
-    multiTenant: true,
+    authMode: "file",
     rateLimitPerMinute: 100,
-    upstreams: { gerace: "http://127.0.0.1:8797", backed: "http://127.0.0.1:8798" },
-    upstreamTokens: { gerace: "token-gerace", backed: "token-backed" },
+    platformUpstream: "http://127.0.0.1:8797",
+    platformToken: "platform-token",
   };
 }
 
@@ -61,6 +62,7 @@ describe("gateway routing", () => {
       new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
     const app = createGatewayApp({
       config,
+      registrySource: createFileRegistrySource(registryPath),
       users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
       proxyDeps: { fetchImpl },
     });
@@ -80,12 +82,18 @@ describe("gateway routing", () => {
       3600,
     );
     let proxied = false;
-    const fetchImpl: typeof fetch = async (input) => {
+    let tenantHeader: string | undefined;
+    const fetchImpl: typeof fetch = async (input, init) => {
       proxied = String(input).includes("/v1/model/entities");
+      const headers = init?.headers;
+      if (headers instanceof Headers) {
+        tenantHeader = headers.get("x-backed-tenant") ?? undefined;
+      }
       return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
     };
     const app = createGatewayApp({
       config,
+      registrySource: createFileRegistrySource(registryPath),
       users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
       proxyDeps: { fetchImpl },
     });
@@ -94,20 +102,19 @@ describe("gateway routing", () => {
     });
     expect(response.status).toBe(200);
     expect(proxied).toBe(true);
+    expect(tenantHeader).toBe("gerace");
   });
 
-  it("single mode serves /v1 without tenant prefix", async () => {
+  it("default tenant serves /v1 without tenant prefix", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
     const config: GatewayConfig = {
       ...baseConfig(dir, registryPath),
-      multiTenant: false,
-      defaultUpstream: "http://127.0.0.1:8799",
-      defaultUpstreamToken: "single-token",
+      defaultTenant: "gerace",
     };
     const token = await createSessionToken(
       config.sessionSecret,
-      { username: "u", tenants: [] },
+      { username: "u", tenants: ["gerace"] },
       3600,
     );
     let proxied = false;
@@ -117,7 +124,8 @@ describe("gateway routing", () => {
     };
     const app = createGatewayApp({
       config,
-      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: [] }],
+      registrySource: createFileRegistrySource(registryPath),
+      users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
       proxyDeps: { fetchImpl },
     });
     const response = await app.request("/v1/model/entities", {
@@ -138,6 +146,7 @@ describe("gateway routing", () => {
     );
     const app = createGatewayApp({
       config,
+      registrySource: createFileRegistrySource(registryPath),
       users: [{ username: "u", passwordHash: hashPassword("p"), tenants: ["gerace"] }],
     });
     const response = await app.request("/v1/model/entities", {

@@ -29,16 +29,18 @@ Single-tenant gateway: `baseUrl` is the gateway origin; paths are `/v1/*`.
 
 ## Methods
 
-| Method | Path |
-|--------|------|
-| `health` | `GET /health` |
-| `listEntities`, `getEntity`, `listRelations`, `searchModel`, `getDefinition` | `/v1/model/*` |
-| `objectQuery` | `POST /v1/query/objects` |
-| `entitySearch` | `POST /v1/search/entities` |
-| `chunkSearch` | `POST /v1/search/chunks` |
-| `entityProfile` | `POST /v1/profile/entities` |
-| `graphTraverse` | `POST /v1/graph/traverse` |
-| `ask` | `POST /v1/chat/ask` |
+| Method                                                                       | Path                                                |
+| ---------------------------------------------------------------------------- | --------------------------------------------------- |
+| `health`                                                                     | `GET /health`                                       |
+| `listEntities`, `getEntity`, `listRelations`, `searchModel`, `getDefinition` | `/v1/model/*`                                       |
+| `objectQuery`                                                                | `POST /v1/query/objects`                            |
+| `entitySearch`                                                               | `POST /v1/search/entities`                          |
+| `chunkSearch`                                                                | `POST /v1/search/chunks`                            |
+| `getDocument`                                                                | `GET /v1/documents/{id}`                            |
+| `describeDocumentPreview`                                                    | `GET /v1/documents/{id}/preview?format=json&page=N` |
+| `entityProfile`                                                              | `POST /v1/profile/entities`                         |
+| `graphTraverse`                                                              | `POST /v1/graph/traverse`                           |
+| `ask`                                                                        | `POST /v1/chat/ask`                                 |
 
 Request bodies and responses are typed (`ObjectQueryBody`, `SemanticAskResponse`, `RowProvenance`, etc.) — re-exported from this package and from `@trybacked/service`.
 

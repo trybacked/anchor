@@ -9,10 +9,9 @@ import {
   collectTemplateRowLimits,
   instantiatePlanTemplate,
   type InstantiatedPlan,
-  type TemplateParamValues,
 } from "./instantiate-template.js";
-import type { RoutedSemanticPlan, SemanticQueryPlan } from "./plan-types.js";
 import { normalizeSemanticQueryPlan } from "./normalize.js";
+import type { RoutedSemanticPlan, SemanticQueryPlan } from "./plan-types.js";
 import type { PlanTemplateRegistry } from "./template-registry.js";
 
 export class SemanticPlanValidationError extends Error {
@@ -31,7 +30,9 @@ function assertObjectExists(ontology: Ontology, objectId: string): void {
 function assertPropertyExists(ontology: Ontology, objectId: string, propertyId: string): void {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
-    throw new SemanticPlanValidationError(`Unknown object "${objectId}" for property "${propertyId}".`);
+    throw new SemanticPlanValidationError(
+      `Unknown object "${objectId}" for property "${propertyId}".`,
+    );
   }
   if (!object.properties.some((property) => property.id === propertyId)) {
     throw new SemanticPlanValidationError(
@@ -54,7 +55,9 @@ export function validateObjectQueryAgainstOntology(
   const validated = parsed.data;
   assertObjectExists(ontology, validated.objectId);
   for (const join of validated.joins ?? []) {
-    const relationship = ontology.relationships.find((candidate) => candidate.id === join.relationshipId);
+    const relationship = ontology.relationships.find(
+      (candidate) => candidate.id === join.relationshipId,
+    );
     if (relationship === undefined) {
       throw new SemanticPlanValidationError(`Unknown relationship "${join.relationshipId}".`);
     }
@@ -115,8 +118,7 @@ export type ValidatedTemplateExecution = {
 };
 
 export type ValidatedRoutedPlan =
-  | { route: "single"; semanticPlan: SemanticQueryPlan }
-  | ValidatedTemplateExecution;
+  { route: "single"; semanticPlan: SemanticQueryPlan } | ValidatedTemplateExecution;
 
 /** Validate LLM routed plan: single object query or known template + params. */
 export function validateRoutedPlan(
@@ -141,7 +143,7 @@ export function validateRoutedPlan(
   const params = plan.params ?? {};
   let instantiated: InstantiatedPlan;
   try {
-    instantiated = instantiatePlanTemplate(template, params as TemplateParamValues);
+    instantiated = instantiatePlanTemplate(template, params);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new SemanticPlanValidationError(message);

@@ -57,14 +57,19 @@ export function compileExistsSemiJoin(
   query: {
     objectId: string;
     filters: { objectId?: string | undefined; propertyId: string; op: string; value: unknown }[];
-    textSearch?: { query: string; objectId?: string | undefined; propertyIds?: string[] | undefined } | undefined;
+    textSearch?:
+      | { query: string; objectId?: string | undefined; propertyIds?: string[] | undefined }
+      | undefined;
   },
   parameters: SqlParameter[],
 ): string {
   const quoteColumn = (objectId: string, propertyId: string): string => {
     const alias = plan.objectAliases.get(objectId);
     if (alias === undefined) {
-      throw new ObjectQueryCompileError("unknown_join_object", `Missing alias for object "${objectId}".`);
+      throw new ObjectQueryCompileError(
+        "unknown_join_object",
+        `Missing alias for object "${objectId}".`,
+      );
     }
     return `${quoteIdentifier(alias)}.${quoteIdentifier(propertyId)}`;
   };

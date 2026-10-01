@@ -7,8 +7,10 @@ import {
   type GraphTraverseBody,
   type ObjectQueryBody,
   type ChunkSearchResponse,
+  type DocumentPreviewResponse,
   type EntityProfileResponse,
   type EntitySearchResponse,
+  type GetDocumentResponse,
   type GetEntityResponse,
   type GraphTraverseResponse,
   type HealthResponse,
@@ -58,7 +60,10 @@ async function requestJson<T>(
         ? payload.error
         : `HTTP ${String(response.status)}`;
     const error = new AnchorApiError(response.status, message);
-    if ((response.status === 401 || response.status === 403) && options.onUnauthorized !== undefined) {
+    if (
+      (response.status === 401 || response.status === 403) &&
+      options.onUnauthorized !== undefined
+    ) {
       options.onUnauthorized(error);
     }
     throw error;
@@ -74,7 +79,11 @@ export function createAnchorClient(options: AnchorClientOptions) {
     listEntities: () => requestJson<ListEntitiesResponse>(options, "GET", "/v1/model/entities"),
 
     getEntity: (id: string) =>
-      requestJson<GetEntityResponse>(options, "GET", `/v1/model/entities/${encodeURIComponent(id)}`),
+      requestJson<GetEntityResponse>(
+        options,
+        "GET",
+        `/v1/model/entities/${encodeURIComponent(id)}`,
+      ),
 
     listRelations: (entityId?: string) => {
       const query = entityId !== undefined ? `?entityId=${encodeURIComponent(entityId)}` : "";
@@ -95,6 +104,20 @@ export function createAnchorClient(options: AnchorClientOptions) {
 
     chunkSearch: (body: ChunkSearchBody) =>
       requestJson<ChunkSearchResponse>(options, "POST", "/v1/search/chunks", body),
+
+    getDocument: (documentId: string) =>
+      requestJson<GetDocumentResponse>(
+        options,
+        "GET",
+        `/v1/documents/${encodeURIComponent(documentId)}`,
+      ),
+
+    describeDocumentPreview: (documentId: string, page = 1) =>
+      requestJson<DocumentPreviewResponse>(
+        options,
+        "GET",
+        `/v1/documents/${encodeURIComponent(documentId)}/preview?page=${String(page)}&format=json`,
+      ),
 
     entityProfile: (body: EntityProfileBody) =>
       requestJson<EntityProfileResponse>(options, "POST", "/v1/profile/entities", body),

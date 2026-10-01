@@ -5,14 +5,22 @@ import {
   warehouseReadersAvailable,
   type WarehouseTableCapabilities,
 } from "./capability-probe.js";
-import { createOntologyQueryRuntime, type OntologyQueryRuntime, type SqlStatementExecutor } from "./execute.js";
+import {
+  createOntologyQueryRuntime,
+  type OntologyQueryRuntime,
+  type SqlStatementExecutor,
+} from "./execute.js";
 import { createDocumentsDatasetResolver } from "./readers/dataset.js";
+import type { VolumeFileReader } from "./readers/document-access.js";
 
 export type BuildQueryRuntimeFromEnvOptions = {
   ontology: Ontology;
   model: SemanticModel;
   executor: SqlStatementExecutor;
   env: NodeJS.ProcessEnv;
+  /** Overrides BACKED_DATABRICKS_CATALOG for docs tables and capability probe. */
+  catalog?: string | undefined;
+  readVolumeFile?: VolumeFileReader | undefined;
 };
 
 export type BuiltQueryRuntime = {
@@ -24,7 +32,7 @@ export type BuiltQueryRuntime = {
 export async function buildQueryRuntimeFromEnv(
   options: BuildQueryRuntimeFromEnvOptions,
 ): Promise<BuiltQueryRuntime> {
-  const catalog = options.env["BACKED_DATABRICKS_CATALOG"];
+  const catalog = options.catalog ?? options.env["BACKED_DATABRICKS_CATALOG"];
   const documentsSchema = options.env["BACKED_DOCUMENTS_SCHEMA"] ?? "docs";
   const vectorSearchIndex = options.env["BACKED_VECTOR_SEARCH_INDEX"];
 
@@ -50,6 +58,7 @@ export async function buildQueryRuntimeFromEnv(
     documentsSchema,
     vectorSearchIndex,
     tableCapabilities,
+    readVolumeFile: options.readVolumeFile,
   });
 
   const unavailableReason =

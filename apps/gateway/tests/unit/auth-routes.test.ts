@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createGatewayApp } from "../../src/app.js";
 import type { GatewayConfig } from "../../src/config.js";
 import { hashPassword } from "../../src/password.js";
+import { mockRegistrySource } from "../helpers/registry-source.js";
 
 const config: GatewayConfig = {
   host: "127.0.0.1",
@@ -11,13 +12,21 @@ const config: GatewayConfig = {
   cookieSecure: false,
   tenantsRegistryPath: "/dev/null",
   usersFilePath: "/dev/null",
-  multiTenant: false,
+  authMode: "file",
   rateLimitPerMinute: 60,
-  upstreams: {},
-  upstreamTokens: {},
-  defaultUpstream: "http://127.0.0.1:1",
-  defaultUpstreamToken: "t",
+  platformUpstream: "http://127.0.0.1:1",
+  platformToken: "t",
 };
+
+const registrySource = mockRegistrySource({
+  enrollment: {
+    host: "https://example.databricks.com",
+    profile: "DEFAULT",
+    warehouse_id: "wh",
+  },
+  shared_spaces: {},
+  tenants: {},
+});
 
 describe("auth routes", () => {
   const users = [{ username: "demo", passwordHash: hashPassword("pass"), tenants: ["gerace"] }];
@@ -25,6 +34,7 @@ describe("auth routes", () => {
   it("login sets session cookie", async () => {
     const app = createGatewayApp({
       config,
+      registrySource,
       users,
       proxyDeps: { fetchImpl: async () => new Response("{}") },
     });
@@ -39,7 +49,7 @@ describe("auth routes", () => {
   });
 
   it("rejects bad password", async () => {
-    const app = createGatewayApp({ config, users });
+    const app = createGatewayApp({ config, registrySource, users });
     const response = await app.request("/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

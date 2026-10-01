@@ -51,7 +51,9 @@ export function assertPlanTemplateStructure(template: PlanTemplate): void {
 
   for (const step of template.steps) {
     if (stepIds.has(step.id)) {
-      throw new PlanTemplateStructureError(`Duplicate step id "${step.id}" in template "${template.id}".`);
+      throw new PlanTemplateStructureError(
+        `Duplicate step id "${step.id}" in template "${template.id}".`,
+      );
     }
     stepIds.add(step.id);
   }

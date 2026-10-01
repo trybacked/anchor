@@ -38,9 +38,7 @@ export {
   type RowFilter,
   type SemanticQueryPlan,
 } from "./plan-types.js";
-export {
-  buildOntologyContextForTranslation,
-} from "./ontology-context.js";
+export { buildOntologyContextForTranslation } from "./ontology-context.js";
 export {
   buildQueryExecutionProvenance,
   buildRowProvenance,
@@ -49,11 +47,7 @@ export {
   type RowProvenance,
 } from "./provenance.js";
 export { renderAnswer } from "./render-answer.js";
-export {
-  buildSemanticTranslationPrompt,
-  ROUTED_SEMANTIC_PLAN_JSON_SHAPE,
-  SEMANTIC_QUERY_PLAN_JSON_SHAPE,
-} from "./prompt.js";
+export { buildSemanticTranslationPrompt, ROUTED_SEMANTIC_PLAN_JSON_SHAPE } from "./prompt.js";
 export {
   createDefaultPlanTemplateRegistry,
   createPlanTemplateRegistry,

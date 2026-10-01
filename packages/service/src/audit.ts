@@ -9,6 +9,7 @@ export type AnchorOperationAuditEvent = {
   sqlHash?: string | undefined;
   principal?: string | undefined;
   user?: string | undefined;
+  tenant?: string | undefined;
 };
 
 export type AnchorOperationAuditHook = (event: AnchorOperationAuditEvent) => void;

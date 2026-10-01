@@ -1,1 +1,5 @@
-export { entityNotFoundMessage, emptyDefinitionTermMessage, definitionNotFoundMessage } from "@trybacked/service";
+export {
+  entityNotFoundMessage,
+  emptyDefinitionTermMessage,
+  definitionNotFoundMessage,
+} from "@trybacked/service";

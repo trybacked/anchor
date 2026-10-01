@@ -20,8 +20,8 @@ export function runDatabricksCli(
     env: process.env,
   });
   return {
-    stdout: result.stdout ?? "",
-    stderr: result.stderr ?? "",
+    stdout: result.stdout || "",
+    stderr: result.stderr || "",
     exitCode: result.status ?? 1,
   };
 }
@@ -40,15 +40,19 @@ export function runDatabricksCliOrThrow(
   return result.stdout;
 }
 
-export function databricksJson<T>(
-  args: string[],
-  options?: { profile?: string | undefined; cwd?: string | undefined; label?: string },
-): T {
-  const stdout = runDatabricksCliOrThrow([...args, "--output", "json"], options);
-  return JSON.parse(stdout.trim()) as T;
+export function databricksAccessToken(profile: string): string {
+  return runDatabricksCliOrThrow(["auth", "token"], { profile, label: "auth token" }).trim();
 }
 
-export async function executeAdminSql(options: {
+export function databricksJson(
+  args: string[],
+  options?: { profile?: string | undefined; cwd?: string | undefined; label?: string },
+): unknown {
+  const stdout = runDatabricksCliOrThrow([...args, "--output", "json"], options);
+  return JSON.parse(stdout.trim()) as unknown;
+}
+
+export function executeAdminSql(options: {
   profile: string;
   warehouseId: string;
   statement: string;
@@ -67,4 +71,5 @@ export async function executeAdminSql(options: {
   if (state !== "SUCCEEDED") {
     throw new Error(`SQL failed (${state}): ${options.statement}\n${out}`);
   }
+  return Promise.resolve();
 }

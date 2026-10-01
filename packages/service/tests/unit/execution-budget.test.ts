@@ -7,19 +7,13 @@ import {
 
 describe("applyQueryExecutionBudget", () => {
   it("defaults semantic_chat row limit when missing", () => {
-    const query = applyQueryExecutionBudget(
-      { objectId: "contract", filters: [] },
-      "semantic_chat",
-    );
+    const query = applyQueryExecutionBudget({ objectId: "contract", filters: [] }, "semantic_chat");
     expect(query.limit).toBe(15);
   });
 
   it("rejects semantic_chat limits above cap", () => {
     expect(() =>
-      applyQueryExecutionBudget(
-        { objectId: "contract", filters: [], limit: 200 },
-        "semantic_chat",
-      ),
+      applyQueryExecutionBudget({ objectId: "contract", filters: [], limit: 200 }, "semantic_chat"),
     ).toThrow(QueryExecutionBudgetError);
   });
 

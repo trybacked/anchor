@@ -19,3 +19,8 @@ export { reciprocalRankFusion } from "./readers/rrf.js";
 export type { ChunkSearchInput } from "./readers/chunk-search.js";
 export type { EntityProfileInput, EntityProfileResult } from "./readers/entity-profile.js";
 export type { GraphTraverseInput } from "./readers/graph-traverse.js";
+export type {
+  DocumentMetadata,
+  DocumentPreviewDescriptor,
+  VolumeFileReader,
+} from "./readers/document-access.js";

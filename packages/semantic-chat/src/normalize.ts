@@ -1,27 +1,32 @@
 import type { ObjectQuery } from "@trybacked/compiler";
-import type { ObjectQueryRequest, ObjectSetDefinition, RowFilter, SemanticQueryPlan } from "./plan-types.js";
+import type {
+  ObjectQueryRequest,
+  ObjectSetDefinition,
+  RowFilter,
+  SemanticQueryPlan,
+} from "./plan-types.js";
 
 const LEGACY_OP_TO_COMPILER: Record<string, string> = {
-    "=": "eq",
-    "!=": "neq",
-    ">": "gt",
-    ">=": "gte",
-    "<": "lt",
-    "<=": "lte",
-    contains: "contains",
-    not_contains: "not_contains",
-    eq: "eq",
-    neq: "neq",
-    gt: "gt",
-    gte: "gte",
-    lt: "lt",
-    lte: "lte",
-    in: "in",
-    not_in: "not_in",
-    is_null: "is_null",
-    is_not_null: "is_not_null",
-    starts_with: "starts_with",
-  };
+  "=": "eq",
+  "!=": "neq",
+  ">": "gt",
+  ">=": "gte",
+  "<": "lt",
+  "<=": "lte",
+  contains: "contains",
+  not_contains: "not_contains",
+  eq: "eq",
+  neq: "neq",
+  gt: "gt",
+  gte: "gte",
+  lt: "lt",
+  lte: "lte",
+  in: "in",
+  not_in: "not_in",
+  is_null: "is_null",
+  is_not_null: "is_not_null",
+  starts_with: "starts_with",
+};
 
 function normalizeFilterOp(op: RowFilter["op"]): NonNullable<ObjectQuery["filters"]>[number]["op"] {
   const mapped = LEGACY_OP_TO_COMPILER[op];
@@ -146,7 +151,11 @@ export function normalizeSemanticQueryPlan(plan: SemanticQueryPlan): NormalizedS
     ...(merged.joins !== undefined ? { joins: merged.joins } : {}),
     ...(merged.select !== undefined ? { select: merged.select } : {}),
     ...(merged.groupBy !== undefined
-      ? { groupBy: merged.groupBy.map((propertyId) => normalizeRootPropertyId(propertyId, objectId)) }
+      ? {
+          groupBy: merged.groupBy.map((propertyId) =>
+            normalizeRootPropertyId(propertyId, objectId),
+          ),
+        }
       : {}),
     ...(merged.orderBy !== undefined
       ? { orderBy: normalizeRootPropertyId(merged.orderBy, objectId) }
@@ -170,12 +179,12 @@ export function normalizeSemanticQueryPlan(plan: SemanticQueryPlan): NormalizedS
           aggregations: merged.aggregations.map((aggregation) => {
             const rawPropertyId = aggregation.propertyId ?? aggregation.column;
             return {
-            op: aggregation.op,
-            ...(rawPropertyId !== undefined
-              ? { propertyId: normalizeRootPropertyId(rawPropertyId, objectId) }
-              : {}),
-            ...(aggregation.alias !== undefined ? { alias: aggregation.alias } : {}),
-          };
+              op: aggregation.op,
+              ...(rawPropertyId !== undefined
+                ? { propertyId: normalizeRootPropertyId(rawPropertyId, objectId) }
+                : {}),
+              ...(aggregation.alias !== undefined ? { alias: aggregation.alias } : {}),
+            };
           }),
         }
       : {}),

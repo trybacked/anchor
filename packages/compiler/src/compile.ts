@@ -110,7 +110,10 @@ function buildFromClause(
   const quoteColumn = (objectId: string, propertyId: string): string => {
     const alias = plan.objectAliases.get(objectId);
     if (alias === undefined) {
-      throw new ObjectQueryCompileError("unknown_join_object", `Missing alias for object "${objectId}".`);
+      throw new ObjectQueryCompileError(
+        "unknown_join_object",
+        `Missing alias for object "${objectId}".`,
+      );
     }
     return `${quoteIdentifier(alias)}.${quoteIdentifier(propertyId)}`;
   };
@@ -178,13 +181,21 @@ function compileWhereClause(
     if (from.usePhysicalJoins || from.joinPlan === null || searchObjectId === query.objectId) {
       const { object, alias } = resolveFilterTarget(ontology, query, from, searchObjectId);
       conditions.push(
-        compileTextSearch(object, alias, query.textSearch.query, query.textSearch.propertyIds, parameters),
+        compileTextSearch(
+          object,
+          alias,
+          query.textSearch.query,
+          query.textSearch.propertyIds,
+          parameters,
+        ),
       );
     }
   }
 
   if (!from.usePhysicalJoins && from.joinPlan !== null) {
-    conditions.push(compileExistsSemiJoin(ontology, from.joinPlan, from.rootAlias, query, parameters));
+    conditions.push(
+      compileExistsSemiJoin(ontology, from.joinPlan, from.rootAlias, query, parameters),
+    );
   }
 
   return conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";

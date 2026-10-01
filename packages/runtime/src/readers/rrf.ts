@@ -6,7 +6,10 @@ export type RankedRow = {
 };
 
 /** Reciprocal rank fusion across ordered result lists (same id = same chunk row). */
-export function reciprocalRankFusion(lists: RankedRow[][], limit: number): Record<string, unknown>[] {
+export function reciprocalRankFusion(
+  lists: RankedRow[][],
+  limit: number,
+): Record<string, unknown>[] {
   const scores = new Map<string, { score: number; row: Record<string, unknown> }>();
   for (const list of lists) {
     list.forEach((item, rank) => {

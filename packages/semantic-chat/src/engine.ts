@@ -259,11 +259,13 @@ function resolveConsumedDocumentIds(
   return [...ids];
 }
 
-function normalizeExecutePlanInput(input: ExecutePlanInput): ExecutePlanInput {
-  if (typeof input === "object" && input !== null && "kind" in input) {
+type DiscriminatedExecutePlanInput = Exclude<ExecutePlanInput, SemanticQueryPlan>;
+
+function normalizeExecutePlanInput(input: ExecutePlanInput): DiscriminatedExecutePlanInput {
+  if ("kind" in input) {
     return input;
   }
-  return { kind: "single", plan: input as SemanticQueryPlan };
+  return { kind: "single", plan: input };
 }
 
 export function createSemanticChatEngine(options: SemanticChatEngineOptions) {
@@ -285,7 +287,7 @@ export function createSemanticChatEngine(options: SemanticChatEngineOptions) {
       try {
         const validatedRoute = validateRoutedPlan(ontology, templateRegistry, routed);
         if (validatedRoute.route === "template") {
-          return executeInstantiatedTemplate(
+          return await executeInstantiatedTemplate(
             ontology,
             queryRuntime,
             question,
@@ -300,7 +302,7 @@ export function createSemanticChatEngine(options: SemanticChatEngineOptions) {
         const normalized = normalizeSemanticQueryPlan(rawPlan);
         normalized.attempts = attempts;
         const validated = validateObjectQueryAgainstOntology(ontology, normalized.objectQuery);
-        return executeValidatedPlan(
+        return await executeValidatedPlan(
           ontology,
           queryRuntime,
           question,
@@ -339,7 +341,7 @@ export function createSemanticChatEngine(options: SemanticChatEngineOptions) {
       options?: { evidence?: boolean | undefined; question?: string | undefined },
     ): Promise<SemanticChatAnswer> {
       const normalizedInput = normalizeExecutePlanInput(input);
-      if ("kind" in normalizedInput && normalizedInput.kind === "template") {
+      if (normalizedInput.kind === "template") {
         const template = templateRegistry.get(normalizedInput.templateId);
         if (template === undefined) {
           throw new SemanticPlanValidationError(
@@ -355,7 +357,7 @@ export function createSemanticChatEngine(options: SemanticChatEngineOptions) {
           throw new SemanticPlanValidationError("Expected template route.");
         }
         const instantiated = validatedRoute.instantiated;
-        return executeInstantiatedTemplate(
+        return await executeInstantiatedTemplate(
           ontology,
           queryRuntime,
           options?.question ?? template.description,
@@ -366,15 +368,12 @@ export function createSemanticChatEngine(options: SemanticChatEngineOptions) {
         );
       }
 
-      const plan =
-        "kind" in normalizedInput && normalizedInput.kind === "single"
-          ? normalizedInput.plan
-          : (normalizedInput as SemanticQueryPlan);
+      const plan = normalizedInput.plan;
       SemanticQueryPlanSchema.parse(plan);
       const normalized = normalizeSemanticQueryPlan(plan);
       normalized.attempts = 1;
       const validated = validateObjectQueryAgainstOntology(ontology, normalized.objectQuery);
-      return executeValidatedPlan(
+      return await executeValidatedPlan(
         ontology,
         queryRuntime,
         options?.question ?? plan.reasoning ?? "",

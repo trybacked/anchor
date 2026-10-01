@@ -51,7 +51,9 @@ export const ObjectQueryFilterSchema = z.object({
     .string()
     .min(1)
     .optional()
-    .describe("Ontology object id (default: query root). Use after joins to filter related objects."),
+    .describe(
+      "Ontology object id (default: query root). Use after joins to filter related objects.",
+    ),
   propertyId: z.string().min(1),
   op: z.enum(OBJECT_QUERY_FILTER_OPS),
   value: z.union([
@@ -65,13 +67,18 @@ export const ObjectQueryFilterSchema = z.object({
 
 export const ObjectQuerySchema = z.object({
   objectId: z.string().min(1),
-  joins: z.array(ObjectQueryJoinSchema).optional().describe("Relationship chain from the root object"),
+  joins: z
+    .array(ObjectQueryJoinSchema)
+    .optional()
+    .describe("Relationship chain from the root object"),
   select: z
     .array(z.string().min(1))
     .optional()
     .describe('Property ids or "objectId.propertyId" for joined projection (uses INNER JOIN)'),
   filters: z.array(ObjectQueryFilterSchema).default([]),
-  textSearch: ObjectQueryTextSearchSchema.optional().describe("Case-insensitive contains across string columns (OR)"),
+  textSearch: ObjectQueryTextSearchSchema.optional().describe(
+    "Case-insensitive contains across string columns (OR)",
+  ),
   mode: z.enum(OBJECT_QUERY_MODES).default("rows"),
   limit: z.number().int().positive().max(MAX_OBJECT_QUERY_LIMIT).optional(),
   groupBy: z.array(z.string().min(1)).optional(),

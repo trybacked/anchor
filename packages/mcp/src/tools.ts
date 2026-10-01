@@ -120,7 +120,8 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     inputSchema: {
       term: z.string().min(1).describe("Rule id, name, or phrase, e.g. 'fattura scaduta'"),
     },
-    handler: (context, args) => serviceFromContext(context).getDefinition(readToolString(args, "term")),
+    handler: (context, args) =>
+      serviceFromContext(context).getDefinition(readToolString(args, "term")),
   },
 ];
 
@@ -140,7 +141,9 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
     select: z
       .array(z.string().min(1))
       .optional()
-      .describe('Root property ids or "objectId.propertyId" for joined projection (uses INNER JOIN)'),
+      .describe(
+        'Root property ids or "objectId.propertyId" for joined projection (uses INNER JOIN)',
+      ),
     mode: z
       .enum(["rows", "count"])
       .optional()
@@ -242,7 +245,9 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
         ...(typeof args["limit"] === "number" ? { limit: args["limit"] } : {}),
         ...(typeof args["minScore"] === "number" ? { minScore: args["minScore"] } : {}),
         ...(Array.isArray(args["documentIds"])
-          ? { documentIds: args["documentIds"].filter((id): id is string => typeof id === "string") }
+          ? {
+              documentIds: args["documentIds"].filter((id): id is string => typeof id === "string"),
+            }
           : {}),
       }),
   },
@@ -262,7 +267,9 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
         name: readToolString(args, "name"),
         ...(typeof args["matchLimit"] === "number" ? { matchLimit: args["matchLimit"] } : {}),
         ...(typeof args["factLimit"] === "number" ? { factLimit: args["factLimit"] } : {}),
-        ...(typeof args["documentLimit"] === "number" ? { documentLimit: args["documentLimit"] } : {}),
+        ...(typeof args["documentLimit"] === "number"
+          ? { documentLimit: args["documentLimit"] }
+          : {}),
       }),
   },
   {
@@ -273,7 +280,9 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
       "Use list_relations to pick relationId; depth 1–3.",
     inputSchema: {
       relationId: z.string().min(1).describe("Relation id from list_relations"),
-      value: z.union([z.string(), z.number()]).describe("Starting key on the relation source column"),
+      value: z
+        .union([z.string(), z.number()])
+        .describe("Starting key on the relation source column"),
       direction: z.enum(["forward", "reverse"]).optional(),
       depth: z.number().int().min(1).max(3).optional(),
       limit: z.number().int().positive().max(1000).describe("Max result rows"),
