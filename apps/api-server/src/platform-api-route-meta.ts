@@ -6,7 +6,7 @@ export const V1_PATH_PREFIX = "/v1";
 
 export type HttpMethod = "get" | "post";
 
-export type JsonBodySpec<Name extends string, Schema extends z.ZodType> = {
+export type JsonBodySpec<Name extends string, Schema extends z.ZodTypeAny = z.ZodTypeAny> = {
   componentName: Name;
   schema: Schema;
   example: z.input<Schema>;
@@ -21,7 +21,7 @@ export type PlatformApiRouteSpec = {
   tags?: string[];
   public?: boolean;
   responses: Record<string, { description: string }>;
-  jsonBody?: JsonBodySpec<string, z.ZodType>;
+  jsonBody?: JsonBodySpec<string>;
   paramSchema?: z.ZodObject<z.ZodRawShape>;
   querySchema?: z.ZodType;
 };
@@ -32,7 +32,7 @@ export const HTTP_OK_OR_UNAVAILABLE = {
   "503": { description: "Unavailable" },
 } as const;
 
-export function jsonBody<Name extends string, Schema extends z.ZodType>(
+export function jsonBody<Name extends string, Schema extends z.ZodTypeAny>(
   componentName: Name,
   schema: Schema,
   example: z.input<Schema>,

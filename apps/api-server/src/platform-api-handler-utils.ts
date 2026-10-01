@@ -1,8 +1,5 @@
-import type { AnchorService } from "@trybacked/service";
-import type { Context } from "hono";
 import type { z } from "zod";
-
-type PlatformHandlerContext = Context<{ Variables: { anchorService: AnchorService } }>;
+import type { PlatformHandlerContext } from "./platform-api-types.js";
 
 export function documentErrorStatus(message: string): 400 | 404 | 503 {
   if (message.includes("not found")) {

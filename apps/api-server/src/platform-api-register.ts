@@ -1,11 +1,7 @@
 import type { Hono } from "hono";
 import { honoPathFromCatalogPath, isV1CatalogPath } from "./platform-api-route-meta.js";
-import {
-  buildPlatformApiRoutes,
-  type AnchorApiVariables,
-  type PlatformApiRoute,
-  type PlatformHandlerDeps,
-} from "./platform-api-routes.js";
+import { buildPlatformApiRoutes, type PlatformApiRoute } from "./platform-api-routes.js";
+import type { AnchorApiVariables, PlatformHandlerDeps } from "./platform-api-types.js";
 
 function mountRoute(
   app: Hono<{ Variables: AnchorApiVariables }>,

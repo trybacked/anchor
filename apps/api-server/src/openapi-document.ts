@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   AUTH_SCHEME,
@@ -37,7 +38,7 @@ function buildComponents(
       return [
         [
           body.componentName,
-          zodToJsonSchema(body.schema, { $refStrategy: "none", target: "openApi3" }),
+          zodToJsonSchema(body.schema as z.ZodType, { $refStrategy: "none", target: "openApi3" }),
         ],
       ];
     }),

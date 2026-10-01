@@ -10,12 +10,13 @@ import {
   type AnchorService,
   type SemanticAskResponse,
 } from "@trybacked/service";
-import type { Context } from "hono";
+import { documentErrorStatus } from "./platform-api-handler-utils.js";
 import {
-  documentErrorStatus,
-  readJsonBody,
-  serviceErrorStatus,
-} from "./platform-api-handler-utils.js";
+  platformRoute,
+  postJsonRoute,
+  postServiceJsonRoute,
+  type RouteFactory,
+} from "./platform-api-route-factory.js";
 import {
   HTTP_OK,
   HTTP_OK_OR_UNAVAILABLE,
@@ -29,35 +30,17 @@ import {
   EntityIdParamSchema,
   ListRelationsQuerySchema,
 } from "./platform-api-schemas.js";
-import type { TenantRuntimeRegistry } from "./tenant-runtime-registry.js";
+import type { PlatformHandlerContext, PlatformHandlerDeps } from "./platform-api-types.js";
 
-export type AnchorApiVariables = {
-  anchorService: AnchorService;
-};
-
-export type PlatformHandlerContext = Context<{ Variables: AnchorApiVariables }>;
-
-export type PlatformHandlerDeps = {
-  getService: () => AnchorService;
-  platformRegistry: TenantRuntimeRegistry | undefined;
-  serveOpenApiDocument: () => Record<string, unknown>;
-};
+export type {
+  AnchorApiVariables,
+  PlatformHandlerContext,
+  PlatformHandlerDeps,
+} from "./platform-api-types.js";
 
 type RouteHandler = (c: PlatformHandlerContext) => Response | Promise<Response>;
 
 export type PlatformApiRoute = PlatformApiRouteSpec & { handle: RouteHandler };
-
-type RouteFactory = {
-  meta: PlatformApiRouteSpec;
-  createHandler: (deps: PlatformHandlerDeps) => RouteHandler;
-};
-
-function platformRoute(
-  meta: PlatformApiRouteSpec,
-  createHandler: (deps: PlatformHandlerDeps) => RouteHandler,
-): RouteFactory {
-  return { meta, createHandler };
-}
 
 const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
   platformRoute(
@@ -176,40 +159,31 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
       return c.json(c.get("anchorService").listRelations(entityId));
     },
   ),
-  platformRoute(
+  postJsonRoute(
     {
       operationId: "searchModel",
-      method: "post",
       path: `${V1_PATH_PREFIX}/model/search`,
       summary: "Search model terms",
       tags: ["model"],
       jsonBody: jsonBody("SearchModelBody", SearchModelBodySchema, { query: "organization" }),
       responses: { "200": { description: "Matches" } },
     },
-    () => async (c) => {
-      const { query } = await readJsonBody(c, SearchModelBodySchema);
-      return c.json(await c.get("anchorService").searchModel(query));
-    },
+    async (c, { query }) => c.json(await c.get("anchorService").searchModel(query)),
   ),
-  platformRoute(
+  postJsonRoute(
     {
       operationId: "getDefinition",
-      method: "post",
       path: `${V1_PATH_PREFIX}/model/definitions`,
       summary: "Resolve a model definition",
       tags: ["model"],
       jsonBody: jsonBody("GetDefinitionBody", GetDefinitionBodySchema, { term: "contract" }),
       responses: { "200": { description: "Definition" } },
     },
-    () => async (c) => {
-      const { term } = await readJsonBody(c, GetDefinitionBodySchema);
-      return c.json(c.get("anchorService").getDefinition(term));
-    },
+    (c, { term }) => c.json(c.get("anchorService").getDefinition(term)),
   ),
-  platformRoute(
+  postServiceJsonRoute(
     {
       operationId: "objectQuery",
-      method: "post",
       path: `${V1_PATH_PREFIX}/query/objects`,
       summary: "Query curated warehouse objects",
       tags: ["object-query-reader"],
@@ -220,19 +194,11 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
       }),
       responses: { "200": { description: "Rows or count" } },
     },
-    () => async (c) => {
-      const body = await readJsonBody(c, ObjectQueryBodySchema);
-      const result = await c.get("anchorService").objectQuery(body);
-      if ("error" in result) {
-        return c.json({ error: result.error }, serviceErrorStatus(result.error));
-      }
-      return c.json(result);
-    },
+    (service, body) => service.objectQuery(body),
   ),
-  platformRoute(
+  postJsonRoute(
     {
       operationId: "entitySearch",
-      method: "post",
       path: `${V1_PATH_PREFIX}/search/entities`,
       summary: "Full-text entity search",
       tags: ["entity-search"],
@@ -242,10 +208,7 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
       }),
       responses: { "200": { description: "Matches" } },
     },
-    () => async (c) => {
-      const body = await readJsonBody(c, EntitySearchBodySchema);
-      return c.json(await c.get("anchorService").entitySearch(body));
-    },
+    async (c, body) => c.json(await c.get("anchorService").entitySearch(body)),
   ),
   platformRoute(
     {
@@ -322,30 +285,20 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
       return new Response(file.data, { status: file.status, headers });
     },
   ),
-  platformRoute(
+  postServiceJsonRoute(
     {
       operationId: "chunkSearch",
-      method: "post",
       path: `${V1_PATH_PREFIX}/search/chunks`,
       summary: "Semantic chunk search",
       tags: ["chunk-search"],
       jsonBody: jsonBody("ChunkSearchBody", ChunkSearchBodySchema, { query: "appalto", limit: 10 }),
       responses: HTTP_OK_OR_UNAVAILABLE,
     },
-    () => async (c) => {
-      const result = await c
-        .get("anchorService")
-        .chunkSearch(await readJsonBody(c, ChunkSearchBodySchema));
-      if ("error" in result) {
-        return c.json({ error: result.error }, serviceErrorStatus(result.error));
-      }
-      return c.json(result);
-    },
+    (service, body) => service.chunkSearch(body),
   ),
-  platformRoute(
+  postServiceJsonRoute(
     {
       operationId: "entityProfile",
-      method: "post",
       path: `${V1_PATH_PREFIX}/profile/entities`,
       summary: "Entity profile with facts and documents",
       tags: ["entity-profile-reader"],
@@ -355,20 +308,11 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
       }),
       responses: HTTP_OK_OR_UNAVAILABLE,
     },
-    () => async (c) => {
-      const result = await c
-        .get("anchorService")
-        .entityProfile(await readJsonBody(c, EntityProfileBodySchema));
-      if ("error" in result) {
-        return c.json({ error: result.error }, serviceErrorStatus(result.error));
-      }
-      return c.json(result);
-    },
+    (service, body) => service.entityProfile(body),
   ),
-  platformRoute(
+  postServiceJsonRoute(
     {
       operationId: "graphTraverse",
-      method: "post",
       path: `${V1_PATH_PREFIX}/graph/traverse`,
       summary: "Multi-hop graph traversal",
       tags: ["graph-traverse"],
@@ -381,20 +325,11 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
       }),
       responses: HTTP_OK_OR_UNAVAILABLE,
     },
-    () => async (c) => {
-      const result = await c
-        .get("anchorService")
-        .graphTraverse(await readJsonBody(c, GraphTraverseBodySchema));
-      if ("error" in result) {
-        return c.json({ error: result.error }, serviceErrorStatus(result.error));
-      }
-      return c.json(result);
-    },
+    (service, body) => service.graphTraverse(body),
   ),
-  platformRoute(
+  postJsonRoute(
     {
       operationId: "semanticAsk",
-      method: "post",
       path: `${V1_PATH_PREFIX}/chat/ask`,
       summary: "Natural-language question",
       tags: ["semantic-chat"],
@@ -410,7 +345,7 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
         "503": { description: "Unavailable" },
       },
     },
-    () => async (c) => {
+    async (c, body) => {
       const service = c.get("anchorService") as AnchorService & {
         semanticAsk?: (body: {
           question: string;
@@ -423,7 +358,6 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
           503,
         );
       }
-      const body = await readJsonBody(c, SemanticAskBodySchema);
       const answer = await service.semanticAsk({
         question: body.question,
         ...(body.evidence !== undefined ? { evidence: body.evidence } : {}),
