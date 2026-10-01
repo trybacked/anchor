@@ -4,7 +4,11 @@ import { Hono } from "hono";
 import { registerAuthRoutes } from "./auth-routes.js";
 import { registerWorkOSAuthRoutes } from "./auth-workos.js";
 import type { GatewayConfig } from "./config.js";
-import { isPublicDocsReferenceTenant, registerDocsRoutes } from "./docs-routes.js";
+import {
+  isPublicDocsReferenceTenant,
+  PUBLIC_DOCS_REFERENCE_TENANT,
+  registerDocsRoutes,
+} from "./docs-routes.js";
 import { normalizeTrailingSlashMiddleware } from "./normalize-trailing-slash.js";
 import {
   forwardToPlatform,
@@ -15,6 +19,7 @@ import {
 import { createRateLimiter } from "./rate-limit.js";
 import { createRequireAuthMiddleware } from "./require-auth.js";
 import type { GatewayVariables } from "./types.js";
+import { forwardGatewayOpenApi } from "./openapi-gateway.js";
 import { assertTenantInRegistry, countConfiguredTenants } from "./upstreams.js";
 import { loadUsersFile, type UserRecord } from "./users.js";
 
@@ -82,7 +87,19 @@ export function createGatewayApp(
   registerDocsRoutes(app, config, registrySource);
 
   app.get("/openapi.json", async (c) =>
-    forwardToPlatform(config, "reference", "public-docs", c.req.raw, "/openapi.json", proxyDeps),
+    forwardGatewayOpenApi(
+      () =>
+        forwardToPlatform(
+          config,
+          "reference",
+          "public-docs",
+          c.req.raw,
+          "/openapi.json",
+          proxyDeps,
+        ),
+      PUBLIC_DOCS_REFERENCE_TENANT,
+      c.req.url,
+    ),
   );
 
   app.get("/t/:tenantId/openapi.json", async (c) => {
@@ -93,13 +110,18 @@ export function createGatewayApp(
     ) {
       return c.json({ error: "Tenant not found" }, 404);
     }
-    return forwardToPlatform(
-      config,
+    return forwardGatewayOpenApi(
+      () =>
+        forwardToPlatform(
+          config,
+          tenantId,
+          "public-docs",
+          c.req.raw,
+          "/openapi.json",
+          proxyDeps,
+        ),
       tenantId,
-      "public-docs",
-      c.req.raw,
-      "/openapi.json",
-      proxyDeps,
+      c.req.url,
     );
   });
 

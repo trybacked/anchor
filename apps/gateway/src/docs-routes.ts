@@ -3,6 +3,7 @@ import type { TenantRegistrySource } from "@trybacked/core";
 import type { Hono } from "hono";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayVariables } from "./types.js";
+import { GATEWAY_OPENAPI_SESSION_SCHEME } from "./openapi-gateway.js";
 import { assertTenantInRegistry } from "./upstreams.js";
 
 /** Synthetic tenant id for public API reference when the registry has no published workspaces yet. */
@@ -143,7 +144,8 @@ function renderTenantPickerPage(tenants: string[]): string {
 function scalarConfigForTenant(tenantId: string, requestUrl: string): Record<string, unknown> {
   const isReference = isPublicDocsReferenceTenant(tenantId);
   const openApiUrl = isReference ? "/openapi.json" : `/t/${tenantId}/openapi.json`;
-  const baseServerURL = new URL(`/t/${tenantId}`, requestUrl).href.replace(/\/$/, "");
+  // Paths in gateway OpenAPI are prefixed with `/t/{tenantId}`; server URL is the gateway origin only.
+  const baseServerURL = new URL(requestUrl).origin;
   const titleSuffix = isReference ? "Platform" : tenantId;
   return {
     pageTitle: `Backed API · ${titleSuffix}`,
@@ -151,10 +153,13 @@ function scalarConfigForTenant(tenantId: string, requestUrl: string): Record<str
     baseServerURL,
     theme: "default",
     layout: "modern",
+    authentication: {
+      preferredSecurityScheme: GATEWAY_OPENAPI_SESSION_SCHEME,
+    },
     metaData: {
       title: `Backed API · ${titleSuffix}`,
       description:
-        "Backed platform HTTP API — ontology, warehouse queries, documents, and semantic chat.",
+        "Sign in at /login on this host before Try it out. POST bodies include examples; auth is the backed_session cookie, not Bearer.",
     },
     customCss: `
           .light-mode { --scalar-color-accent: #5b8def; }
@@ -187,7 +192,19 @@ export function registerDocsRoutes(
   });
 
   app.get("/docs/t/:tenantId", async (c, next) => {
-    const tenantId = c.req.param("tenantId");
+    let tenantId = c.req.param("tenantId");
+    if (isPublicDocsReferenceTenant(tenantId)) {
+      const registered = await listRegisteredTenantIds(registrySource);
+      if (registered.length > 0) {
+        const preferred =
+          config.defaultTenant !== undefined && registered.includes(config.defaultTenant)
+            ? config.defaultTenant
+            : registered[0];
+        if (preferred !== undefined) {
+          return c.redirect(`/docs/t/${preferred}`);
+        }
+      }
+    }
     if (!(await canOpenTenantDocs(registrySource, tenantId))) {
       return c.json({ error: "Tenant not found" }, 404);
     }

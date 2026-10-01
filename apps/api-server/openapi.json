@@ -3,7 +3,7 @@
   "info": {
     "title": "Backed Platform API",
     "version": "0.1.0",
-    "description": "HTTP API for ontology discovery, governed object queries, document archive search, and semantic chat. On the public gateway, browse `/docs` without signing in. API calls use `/t/{tenantId}/…` with a platform session cookie; the gateway adds upstream credentials."
+    "description": "HTTP API for ontology discovery, governed object queries, document archive search, and semantic chat.\n\n**Public gateway (`api.backed.app`):** open `/docs` without signing in. To call live data, sign in at `/login` (WorkOS). Requests go to `/t/{tenantId}/v1/…`; the browser sends the `backed_session` cookie — **not** a Bearer token.\n\n**Try it out:** use `/docs/t/{your-tenant}` (e.g. `gerace`), log in on the same host, then send requests. Example bodies are prefilled below each POST."
   },
   "tags": [
     {
@@ -40,10 +40,413 @@
     }
   ],
   "components": {
+    "schemas": {
+      "SearchModelBody": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      },
+      "GetDefinitionBody": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["term"],
+        "additionalProperties": false
+      },
+      "ObjectQueryBody": {
+        "type": "object",
+        "properties": {
+          "objectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "joins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "relationshipId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Published ontology relationship id"
+                }
+              },
+              "required": ["relationshipId"],
+              "additionalProperties": false
+            },
+            "description": "Relationship chain from the root object"
+          },
+          "select": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Property ids or \"objectId.propertyId\" for joined projection (uses INNER JOIN)"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "objectId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Ontology object id (default: query root). Use after joins to filter related objects."
+                },
+                "propertyId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "eq",
+                    "neq",
+                    "gt",
+                    "gte",
+                    "lt",
+                    "lte",
+                    "contains",
+                    "not_contains",
+                    "in",
+                    "not_in",
+                    "is_null",
+                    "is_not_null",
+                    "starts_with"
+                  ]
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "enum": ["null"],
+                      "nullable": true
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "required": ["propertyId", "op", "value"],
+              "additionalProperties": false
+            },
+            "default": []
+          },
+          "textSearch": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "minLength": 1
+              },
+              "objectId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Defaults to the query root objectId; must be on the join graph"
+              },
+              "propertyIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "String columns to search; default = all string properties on the object"
+              }
+            },
+            "required": ["query"],
+            "additionalProperties": false,
+            "description": "Case-insensitive contains across string columns (OR)"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["rows", "count"],
+            "default": "rows"
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "groupBy": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "aggregations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": ["sum", "count", "min", "max", "avg"]
+                },
+                "propertyId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "alias": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["op"],
+              "additionalProperties": false
+            }
+          },
+          "orderBy": {
+            "type": "string",
+            "minLength": 1
+          },
+          "orderDirection": {
+            "type": "string",
+            "enum": ["asc", "desc"]
+          }
+        },
+        "required": ["objectId"],
+        "additionalProperties": false
+      },
+      "EntitySearchBody": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["entity", "property", "relation", "rule"]
+            },
+            "description": "If set, filter search_model matches to these kinds"
+          }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      },
+      "ChunkSearchBody": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "minScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "documentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      },
+      "EntityProfileBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "matchLimit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 10
+          },
+          "factLimit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "documentLimit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "GraphTraverseBody": {
+        "type": "object",
+        "properties": {
+          "relationId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["forward", "reverse"]
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["rows", "count"]
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "objectId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "propertyId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "eq",
+                    "neq",
+                    "gt",
+                    "gte",
+                    "lt",
+                    "lte",
+                    "contains",
+                    "not_contains",
+                    "in",
+                    "not_in",
+                    "is_null",
+                    "is_not_null",
+                    "starts_with"
+                  ]
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "enum": ["null"],
+                      "nullable": true
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "required": ["propertyId", "op", "value"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["relationId", "value", "limit"],
+        "additionalProperties": false
+      },
+      "SemanticAskBody": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "boolean"
+          }
+        },
+        "required": ["question"],
+        "additionalProperties": false
+      }
+    },
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
-        "scheme": "bearer"
+        "scheme": "bearer",
+        "description": "Platform API token (`ANCHOR_API_TOKEN`). Used only when calling platform-api directly; the public gateway uses a session cookie instead."
       }
     }
   },
@@ -56,6 +459,7 @@
     "/health": {
       "get": {
         "operationId": "health",
+        "summary": "Gateway / platform liveness",
         "security": [],
         "responses": {
           "200": {
@@ -67,6 +471,7 @@
     "/openapi.json": {
       "get": {
         "operationId": "openApi",
+        "summary": "OpenAPI document",
         "security": [],
         "responses": {
           "200": {
@@ -78,7 +483,13 @@
     "/v1/model/entities": {
       "get": {
         "operationId": "listEntities",
+        "summary": "List ontology entities",
         "tags": ["model"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Entities"
@@ -89,7 +500,23 @@
     "/v1/model/entities/{id}": {
       "get": {
         "operationId": "getEntity",
+        "summary": "Get entity by id",
         "tags": ["model"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Entity"
@@ -103,7 +530,24 @@
     "/v1/model/relations": {
       "get": {
         "operationId": "listRelations",
+        "summary": "List relations",
         "tags": ["model"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter relations to those touching this entity id"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Relations"
@@ -114,7 +558,26 @@
     "/v1/model/search": {
       "post": {
         "operationId": "searchModel",
+        "summary": "Search model terms",
         "tags": ["model"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchModelBody"
+              },
+              "example": {
+                "query": "organization"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Matches"
@@ -125,7 +588,26 @@
     "/v1/model/definitions": {
       "post": {
         "operationId": "getDefinition",
+        "summary": "Resolve a model definition",
         "tags": ["model"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetDefinitionBody"
+              },
+              "example": {
+                "term": "contract"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Definition"
@@ -136,7 +618,34 @@
     "/v1/query/objects": {
       "post": {
         "operationId": "objectQuery",
+        "summary": "Query curated warehouse objects",
         "tags": ["object-query-reader"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObjectQueryBody"
+              },
+              "example": {
+                "objectId": "contract",
+                "mode": "count",
+                "filters": [
+                  {
+                    "propertyId": "source_year_month",
+                    "op": "eq",
+                    "value": "2025-06"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Rows or count"
@@ -147,7 +656,27 @@
     "/v1/search/entities": {
       "post": {
         "operationId": "entitySearch",
+        "summary": "Full-text entity search",
         "tags": ["entity-search"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntitySearchBody"
+              },
+              "example": {
+                "query": "contract",
+                "kinds": ["entity"]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Matches"
@@ -158,7 +687,23 @@
     "/v1/documents/{id}": {
       "get": {
         "operationId": "getDocument",
+        "summary": "Document metadata",
         "tags": ["documents"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Document metadata"
@@ -175,8 +720,22 @@
     "/v1/documents/{id}/preview": {
       "get": {
         "operationId": "getDocumentPreview",
+        "summary": "PDF preview page",
         "tags": ["documents"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "page",
             "in": "query",
@@ -209,7 +768,27 @@
     "/v1/search/chunks": {
       "post": {
         "operationId": "chunkSearch",
+        "summary": "Semantic chunk search",
         "tags": ["chunk-search"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChunkSearchBody"
+              },
+              "example": {
+                "query": "appalto",
+                "limit": 10
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Matching chunks"
@@ -223,7 +802,27 @@
     "/v1/profile/entities": {
       "post": {
         "operationId": "entityProfile",
+        "summary": "Entity profile with facts and documents",
         "tags": ["entity-profile-reader"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityProfileBody"
+              },
+              "example": {
+                "name": "Comune di Gerace",
+                "matchLimit": 3
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Profile"
@@ -237,7 +836,30 @@
     "/v1/graph/traverse": {
       "post": {
         "operationId": "graphTraverse",
+        "summary": "Multi-hop graph traversal",
         "tags": ["graph-traverse"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphTraverseBody"
+              },
+              "example": {
+                "relationId": "contract_awarded_to_organization",
+                "value": "01234567890",
+                "depth": 1,
+                "limit": 20,
+                "mode": "rows"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Joined rows"
@@ -251,7 +873,27 @@
     "/v1/chat/ask": {
       "post": {
         "operationId": "semanticAsk",
+        "summary": "Natural-language question",
         "tags": ["semantic-chat"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SemanticAskBody"
+              },
+              "example": {
+                "question": "Quanti contratti a giugno 2025?",
+                "evidence": true
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "NL answer with route (single|template), execution steps, SQL, rows/count, and provenance"

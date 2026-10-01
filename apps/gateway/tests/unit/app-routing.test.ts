@@ -223,7 +223,11 @@ tenants: {}
     });
     const response = await app.request("/t/gerace/openapi.json");
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ openapi: "3.1.0" });
+    const body = await response.json();
+    expect(body.openapi).toBe("3.1.0");
+    expect(body.servers).toEqual([
+      { url: "http://localhost", description: "Gateway · tenant gerace" },
+    ]);
   });
 
   it("multi mode does not expose /v1 at root", async () => {
