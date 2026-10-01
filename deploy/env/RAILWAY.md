@@ -13,7 +13,7 @@ Repo sorgente: **[trybacked/anchor](https://github.com/trybacked/anchor)** (root
 | **Postgres** | DB control-plane | `${{Postgres.DATABASE_URL}}` |
 | **console** / **web** | App legacy | Non toccati da questo stack |
 
-Config build: `apps/*/railway.toml` con `builder = "DOCKERFILE"`.
+Config build: imposta **`RAILWAY_DOCKERFILE_PATH`** per servizio (es. `apps/gateway/Dockerfile`) — Railway altrimenti usa Railpack sul monorepo. Opzionale: `apps/*/railway.toml` con `builder = "DOCKERFILE"`.
 
 ## Checklist post-deploy
 
