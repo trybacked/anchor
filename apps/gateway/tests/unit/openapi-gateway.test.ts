@@ -66,8 +66,12 @@ describe("adaptOpenApiDocumentForGateway", () => {
     );
 
     expect(adapted.paths?.["/v1/search/entities"]).toEqual({ post: {} });
-    expect(adapted.paths?.["/health/live"]).toBeUndefined();
-    expect(adapted.paths?.["/health"]).toBeDefined();
+    expect(adapted.paths?.["/health/live"]).toMatchObject({
+      get: { summary: "Liveness probe" },
+    });
+    expect(adapted.paths?.["/health"]).toMatchObject({
+      get: { summary: "Gateway health" },
+    });
     expect(adapted.servers?.[0]?.description).toContain("platform browse");
   });
 

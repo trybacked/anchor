@@ -7,7 +7,8 @@ const TRANSLATION_SYSTEM =
   "Translate the user question into JSON matching the routed semantic plan schema. " +
   "Use route single for warehouse queries; route template only for document-archive search flows. " +
   "Use only ontology object and relationship ids from the context. " +
-  "Prefer mode count for how-many questions; keep row limits small.";
+  "Prefer mode count for how-many questions; keep row limits small. " +
+  'Never combine mode count with textSearch; use filters (contains/eq/in) or filters [] for totals.';
 
 export type LlmUsageRecord = {
   inputTokens: number;
