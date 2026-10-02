@@ -3,8 +3,8 @@ import { AnchorApiError, createAnchorClient } from "../../src/client.js";
 import type { SemanticAskResponse } from "@trybacked/service";
 
 const askPayload: SemanticAskResponse = {
-  text: "Ci sono 3 contratti.",
-  question: "Quanti contratti?",
+  text: "There are 3 contracts.",
+  question: "How many contracts?",
   route: "single",
   plan: { objectId: "contract", mode: "count" },
   result: {
@@ -30,7 +30,7 @@ describe("createAnchorClient", () => {
         headers: { "content-type": "application/json" },
       });
     const client = createAnchorClient({ baseUrl: "http://gw/t/gerace/", fetch: fetchImpl });
-    const answer = await client.ask({ question: "Quanti contratti?" });
+    const answer = await client.ask({ question: "How many contracts?" });
     expect(answer.route).toBe("single");
     expect(answer.steps).toHaveLength(1);
     expect(answer.text).toContain("3");

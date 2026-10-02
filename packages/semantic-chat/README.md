@@ -30,7 +30,7 @@ const engine = createSemanticChatEngine({
   translate,
 });
 
-const answer = await engine.ask("Quanti contratti per il comune di Gerace?");
+const answer = await engine.ask("How many contracts for the municipality of Gerace?");
 // answer.plan.objectQuery, answer.result.rows, answer.provenance[]
 ```
 

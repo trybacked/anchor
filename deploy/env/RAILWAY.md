@@ -1,49 +1,49 @@
-# Railway — progetto `backed` (Versadia)
+# Railway — `backed` project (Versadia)
 
-Repo sorgente: **[trybacked/anchor](https://github.com/trybacked/anchor)** (root = cartella `anchor/`).
+Source repo: **[trybacked/anchor](https://github.com/trybacked/anchor)** (root = `anchor/` folder).
 
-## Mapping servizi (nomi legacy → ruolo)
+## Service mapping (legacy names → role)
 
-| Servizio Railway | Ruolo anchor           | Dominio / rete                                                              |
-| ---------------- | ---------------------- | --------------------------------------------------------------------------- |
-| **api**          | Gateway (MCP + WorkOS) | `api.backed.app` (pubblico)                                                 |
-| **cloud**        | Control-plane API      | `cloud.backed.app` (opzionale; anche `control-plane.railway.internal:8791`) |
-| **platform-api** | Platform API           | Solo privato `platform-api.railway.internal:8787`                           |
-| **provisioner**  | Worker provisioning    | Nessuna HTTP — **disabilita health check HTTP** (vedi sotto)                |
-| **Postgres**     | DB control-plane       | `${{Postgres.DATABASE_URL}}`                                                |
+| Railway service  | Anchor role            | Domain / network                                                          |
+| ---------------- | ---------------------- | ------------------------------------------------------------------------- |
+| **api**          | Gateway (MCP + WorkOS) | `api.backed.app` (public)                                                 |
+| **cloud**        | Control-plane API      | `cloud.backed.app` (optional; also `control-plane.railway.internal:8791`) |
+| **platform-api** | Platform API           | Private only `platform-api.railway.internal:8787`                         |
+| **provisioner**  | Provisioning worker    | No HTTP — **disable HTTP health check** (see below)                       |
+| **Postgres**     | Control-plane DB       | `${{Postgres.DATABASE_URL}}`                                              |
 
-**Altro nel progetto (non stack anchor):** **web** → `www.backed.app` (Next.js / Stripe / WorkOS, repo non collegato in dashboard). **console** (`trybacked/console`, `console.backed.app`) è stato rimosso: era la UI del vecchio api/cloud.
+**Other project services (not anchor stack):** **web** → `www.backed.app` (Next.js / Stripe / WorkOS, repo not linked in dashboard). **console** (`trybacked/console`, `console.backed.app`) was removed: it was the legacy api/cloud UI.
 
-Config build: imposta **`RAILWAY_DOCKERFILE_PATH`** per servizio (es. `apps/gateway/Dockerfile`) — Railway altrimenti usa Railpack sul monorepo. Opzionale: `apps/*/railway.toml` con `builder = "DOCKERFILE"`.
+Build config: set **`RAILWAY_DOCKERFILE_PATH`** per service (e.g. `apps/gateway/Dockerfile`) — otherwise Railway uses Railpack on the monorepo. Optional: `apps/*/railway.toml` with `builder = "DOCKERFILE"`.
 
-## Checklist post-deploy
+## Post-deploy checklist
 
-1. Imposta **BACKED_DATABRICKS_HOST**, **TOKEN**, **WAREHOUSE_ID** su `cloud`, `provisioner`, `platform-api` (output di `backed platform bootstrap`).
-2. WorkOS Dashboard → app AuthKit **「backed」** (`WORKOS_CLIENT_ID` sul servizio **api**): redirect **`https://api.backed.app/callback`** (path gateway Hono, **non** `/auth/callback` Carta). Se manca, AuthKit mostra _Couldn't sign in_.
-3. CLI remota:
+1. Set **BACKED_DATABRICKS_HOST**, **TOKEN**, **WAREHOUSE_ID** on `cloud`, `provisioner`, and `platform-api` (output of `backed platform bootstrap`).
+2. WorkOS Dashboard → AuthKit app **「backed」** (`WORKOS_CLIENT_ID` on **api** service): redirect **`https://api.backed.app/callback`** (gateway Hono path, **not** Carta `/auth/callback`). If missing, AuthKit shows _Couldn't sign in_.
+3. Remote CLI:
    ```bash
    export BACKED_CONTROL_PLANE_URL=https://cloud.backed.app
    export CONTROL_PLANE_ADMIN_TOKEN=…
    backed tenant create gerace --remote
    ```
-4. Rinomina i servizi in dashboard (api → gateway, cloud → control-plane) quando vuoi — i nomi DNS privati usano `privateNetworkEndpoint` (`gateway`, `control-plane`, …).
+4. Rename services in the dashboard (api → gateway, cloud → control-plane) when you want — private DNS names use `privateNetworkEndpoint` (`gateway`, `control-plane`, …).
 
-### Job provisioning bloccato in `pending`
+### Provisioning job stuck in `pending`
 
-Il worker è **`node dist/worker.js`** (servizio **provisioner**). Se Railway applica `healthcheckPath=/health/live` (come su **cloud**), il container muore perché il worker **non espone HTTP** — nei log vedi solo `Control plane schema applied.` e poi `Stopping Container`, mai `Control plane worker started`.
+The worker is **`node dist/worker.js`** (**provisioner** service). If Railway applies `healthcheckPath=/health/live` (like **cloud**), the container exits because the worker **does not expose HTTP** — logs show only `Control plane schema applied.` then `Stopping Container`, never `Control plane worker started`.
 
-**Fix:** redeploy **provisioner** da branch `staging` (worker espone `GET /health/live` su `PORT` prima della migrate). Start command consigliato: `node dist/worker.js` (vedi `deploy/railway.provisioner.toml`). Nei log devono comparire **entrambe** le righe:
+**Fix:** redeploy **provisioner** from branch `staging` (worker exposes `GET /health/live` on `PORT` before migrate). Recommended start command: `node dist/worker.js` (see `deploy/railway.provisioner.toml`). Logs should include **both** lines:
 
 - `Provisioner health http://…/health/live`
 - `Control plane worker started`
 
-Poi controlla il job:
+Then check the job:
 
 ```bash
 curl -sS -H "Authorization: Bearer $CONTROL_PLANE_ADMIN_TOKEN" \
   "https://cloud.backed.app/v1/jobs/<JOB_ID>"
 ```
 
-Stati: `pending` → `running` → `completed` (o `failed` con messaggio in `error`). Il job resta in coda: non serve ricreare l’organization.
+States: `pending` → `running` → `completed` (or `failed` with message in `error`). The job stays queued: you do not need to recreate the organization.
 
-Dettaglio variabili: [ENV.md](./ENV.md).
+Variable details: [ENV.md](./ENV.md).

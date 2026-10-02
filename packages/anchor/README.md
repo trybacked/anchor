@@ -20,7 +20,7 @@ const client = createAnchorClient({
 });
 
 const entities = await client.listEntities();
-const answer = await client.ask({ question: "Quanti contratti a giugno 2025?", evidence: true });
+const answer = await client.ask({ question: "How many contracts in June 2025?", evidence: true });
 ```
 
 Multi-tenant gateway: set `baseUrl` to `{gatewayOrigin}/t/{tenantId}` (no trailing slash required). Session cookies are sent when `credentials: "include"` and the browser is on the same site as the gateway.

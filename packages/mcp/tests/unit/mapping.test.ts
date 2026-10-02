@@ -93,8 +93,8 @@ describe("mapping surface", () => {
     expect(matches.some((match) => match.id === "cliente")).toBe(true);
   });
 
-  it("getDefinition returns confirmed rule for fattura scaduta", () => {
-    const result = getDefinition(model, "fattura scaduta");
+  it("getDefinition returns confirmed rule for overdue invoice", () => {
+    const result = getDefinition(model, "overdue invoice");
     expect(result).toEqual(
       expect.objectContaining({
         found: true,
@@ -106,7 +106,7 @@ describe("mapping surface", () => {
   });
 
   it("getDefinition ignores proposed rules", () => {
-    const result = getDefinition(model, "fattura in bozza");
+    const result = getDefinition(model, "draft invoice");
     expect(result.found).toBe(false);
   });
 });

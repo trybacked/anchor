@@ -1,5 +1,5 @@
 {
-  "question": "Quanti contratti ci sono?",
+  "question": "How many contracts are there?",
   "plan": {
     "objectQuery": {
       "entityId": "contract",

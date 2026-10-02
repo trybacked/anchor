@@ -5,14 +5,14 @@ export function renderAnswer(answer: SemanticChatAnswer): string {
   if (result.mode === "count") {
     const countRow = result.rows[0]?.["count"];
     const countValue = typeof countRow === "number" ? countRow : Number(countRow ?? 0);
-    return `Trovati ${String(countValue)} record per l'oggetto "${result.objectId}".`;
+    return `Found ${String(countValue)} records for object "${result.objectId}".`;
   }
 
   const lines: string[] = [
-    `Risultati per "${result.objectId}": ${String(result.rowCount)} righe (limite query applicato).`,
+    `Results for "${result.objectId}": ${String(result.rowCount)} rows (query limit applied).`,
   ];
   if (result.rowCount > 0) {
-    lines.push(`Colonne: ${result.columns.join(", ")}.`);
+    lines.push(`Columns: ${result.columns.join(", ")}.`);
   }
 
   const docCitations = provenance
@@ -22,15 +22,15 @@ export function renderAnswer(answer: SemanticChatAnswer): string {
     .map((document) => {
       const page =
         document.pageStart !== undefined
-          ? ` p. ${String(document.pageStart)}`
+          ? ` page ${String(document.pageStart)}`
           : document.page !== undefined
-            ? ` p. ${String(document.page)}`
+            ? ` page ${String(document.page)}`
             : "";
       const label = document.filename ?? document.documentId;
       return `${label}${page}`;
     });
   if (docCitations.length > 0) {
-    lines.push(`Documenti citati: ${docCitations.join("; ")}.`);
+    lines.push(`Cited documents: ${docCitations.join("; ")}.`);
   }
 
   return lines.join(" ");

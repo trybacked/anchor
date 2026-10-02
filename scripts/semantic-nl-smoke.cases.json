@@ -4,7 +4,7 @@
   "cases": [
     {
       "id": "count-contracts-ingest-2025-06",
-      "question": "Quanti contratti ci sono nel mese di ingest giugno 2025?",
+      "question": "How many contracts are in the June 2025 ingest month?",
       "expect": {
         "objectId": "contract",
         "mode": "count",
@@ -16,7 +16,7 @@
     },
     {
       "id": "count-organizations",
-      "question": "Quante amministrazioni appaltanti (organizzazioni) sono presenti?",
+      "question": "How many contracting authorities (organizations) are there?",
       "expect": {
         "objectId": "organization",
         "mode": "count",
@@ -27,7 +27,7 @@
     },
     {
       "id": "rows-contracts-sample",
-      "question": "Mostrami al massimo 5 contratti pubblicati nel mese di ingest 2025-06.",
+      "question": "Show at most 5 contracts published in the June 2025 ingest month.",
       "expect": {
         "objectId": "contract",
         "mode": "rows",
@@ -39,7 +39,7 @@
     },
     {
       "id": "multi-hop-sicilia",
-      "question": "Quanti contratti del mese 2025-06 riguardano enti con sezione regionale Sicilia?",
+      "question": "How many contracts in month 2025-06 involve entities with regional section Sicilia?",
       "expect": {
         "objectId": "contract",
         "mode": "count",
@@ -59,7 +59,7 @@
     },
     {
       "id": "in-multiple-ingest-months",
-      "question": "Quanti contratti ci sono nei mesi di ingest maggio e giugno 2025?",
+      "question": "How many contracts are in the May and June 2025 ingest months?",
       "expect": {
         "objectId": "contract",
         "mode": "count",
@@ -77,7 +77,7 @@
     },
     {
       "id": "groupby-region-2025-06",
-      "question": "Per il mese ingest 2025-06, elenca fino a 10 righe con sezione regionale e numero di contratti per ciascuna.",
+      "question": "For ingest month 2025-06, list up to 10 rows with regional section and contract count per section.",
       "expect": {
         "objectId": "contract",
         "mode": "rows",
@@ -93,7 +93,7 @@
     },
     {
       "id": "join-select-organization-name",
-      "question": "Mostrami 3 contratti (CIG) del mese ingest 2025-06 con denominazione amministrazione appaltante via join organizzazione.",
+      "question": "Show 3 contracts (CIG) for ingest month 2025-06 with contracting authority name via organization join.",
       "expect": {
         "objectId": "contract",
         "mode": "rows",
@@ -108,7 +108,7 @@
     },
     {
       "id": "complex-multi-constraint",
-      "question": "Nel mese di ingest giugno 2025, quanti contratti hanno oggetto gara che contiene servizi e sezione regionale compilata?",
+      "question": "In the June 2025 ingest month, how many contracts have tender subject containing servizi and a populated regional section?",
       "expect": {
         "objectId": "contract",
         "mode": "count",
@@ -121,7 +121,7 @@
     },
     {
       "id": "contains-subject",
-      "question": "Quanti contratti del 2025-06 hanno un oggetto gara che contiene la parola servizi?",
+      "question": "How many contracts in 2025-06 have tender subject containing the word servizi?",
       "expect": {
         "objectId": "contract",
         "mode": "count",
@@ -137,7 +137,7 @@
     {
       "id": "template-document-search",
       "optional": true,
-      "question": "Cosa dicono i documenti sulla manutenzione dell'ascensore? Mostra contratti del mese ingest giugno 2025 collegati.",
+      "question": "What do documents say about elevator maintenance? Show contracts linked for June 2025 ingest month.",
       "expect": {
         "route": "template",
         "templateId": "search-then-filter",
@@ -148,7 +148,7 @@
     {
       "id": "reject-unknown-property",
       "optional": true,
-      "question": "Quanti contratti hanno il campo crm_customer_id valorizzato?",
+      "question": "How many contracts have crm_customer_id populated?",
       "expect": {
         "shouldFail": true,
         "failType": "SemanticPlanValidationError"

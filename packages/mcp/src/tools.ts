@@ -104,7 +104,7 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       "Return a confirmed business definition with provenance, or a structured not-found response.",
     inputSchema: {
-      term: z.string().min(1).describe("Rule id, name, or phrase, e.g. 'fattura scaduta'"),
+      term: z.string().min(1).describe("Rule id, name, or phrase, e.g. 'overdue invoice'"),
     },
     handler: (context, args) =>
       serviceFromContext(context).getDefinition(readToolString(args, "term")),
@@ -303,7 +303,7 @@ export const ASK_SEMANTIC_TOOL_DEFINITION: ToolDefinition = {
     "Natural-language question → routed semantic plan (single warehouse query or document search template). " +
     "Returns rows/count, SQL, provenance, and execution steps. Requires AI Gateway configuration.",
   inputSchema: {
-    question: z.string().min(1).describe("Italian or English NL question"),
+    question: z.string().min(1).describe("Natural language question"),
     evidence: z
       .boolean()
       .optional()

@@ -18,11 +18,11 @@ const repoRoot = join(scriptDir, "..");
 const defaultWorkspace = join(repoRoot, "..", "ontology", "gerace");
 
 const MONTHS = [
-  { ym: "2025-06", label: "giugno 2025" },
-  { ym: "2025-05", label: "maggio 2025" },
-  { ym: "2025-04", label: "aprile 2025" },
-  { ym: "2025-03", label: "marzo 2025" },
-  { ym: "2025-02", label: "febbraio 2025" },
+  { ym: "2025-06", label: "June 2025" },
+  { ym: "2025-05", label: "May 2025" },
+  { ym: "2025-04", label: "April 2025" },
+  { ym: "2025-03", label: "March 2025" },
+  { ym: "2025-02", label: "February 2025" },
 ];
 
 const REGIONS = ["Sicilia", "Lombardia", "Lazio", "Campania", "Veneto", "Piemonte", "Toscana"];
@@ -56,56 +56,56 @@ function buildQuestions(count) {
   };
 
   for (const month of MONTHS) {
-    push("count-month", `Quanti contratti ci sono nel mese di ingest ${month.label}?`);
-    push("count-month-alt", `Dammi il totale contratti per source_year_month ${month.ym}.`);
+    push("count-month", `How many contracts are in the ${month.label} ingest month?`);
+    push("count-month-alt", `Give me the total contracts for source_year_month ${month.ym}.`);
   }
 
   for (const keyword of KEYWORDS) {
     push(
       "contains-subject",
-      `Quanti contratti del mese ingest giugno 2025 hanno oggetto gara che contiene "${keyword}"?`,
+      `How many contracts in June 2025 ingest month have tender subject containing "${keyword}"?`,
     );
   }
 
   for (const region of REGIONS) {
     push(
       "multi-hop-region",
-      `Quanti contratti del 2025-06 riguardano enti con sezione regionale ${region}?`,
+      `How many contracts in 2025-06 involve entities with regional section ${region}?`,
     );
   }
 
   for (const limit of [3, 5, 8, 10, 15]) {
-    push("rows-sample", `Mostrami al massimo ${String(limit)} contratti del mese ingest 2025-06.`);
+    push("rows-sample", `Show at most ${String(limit)} contracts for the June 2025 ingest month.`);
   }
 
   for (let variant = 0; variant < 6; variant += 1) {
     push(
       "organization-count",
-      `Quante organizzazioni (amministrazioni appaltanti) risultano nel dataset${variant === 0 ? "" : ` — variant ${String(variant)}`}?`,
+      `How many organizations (contracting authorities) are in the dataset${variant === 0 ? "" : ` — variant ${String(variant)}`}?`,
     );
   }
 
   for (const region of REGIONS.slice(0, 4)) {
     push(
       "groupby-region",
-      `Per il 2025-06, fino a 10 righe: contratti per sezione regionale (inclusa ${region} se presente).`,
+      `For 2025-06, up to 10 rows: contracts by regional section (including ${region} if present).`,
     );
   }
 
   for (const limit of [3, 5, 5, 5]) {
     push(
       "join-select-name",
-      `Elenca ${String(limit)} contratti del 2025-06 con denominazione amministrazione appaltante (join organizzazione).`,
+      `List ${String(limit)} contracts from 2025-06 with contracting authority name (organization join).`,
     );
   }
 
   push(
     "complex",
-    "Nel giugno 2025, quanti contratti con oggetto gara che contiene servizi e sezione regionale valorizzata?",
+    "In June 2025, how many contracts with tender subject containing servizi and a populated regional section?",
   );
-  push("complex", "Quanti contratti nei mesi maggio e giugno 2025 insieme?");
-  push("text-ish", "Quanti contratti ingest 2025-06 con CIG che inizia per Z?");
-  push("text-ish", "Organizzazioni in Lombardia: quante sono?");
+  push("complex", "How many contracts in May and June 2025 combined?");
+  push("text-ish", "How many contracts in ingest 2025-06 with CIG starting with Z?");
+  push("text-ish", "Organizations in Lombardia: how many are there?");
 
   return questions.slice(0, count);
 }

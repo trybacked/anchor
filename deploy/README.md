@@ -8,9 +8,9 @@
 anchor/deploy/
 ├── docker-compose.yml    → gateway, platform-api, postgres, control-plane, provisioner
 ├── env/
-│   ├── ENV.md                      → cosa serve / cosa no (matrice)
-│   ├── local.compose.env.example   → profilo locale
-│   └── railway.*.env.example       → profilo Railway
+│   ├── ENV.md                      → required vs optional vars (matrix)
+│   ├── local.compose.env.example   → local profile
+│   └── railway.*.env.example       → Railway profile
 ├── users.yaml.example    → file auth (GATEWAY_AUTH_MODE=file)
 └── scripts/
     ├── check-stack.mjs
@@ -42,7 +42,7 @@ chmod 600 .env users.yaml
 
 ## First-time setup (HTTP registry + control plane)
 
-Vedi [env/ENV.md](./env/ENV.md) e `env/local.compose.env.example` (sezione commentata http + WorkOS).
+See [env/ENV.md](./env/ENV.md) and `env/local.compose.env.example` (commented http + WorkOS section).
 
 Create organizations via API/CLI (no manual `tenants.yaml` edit):
 
@@ -65,13 +65,13 @@ Public URL: `http://127.0.0.1:${GATEWAY_PUBLIC_PORT:-8080}`.
 
 ## Commands
 
-| Action             | Command                                                                                              |
-| ------------------ | ---------------------------------------------------------------------------------------------------- |
-| Preflight          | `pnpm deploy:check`                                                                                  |
-| GitHub CI (locale) | `pnpm check:ci`                                                                                      |
-| Start              | `docker compose -f deploy/docker-compose.yml up -d --build`                                          |
-| Logs               | `docker compose -f deploy/docker-compose.yml logs -f gateway platform-api control-plane provisioner` |
-| Stop               | `docker compose -f deploy/docker-compose.yml down`                                                   |
+| Action            | Command                                                                                              |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| Preflight         | `pnpm deploy:check`                                                                                  |
+| GitHub CI (local) | `pnpm check:ci`                                                                                      |
+| Start             | `docker compose -f deploy/docker-compose.yml up -d --build`                                          |
+| Logs              | `docker compose -f deploy/docker-compose.yml logs -f gateway platform-api control-plane provisioner` |
+| Stop              | `docker compose -f deploy/docker-compose.yml down`                                                   |
 
 ## Token rule
 

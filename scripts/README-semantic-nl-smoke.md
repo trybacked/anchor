@@ -1,6 +1,6 @@
 # Semantic NL smoke
 
-End-to-end check: **Italian question → Vercel AI Gateway → routed plan (`single` | `template`) → validate → Databricks** (templates: document search then contract filter).
+End-to-end check: **natural language question → Vercel AI Gateway → routed plan (`single` | `template`) → validate → Databricks** (templates: document search then contract filter).
 
 ## Run
 
