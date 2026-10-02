@@ -31,7 +31,7 @@ export function scalarConfigForTenant(
     layout: "modern",
     metaData: {
       title: `Backed API · ${tenantId}`,
-      description: `Sign in at ${GATEWAY_AUTH_PATHS.login} on this host before Try it out. POST bodies include examples; auth is the backed_session cookie, not Bearer.`,
+      description: `Sign in at ${GATEWAY_AUTH_PATHS.login} on this host for Try it out (cookie), or use OAuth Bearer (see Gateway · OAuth & session in the spec).`,
     },
     customCss: `
           .light-mode { --scalar-color-accent: #5b8def; }
