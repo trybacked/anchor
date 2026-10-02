@@ -222,9 +222,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
 
   app.get("/v1/oauth-clients/:clientId", requireInternal(config), async (c) => {
     const clientId = c.req.param("clientId");
-    if (clientId === undefined) {
-      return c.json({ error: "Missing clientId" }, 400);
-    }
     const row = await getOAuthClientById(pool, clientId);
     if (row === undefined) {
       return c.json({ error: "Not found" }, 404);
@@ -280,9 +277,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     async (c) => {
       const body = c.req.valid("json");
       const clientId = c.req.param("clientId");
-      if (clientId === undefined) {
-        return c.json({ error: "Missing clientId" }, 400);
-      }
       const row = await patchOAuthClient(pool, clientId, {
         ...(body.name !== undefined ? { name: body.name } : {}),
         ...(body.redirectUris !== undefined ? { redirectUris: body.redirectUris } : {}),
@@ -297,9 +291,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
 
   app.delete("/v1/admin/oauth-clients/:clientId", requireAdmin(config), async (c) => {
     const clientId = c.req.param("clientId");
-    if (clientId === undefined) {
-      return c.json({ error: "Missing clientId" }, 400);
-    }
     const deleted = await deleteOAuthClient(pool, clientId);
     if (!deleted) {
       return c.json({ error: "Not found" }, 404);
