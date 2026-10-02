@@ -74,7 +74,7 @@ async function grantReadDocsRawVolumeIfPresent(
 ): Promise<void> {
   try {
     await admin.execute(
-      `GRANT READ VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
+      `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
     );
   } catch {
     return;

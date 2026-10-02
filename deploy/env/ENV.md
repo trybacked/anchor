@@ -48,12 +48,13 @@ Interactive docs (Scalar): **`GET /docs`**, **`GET /docs/platform`** (platform b
 | `ANCHOR_API_TOKEN`                              | R         | ✓     | ✓       |
 | `BACKED_REGISTRY_SOURCE`                        | R         | ✓     | ✓       |
 | `BACKED_REGISTRY_URL` / `BACKED_REGISTRY_TOKEN` | R if http | ✓     | ✓       |
-| `BACKED_DATABRICKS_HOST`                        | R         | ✓     | ✓       | Platform SP (bootstrap) |
+| `BACKED_DATABRICKS_HOST`                        | R         | ✓     | ✓       | Platform SP (bootstrap)                             |
 | `BACKED_DATABRICKS_TOKEN`                       | R         | ✓     | ✓       |
 | `BACKED_DATABRICKS_WAREHOUSE_ID`                | R         | ✓     | ✓       |
-| `AI_GATEWAY_API_KEY`                            | O         | ✓     | ✓       | `/v1/chat/ask` only     |
+| `AI_GATEWAY_API_KEY`                            | O         | ✓     | ✓       | `/v1/chat/ask` only                                 |
+| `ANCHOR_MAX_UPLOAD_BYTES`                       | O         | ✓     | ✓       | Max multipart upload (default 50MB) on platform-api |
 | `ANCHOR_TENANTS_REGISTRY`                       | R if file | ✓     | —       |
-| `DATABASE_URL`                                  | —         | —     | —       | Not used (token auth)   |
+| `DATABASE_URL`                                  | —         | —     | —       | Not used (token auth)                               |
 
 ### Control-plane + provisioner (worker)
 
@@ -95,6 +96,10 @@ openssl rand -hex 24   # ANCHOR_API_TOKEN, CONTROL_PLANE_* (≥16 char)
 ```
 
 Single rule: `GATEWAY_PLATFORM_TOKEN` = `ANCHOR_API_TOKEN`.
+
+## Document uploads (workshop)
+
+Platform-api needs **READ + WRITE** on `{catalog}.docs.raw` and **CAN_MANAGE_RUN** on the `{catalog}-docs-refresh` Databricks job for the platform service principal. New tenants get this via `@trybacked/platform-admin` provisioning; existing catalogs may need a one-time grant update.
 
 ## Databricks bootstrap
 

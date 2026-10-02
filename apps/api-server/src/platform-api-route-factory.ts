@@ -4,7 +4,11 @@ import {
   type ServiceErrorResult,
 } from "@trybacked/service";
 import type { z } from "zod";
-import { jsonServiceErrorResponse, readJsonBody } from "./platform-api-handler-utils.js";
+import {
+  getAnchorService,
+  jsonServiceErrorResponse,
+  readJsonBody,
+} from "./platform-api-handler-utils.js";
 import type { JsonBodySpec, PlatformApiRouteSpec } from "./platform-api-route-meta.js";
 import type {
   PlatformHandlerContext,
@@ -50,7 +54,7 @@ export function postServiceJsonRoute<Schema extends z.ZodTypeAny>(
   ) => Promise<Record<string, unknown> | ServiceErrorResult>,
 ): RouteFactory {
   return postJsonRoute(meta, async (c, body) => {
-    const result = await invoke(c.get("anchorService"), body);
+    const result = await invoke(getAnchorService(c), body);
     if (isServiceErrorResult(result)) {
       return jsonServiceErrorResponse(c, result);
     }

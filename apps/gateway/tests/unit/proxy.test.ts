@@ -54,6 +54,38 @@ describe("proxy", () => {
     expect(seenTenant).toBe("gerace");
   });
 
+  it("forwards multipart POST body to platform-api", async () => {
+    let seenMethod: string | undefined;
+    let bodyLength = 0;
+    const fetchImpl: typeof fetch = async (_input, init) => {
+      seenMethod = init?.method;
+      if (init?.body instanceof ArrayBuffer) {
+        bodyLength = init.body.byteLength;
+      }
+      return new Response(JSON.stringify({ path: "/Volumes/x/docs/raw/a.pdf" }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      });
+    };
+    const form = new FormData();
+    form.append("file", new Blob([new Uint8Array([1, 2, 3])]), "a.pdf");
+    const request = new Request("http://gateway/t/gerace/v1/files", {
+      method: "POST",
+      body: form,
+    });
+    const response = await forwardToPlatform(
+      platformConfig,
+      "gerace",
+      "demo",
+      request,
+      "/v1/files",
+      { fetchImpl },
+    );
+    expect(response.status).toBe(201);
+    expect(seenMethod).toBe("POST");
+    expect(bodyLength).toBeGreaterThan(0);
+  });
+
   it("omits tenant header when tenant id is undefined", async () => {
     let seenTenant: string | null = "unset";
     const fetchImpl: typeof fetch = async (_input, init) => {

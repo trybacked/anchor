@@ -1,23 +1,18 @@
 import { zValidator } from "@hono/zod-validator";
+import { LoginRequestSchema } from "@trybacked/core";
 import type { Hono } from "hono";
-import { z } from "zod";
 import type { GatewayConfig } from "./config.js";
 import { setSessionCookie } from "./cookies.js";
 import { createSessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";
 import { authenticateUser, type UserRecord } from "./users.js";
 
-const LoginBodySchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
-});
-
 export function registerAuthRoutes(
   app: Hono<{ Variables: GatewayVariables }>,
   config: GatewayConfig,
   getUsers: () => UserRecord[],
 ): void {
-  app.post("/login", zValidator("json", LoginBodySchema), async (c) => {
+  app.post("/login", zValidator("json", LoginRequestSchema), async (c) => {
     const body = c.req.valid("json");
     const user = authenticateUser(getUsers(), body.username, body.password);
     if (user === undefined) {

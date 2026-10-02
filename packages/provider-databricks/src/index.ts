@@ -15,13 +15,25 @@ export {
 export type { CreateDatabricksDatasetProviderOptions } from "./databricks-dataset-provider.js";
 export { createDatabricksSqlClient } from "./sql-client.js";
 export type { DatabricksSqlClient, SqlParameter, SqlParameterValue, SqlRow } from "./sql-client.js";
-export { createDatabricksFilesClient, normalizeDatabricksVolumePath } from "./files-client.js";
+export {
+  createDatabricksFilesClient,
+  createDatabricksBlobStore,
+  DatabricksFileExistsError,
+  normalizeDatabricksVolumePath,
+} from "./files-client.js";
 export type {
   DatabricksBlobStore,
+  DatabricksDirectoryEntry,
   DatabricksFileReadResult,
+  DatabricksFileStat,
   DatabricksFilesClient,
 } from "./files-client.js";
-export { createDatabricksBlobStore } from "./files-client.js";
+export { createDatabricksJobsClient } from "./jobs-client.js";
+export type {
+  DatabricksJobRunResult,
+  DatabricksJobRunState,
+  DatabricksJobsClient,
+} from "./jobs-client.js";
 
 export function createDatabricksProviderFromEnv(
   env: Record<string, string | undefined> = process.env,

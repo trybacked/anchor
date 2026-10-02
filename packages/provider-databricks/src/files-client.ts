@@ -21,12 +21,43 @@ export type DatabricksFileReadResult = {
   acceptRanges?: string | undefined;
 };
 
+export type DatabricksDirectoryEntry = {
+  path: string;
+  name: string;
+  isDirectory: boolean;
+  fileSize?: number | undefined;
+  lastModified?: number | undefined;
+};
+
+export type DatabricksFileStat = {
+  path: string;
+  fileSize: number;
+  lastModified?: number | undefined;
+};
+
+export class DatabricksFileExistsError extends Error {
+  readonly path: string;
+
+  constructor(path: string) {
+    super(`File already exists: ${path}`);
+    this.name = "DatabricksFileExistsError";
+    this.path = path;
+  }
+}
+
 export type DatabricksFilesClient = {
   readFile: (
     path: string,
     init?: { range?: string | undefined },
   ) => Promise<DatabricksFileReadResult>;
-  writeFile: (path: string, data: Uint8Array) => Promise<void>;
+  writeFile: (
+    path: string,
+    data: Uint8Array,
+    options?: { overwrite?: boolean | undefined },
+  ) => Promise<void>;
+  statFile: (path: string) => Promise<DatabricksFileStat | null>;
+  listDirectory: (path: string) => Promise<DatabricksDirectoryEntry[]>;
+  deleteFile: (path: string) => Promise<void>;
 };
 
 export type DatabricksBlobStore = {
@@ -54,7 +85,7 @@ function contentTypeFromFilename(filename: string): string {
 export function createDatabricksFilesClient(
   config: DatabricksProviderConfig,
 ): DatabricksFilesClient {
-  return {
+  const client: DatabricksFilesClient = {
     readFile: async (rawPath, init) => {
       const path = normalizeDatabricksVolumePath(rawPath);
       const url = `${apiBaseUrl(config.host)}/api/2.0/fs/files${encodeURI(path)}`;
@@ -95,9 +126,105 @@ export function createDatabricksFilesClient(
       };
     },
 
-    writeFile: async (rawPath, data) => {
+    statFile: async (rawPath) => {
       const path = normalizeDatabricksVolumePath(rawPath);
-      const url = `${apiBaseUrl(config.host)}/api/2.0/fs/files${encodeURI(path)}?overwrite=true`;
+      const url = `${apiBaseUrl(config.host)}/api/2.0/fs/files${encodeURI(path)}`;
+      const response = await fetch(url, {
+        method: "HEAD",
+        headers: { Authorization: `Bearer ${config.token}` },
+      });
+      if (response.status === 404) {
+        return null;
+      }
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(
+          `Databricks files API HEAD ${String(response.status)} for "${path}": ${body.slice(0, 240)}`,
+        );
+      }
+      const lengthHeader = response.headers.get("content-length");
+      const fileSize = lengthHeader !== null && lengthHeader.length > 0 ? Number(lengthHeader) : 0;
+      const modifiedHeader = response.headers.get("last-modified");
+      const lastModified =
+        modifiedHeader !== null && modifiedHeader.length > 0
+          ? Date.parse(modifiedHeader)
+          : undefined;
+      return {
+        path,
+        fileSize: Number.isNaN(fileSize) ? 0 : fileSize,
+        ...(lastModified !== undefined && !Number.isNaN(lastModified) ? { lastModified } : {}),
+      };
+    },
+
+    listDirectory: async (rawPath) => {
+      const path = normalizeDatabricksVolumePath(rawPath);
+      const url = `${apiBaseUrl(config.host)}/api/2.0/fs/directories${encodeURI(path)}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${config.token}` },
+      });
+      if (response.status === 404) {
+        return [];
+      }
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(
+          `Databricks directories API ${String(response.status)} for "${path}": ${body.slice(0, 240)}`,
+        );
+      }
+      const payload = (await response.json()) as {
+        contents?: Array<{
+          path?: string;
+          name?: string;
+          is_directory?: boolean;
+          file_size?: number;
+          last_modified?: number;
+        }>;
+      };
+      return (payload.contents ?? []).flatMap((entry) => {
+        if (entry.path === undefined || entry.name === undefined) {
+          return [];
+        }
+        return [
+          {
+            path: entry.path,
+            name: entry.name,
+            isDirectory: entry.is_directory === true,
+            ...(entry.file_size !== undefined ? { fileSize: entry.file_size } : {}),
+            ...(entry.last_modified !== undefined ? { lastModified: entry.last_modified } : {}),
+          },
+        ];
+      });
+    },
+
+    deleteFile: async (rawPath) => {
+      const path = normalizeDatabricksVolumePath(rawPath);
+      const url = `${apiBaseUrl(config.host)}/api/2.0/fs/files${encodeURI(path)}`;
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${config.token}` },
+      });
+      if (response.status === 404) {
+        return;
+      }
+      if (response.status !== 204 && response.status !== 200) {
+        const body = await response.text();
+        throw new Error(
+          `Databricks files API DELETE ${String(response.status)} for "${path}": ${body.slice(0, 240)}`,
+        );
+      }
+    },
+
+    writeFile: async (rawPath, data, options) => {
+      const path = normalizeDatabricksVolumePath(rawPath);
+      const overwrite = options?.overwrite === true;
+      if (!overwrite) {
+        const existing = await client.statFile(path);
+        if (existing !== null) {
+          throw new DatabricksFileExistsError(path);
+        }
+      }
+      const overwriteQuery = overwrite ? "true" : "false";
+      const url = `${apiBaseUrl(config.host)}/api/2.0/fs/files${encodeURI(path)}?overwrite=${overwriteQuery}`;
       const response = await fetch(url, {
         method: "PUT",
         headers: {
@@ -114,6 +241,7 @@ export function createDatabricksFilesClient(
       }
     },
   };
+  return client;
 }
 
 export function createDatabricksBlobStore(config: DatabricksProviderConfig): DatabricksBlobStore {

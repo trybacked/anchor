@@ -192,6 +192,9 @@ importers:
 
   packages/anchor:
     dependencies:
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
       '@trybacked/service':
         specifier: workspace:*
         version: link:../service

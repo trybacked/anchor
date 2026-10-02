@@ -8,6 +8,7 @@ import {
   createVolumeOntologyStore,
   type OntologyStore,
 } from "@trybacked/registry";
+import { grantDocsRefreshJobRunIfPresent } from "./admin-jobs.js";
 import {
   createAdminSqlClient,
   createTenantCatalog,
@@ -72,6 +73,7 @@ export async function provisionTenantCloud(
       platformPrincipal,
       sharedSpaceKeys,
     );
+    await grantDocsRefreshJobRunIfPresent(adminConfig, catalog, platformPrincipal);
   }
 
   await patchWarehousePermissions(adminConfig, warehouseId, applicationId, "CAN_USE", deps);

@@ -253,3 +253,17 @@ export {
   type TenantRegistrySnapshot,
   type TenantRegistrySource,
 } from "./tenant-registry-source.js";
+export {
+  GatewayAuthModeSchema,
+  LoginRequestSchema,
+  LoginResponseSchema,
+  GatewaySessionSchema,
+  GatewayHealthSchema,
+  LogoutResponseSchema,
+  type GatewayAuthMode,
+  type LoginRequest,
+  type LoginResponse,
+  type GatewaySession,
+  type GatewayHealth,
+  type LogoutResponse,
+} from "./gateway-contract.js";

@@ -33,6 +33,7 @@ if (config.platformMode) {
     databricksConfig,
     env: process.env,
     cacheTtlSeconds: config.tenantCacheTtlSeconds,
+    maxUploadBytes: config.maxUploadBytes,
     audit: { onOperation, auditPrincipal: config.auditPrincipalId },
   });
   app = createAnchorApiApp(

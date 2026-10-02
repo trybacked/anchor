@@ -1,10 +1,19 @@
 import {
   isServiceErrorResult,
   serviceErrorHttpStatus,
+  type AnchorService,
   type ServiceErrorResult,
 } from "@trybacked/service";
 import type { z } from "zod";
 import type { PlatformHandlerContext } from "./platform-api-types.js";
+
+export function getAnchorService(c: PlatformHandlerContext): AnchorService {
+  const service = c.get("anchorService");
+  if (service === undefined) {
+    throw new Error("anchorService not resolved");
+  }
+  return service;
+}
 
 export function jsonServiceErrorResponse(
   c: PlatformHandlerContext,
