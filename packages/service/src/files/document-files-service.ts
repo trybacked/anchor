@@ -119,6 +119,22 @@ function normalizeSegment(
   return trimmed;
 }
 
+/** Maps browser names (spaces, uppercase) to volume-safe slugs before normalizeSegment. */
+function prepareFilename(raw: string): string | ServiceErrorResult {
+  const basename = raw.trim().split(/[/\\]/).pop()?.trim() ?? "";
+  if (basename.length === 0) {
+    return serviceError("bad_request", "filename must not be empty");
+  }
+  let slug = basename.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_.-]+/g, "");
+  if (slug.length === 0) {
+    return serviceError("bad_request", "filename has no valid characters after normalization");
+  }
+  if (!/^[a-z0-9]/.test(slug)) {
+    slug = `f_${slug}`;
+  }
+  return normalizeSegment(slug, "filename");
+}
+
 function mapRunStatus(lifeCycle: string, resultState?: string): RefreshRunStatus {
   if (lifeCycle === "PENDING" || lifeCycle === "BLOCKED" || lifeCycle === "WAITING_FOR_RETRY") {
     return "queued";
@@ -146,7 +162,7 @@ function resolveVolumePath(
   folder: string | undefined,
   filename: string,
 ): string | ServiceErrorResult {
-  const nameResult = normalizeSegment(filename, "filename");
+  const nameResult = prepareFilename(filename);
   if (typeof nameResult !== "string") {
     return nameResult;
   }
@@ -197,9 +213,10 @@ export function createDocumentFilesService(
           const message = error instanceof Error ? error.message : "File already exists";
           return serviceError("conflict", message);
         }
-        throw error;
+        const message = error instanceof Error ? error.message : String(error);
+        return serviceError("unavailable", message);
       }
-      const filename = uploadOptions.filename.trim();
+      const filename = pathResult.slice(pathResult.lastIndexOf("/") + 1);
       const folder =
         uploadOptions.folder !== undefined && uploadOptions.folder.trim().length > 0
           ? uploadOptions.folder.trim()
@@ -222,7 +239,13 @@ export function createDocumentFilesService(
         }
         prefix = `${root}/${folderResult}`;
       }
-      const raw = await options.files.listDirectory(prefix);
+      let raw: Awaited<ReturnType<DocumentVolumeClient["listDirectory"]>>;
+      try {
+        raw = await options.files.listDirectory(prefix);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return serviceError("unavailable", message);
+      }
       const entries: FileEntry[] = raw.map((entry) => ({
         path: entry.path,
         documentId: documentIdFromPath(entry.path),
