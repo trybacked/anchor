@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/platform-admin",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Cloud-safe Databricks tenant provisioning (REST only, no local CLI)",
   "license": "Apache-2.0",

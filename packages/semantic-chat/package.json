@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/semantic-chat",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "type": "module",
   "description": "NL → semantic query planner and deterministic executor with row provenance for chat/workshop",
   "license": "Apache-2.0",

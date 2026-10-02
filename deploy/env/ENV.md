@@ -41,6 +41,8 @@ Interactive docs (Scalar): **`GET /docs`**, **`GET /docs/platform`** (platform b
 | `WORKOS_CONSOLE_REDIRECT_URI`  | —                  | —     | —       | Next.js console only                                                                                                                                                                     |
 | `BACKED_DATABRICKS_*`          | —                  | —     | —       | **Not** on the gateway                                                                                                                                                                   |
 
+Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control plane (`POST /v1/admin/oauth-clients`); gateway reads them via `GET /v1/oauth-clients` using `CONTROL_PLANE_INTERNAL_TOKEN`. See [docs/OAUTH_APPS.md](../../docs/OAUTH_APPS.md).
+
 ### Platform-api (internal)
 
 | Variable                                        | R/O       | Local | Railway |

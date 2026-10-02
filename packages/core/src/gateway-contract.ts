@@ -33,3 +33,20 @@ export const LogoutResponseSchema = z.object({
   ok: z.literal(true),
 });
 export type LogoutResponse = z.infer<typeof LogoutResponseSchema>;
+
+export const OAuthTokenRequestSchema = z.object({
+  grant_type: z.literal("authorization_code"),
+  code: z.string().min(1),
+  client_id: z.string().min(1),
+  redirect_uri: z.string().url(),
+  client_secret: z.string().min(1).optional(),
+  code_verifier: z.string().min(43).max(128).optional(),
+});
+export type OAuthTokenRequest = z.infer<typeof OAuthTokenRequestSchema>;
+
+export const OAuthTokenResponseSchema = z.object({
+  access_token: z.string().min(1),
+  token_type: z.literal("Bearer"),
+  expires_in: z.number().int().positive(),
+});
+export type OAuthTokenResponse = z.infer<typeof OAuthTokenResponseSchema>;

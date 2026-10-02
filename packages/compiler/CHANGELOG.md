@@ -1,5 +1,21 @@
 # @trybacked/compiler
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @trybacked/core@0.4.0
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [36f1c95]
+- Updated dependencies [c94dac9]
+- Updated dependencies [f6cb39e]
+  - @trybacked/core@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

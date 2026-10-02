@@ -1,5 +1,19 @@
 # @trybacked/core
 
+## 0.4.0
+
+### Minor Changes
+
+- Add scalable third-party OAuth: control-plane client registry, gateway authorization code + PKCE, Bearer session, and SDK authorize/token helpers.
+
+## 0.3.0
+
+### Minor Changes
+
+- 36f1c95: Add cloud control plane (Postgres + HTTP registry), REST-only tenant provisioning package, WorkOS gateway auth mode, and CLI `--remote` for organization creation. Private deploy apps (control-plane, gateway, api-server) are versioned with the monorepo, not npm.
+- c94dac9: Modular Anchor SDK (`createBackedClient`) with gateway auth, tenant-scoped model/query/search/documents/graph/ai/files modules. Platform API adds document upload, list, delete, and docs refresh job endpoints.
+- f6cb39e: Platform mode: remote ontology store on UC volumes, single multi-tenant api-server, gateway platform upstream, CLI bootstrap/status, and two-service deploy stack.
+
 ## 0.2.1
 
 ### Patch Changes

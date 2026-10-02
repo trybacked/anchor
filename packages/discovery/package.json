@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/discovery",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "type": "module",
   "description": "Deterministic ontology discovery from dataset inspection (profile / schema analysis)",
   "license": "Apache-2.0",
