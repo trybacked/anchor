@@ -53,7 +53,13 @@ async function fetchTenantsFromControlPlane(
 
 type GatewayContext = Context<{ Variables: GatewayVariables }>;
 
-function beginWorkOSAuthorization(c: GatewayContext, config: GatewayConfig, workos: WorkOS, clientId: string, redirectUri: string): Response {
+function beginWorkOSAuthorization(
+  c: GatewayContext,
+  config: GatewayConfig,
+  workos: WorkOS,
+  clientId: string,
+  redirectUri: string,
+): Response {
   const state = crypto.randomUUID();
   setOAuthCookie(c, config, OAUTH_STATE_COOKIE, state);
   const url = workos.userManagement.getAuthorizationUrl({
@@ -123,11 +129,7 @@ export function registerWorkOSAuthRoutes(
       return c.redirect(redirectTarget);
     }
 
-    const token = await createSessionToken(
-      config.sessionSecret,
-      user,
-      config.sessionTtlSeconds,
-    );
+    const token = await createSessionToken(config.sessionSecret, user, config.sessionTtlSeconds);
     setSessionCookie(c, config, token);
     clearOAuthFlowCookies(c, config);
     const returnPath = safeReturnPath(getCookie(c, OAUTH_RETURN_COOKIE)) ?? "/docs";

@@ -48,7 +48,8 @@ export async function verifyOAuthPending(
       "redirectUri" in payload && typeof payload.redirectUri === "string"
         ? payload.redirectUri
         : undefined;
-    const state = "state" in payload && typeof payload.state === "string" ? payload.state : undefined;
+    const state =
+      "state" in payload && typeof payload.state === "string" ? payload.state : undefined;
     if (clientId === undefined || redirectUri === undefined || state === undefined) {
       return undefined;
     }

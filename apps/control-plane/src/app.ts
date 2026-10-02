@@ -21,10 +21,7 @@ import {
   patchOAuthClient,
   updateOrganizationWorkosId,
 } from "./db/repositories.js";
-import {
-  generateClientSecret,
-  hashClientSecret,
-} from "./oauth-client-secret.js";
+import { generateClientSecret, hashClientSecret } from "./oauth-client-secret.js";
 import { buildTenantsRegistry } from "./registry-builder.js";
 
 const CreateOrganizationSchema = z.object({
@@ -61,9 +58,13 @@ const PatchOAuthClientSchema = z
     redirectUris: z.array(z.string().url()).min(1).optional(),
     corsOrigins: z.array(z.string().url()).optional(),
   })
-  .refine((body) => body.name !== undefined || body.redirectUris !== undefined || body.corsOrigins !== undefined, {
-    message: "At least one field is required",
-  });
+  .refine(
+    (body) =>
+      body.name !== undefined || body.redirectUris !== undefined || body.corsOrigins !== undefined,
+    {
+      message: "At least one field is required",
+    },
+  );
 
 function toPublicOAuthClient(row: Awaited<ReturnType<typeof getOAuthClientById>>) {
   if (row === undefined) {
@@ -255,12 +256,8 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       const confidential = body.confidential === true;
       const plainSecret = confidential ? generateClientSecret() : undefined;
       const clientSecretHash =
-        plainSecret !== undefined
-          ? hashClientSecret(plainSecret, config.internalToken)
-          : null;
-      const corsOrigins =
-        body.corsOrigins ??
-        body.redirectUris.map((uri) => new URL(uri).origin);
+        plainSecret !== undefined ? hashClientSecret(plainSecret, config.internalToken) : null;
+      const corsOrigins = body.corsOrigins ?? body.redirectUris.map((uri) => new URL(uri).origin);
       const row = await insertOAuthClient(pool, {
         clientId: body.clientId,
         name: body.name,

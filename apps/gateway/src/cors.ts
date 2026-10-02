@@ -1,9 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import type { GatewayConfig } from "./config.js";
-import {
-  collectCorsOrigins,
-  listRegisteredOAuthClients,
-} from "./oauth-client-store.js";
+import { collectCorsOrigins, listRegisteredOAuthClients } from "./oauth-client-store.js";
 import type { GatewayVariables } from "./types.js";
 
 const CORS_PATH_PREFIXES = ["/me", "/logout", "/oauth/", "/t/"];

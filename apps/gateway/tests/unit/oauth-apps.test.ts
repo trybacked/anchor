@@ -176,11 +176,12 @@ describe("oauth apps", () => {
       { username: "user@example.com", tenants: ["gerace"] },
       3600,
     );
-    const fetchImpl = vi.fn(async () =>
-      new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
     );
     const app = createGatewayApp({
       config,
