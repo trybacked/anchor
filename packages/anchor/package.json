@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/anchor",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "HTTP client for the Anchor API (generated from OpenAPI)",
   "license": "Apache-2.0",

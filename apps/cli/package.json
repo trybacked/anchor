@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/cli",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "Anchor CLI (`backed`): pull, sync, and deploy a governed ontology over Databricks",
   "license": "Apache-2.0",
