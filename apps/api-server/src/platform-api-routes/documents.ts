@@ -1,5 +1,9 @@
 import { isServiceErrorResult } from "@trybacked/service";
-import { jsonServiceErrorResponse, respondIfServiceError } from "../platform-api-handler-utils.js";
+import {
+  getAnchorService,
+  jsonServiceErrorResponse,
+  respondIfServiceError,
+} from "../platform-api-handler-utils.js";
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import { DocumentIdParamSchema, DocumentPreviewQuerySchema } from "../platform-api-schemas.js";
@@ -21,7 +25,7 @@ export const platformApiDocumentRoutes: RouteFactory[] = [
     },
     () => async (c) => {
       const { id } = DocumentIdParamSchema.parse(c.req.param());
-      const result = await c.get("anchorService").getDocument(id);
+      const result = await getAnchorService(c).getDocument(id);
       const errorResponse = respondIfServiceError(c, result);
       if (errorResponse !== null) {
         return errorResponse;
@@ -50,7 +54,7 @@ export const platformApiDocumentRoutes: RouteFactory[] = [
       const accept = c.req.header("accept") ?? "";
       const wantsJson =
         format === "json" || (format !== "file" && accept.includes("application/json"));
-      const service = c.get("anchorService");
+      const service = getAnchorService(c);
       if (wantsJson) {
         const descriptor = await service.describeDocumentPreview(id, page);
         if (isServiceErrorResult(descriptor)) {

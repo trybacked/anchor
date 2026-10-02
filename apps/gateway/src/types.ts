@@ -1,7 +1,6 @@
-export type GatewayUser = {
-  username: string;
-  tenants: string[];
-};
+import type { GatewaySession } from "@trybacked/core";
+
+export type GatewayUser = GatewaySession;
 
 export type GatewaySessionPayload = {
   sub: string;

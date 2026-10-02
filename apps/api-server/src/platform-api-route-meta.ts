@@ -4,12 +4,18 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 export const AUTH_SCHEME = "backedAuth";
 export const V1_PATH_PREFIX = "/v1";
 
-export type HttpMethod = "get" | "post";
+export type HttpMethod = "get" | "post" | "delete";
+
+export type PlatformRouteRequires = "ontology" | "tenant";
 
 export type JsonBodySpec<Name extends string, Schema extends z.ZodTypeAny = z.ZodTypeAny> = {
   componentName: Name;
   schema: Schema;
   example: z.input<Schema>;
+};
+
+export type MultipartBodySpec = {
+  description: string;
 };
 
 export type PlatformApiRouteSpec = {
@@ -20,8 +26,10 @@ export type PlatformApiRouteSpec = {
   summary: string;
   tags?: string[];
   public?: boolean;
+  requires?: PlatformRouteRequires;
   responses: Record<string, { description: string }>;
   jsonBody?: JsonBodySpec<string>;
+  multipartBody?: MultipartBodySpec;
   paramSchema?: z.ZodObject<z.ZodRawShape>;
   querySchema?: z.ZodType;
 };
@@ -84,6 +92,7 @@ export const OPENAPI_TAG_DESCRIPTIONS: Record<string, string> = {
   "entity-profile-reader": "Enriched entity profiles",
   "graph-traverse": "Multi-hop graph traversal",
   "semantic-chat": "Natural-language answers over governed data",
+  files: "Upload and manage raw document files before pipeline refresh",
 };
 
 export function openApiTagsFromRoutes(routes: PlatformApiRouteSpec[]): Array<{

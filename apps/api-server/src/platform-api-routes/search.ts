@@ -1,4 +1,5 @@
 import { ChunkSearchBodySchema, EntitySearchBodySchema } from "@trybacked/service";
+import { getAnchorService } from "../platform-api-handler-utils.js";
 import {
   postJsonRoute,
   postServiceJsonRoute,
@@ -19,7 +20,7 @@ export const platformApiEntitySearchRoutes: RouteFactory[] = [
       }),
       responses: { "200": { description: "Matches" } },
     },
-    async (c, body) => c.json(await c.get("anchorService").entitySearch(body)),
+    async (c, body) => c.json(await getAnchorService(c).entitySearch(body)),
   ),
 ];
 

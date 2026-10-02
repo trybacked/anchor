@@ -73,6 +73,26 @@ function operationFromSpec(spec: PlatformApiRouteSpec, secured: boolean): Record
     security: opSecurity,
     ...(parameters !== undefined ? { parameters } : {}),
     ...(spec.jsonBody !== undefined ? { requestBody: jsonRequestBodyFromSpec(spec.jsonBody) } : {}),
+    ...(spec.multipartBody !== undefined
+      ? {
+          requestBody: {
+            required: true,
+            content: {
+              "multipart/form-data": {
+                schema: {
+                  type: "object",
+                  required: ["file"],
+                  properties: {
+                    file: { type: "string", format: "binary" },
+                    folder: { type: "string" },
+                  },
+                },
+                description: spec.multipartBody.description,
+              },
+            },
+          },
+        }
+      : {}),
     responses: spec.responses,
   };
 }

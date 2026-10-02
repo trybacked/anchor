@@ -11,6 +11,7 @@ const ApiConfigSchema = z.object({
   platformMode: z.boolean(),
   tenantsRegistryPath: z.string().min(1).optional(),
   tenantCacheTtlSeconds: z.number().int().positive().optional(),
+  maxUploadBytes: z.number().int().positive(),
 });
 
 export type ApiConfig = z.infer<typeof ApiConfigSchema>;
@@ -51,6 +52,10 @@ export function readApiConfig(env: NodeJS.ProcessEnv): ApiConfig {
   const ttlRaw = env["ANCHOR_TENANT_CACHE_TTL_SECONDS"]?.trim();
   const tenantCacheTtlSeconds =
     ttlRaw !== undefined && ttlRaw.length > 0 ? Number(ttlRaw) : undefined;
+  const maxUploadDefault = 50 * 1024 * 1024;
+  const maxUploadRaw = env["ANCHOR_MAX_UPLOAD_BYTES"]?.trim();
+  const maxUploadBytes =
+    maxUploadRaw !== undefined && maxUploadRaw.length > 0 ? Number(maxUploadRaw) : maxUploadDefault;
 
   return ApiConfigSchema.parse({
     host,
@@ -69,5 +74,6 @@ export function readApiConfig(env: NodeJS.ProcessEnv): ApiConfig {
     ...(tenantCacheTtlSeconds !== undefined && !Number.isNaN(tenantCacheTtlSeconds)
       ? { tenantCacheTtlSeconds }
       : {}),
+    maxUploadBytes: Number.isNaN(maxUploadBytes) ? maxUploadDefault : maxUploadBytes,
   });
 }

@@ -1,4 +1,4 @@
-export const SERVICE_ERROR_CODES = ["not_found", "unavailable", "bad_request"] as const;
+export const SERVICE_ERROR_CODES = ["not_found", "unavailable", "bad_request", "conflict"] as const;
 
 export type ServiceErrorCode = (typeof SERVICE_ERROR_CODES)[number];
 
@@ -31,7 +31,7 @@ export function isServiceErrorResult(value: unknown): value is ServiceErrorResul
   return isServiceErrorCode(candidate.code) && typeof candidate.message === "string";
 }
 
-export function serviceErrorHttpStatus(code: ServiceErrorCode): 400 | 404 | 503 {
+export function serviceErrorHttpStatus(code: ServiceErrorCode): 400 | 404 | 409 | 503 {
   switch (code) {
     case "not_found":
       return 404;
@@ -39,6 +39,8 @@ export function serviceErrorHttpStatus(code: ServiceErrorCode): 400 | 404 | 503 
       return 503;
     case "bad_request":
       return 400;
+    case "conflict":
+      return 409;
     default: {
       const exhaustive: never = code;
       return exhaustive;

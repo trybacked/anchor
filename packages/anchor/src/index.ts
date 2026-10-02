@@ -1,5 +1,25 @@
-export { AnchorApiError, createAnchorClient } from "./client.js";
-export type { AnchorClient, AnchorClientOptions } from "./client.js";
+export {
+  createBackedClient,
+  AnchorApiError,
+  type BackedClient,
+  type BackedClientOptions,
+  type GatewayBackedClient,
+  type GatewayBackedClientOptions,
+  type PlatformBackedClient,
+  type PlatformBackedClientOptions,
+  type TenantClient,
+} from "./client.js";
+export type { AuthModule, HealthModule } from "./modules/auth.js";
+export type { TransportOptions } from "./transport.js";
+
+export type {
+  GatewayAuthMode,
+  GatewayHealth,
+  GatewaySession,
+  LoginRequest,
+  LoginResponse,
+  LogoutResponse,
+} from "@trybacked/core";
 
 export type {
   ChunkSearchBody,
@@ -14,6 +34,7 @@ export type {
   EntitySearchBody,
   EntitySearchResponse,
   EntitySummary,
+  FileEntry,
   GetDefinitionResponse,
   GetDocumentResponse,
   GetEntityResponse,
@@ -21,13 +42,17 @@ export type {
   GraphTraverseResponse,
   HealthResponse,
   ListEntitiesResponse,
+  ListFilesResponse,
   ListRelationsResponse,
   ObjectQueryBody,
   ObjectQueryResponse,
+  RefreshRun,
+  RefreshRunStatus,
   RelationSummary,
   RowProvenance,
   SearchMatch,
   SemanticAskResponse,
   SemanticAskResult,
   SemanticAskStep,
+  UploadedFile,
 } from "@trybacked/service";

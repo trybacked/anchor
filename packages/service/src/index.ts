@@ -75,6 +75,16 @@ export {
   type RowProvenance,
 } from "./provenance.js";
 export {
+  createDocumentFilesService,
+  type CreateDocumentFilesServiceOptions,
+  type DocumentFilesService,
+  type FileEntry,
+  type ListFilesResponse,
+  type RefreshRun,
+  type RefreshRunStatus,
+  type UploadedFile,
+} from "./files/index.js";
+export {
   AnchorApiError,
   type ChunkSearchResponse,
   type DocumentPreviewFile,

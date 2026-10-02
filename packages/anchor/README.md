@@ -1,49 +1,68 @@
 # @trybacked/anchor
 
-HTTP client for the Anchor API (`apps/api-server`) and the multi-tenant gateway (`/t/{tenantId}/v1/*`).
+HTTP client for the Backed gateway and platform API.
 
 ## Install
 
-Workspace dependency: `"@trybacked/anchor": "workspace:*"`.
+```json
+"@trybacked/anchor": "workspace:*"
+```
 
-## Usage
+## Gateway (browser / workshop)
 
 ```ts
-import { createAnchorClient, AnchorApiError } from "@trybacked/anchor";
+import { createBackedClient } from "@trybacked/anchor";
 
-const client = createAnchorClient({
-  baseUrl: "https://workshop.example.com/t/gerace",
+const backed = createBackedClient({
+  mode: "gateway",
+  baseUrl: "https://api.example.com",
   credentials: "include",
   onUnauthorized: () => {
     window.location.href = "/login";
   },
 });
 
-const entities = await client.listEntities();
-const answer = await client.ask({ question: "How many contracts in June 2025?", evidence: true });
+await backed.auth.loginWithPassword({ username: "demo", password: "…" });
+const session = await backed.auth.session();
+
+const gerace = backed.tenant("gerace");
+const { entities } = await gerace.model.listEntities();
+await gerace.files.upload(file, { filename: "report.pdf", folder: "contratti" });
+const run = await gerace.files.refresh();
+await gerace.ai.ask({ question: "How many contracts?", evidence: true });
 ```
 
-Multi-tenant gateway: set `baseUrl` to `{gatewayOrigin}/t/{tenantId}` (no trailing slash required). Session cookies are sent when `credentials: "include"` and the browser is on the same site as the gateway.
+WorkOS: redirect with `location.href = backed.auth.loginUrl({ next: "/app" })`.
 
-Single-tenant gateway: `baseUrl` is the gateway origin; paths are `/v1/*`.
+## Platform API (server-side)
 
-## Methods
+```ts
+const backed = createBackedClient({
+  mode: "platform",
+  baseUrl: "http://127.0.0.1:8787",
+  token: process.env.ANCHOR_API_TOKEN!,
+});
 
-| Method                                                                       | Path                                                |
-| ---------------------------------------------------------------------------- | --------------------------------------------------- |
-| `health`                                                                     | `GET /health`                                       |
-| `listEntities`, `getEntity`, `listRelations`, `searchModel`, `getDefinition` | `/v1/model/*`                                       |
-| `objectQuery`                                                                | `POST /v1/query/objects`                            |
-| `entitySearch`                                                               | `POST /v1/search/entities`                          |
-| `chunkSearch`                                                                | `POST /v1/search/chunks`                            |
-| `getDocument`                                                                | `GET /v1/documents/{id}`                            |
-| `describeDocumentPreview`                                                    | `GET /v1/documents/{id}/preview?format=json&page=N` |
-| `entityProfile`                                                              | `POST /v1/profile/entities`                         |
-| `graphTraverse`                                                              | `POST /v1/graph/traverse`                           |
-| `ask`                                                                        | `POST /v1/chat/ask`                                 |
+const tenant = backed.tenant("gerace");
+await tenant.query.objects({ objectId: "contract", mode: "count" });
+```
 
-Request bodies and responses are typed (`ObjectQueryBody`, `SemanticAskResponse`, `RowProvenance`, etc.) — re-exported from this package and from `@trybacked/service`.
+## Modules
 
-## Errors
+| Module                  | Methods                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `auth` (gateway only)   | `loginWithPassword`, `loginUrl`, `logout`, `me`, `session`              |
+| `health` (gateway only) | `live`, `status`                                                        |
+| `tenant(id).model`      | `listEntities`, `getEntity`, `listRelations`, `search`, `getDefinition` |
+| `tenant(id).query`      | `objects`                                                               |
+| `tenant(id).search`     | `entities`, `chunks`                                                    |
+| `tenant(id).documents`  | `get`, `preview`, `previewUrl`                                          |
+| `tenant(id).graph`      | `profile`, `traverse`                                                   |
+| `tenant(id).ai`         | `ask`                                                                   |
+| `tenant(id).files`      | `upload`, `list`, `delete`, `refresh`, `getRefresh`, `waitForRefresh`   |
 
-Failed responses throw `AnchorApiError` with `status` (401, 403, 404, …) and `message` from the API `{ error }` field when present.
+Types are re-exported from `@trybacked/service` and `@trybacked/core` (gateway contract).
+
+## Legacy
+
+`createAnchorClient({ baseUrl: "…/t/gerace" })` remains as a thin compatibility wrapper; prefer `createBackedClient`.

@@ -3,9 +3,9 @@ import { Hono } from "hono";
 import { createBearerAuthMiddleware } from "./auth.js";
 import { buildOpenApiDocument } from "./openapi-document.js";
 import { registerPlatformApiRoutes } from "./platform-api-register.js";
+import type { AnchorApiVariables } from "./platform-api-types.js";
 import { withRequestContext } from "./request-context.js";
 import type { TenantRuntimeRegistry } from "./tenant-runtime-registry.js";
-import { OntologyNotPublishedError, TenantNotFoundError } from "./tenant-runtime-registry.js";
 
 export type CreateAnchorApiAppOptions = {
   apiToken?: string | undefined;
@@ -15,14 +15,14 @@ export type CreateAnchorApiAppOptions = {
 export function createAnchorApiApp(
   getService: () => AnchorService,
   options: CreateAnchorApiAppOptions = {},
-): Hono<{ Variables: { anchorService: AnchorService } }> {
-  const app = new Hono<{ Variables: { anchorService: AnchorService } }>();
+): Hono<{ Variables: AnchorApiVariables }> {
+  const app = new Hono<{ Variables: AnchorApiVariables }>();
   const auth =
     options.apiToken !== undefined ? createBearerAuthMiddleware(options.apiToken) : undefined;
   const openApiSecured = Boolean(options.apiToken);
   const platformRegistry = options.platform?.registry;
 
-  const v1 = new Hono<{ Variables: { anchorService: AnchorService } }>();
+  const v1 = new Hono<{ Variables: AnchorApiVariables }>();
 
   if (auth !== undefined) {
     v1.use("*", auth);
@@ -36,26 +36,15 @@ export function createAnchorApiApp(
       if (tenant === undefined || tenant.length === 0) {
         return c.json({ error: "Missing X-Backed-Tenant header" }, 400);
       }
-      try {
-        const anchorService = await platformRegistry.resolve(tenant);
-        c.set("anchorService", anchorService);
-
-        await withRequestContext({ user, tenant }, () => next());
-        return;
-      } catch (error) {
-        if (error instanceof TenantNotFoundError) {
-          return c.json({ error: error.message }, 404);
-        }
-        if (error instanceof OntologyNotPublishedError) {
-          return c.json({ error: error.message }, 503);
-        }
-        throw error;
-      }
+      c.set("tenantId", tenant);
+      await withRequestContext({ user, tenant }, () => next());
+      return;
     });
   } else {
     v1.use("*", async (c, next) => {
       const headerUser = c.req.header("X-Backed-User")?.trim();
       const user = headerUser !== undefined && headerUser.length > 0 ? headerUser : undefined;
+      c.set("tenantId", "workspace");
       c.set("anchorService", getService());
       await withRequestContext({ user }, () => next());
       return;
@@ -66,6 +55,18 @@ export function createAnchorApiApp(
     getService,
     platformRegistry,
     serveOpenApiDocument: () => buildOpenApiDocument(openApiSecured),
+    resolveOntologyService: async (tenantId) => {
+      if (platformRegistry !== undefined) {
+        return await platformRegistry.resolve(tenantId);
+      }
+      return getService();
+    },
+    resolveFilesService: async (tenantId) => {
+      if (platformRegistry === undefined) {
+        throw new Error("Platform registry required for file operations");
+      }
+      return await platformRegistry.resolveFiles(tenantId);
+    },
   });
 
   app.route("/v1", v1);

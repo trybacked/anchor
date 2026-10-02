@@ -1,4 +1,5 @@
 import { SemanticAskBodySchema } from "@trybacked/service";
+import { getAnchorService } from "../platform-api-handler-utils.js";
 import { postJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 
@@ -22,7 +23,7 @@ export const platformApiSemanticChatRoutes: RouteFactory[] = [
       },
     },
     async (c, body) => {
-      const service = c.get("anchorService");
+      const service = getAnchorService(c);
       if (service.semanticAsk === undefined) {
         return c.json(
           { error: "Semantic chat is unavailable: set AI_GATEWAY_API_KEY (Vercel AI Gateway)." },

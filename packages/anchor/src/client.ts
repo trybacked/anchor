@@ -1,134 +1,148 @@
+import type { AnchorApiError } from "@trybacked/service";
+import { createAiModule } from "./modules/ai.js";
 import {
-  AnchorApiError,
-  type ChunkSearchBody,
-  type EntityProfileBody,
-  type EntitySearchBody,
-  type GetDefinitionResponse,
-  type GraphTraverseBody,
-  type ObjectQueryBody,
-  type ChunkSearchResponse,
-  type DocumentPreviewResponse,
-  type EntityProfileResponse,
-  type EntitySearchResponse,
-  type GetDocumentResponse,
-  type GetEntityResponse,
-  type GraphTraverseResponse,
-  type HealthResponse,
-  type ListEntitiesResponse,
-  type ListRelationsResponse,
-  type ObjectQueryResponse,
-  type SearchMatch,
-  type SemanticAskResponse,
-} from "@trybacked/service";
+  createAuthModule,
+  createHealthModule,
+  type AuthModule,
+  type HealthModule,
+} from "./modules/auth.js";
+import { createDocumentsModule } from "./modules/documents.js";
+import { createFilesModule } from "./modules/files.js";
+import { createGraphModule } from "./modules/graph.js";
+import { createModelModule } from "./modules/model.js";
+import { createQueryModule } from "./modules/query.js";
+import { createSearchModule } from "./modules/search.js";
+import { gatewayTenantContext, platformTenantContext } from "./scope.js";
+import { createTransport, type TransportOptions } from "./transport.js";
 
-export type AnchorClientOptions = {
+export type TenantClient = {
+  tenantId: string;
+  model: ReturnType<typeof createModelModule>;
+  query: ReturnType<typeof createQueryModule>;
+  search: ReturnType<typeof createSearchModule>;
+  documents: ReturnType<typeof createDocumentsModule>;
+  graph: ReturnType<typeof createGraphModule>;
+  ai: ReturnType<typeof createAiModule>;
+  files: ReturnType<typeof createFilesModule>;
+};
+
+export type GatewayBackedClientOptions = TransportOptions & {
+  mode: "gateway";
+  baseUrl: string;
+};
+
+export type PlatformBackedClientOptions = TransportOptions & {
+  mode: "platform";
+  baseUrl: string;
+  token: string;
+};
+
+export type BackedClientOptions = GatewayBackedClientOptions | PlatformBackedClientOptions;
+
+export type GatewayBackedClient = {
+  mode: "gateway";
+  auth: AuthModule;
+  health: HealthModule;
+  tenant: (tenantId: string) => TenantClient;
+};
+
+export type PlatformBackedClient = {
+  mode: "platform";
+  tenant: (tenantId: string) => TenantClient;
+};
+
+export type BackedClient = GatewayBackedClient | PlatformBackedClient;
+
+function createTenantClient(
+  transport: ReturnType<typeof createTransport>,
+  ctx: ReturnType<typeof gatewayTenantContext>,
+): TenantClient {
+  return {
+    tenantId: ctx.tenantId,
+    model: createModelModule(transport, ctx),
+    query: createQueryModule(transport, ctx),
+    search: createSearchModule(transport, ctx),
+    documents: createDocumentsModule(transport, ctx),
+    graph: createGraphModule(transport, ctx),
+    ai: createAiModule(transport, ctx),
+    files: createFilesModule(transport, ctx),
+  };
+}
+
+export function createBackedClient(options: GatewayBackedClientOptions): GatewayBackedClient;
+export function createBackedClient(options: PlatformBackedClientOptions): PlatformBackedClient;
+export function createBackedClient(options: BackedClientOptions): BackedClient {
+  const transport = createTransport(options.baseUrl, options);
+
+  switch (options.mode) {
+    case "gateway": {
+      return {
+        mode: "gateway",
+        auth: createAuthModule(transport),
+        health: createHealthModule(transport),
+        tenant: (tenantId) =>
+          createTenantClient(transport, gatewayTenantContext(options.baseUrl, tenantId)),
+      };
+    }
+    case "platform": {
+      return {
+        mode: "platform",
+        tenant: (tenantId) =>
+          createTenantClient(
+            transport,
+            platformTenantContext(options.baseUrl, options.token, tenantId),
+          ),
+      };
+    }
+    default: {
+      const exhaustive: never = options;
+      throw new Error(`Unsupported client mode: ${String(exhaustive)}`);
+    }
+  }
+}
+
+/** Legacy flat client; prefer `createBackedClient`. */
+export function createAnchorClient(options: {
   baseUrl: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
-
-  credentials?: "omit" | "same-origin" | "include";
-
+  credentials?: RequestCredentials;
   onUnauthorized?: (error: AnchorApiError) => void;
-};
-
-async function requestJson<T>(
-  options: AnchorClientOptions,
-  method: string,
-  path: string,
-  body?: unknown,
-): Promise<T> {
-  const fetchFn = options.fetch ?? fetch;
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-    ...options.headers,
-  };
-  const init: RequestInit = {
-    method,
-    headers,
+}) {
+  const base = options.baseUrl.replace(/\/$/, "");
+  const tenantMatch = /\/t\/([^/]+)\/?$/.exec(base);
+  const gatewayOrigin = tenantMatch !== null ? base.slice(0, tenantMatch.index) : base;
+  const tenantId = tenantMatch?.[1];
+  const client = createBackedClient({
+    mode: "gateway",
+    baseUrl: gatewayOrigin.length > 0 ? gatewayOrigin : base,
+    ...(options.fetch !== undefined ? { fetch: options.fetch } : {}),
     ...(options.credentials !== undefined ? { credentials: options.credentials } : {}),
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  };
-  const response = await fetchFn(`${options.baseUrl.replace(/\/$/, "")}${path}`, init);
-  const payload: unknown = await response.json();
-  if (!response.ok) {
-    const message =
-      typeof payload === "object" &&
-      payload !== null &&
-      "error" in payload &&
-      typeof payload.error === "string"
-        ? payload.error
-        : `HTTP ${String(response.status)}`;
-    const error = new AnchorApiError(response.status, message);
-    if (
-      (response.status === 401 || response.status === 403) &&
-      options.onUnauthorized !== undefined
-    ) {
-      options.onUnauthorized(error);
-    }
-    throw error;
-  }
-  return payload as T;
-}
-
-export function createAnchorClient(options: AnchorClientOptions) {
+    ...(options.onUnauthorized !== undefined ? { onUnauthorized: options.onUnauthorized } : {}),
+    ...(options.headers !== undefined ? { headers: options.headers } : {}),
+  });
+  const resolvedTenant = tenantId ?? "default";
+  const tenant = client.tenant(resolvedTenant);
   return {
-    health: () => requestJson<HealthResponse>(options, "GET", "/health"),
-
-    listEntities: () => requestJson<ListEntitiesResponse>(options, "GET", "/v1/model/entities"),
-
-    getEntity: (id: string) =>
-      requestJson<GetEntityResponse>(
-        options,
-        "GET",
-        `/v1/model/entities/${encodeURIComponent(id)}`,
-      ),
-
-    listRelations: (entityId?: string) => {
-      const query = entityId !== undefined ? `?entityId=${encodeURIComponent(entityId)}` : "";
-      return requestJson<ListRelationsResponse>(options, "GET", `/v1/model/relations${query}`);
-    },
-
-    searchModel: (query: string) =>
-      requestJson<SearchMatch[]>(options, "POST", "/v1/model/search", { query }),
-
-    getDefinition: (term: string) =>
-      requestJson<GetDefinitionResponse>(options, "POST", "/v1/model/definitions", { term }),
-
-    objectQuery: (body: ObjectQueryBody) =>
-      requestJson<ObjectQueryResponse>(options, "POST", "/v1/query/objects", body),
-
-    entitySearch: (body: EntitySearchBody) =>
-      requestJson<EntitySearchResponse>(options, "POST", "/v1/search/entities", body),
-
-    chunkSearch: (body: ChunkSearchBody) =>
-      requestJson<ChunkSearchResponse>(options, "POST", "/v1/search/chunks", body),
-
-    getDocument: (documentId: string) =>
-      requestJson<GetDocumentResponse>(
-        options,
-        "GET",
-        `/v1/documents/${encodeURIComponent(documentId)}`,
-      ),
-
-    describeDocumentPreview: (documentId: string, page = 1) =>
-      requestJson<DocumentPreviewResponse>(
-        options,
-        "GET",
-        `/v1/documents/${encodeURIComponent(documentId)}/preview?page=${String(page)}&format=json`,
-      ),
-
-    entityProfile: (body: EntityProfileBody) =>
-      requestJson<EntityProfileResponse>(options, "POST", "/v1/profile/entities", body),
-
-    graphTraverse: (body: GraphTraverseBody) =>
-      requestJson<GraphTraverseResponse>(options, "POST", "/v1/graph/traverse", body),
-
-    ask: (body: { question: string; evidence?: boolean }) =>
-      requestJson<SemanticAskResponse>(options, "POST", "/v1/chat/ask", body),
+    health: () => client.health.status(),
+    listEntities: () => tenant.model.listEntities(),
+    getEntity: (id: string) => tenant.model.getEntity(id),
+    listRelations: (entityId?: string) => tenant.model.listRelations(entityId),
+    searchModel: (query: string) => tenant.model.search(query),
+    getDefinition: (term: string) => tenant.model.getDefinition(term),
+    objectQuery: (body: Parameters<typeof tenant.query.objects>[0]) => tenant.query.objects(body),
+    entitySearch: (body: Parameters<typeof tenant.search.entities>[0]) =>
+      tenant.search.entities(body),
+    chunkSearch: (body: Parameters<typeof tenant.search.chunks>[0]) => tenant.search.chunks(body),
+    getDocument: (id: string) => tenant.documents.get(id),
+    describeDocumentPreview: (id: string, page?: number) => tenant.documents.preview(id, page),
+    entityProfile: (body: Parameters<typeof tenant.graph.profile>[0]) => tenant.graph.profile(body),
+    graphTraverse: (body: Parameters<typeof tenant.graph.traverse>[0]) =>
+      tenant.graph.traverse(body),
+    ask: (body: Parameters<typeof tenant.ai.ask>[0]) => tenant.ai.ask(body),
   };
 }
 
 export type AnchorClient = ReturnType<typeof createAnchorClient>;
 
-export { AnchorApiError };
+export { AnchorApiError } from "@trybacked/service";

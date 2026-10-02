@@ -1,5 +1,5 @@
 import { GetDefinitionBodySchema, SearchModelBodySchema } from "@trybacked/service";
-import { respondIfServiceError } from "../platform-api-handler-utils.js";
+import { getAnchorService, respondIfServiceError } from "../platform-api-handler-utils.js";
 import { platformRoute, postJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import { EntityIdParamSchema, ListRelationsQuerySchema } from "../platform-api-schemas.js";
@@ -14,7 +14,7 @@ export const platformApiModelRoutes: RouteFactory[] = [
       tags: ["model"],
       responses: { "200": { description: "Entities" } },
     },
-    () => (c) => c.json(c.get("anchorService").listEntities()),
+    () => (c) => c.json(getAnchorService(c).listEntities()),
   ),
   platformRoute(
     {
@@ -28,7 +28,7 @@ export const platformApiModelRoutes: RouteFactory[] = [
     },
     () => (c) => {
       const { id } = EntityIdParamSchema.parse(c.req.param());
-      const result = c.get("anchorService").getEntity(id);
+      const result = getAnchorService(c).getEntity(id);
       const errorResponse = respondIfServiceError(c, result);
       if (errorResponse !== null) {
         return errorResponse;
@@ -48,7 +48,7 @@ export const platformApiModelRoutes: RouteFactory[] = [
     },
     () => (c) => {
       const { entityId } = ListRelationsQuerySchema.parse(c.req.query());
-      return c.json(c.get("anchorService").listRelations(entityId));
+      return c.json(getAnchorService(c).listRelations(entityId));
     },
   ),
   postJsonRoute(
@@ -60,7 +60,7 @@ export const platformApiModelRoutes: RouteFactory[] = [
       jsonBody: jsonBody("SearchModelBody", SearchModelBodySchema, { query: "organization" }),
       responses: { "200": { description: "Matches" } },
     },
-    async (c, { query }) => c.json(await c.get("anchorService").searchModel(query)),
+    async (c, { query }) => c.json(await getAnchorService(c).searchModel(query)),
   ),
   postJsonRoute(
     {
@@ -71,6 +71,6 @@ export const platformApiModelRoutes: RouteFactory[] = [
       jsonBody: jsonBody("GetDefinitionBody", GetDefinitionBodySchema, { term: "contract" }),
       responses: { "200": { description: "Definition" } },
     },
-    (c, { term }) => c.json(c.get("anchorService").getDefinition(term)),
+    (c, { term }) => c.json(getAnchorService(c).getDefinition(term)),
   ),
 ];
