@@ -29,3 +29,15 @@ CREATE TABLE IF NOT EXISTS provisioning_jobs (
 );
 
 CREATE INDEX IF NOT EXISTS provisioning_jobs_status_idx ON provisioning_jobs (status);
+
+CREATE TABLE IF NOT EXISTS oauth_clients (
+  client_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  redirect_uris JSONB NOT NULL DEFAULT '[]'::jsonb,
+  cors_origins JSONB NOT NULL DEFAULT '[]'::jsonb,
+  client_secret_hash TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS oauth_clients_updated_idx ON oauth_clients (updated_at);

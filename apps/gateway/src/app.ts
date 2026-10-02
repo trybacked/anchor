@@ -17,6 +17,7 @@ import {
 } from "./proxy.js";
 import { resolvePublicOrigin } from "./public-origin.js";
 import { createRateLimiter } from "./rate-limit.js";
+import { createOAuthCorsMiddleware } from "./cors.js";
 import { createRequireAuthMiddleware } from "./require-auth.js";
 import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry, countConfiguredTenants } from "./upstreams.js";
@@ -60,6 +61,9 @@ export function createGatewayApp(
   const app = new Hono<{ Variables: GatewayVariables }>();
 
   app.use("*", normalizeTrailingSlashMiddleware);
+  if (config.authMode === "workos") {
+    app.use("*", createOAuthCorsMiddleware(config));
+  }
 
   app.get("/health/live", (c) => c.json({ ok: true as const }));
 

@@ -1,5 +1,12 @@
 # @trybacked/registry
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @trybacked/core@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
@@ -10,6 +17,7 @@
 ### Patch Changes
 
 - Updated dependencies [36f1c95]
+- Updated dependencies [c94dac9]
 - Updated dependencies [f6cb39e]
   - @trybacked/core@0.3.0
 

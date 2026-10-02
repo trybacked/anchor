@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/compiler",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "type": "module",
   "description": "Compiles ontology object queries into parameterized SQL using published mappings",
   "license": "Apache-2.0",

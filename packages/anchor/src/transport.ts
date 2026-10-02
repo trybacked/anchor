@@ -4,6 +4,7 @@ export type TransportOptions = {
   fetch?: typeof fetch | undefined;
   headers?: Record<string, string> | undefined;
   credentials?: RequestCredentials | undefined;
+  accessToken?: (() => string | undefined | Promise<string | undefined>) | undefined;
   onUnauthorized?: ((error: AnchorApiError) => void) | undefined;
 };
 
@@ -22,6 +23,17 @@ export type Transport = {
 export function createTransport(baseUrl: string, options: TransportOptions): Transport {
   const fetchFn = options.fetch ?? fetch;
   const root = baseUrl.replace(/\/$/, "");
+
+  async function authHeaders(): Promise<Record<string, string>> {
+    if (options.accessToken === undefined) {
+      return {};
+    }
+    const token = await options.accessToken();
+    if (token === undefined || token.length === 0) {
+      return {};
+    }
+    return { Authorization: `Bearer ${token}` };
+  }
 
   async function handleResponse(response: Response): Promise<Response> {
     if (response.ok) {
@@ -58,6 +70,7 @@ export function createTransport(baseUrl: string, options: TransportOptions): Tra
       const headers: Record<string, string> = {
         Accept: "application/json",
         ...options.headers,
+        ...(await authHeaders()),
         ...req.headers,
       };
       let body: BodyInit | undefined;
@@ -82,6 +95,7 @@ export function createTransport(baseUrl: string, options: TransportOptions): Tra
     requestRaw: async (method: string, url: string, req: RequestOptions = {}) => {
       const headers: Record<string, string> = {
         ...options.headers,
+        ...(await authHeaders()),
         ...req.headers,
       };
       let body: BodyInit | undefined;

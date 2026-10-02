@@ -206,3 +206,97 @@ export async function listTenantsForWorkosOrganizations(
   );
   return result.rows.map((row) => row.tenant_id);
 }
+
+export type OAuthClientRow = {
+  client_id: string;
+  name: string;
+  redirect_uris: string[];
+  cors_origins: string[];
+  client_secret_hash: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+function mapOAuthClientRow(row: OAuthClientRow): OAuthClientRow {
+  return {
+    ...row,
+    redirect_uris: Array.isArray(row.redirect_uris) ? row.redirect_uris : [],
+    cors_origins: Array.isArray(row.cors_origins) ? row.cors_origins : [],
+  };
+}
+
+export async function insertOAuthClient(
+  pool: pg.Pool,
+  input: {
+    clientId: string;
+    name: string;
+    redirectUris: string[];
+    corsOrigins: string[];
+    clientSecretHash: string | null;
+  },
+): Promise<OAuthClientRow> {
+  const result = await pool.query<OAuthClientRow>(
+    `INSERT INTO oauth_clients (client_id, name, redirect_uris, cors_origins, client_secret_hash)
+     VALUES ($1, $2, $3::jsonb, $4::jsonb, $5)
+     RETURNING *`,
+    [
+      input.clientId,
+      input.name,
+      JSON.stringify(input.redirectUris),
+      JSON.stringify(input.corsOrigins),
+      input.clientSecretHash,
+    ],
+  );
+  return mapOAuthClientRow(result.rows[0] as OAuthClientRow);
+}
+
+export async function listOAuthClients(pool: pg.Pool): Promise<OAuthClientRow[]> {
+  const result = await pool.query<OAuthClientRow>(
+    "SELECT * FROM oauth_clients ORDER BY client_id",
+  );
+  return result.rows.map((row) => mapOAuthClientRow(row));
+}
+
+export async function getOAuthClientById(
+  pool: pg.Pool,
+  clientId: string,
+): Promise<OAuthClientRow | undefined> {
+  const result = await pool.query<OAuthClientRow>(
+    "SELECT * FROM oauth_clients WHERE client_id = $1",
+    [clientId],
+  );
+  const row = result.rows[0];
+  return row === undefined ? undefined : mapOAuthClientRow(row);
+}
+
+export async function deleteOAuthClient(pool: pg.Pool, clientId: string): Promise<boolean> {
+  const result = await pool.query("DELETE FROM oauth_clients WHERE client_id = $1", [clientId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function patchOAuthClient(
+  pool: pg.Pool,
+  clientId: string,
+  patch: {
+    name?: string | undefined;
+    redirectUris?: string[] | undefined;
+    corsOrigins?: string[] | undefined;
+  },
+): Promise<OAuthClientRow | undefined> {
+  const existing = await getOAuthClientById(pool, clientId);
+  if (existing === undefined) {
+    return undefined;
+  }
+  const name = patch.name ?? existing.name;
+  const redirectUris = patch.redirectUris ?? existing.redirect_uris;
+  const corsOrigins = patch.corsOrigins ?? existing.cors_origins;
+  const result = await pool.query<OAuthClientRow>(
+    `UPDATE oauth_clients
+     SET name = $2, redirect_uris = $3::jsonb, cors_origins = $4::jsonb, updated_at = now()
+     WHERE client_id = $1
+     RETURNING *`,
+    [clientId, name, JSON.stringify(redirectUris), JSON.stringify(corsOrigins)],
+  );
+  const row = result.rows[0];
+  return row === undefined ? undefined : mapOAuthClientRow(row);
+}

@@ -1,10 +1,16 @@
 import { WorkOS } from "@workos-inc/node";
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import type { GatewayConfig } from "./config.js";
 import {
+  completeOAuthAppRedirect,
+  readOAuthPendingCookie,
+  registerOAuthAppRoutes,
+} from "./auth-oauth-apps.js";
+import {
   OAUTH_RETURN_COOKIE,
   OAUTH_STATE_COOKIE,
+  clearOAuthFlowCookies,
   setOAuthCookie,
   setSessionCookie,
 } from "./cookies.js";
@@ -45,6 +51,20 @@ async function fetchTenantsFromControlPlane(
   return Array.isArray(payload.tenants) ? payload.tenants : [];
 }
 
+type GatewayContext = Context<{ Variables: GatewayVariables }>;
+
+function beginWorkOSAuthorization(c: GatewayContext, config: GatewayConfig, workos: WorkOS, clientId: string, redirectUri: string): Response {
+  const state = crypto.randomUUID();
+  setOAuthCookie(c, config, OAUTH_STATE_COOKIE, state);
+  const url = workos.userManagement.getAuthorizationUrl({
+    clientId,
+    redirectUri,
+    provider: "authkit",
+    state,
+  });
+  return c.redirect(url);
+}
+
 export function registerWorkOSAuthRoutes(
   app: Hono<{ Variables: GatewayVariables }>,
   config: GatewayConfig,
@@ -53,20 +73,17 @@ export function registerWorkOSAuthRoutes(
   const clientId = config.workosClientId ?? "";
   const redirectUri = config.workosRedirectUri ?? "";
 
+  const startWorkOSLogin = (c: GatewayContext) =>
+    beginWorkOSAuthorization(c, config, workos, clientId, redirectUri);
+
+  registerOAuthAppRoutes(app, config, startWorkOSLogin);
+
   app.get("/login", (c) => {
     const returnPath = safeReturnPath(c.req.query("next"));
     if (returnPath !== undefined) {
       setOAuthCookie(c, config, OAUTH_RETURN_COOKIE, returnPath);
     }
-    const state = crypto.randomUUID();
-    setOAuthCookie(c, config, OAUTH_STATE_COOKIE, state);
-    const url = workos.userManagement.getAuthorizationUrl({
-      clientId,
-      redirectUri,
-      provider: "authkit",
-      state,
-    });
-    return c.redirect(url);
+    return startWorkOSLogin(c);
   });
 
   app.get("/callback", async (c) => {
@@ -94,12 +111,25 @@ export function registerWorkOSAuthRoutes(
       .filter((id): id is string => typeof id === "string" && id.length > 0);
     const tenants = await fetchTenantsFromControlPlane(config, orgIds);
     const username = auth.user.email.length > 0 ? auth.user.email : auth.user.id;
+    const user = { username, tenants };
+
+    const pendingToken = readOAuthPendingCookie(c);
+    if (pendingToken !== undefined) {
+      const redirectTarget = await completeOAuthAppRedirect(config, pendingToken, user);
+      clearOAuthFlowCookies(c, config);
+      if (redirectTarget === undefined) {
+        return c.json({ error: "Invalid OAuth app session" }, 400);
+      }
+      return c.redirect(redirectTarget);
+    }
+
     const token = await createSessionToken(
       config.sessionSecret,
-      { username, tenants },
+      user,
       config.sessionTtlSeconds,
     );
     setSessionCookie(c, config, token);
+    clearOAuthFlowCookies(c, config);
     const returnPath = safeReturnPath(getCookie(c, OAUTH_RETURN_COOKIE)) ?? "/docs";
     return c.redirect(returnPath);
   });
