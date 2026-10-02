@@ -34,6 +34,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Version PRs only need GITHUB_TOKEN. Publish needs secrets.NPM_TOKEN (automation token for @trybacked).
       - name: Create Release Pull Request or Publish
         uses: changesets/action@v1
         with:
@@ -41,7 +42,5 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # changesets/action reads NPM_TOKEN; the .npmrc written by
-          # actions/setup-node resolves NODE_AUTH_TOKEN. Both are needed.
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
