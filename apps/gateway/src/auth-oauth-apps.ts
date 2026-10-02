@@ -5,15 +5,15 @@ import { getCookie } from "hono/cookie";
 import type { GatewayConfig } from "./config.js";
 import { OAUTH_PENDING_COOKIE, setOAuthCookie } from "./cookies.js";
 import {
+  getRegisteredOAuthClient,
+  verifyRegisteredClientSecret,
+} from "./oauth-client-store.js";
+import {
   createAuthorizationCode,
   signOAuthPending,
   verifyAuthorizationCode,
   verifyOAuthPending,
 } from "./oauth-codes.js";
-import {
-  getRegisteredOAuthClient,
-  verifyRegisteredClientSecret,
-} from "./oauth-client-store.js";
 import { isValidCodeVerifier, verifyPkceChallenge } from "./oauth-pkce.js";
 import { createSessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";

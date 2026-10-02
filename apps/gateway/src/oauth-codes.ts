@@ -36,7 +36,7 @@ export async function verifyOAuthPending(
 ): Promise<OAuthPendingContext | undefined> {
   try {
     const payload = await verify(token, secret, "HS256");
-    if (typeof payload !== "object" || payload === null) {
+    if (typeof payload !== "object") {
       return undefined;
     }
     if (!("typ" in payload) || payload.typ !== "oauth_pending") {
@@ -106,7 +106,7 @@ export async function verifyAuthorizationCode(
 ): Promise<AuthorizationCodePayload | undefined> {
   try {
     const payload = await verify(code, secret, "HS256");
-    if (typeof payload !== "object" || payload === null) {
+    if (typeof payload !== "object") {
       return undefined;
     }
     if (!("typ" in payload) || payload.typ !== AUTH_CODE_TYP) {

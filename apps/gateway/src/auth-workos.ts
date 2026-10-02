@@ -1,12 +1,12 @@
 import { WorkOS } from "@workos-inc/node";
 import type { Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import type { GatewayConfig } from "./config.js";
 import {
   completeOAuthAppRedirect,
   readOAuthPendingCookie,
   registerOAuthAppRoutes,
 } from "./auth-oauth-apps.js";
+import type { GatewayConfig } from "./config.js";
 import {
   OAUTH_RETURN_COOKIE,
   OAUTH_STATE_COOKIE,

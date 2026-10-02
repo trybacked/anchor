@@ -1,19 +1,13 @@
-import { SESSION_COOKIE_NAME } from "./cookies.js";
 import { tenantBasePath } from "./gateway-paths.js";
+import {
+  mergeGatewayAuthOpenApi,
+  SESSION_COOKIE_SCHEME,
+} from "./openapi-gateway-auth.js";
 import {
   PLATFORM_PUBLIC_HEALTH_PREFIX,
   type OpenApiDocument,
   type OpenApiInfo,
 } from "./openapi-types.js";
-
-const SESSION_COOKIE_SCHEME = {
-  type: "apiKey",
-  in: "cookie",
-  name: SESSION_COOKIE_NAME,
-  description:
-    "Session cookie set by signing in at /login on this host. Leave any token field empty: " +
-    "the browser attaches the cookie automatically once you are signed in.",
-} as const;
 
 export type GatewayOpenApiTarget = { kind: "platform" } | { kind: "tenant"; tenantId: string };
 
@@ -47,8 +41,9 @@ function withPlatformBrowseNote(info: OpenApiInfo | undefined): OpenApiInfo {
   const note =
     "**Platform API shape (browse only).** No workspace is published yet, so paths stay " +
     "as on platform-api (`/v1/…`). Try it out against live data opens after a tenant is " +
-    "provisioned at `/docs/t/{tenantId}`. Sign in at [/login](/login) before Try it out when " +
-    "using tenant docs. Liveness: `GET /health` on this gateway.";
+    "provisioned at `/docs/t/{tenantId}`. " +
+    "**Auth:** first-party docs use [/login](/login) + cookie; third-party apps use **Gateway · OAuth & session** " +
+    "(`/oauth/authorize`, `/oauth/token`, then Bearer on tenant routes). Liveness: `GET /health`.";
   const description = info?.description;
   return {
     ...info,
@@ -60,9 +55,9 @@ function withPlatformBrowseNote(info: OpenApiInfo | undefined): OpenApiInfo {
 function withTenantNote(info: OpenApiInfo | undefined, tenantId: string): OpenApiInfo {
   const note =
     `**Tenant \`${tenantId}\`.** Try it out calls \`/t/${tenantId}/v1/…\` on this gateway. ` +
-    "Sign in at [/login](/login) on this host first, then send requests — no Bearer token, " +
-    "the `backed_session` cookie is enough. [/logout](/logout) refreshes a stale session. " +
-    `Liveness probes: \`GET /health\` on this gateway (not under \`/t/${tenantId}\`).`;
+    "**Auth:** sign in at [/login](/login) on this host (cookie), **or** use OAuth Bearer from " +
+    "`/oauth/token` (third-party apps). [/logout](/logout) clears the cookie session. " +
+    `Liveness: \`GET /health\` (not under \`/t/${tenantId}\`).`;
   const description = info?.description;
   return {
     ...info,
@@ -86,22 +81,22 @@ export function adaptOpenApiDocumentForGateway(
   origin: string,
 ): OpenApiDocument {
   if (target.kind === "platform") {
-    return {
+    return mergeGatewayAuthOpenApi({
       ...doc,
       info: withPlatformBrowseNote(doc.info),
       servers: [{ url: origin, description: "Gateway · platform browse" }],
       paths: pathsWithoutHealth(doc.paths ?? {}),
       components: adaptComponents(doc),
-    };
+    });
   }
 
-  return {
+  return mergeGatewayAuthOpenApi({
     ...doc,
     info: withTenantNote(doc.info, target.tenantId),
     servers: [{ url: origin, description: `Gateway · tenant ${target.tenantId}` }],
     paths: tenantScopedPaths(doc.paths ?? {}, tenantBasePath(target.tenantId)),
     components: adaptComponents(doc),
-  };
+  });
 }
 
 export async function adaptOpenApiResponse(
