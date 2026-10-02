@@ -1,5 +1,12 @@
 # @trybacked/core
 
+## 0.3.0
+
+### Minor Changes
+
+- 36f1c95: Add cloud control plane (Postgres + HTTP registry), REST-only tenant provisioning package, WorkOS gateway auth mode, and CLI `--remote` for organization creation. Private deploy apps (control-plane, gateway, api-server) are versioned with the monorepo, not npm.
+- f6cb39e: Platform mode: remote ontology store on UC volumes, single multi-tenant api-server, gateway platform upstream, CLI bootstrap/status, and two-service deploy stack.
+
 ## 0.2.1
 
 ### Patch Changes
