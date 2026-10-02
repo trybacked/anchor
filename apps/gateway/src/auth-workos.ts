@@ -81,10 +81,8 @@ export function registerWorkOSAuthRoutes(
   const clientId = config.workosClientId ?? "";
   const redirectUri = config.workosRedirectUri ?? "";
 
-  const startWorkOSLogin = (
-    c: GatewayContext,
-    options?: { screenHint?: "sign-in" | "sign-up" },
-  ) => beginWorkOSAuthorization(c, config, workos, clientId, redirectUri, options);
+  const startWorkOSLogin = (c: GatewayContext, options?: { screenHint?: "sign-in" | "sign-up" }) =>
+    beginWorkOSAuthorization(c, config, workos, clientId, redirectUri, options);
 
   registerOAuthAppRoutes(app, config, startWorkOSLogin);
 

@@ -1,9 +1,9 @@
-import type { Context, Next } from "hono";
-import type { ControlPlaneConfig } from "../config.js";
-import { getOrganizationByTenantId } from "../db/repositories.js";
-import { resolveTenantRole } from "../db/ontology-repositories.js";
 import type { TenantRole } from "@trybacked/core";
+import type { Context, Next } from "hono";
 import type pg from "pg";
+import type { ControlPlaneConfig } from "../config.js";
+import { resolveTenantRole } from "../db/ontology-repositories.js";
+import { getOrganizationByTenantId } from "../db/repositories.js";
 
 export type AuthoringVariables = {
   tenantId: string;
@@ -42,7 +42,10 @@ export function requireAuthoringAccess(config: ControlPlaneConfig, pool: pg.Pool
     const rolesHeader = c.req.header("X-Backed-Roles")?.trim();
     const workosRoles =
       rolesHeader !== undefined && rolesHeader.length > 0
-        ? rolesHeader.split(",").map((role) => role.trim()).filter((role) => role.length > 0)
+        ? rolesHeader
+            .split(",")
+            .map((role) => role.trim())
+            .filter((role) => role.length > 0)
         : [];
     const role = await resolveTenantRole(pool, tenantId, username, workosRoles);
     (c as Context<{ Variables: { authoring: AuthoringVariables } }>).set("authoring", {
@@ -64,10 +67,7 @@ export function requireAuthoringRole(minimum: TenantRole) {
     admin: 3,
   };
   return async (c: Context, next: Next) => {
-    const ctx = (c as Context<{ Variables: { authoring: AuthoringVariables } }>).get("authoring");
-    if (ctx === undefined) {
-      return c.json({ error: "Authoring context missing" }, 500);
-    }
+    const ctx = getAuthoring(c);
     if (rank[ctx.role] < rank[minimum]) {
       return c.json({ error: "Forbidden", requiredRole: minimum }, 403);
     }

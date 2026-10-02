@@ -82,8 +82,7 @@ export const platformApiFileRoutes: RouteFactory[] = [
         typeof filenameRaw === "string" && filenameRaw.trim().length > 0
           ? filenameRaw.trim()
           : undefined;
-      const filename =
-        filenameField ?? (file.name.trim().length > 0 ? file.name : "upload.bin");
+      const filename = filenameField ?? (file.name.trim().length > 0 ? file.name : "upload.bin");
       const folderRaw = form["folder"];
       const folder =
         typeof folderRaw === "string" && folderRaw.trim().length > 0 ? folderRaw.trim() : undefined;

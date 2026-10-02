@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { applyCommand, applyCommands, emptySemanticModel } from "./apply-command.js";
 import type { AuthoringCommand } from "@trybacked/core";
+import { describe, expect, it } from "vitest";
+import { applyCommand, applyCommands, emptySemanticModel } from "../../src/apply-command.js";
 
 describe("applyCommand", () => {
   it("adds and removes an entity", () => {

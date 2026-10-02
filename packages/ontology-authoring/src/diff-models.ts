@@ -1,5 +1,5 @@
-import type { AuthoringDiffChange } from "./types.js";
 import type { Entity, Property, Relation, SemanticModel } from "@trybacked/core";
+import type { AuthoringDiffChange } from "./types.js";
 
 function propertyKey(entityId: string, column: string): string {
   return `${entityId}.${column}`;

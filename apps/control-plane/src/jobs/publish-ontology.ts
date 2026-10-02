@@ -1,10 +1,11 @@
-import { serializeModelYaml } from "@trybacked/core";
-import { createDatabricksBlobStore } from "@trybacked/provider-databricks";
-import { buildRemotePublication, createVolumeOntologyStore } from "@trybacked/registry";
+import { serializeModelYaml, type SemanticModel } from "@trybacked/core";
 import { validateAuthoringModel } from "@trybacked/ontology-authoring";
 import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
+import { createDatabricksBlobStore } from "@trybacked/provider-databricks";
 import { createDatabricksSqlClient } from "@trybacked/provider-databricks";
+import { buildRemotePublication, createVolumeOntologyStore } from "@trybacked/registry";
 import type pg from "pg";
+import { sqlCellStringFromKeys } from "../authoring/sql-row.js";
 import {
   getOntologyDraft,
   getLatestOntologyVersion,
@@ -13,7 +14,7 @@ import {
 
 async function validateWarehouseMappings(
   config: DatabricksProviderConfig,
-  model: import("@trybacked/core").SemanticModel,
+  model: SemanticModel,
 ): Promise<string[]> {
   const sqlClient = createDatabricksSqlClient(config);
   const errors: string[] = [];
@@ -34,7 +35,9 @@ async function validateWarehouseMappings(
     try {
       const rows = await sqlClient.execute(sql);
       columns = new Set(
-        rows.map((row) => String(row["column_name"] ?? row["COLUMN_NAME"] ?? "")).filter(Boolean),
+        rows
+          .map((row) => sqlCellStringFromKeys(row, ["column_name", "COLUMN_NAME"]))
+          .filter(Boolean),
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -85,7 +88,7 @@ export async function runPublishOntologyJob(
     tenant_id: input.tenantId,
     version: nextVersion,
     model: draft.model,
-    ontology: record.ontology as Record<string, unknown>,
+    ontology: record.ontology,
     published_by: input.actor,
     notes: input.notes ?? null,
     artifact_path: artifactPath,
@@ -93,6 +96,6 @@ export async function runPublishOntologyJob(
   return { version: nextVersion, artifactPath };
 }
 
-export function exportDraftYaml(model: import("@trybacked/core").SemanticModel): string {
+export function exportDraftYaml(model: SemanticModel): string {
   return serializeModelYaml(model);
 }

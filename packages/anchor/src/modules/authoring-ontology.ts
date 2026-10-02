@@ -88,11 +88,9 @@ export function createAuthoringOntologyModule(transport: Transport, ctx: TenantA
 
     export: (format: "yaml" | "json" = "json") =>
       format === "json"
-        ? transport.requestJson<DraftResponse["model"]>(
-            "GET",
-            `${base()}/export?format=json`,
-            { headers: headers() },
-          )
+        ? transport.requestJson<DraftResponse["model"]>("GET", `${base()}/export?format=json`, {
+            headers: headers(),
+          })
         : transport.requestText("GET", `${base()}/export?format=yaml`, { headers: headers() }),
 
     packs: () =>

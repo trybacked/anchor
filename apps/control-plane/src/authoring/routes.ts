@@ -16,7 +16,6 @@ import { createDatabricksSqlClient } from "@trybacked/provider-databricks";
 import { Hono } from "hono";
 import type pg from "pg";
 import type { ControlPlaneConfig } from "../config.js";
-import { enqueueJob, getJob, getOrganizationByTenantId } from "../db/repositories.js";
 import {
   applyDraftCommandsTx,
   deleteRoleBinding,
@@ -30,11 +29,7 @@ import {
   upsertRoleBinding,
   insertDerivedDataset,
 } from "../db/ontology-repositories.js";
-import {
-  ensureOntologyDraft,
-  importModelContent,
-  validateDraftModel,
-} from "./draft-service.js";
+import { enqueueJob, getJob, getOrganizationByTenantId } from "../db/repositories.js";
 import { exportDraftYaml } from "../jobs/publish-ontology.js";
 import {
   getAuthoring,
@@ -42,6 +37,8 @@ import {
   requireAuthoringRole,
   type AuthoringVariables,
 } from "./context.js";
+import { ensureOntologyDraft, importModelContent, validateDraftModel } from "./draft-service.js";
+import { sqlCellString } from "./sql-row.js";
 
 type AuthoringEnv = {
   Variables: {
@@ -284,12 +281,14 @@ export function registerAuthoringRoutes(
     const format = c.req.query("format") === "yaml" ? "yaml" : "json";
     const draft = await ensureOntologyDraft(pool, ctx.tenantId, ctx.username);
     if (format === "yaml") {
-      return c.text(exportDraftYaml(draft.model), 200, { "Content-Type": "text/yaml; charset=utf-8" });
+      return c.text(exportDraftYaml(draft.model), 200, {
+        "Content-Type": "text/yaml; charset=utf-8",
+      });
     }
     return c.json(draft.model);
   });
 
-  authoring.get("/ontology/packs", requireAuthoringRole("viewer"), async (c) => {
+  authoring.get("/ontology/packs", requireAuthoringRole("viewer"), (c) => {
     return c.json({ packs: listPacks() });
   });
 
@@ -302,9 +301,7 @@ export function registerAuthoringRoutes(
     const draft = await ensureOntologyDraft(pool, ctx.tenantId, ctx.username);
     const ifMatch = c.req.header("If-Match")?.replace(/^"|"$/g, "");
     const expectedRevision =
-      ifMatch !== undefined && ifMatch.length > 0
-        ? Number.parseInt(ifMatch, 10)
-        : draft.revision;
+      ifMatch !== undefined && ifMatch.length > 0 ? Number.parseInt(ifMatch, 10) : draft.revision;
     const commands = [{ type: "applyPack" as const, packId, catalog: ctx.catalog }];
     let nextModel;
     try {
@@ -397,7 +394,9 @@ export function registerAuthoringRoutes(
       `SELECT schema_name FROM ${ctx.catalog}.information_schema.schemata ORDER BY schema_name`,
     );
     return c.json({
-      schemas: rows.map((row) => String(row["schema_name"] ?? "")).filter((name) => name.length > 0),
+      schemas: rows
+        .map((row) => sqlCellString(row, "schema_name"))
+        .filter((name) => name.length > 0),
     });
   });
 
@@ -418,7 +417,7 @@ export function registerAuthoringRoutes(
     );
     return c.json({
       tables: rows.map((row) => {
-        const name = String(row["table_name"] ?? "");
+        const name = sqlCellString(row, "table_name");
         return {
           catalog: ctx.catalog,
           schema,
@@ -429,10 +428,14 @@ export function registerAuthoringRoutes(
     });
   });
 
-  authoring.post("/warehouse/tables/:fqn/suggest-entity", requireAuthoringRole("editor"), async (c) => {
+  authoring.post("/warehouse/tables/:fqn/suggest-entity", requireAuthoringRole("editor"), (c) => {
     const fqn = decodeURIComponent(c.req.param("fqn") ?? "");
     const ctx = getAuthoring(c);
-    const entityId = fqn.split(".").pop()?.replace(/[^a-z0-9_]/g, "_") ?? "entity";
+    const entityId =
+      fqn
+        .split(".")
+        .pop()
+        ?.replace(/[^a-z0-9_]/g, "_") ?? "entity";
     return c.json({
       command: {
         type: "addEntity",
@@ -471,9 +474,9 @@ export function registerAuthoringRoutes(
     );
     return c.json({
       columns: rows.map((row) => ({
-        name: String(row["column_name"] ?? ""),
-        dataType: String(row["data_type"] ?? ""),
-        nullable: String(row["is_nullable"] ?? "YES").toUpperCase() === "YES",
+        name: sqlCellString(row, "column_name"),
+        dataType: sqlCellString(row, "data_type"),
+        nullable: sqlCellString(row, "is_nullable", "YES").toUpperCase() === "YES",
       })),
     });
   });
@@ -496,9 +499,7 @@ export function registerAuthoringRoutes(
       });
       await client.execute(`EXPLAIN ${normalized}`);
       const viewFqn = `${ctx.catalog}.curated.${body.name}`;
-      await client.execute(
-        `CREATE OR REPLACE VIEW ${viewFqn} AS ${normalized}`,
-      );
+      await client.execute(`CREATE OR REPLACE VIEW ${viewFqn} AS ${normalized}`);
       await insertDerivedDataset(pool, {
         tenant_id: ctx.tenantId,
         name: body.name,

@@ -1,7 +1,7 @@
 import type { AuthoringCommand, OntologyPackSummary } from "@trybacked/core";
+import { AuthoringCommandError } from "../apply-command.js";
 import { anacPackCommands } from "./anac.js";
 import { docsPackCommands } from "./docs.js";
-import { AuthoringCommandError } from "../apply-command.js";
 
 export const ONTOLOGY_PACKS: OntologyPackSummary[] = [
   {
@@ -12,7 +12,8 @@ export const ONTOLOGY_PACKS: OntologyPackSummary[] = [
   {
     id: "docs",
     name: "Document archive",
-    description: "document, document_element, person, and document_has_elements on tenant docs schema",
+    description:
+      "document, document_element, person, and document_has_elements on tenant docs schema",
   },
 ];
 

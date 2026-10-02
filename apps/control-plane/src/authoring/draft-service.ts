@@ -1,10 +1,10 @@
-import { randomUUID } from "node:crypto";
 import { parseModelYaml, SemanticModelSchema, type SemanticModel } from "@trybacked/core";
 import {
   applyCommands,
   emptySemanticModel,
   validateAuthoringModel,
 } from "@trybacked/ontology-authoring";
+import { randomUUID } from "node:crypto";
 import type pg from "pg";
 import {
   getLatestOntologyVersion,

@@ -1,5 +1,5 @@
-import { sign, verify } from "hono/jwt";
 import type { TenantRole } from "@trybacked/core";
+import { sign, verify } from "hono/jwt";
 import type { GatewaySessionPayload, GatewayUser } from "./types.js";
 
 export async function createSessionToken(

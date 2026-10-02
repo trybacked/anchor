@@ -68,15 +68,11 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
           ? { sourceTable: command.patch.sourceTable }
           : {}),
         ...(command.patch.status !== undefined ? { status: command.patch.status } : {}),
-        ...(command.patch.confidence !== undefined
-          ? { confidence: command.patch.confidence }
-          : {}),
+        ...(command.patch.confidence !== undefined ? { confidence: command.patch.confidence } : {}),
       };
       return {
         ...model,
-        entities: model.entities.map((entry) =>
-          entry.id === command.entityId ? updated : entry,
-        ),
+        entities: model.entities.map((entry) => (entry.id === command.entityId ? updated : entry)),
       };
     }
     case "removeEntity": {
@@ -92,7 +88,9 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
     }
     case "addProperty": {
       const entity = findEntity(model, command.entityId);
-      if (entity.properties.some((property) => property.columnName === command.property.columnName)) {
+      if (
+        entity.properties.some((property) => property.columnName === command.property.columnName)
+      ) {
         throw new AuthoringCommandError(
           `Property column "${command.property.columnName}" already exists on "${command.entityId}"`,
         );
@@ -103,16 +101,12 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
       };
       return {
         ...model,
-        entities: model.entities.map((entry) =>
-          entry.id === command.entityId ? updated : entry,
-        ),
+        entities: model.entities.map((entry) => (entry.id === command.entityId ? updated : entry)),
       };
     }
     case "updateProperty": {
       const entity = findEntity(model, command.entityId);
-      const property = entity.properties.find(
-        (entry) => entry.columnName === command.columnName,
-      );
+      const property = entity.properties.find((entry) => entry.columnName === command.columnName);
       if (property === undefined) {
         throw new AuthoringCommandError(
           `Property "${command.columnName}" not found on "${command.entityId}"`,
@@ -128,17 +122,13 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
       const updatedProperty: Property = {
         ...property,
         ...(command.patch.name !== undefined ? { name: command.patch.name } : {}),
-        ...(command.patch.columnName !== undefined
-          ? { columnName: command.patch.columnName }
-          : {}),
+        ...(command.patch.columnName !== undefined ? { columnName: command.patch.columnName } : {}),
         ...(command.patch.semanticType !== undefined
           ? { semanticType: command.patch.semanticType }
           : {}),
         ...(command.patch.role !== undefined ? { role: command.patch.role } : {}),
         ...(command.patch.nullable !== undefined ? { nullable: command.patch.nullable } : {}),
-        ...(command.patch.confidence !== undefined
-          ? { confidence: command.patch.confidence }
-          : {}),
+        ...(command.patch.confidence !== undefined ? { confidence: command.patch.confidence } : {}),
       };
       const updated: Entity = {
         ...entity,
@@ -148,9 +138,7 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
       };
       return {
         ...model,
-        entities: model.entities.map((entry) =>
-          entry.id === command.entityId ? updated : entry,
-        ),
+        entities: model.entities.map((entry) => (entry.id === command.entityId ? updated : entry)),
       };
     }
     case "removeProperty": {
@@ -168,9 +156,7 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
       };
       return {
         ...model,
-        entities: model.entities.map((entry) =>
-          entry.id === command.entityId ? updated : entry,
-        ),
+        entities: model.entities.map((entry) => (entry.id === command.entityId ? updated : entry)),
       };
     }
     case "addRelation": {
@@ -186,9 +172,7 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
       const updated: Relation = {
         ...relation,
         ...(command.patch.name !== undefined ? { name: command.patch.name } : {}),
-        ...(command.patch.fromColumn !== undefined
-          ? { fromColumn: command.patch.fromColumn }
-          : {}),
+        ...(command.patch.fromColumn !== undefined ? { fromColumn: command.patch.fromColumn } : {}),
         ...(command.patch.toColumn !== undefined ? { toColumn: command.patch.toColumn } : {}),
         ...(command.patch.cardinality !== undefined
           ? { cardinality: command.patch.cardinality }
@@ -220,9 +204,7 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
       const updated: Rule = {
         ...rule,
         ...(command.patch.name !== undefined ? { name: command.patch.name } : {}),
-        ...(command.patch.definition !== undefined
-          ? { definition: command.patch.definition }
-          : {}),
+        ...(command.patch.definition !== undefined ? { definition: command.patch.definition } : {}),
         ...(command.patch.appliesTo !== undefined ? { appliesTo: command.patch.appliesTo } : {}),
         ...(command.patch.column !== undefined ? { column: command.patch.column } : {}),
         ...(command.patch.status !== undefined ? { status: command.patch.status } : {}),
@@ -251,10 +233,7 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
   }
 }
 
-export function applyCommands(
-  model: SemanticModel,
-  commands: AuthoringCommand[],
-): SemanticModel {
+export function applyCommands(model: SemanticModel, commands: AuthoringCommand[]): SemanticModel {
   let current = model;
   for (const command of commands) {
     current = applyCommand(current, command);

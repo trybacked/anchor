@@ -190,10 +190,7 @@ export async function getOntologyVersion(
     published_at: Date;
     notes: string | null;
     artifact_path: string | null;
-  }>("SELECT * FROM ontology_versions WHERE tenant_id = $1 AND version = $2", [
-    tenantId,
-    version,
-  ]);
+  }>("SELECT * FROM ontology_versions WHERE tenant_id = $1 AND version = $2", [tenantId, version]);
   const row = result.rows[0];
   if (row === undefined) {
     return undefined;
@@ -229,10 +226,7 @@ export async function insertOntologyVersion(
   );
 }
 
-export async function getLatestOntologyVersion(
-  pool: pg.Pool,
-  tenantId: string,
-): Promise<number> {
+export async function getLatestOntologyVersion(pool: pg.Pool, tenantId: string): Promise<number> {
   const result = await pool.query<{ version: number | null }>(
     "SELECT MAX(version) AS version FROM ontology_versions WHERE tenant_id = $1",
     [tenantId],
@@ -244,9 +238,7 @@ export async function listOntologyChanges(
   pool: pg.Pool,
   tenantId: string,
   limit: number,
-): Promise<
-  { revision: number; command: AuthoringCommand; actor: string; createdAt: string }[]
-> {
+): Promise<{ revision: number; command: AuthoringCommand; actor: string; createdAt: string }[]> {
   const result = await pool.query<{
     revision: number;
     command: unknown;
@@ -265,10 +257,7 @@ export async function listOntologyChanges(
   }));
 }
 
-export async function listRoleBindings(
-  pool: pg.Pool,
-  tenantId: string,
-): Promise<RoleBindingRow[]> {
+export async function listRoleBindings(pool: pg.Pool, tenantId: string): Promise<RoleBindingRow[]> {
   const result = await pool.query<RoleBindingRow>(
     "SELECT tenant_id, subject_type, subject, role FROM tenant_role_bindings WHERE tenant_id = $1",
     [tenantId],
@@ -276,10 +265,7 @@ export async function listRoleBindings(
   return result.rows;
 }
 
-export async function upsertRoleBinding(
-  pool: pg.Pool,
-  binding: RoleBindingRow,
-): Promise<void> {
+export async function upsertRoleBinding(pool: pg.Pool, binding: RoleBindingRow): Promise<void> {
   await pool.query(
     `INSERT INTO tenant_role_bindings (tenant_id, subject_type, subject, role)
      VALUES ($1, $2, $3, $4)
@@ -337,10 +323,7 @@ export async function listDerivedDatasets(
   return result.rows;
 }
 
-export async function insertDerivedDataset(
-  pool: pg.Pool,
-  row: DerivedDatasetRow,
-): Promise<void> {
+export async function insertDerivedDataset(pool: pg.Pool, row: DerivedDatasetRow): Promise<void> {
   await pool.query(
     `INSERT INTO derived_datasets (tenant_id, name, schema_name, sql, status, created_by)
      VALUES ($1, $2, $3, $4, $5, $6)`,

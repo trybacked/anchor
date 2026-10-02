@@ -6,12 +6,12 @@ import {
   type AuthModule,
   type HealthModule,
 } from "./modules/auth.js";
-import { createDocumentsModule } from "./modules/documents.js";
 import { createAuthoringDatasetsModule } from "./modules/authoring-datasets.js";
 import { createAuthoringJobsModule } from "./modules/authoring-jobs.js";
 import { createAuthoringMembersModule } from "./modules/authoring-members.js";
 import { createAuthoringOntologyModule } from "./modules/authoring-ontology.js";
 import { createAuthoringWarehouseModule } from "./modules/authoring-warehouse.js";
+import { createDocumentsModule } from "./modules/documents.js";
 import { createFilesModule } from "./modules/files.js";
 import { createGraphModule } from "./modules/graph.js";
 import { createModelModule } from "./modules/model.js";

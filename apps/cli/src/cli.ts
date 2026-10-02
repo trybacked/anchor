@@ -5,8 +5,8 @@ import {
   dispatchAnchorCommand,
   UnknownAnchorCommandError,
 } from "./anchor-commands.js";
-import { platformBootstrapCommand, platformStatusCommand } from "./commands/platform-bootstrap.js";
 import { ontologyImportCommand } from "./commands/ontology-import.js";
+import { platformBootstrapCommand, platformStatusCommand } from "./commands/platform-bootstrap.js";
 import { tenantCreateCommand } from "./commands/tenant-create.js";
 import { printCliVersion } from "./commands/version.js";
 import { formatCliCommand, isHelpFlag, isVersionFlag, SERVICES } from "./config.js";

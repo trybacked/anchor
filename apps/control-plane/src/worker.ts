@@ -14,8 +14,8 @@ import {
   requeueJob,
   updateOrganizationStatus,
 } from "./db/repositories.js";
-import { buildTenantsRegistry } from "./registry-builder.js";
 import { runPublishOntologyJob } from "./jobs/publish-ontology.js";
+import { buildTenantsRegistry } from "./registry-builder.js";
 
 const config = readControlPlaneConfig(process.env);
 const pool = createPool(config.databaseUrl);
@@ -78,11 +78,9 @@ async function processJob(): Promise<boolean> {
       throw new Error("Job payload missing tenantId");
     }
     if (job.kind === "publish_ontology") {
-      const catalog =
-        typeof job.payload.catalog === "string" ? job.payload.catalog : undefined;
+      const catalog = typeof job.payload.catalog === "string" ? job.payload.catalog : undefined;
       const actor = typeof job.payload.actor === "string" ? job.payload.actor : "system";
-      const notes =
-        typeof job.payload.notes === "string" ? job.payload.notes : undefined;
+      const notes = typeof job.payload.notes === "string" ? job.payload.notes : undefined;
       if (catalog === undefined) {
         throw new Error("publish_ontology payload missing catalog");
       }

@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import type pg from "pg";
 import { z } from "zod";
 import { requireAdmin, requireInternal } from "./auth.js";
+import { registerAuthoringRoutes } from "./authoring/routes.js";
 import type { ControlPlaneConfig } from "./config.js";
 import {
   deleteOAuthClient,
@@ -22,7 +23,6 @@ import {
   updateOrganizationWorkosId,
 } from "./db/repositories.js";
 import { generateClientSecret, hashClientSecret } from "./oauth-client-secret.js";
-import { registerAuthoringRoutes } from "./authoring/routes.js";
 import { buildTenantsRegistry } from "./registry-builder.js";
 
 const CreateOrganizationSchema = z.object({

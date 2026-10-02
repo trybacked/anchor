@@ -31,7 +31,10 @@ function copyForwardHeaders(source: Headers): Headers {
   return headers;
 }
 
-function workosRolesHeader(user: { workosRoles?: string[] | undefined; roles?: Record<string, string> | undefined }, tenantId: string | undefined): string | undefined {
+function workosRolesHeader(
+  user: { workosRoles?: string[] | undefined; roles?: Record<string, string> | undefined },
+  tenantId: string | undefined,
+): string | undefined {
   if (tenantId !== undefined && user.roles?.[tenantId] !== undefined) {
     return user.roles[tenantId];
   }
@@ -44,7 +47,11 @@ function workosRolesHeader(user: { workosRoles?: string[] | undefined; roles?: R
 export async function forwardToControlPlane(
   config: GatewayConfig,
   tenantId: string,
-  user: { username: string; workosRoles?: string[] | undefined; roles?: Record<string, string> | undefined },
+  user: {
+    username: string;
+    workosRoles?: string[] | undefined;
+    roles?: Record<string, string> | undefined;
+  },
   request: Request,
   upstreamPath: string,
   deps: ProxyDeps = {},

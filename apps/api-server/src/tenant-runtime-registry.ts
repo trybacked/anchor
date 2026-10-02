@@ -69,7 +69,10 @@ export function createTenantRuntimeRegistry(options: {
     ontologyVersion: number;
   };
 
-  function tenantOntologyVersion(registry: Awaited<ReturnType<typeof loadRegistry>>, tenantId: string): number {
+  function tenantOntologyVersion(
+    registry: Awaited<ReturnType<typeof loadRegistry>>,
+    tenantId: string,
+  ): number {
     return registry.tenants[tenantId]?.ontologyVersion ?? 0;
   }
   const filesCache = new Map<string, FilesCacheEntry>();

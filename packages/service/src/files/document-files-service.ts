@@ -125,7 +125,10 @@ function prepareFilename(raw: string): string | ServiceErrorResult {
   if (basename.length === 0) {
     return serviceError("bad_request", "filename must not be empty");
   }
-  let slug = basename.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_.-]+/g, "");
+  let slug = basename
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_.-]+/g, "");
   if (slug.length === 0) {
     return serviceError("bad_request", "filename has no valid characters after normalization");
   }
