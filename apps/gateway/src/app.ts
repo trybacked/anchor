@@ -5,6 +5,7 @@ import { registerAuthRoutes } from "./auth-routes.js";
 import { registerWorkOSAuthRoutes } from "./auth-workos.js";
 import type { GatewayConfig } from "./config.js";
 import { clearSessionCookies } from "./cookies.js";
+import { createOAuthCorsMiddleware } from "./cors.js";
 import { registerDocsRoutes } from "./docs-routes.js";
 import { GATEWAY_AUTH_PATHS, TENANT_OPENAPI_ROUTE } from "./gateway-paths.js";
 import { normalizeTrailingSlashMiddleware } from "./normalize-trailing-slash.js";
@@ -17,7 +18,6 @@ import {
 } from "./proxy.js";
 import { resolvePublicOrigin } from "./public-origin.js";
 import { createRateLimiter } from "./rate-limit.js";
-import { createOAuthCorsMiddleware } from "./cors.js";
 import { createRequireAuthMiddleware } from "./require-auth.js";
 import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry, countConfiguredTenants } from "./upstreams.js";
