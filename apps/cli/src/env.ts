@@ -24,10 +24,8 @@ export function findWorkspaceRoot(startDir: string = process.cwd()): string {
 export function loadWorkspaceDotEnv(startDir: string = process.cwd()): string {
   const root = findWorkspaceRoot(startDir);
   const envPath = workspaceEnvPath(root);
-  try {
+  if (existsSync(envPath)) {
     process.loadEnvFile(envPath);
-  } catch {
-    // Workspace .env is optional.
   }
   return root;
 }

@@ -1,0 +1,36 @@
+{
+  "name": "@trybacked/api-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Anchor HTTP API — single server for SDK, MCP bridge, and product apps",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "start": "node dist/index.js",
+    "dev": "node --watch dist/index.js",
+    "generate:openapi": "node dist/generate-openapi.js && prettier --write openapi.json",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.4",
+    "@hono/zod-validator": "^0.5.0",
+    "@trybacked/core": "workspace:*",
+    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/registry": "workspace:*",
+    "@trybacked/runtime": "workspace:*",
+    "@trybacked/semantic-chat": "workspace:*",
+    "@trybacked/service": "workspace:*",
+    "hono": "^4.13.5",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}

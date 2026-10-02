@@ -67,7 +67,7 @@ describe("backed anchor deploy e2e", () => {
         expect.arrayContaining([expect.objectContaining({ kind: "entity", id: "cliente" })]),
       );
       const definition = parseToolJson(
-        await client.callTool({ name: "get_definition", arguments: { term: "fattura scaduta" } }),
+        await client.callTool({ name: "get_definition", arguments: { term: "overdue invoice" } }),
       );
       expect(definition).toEqual(
         expect.objectContaining({

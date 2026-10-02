@@ -1,15 +1,21 @@
-/**
- * @packageDocumentation
- * Anchor ontology contract: ontology spec, dataset provider interface, workspace layout,
- * review workflow, and model.yaml v1 serialization used by internal packages.
- */
-/** Published npm package name. */
 export const PACKAGE_NAME = "@trybacked/core" as const;
 export {
   MODEL_FORMAT_VERSION,
   LOW_CONFIDENCE_THRESHOLD,
   DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
+  DEFAULT_SEARCH_MIN_SCORE,
+  DEFAULT_WAREHOUSE_ROW_LIMIT,
+  MAX_WAREHOUSE_ROW_LIMIT,
+  SEMANTIC_CHAT_MAX_ROW_LIMIT,
 } from "./constants.js";
+export {
+  MIN_TRAVERSE_DEPTH,
+  MAX_TRAVERSE_DEPTH,
+  clampTraverseDepth,
+  buildRelationPath,
+  resolveRelationPath,
+} from "./graph-traverse.js";
+export type { TraverseDirection, RelationHop, RelationPathSegment } from "./graph-traverse.js";
 export {
   DOC_TYPE_TABLE_PREFIX,
   DOC_TYPE_UNKNOWN_SLUG,
@@ -228,3 +234,22 @@ export type {
   ValidationResult,
   ValidationSeverity,
 } from "./ontology/index.js";
+export {
+  TenantsRegistrySchema,
+  ensureTenantInRegistry,
+  loadTenantsRegistry,
+  resolveBundleTarget,
+  resolveTenantCatalog,
+  saveTenantsRegistry,
+  validateTenantId,
+  type TenantsRegistry,
+} from "./tenants-registry.js";
+export {
+  createFileRegistrySource,
+  createHttpRegistrySource,
+  createRegistrySourceFromEnv,
+  resolveRegistrySourceFromEnv,
+  type RegistrySourceMode,
+  type TenantRegistrySnapshot,
+  type TenantRegistrySource,
+} from "./tenant-registry-source.js";

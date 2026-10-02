@@ -1,0 +1,33 @@
+{
+  "name": "@trybacked/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-tenant HTTP gateway — user auth, tenant routing to Anchor API servers",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "start": "node dist/index.js",
+    "dev": "node --watch dist/index.js",
+    "test": "vitest run --config vitest.config.ts",
+    "hash-password": "node scripts/hash-password.mjs"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.4",
+    "@hono/zod-validator": "^0.5.0",
+    "@scalar/hono-api-reference": "^0.12.8",
+    "@trybacked/core": "workspace:*",
+    "@workos-inc/node": "^7.71.0",
+    "hono": "^4.13.5",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}

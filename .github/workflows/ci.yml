@@ -45,5 +45,11 @@ jobs:
       - name: Verify schema artifact is committed
         run: git diff --exit-code schema/anchor-schema-v1.json
 
+      - name: Generate OpenAPI
+        run: pnpm --filter @trybacked/api-server generate:openapi
+
+      - name: Verify OpenAPI artifact is committed
+        run: git diff --exit-code apps/api-server/openapi.json
+
       - name: Test with coverage
         run: pnpm test:coverage

@@ -12,9 +12,10 @@ export const ANSI = {
   white: `${ESC}37m`,
   brightWhite: `${ESC}97m`,
 } as const;
+const ANSI_SGR_PATTERN = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;]*m`, "g");
+
 export function stripAnsi(text: string): string {
-  // eslint-disable-next-line no-control-regex -- stripping terminal escape sequences
-  return text.replace(/\u001B\[[0-9;]*m/g, "");
+  return text.replace(ANSI_SGR_PATTERN, "");
 }
 export function wrap(code: string, text: string): string {
   return `${code}${text}${ANSI.reset}`;

@@ -1,4 +1,4 @@
-# @backed/diff
+# @trybacked/diff
 
 Deterministic run comparison — zero LLM in the MVP.
 

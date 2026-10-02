@@ -23,7 +23,6 @@ export function lifecycleStageIndex(stage: OntologyLifecycleStage): number {
   return LIFECYCLE_ORDER.indexOf(stage);
 }
 
-/** Returns true when `next` is the same stage or a later stage in the governance pipeline. */
 export function canAdvanceLifecycle(
   current: OntologyLifecycleStage,
   next: OntologyLifecycleStage,

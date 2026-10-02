@@ -83,8 +83,8 @@ relations:
 
 rules:
   - id: fattura-scaduta
-    name: Fattura scaduta
-    definition: Una fattura è scaduta quando cod_stato è "SCAD".
+    name: Overdue invoice
+    definition: An invoice is overdue when cod_stato is "SCAD".
     appliesTo: fattura
     column: cod_stato
     status: confirmed
@@ -95,8 +95,8 @@ rules:
       evidence: "Confirmed business definition in fixture model"
 
   - id: fattura-bozza
-    name: Fattura in bozza
-    definition: Una fattura è in bozza quando cod_stato è "BOZ".
+    name: Draft invoice
+    definition: An invoice is in draft when cod_stato is "BOZ".
     appliesTo: fattura
     column: cod_stato
     status: proposed

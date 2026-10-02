@@ -1,4 +1,3 @@
-/** Zod schemas and types for Anchor semantic models (`model.yaml`). */
 import { z } from "zod";
 import { MODEL_FORMAT_VERSION } from "./constants.js";
 export const ConfidenceSchema = z.number().min(0).max(1);
@@ -75,51 +74,27 @@ export const SemanticModelSchema = z.object({
   relations: z.array(RelationSchema),
   rules: z.array(RuleSchema),
 });
-/**
- *
- */
+
 export type Confidence = z.infer<typeof ConfidenceSchema>;
-/**
- *
- */
+
 export type Provenance = z.infer<typeof ProvenanceSchema>;
-/**
- *
- */
+
 export type SemanticType = z.infer<typeof SemanticTypeSchema>;
-/**
- *
- */
+
 export type PropertyRole = z.infer<typeof PropertyRoleSchema>;
-/**
- *
- */
+
 export type ElementStatus = z.infer<typeof ElementStatusSchema>;
-/**
- *
- */
+
 export type Property = z.infer<typeof PropertySchema>;
-/**
- *
- */
+
 export type Entity = z.infer<typeof EntitySchema>;
-/**
- *
- */
+
 export type Cardinality = z.infer<typeof CardinalitySchema>;
-/**
- *
- */
+
 export type Relation = z.infer<typeof RelationSchema>;
-/**
- *
- */
+
 export type Rule = z.infer<typeof RuleSchema>;
-/**
- *
- */
+
 export type ModelMetadata = z.infer<typeof ModelMetadataSchema>;
-/**
- *
- */
+
 export type SemanticModel = z.infer<typeof SemanticModelSchema>;

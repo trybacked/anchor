@@ -1,0 +1,12 @@
+{
+  "question": "How many contracts are there?",
+  "plan": {
+    "objectQuery": {
+      "entityId": "contract",
+      "mode": "count",
+      "filters": []
+    }
+  },
+  "expectObjectId": "contract",
+  "expectMode": "count"
+}

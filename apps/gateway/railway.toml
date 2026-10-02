@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/gateway/Dockerfile"
+watchPatterns = ["anchor/apps/gateway/**", "anchor/packages/**"]
+
+[deploy]
+healthcheckPath = "/health/live"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

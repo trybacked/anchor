@@ -1,0 +1,35 @@
+# Run from repo root:
+#   docker compose -f anchor/apps/api-server/docker-compose.yml up -d --build
+#
+# Requires ANCHOR_API_TOKEN and BACKED_DATABRICKS_* (and optional AI_GATEWAY_API_KEY)
+# in the env file referenced below.
+name: backed-anchor-api
+
+services:
+  anchor-api:
+    build:
+      context: ../../..
+      dockerfile: anchor/apps/api-server/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${ANCHOR_API_PORT:-8787}:8787"
+    environment:
+      HOST: "0.0.0.0"
+      ANCHOR_API_PORT: "8787"
+      ANCHOR_WORKSPACE_ROOT: /workspace
+      ANCHOR_AUDIT_LOG_PATH: /var/log/anchor/audit.jsonl
+      ANCHOR_AUDIT_LOG_STDERR: "1"
+    env_file:
+      - ${ANCHOR_API_ENV_FILE:-../../../ontology/gerace/.env}
+    volumes:
+      - ${ANCHOR_WORKSPACE_HOST:-../../../ontology/gerace}:/workspace:ro
+      - anchor-api-logs:/var/log/anchor
+    healthcheck:
+      test: ["CMD", "node", "scripts/docker-healthcheck.mjs"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  anchor-api-logs:

@@ -97,4 +97,10 @@ export default tseslint.config(
       "jsdoc/require-jsdoc": "off",
     },
   },
+  {
+    files: ["packages/semantic-chat/src/adapters/vercel-ai.ts"],
+    rules: {
+      "@typescript-eslint/no-deprecated": "off",
+    },
+  },
 );

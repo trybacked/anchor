@@ -1,0 +1,35 @@
+{
+  "name": "@trybacked/control-plane",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backed cloud control plane — organizations, registry, provisioning jobs",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp src/db/schema.sql dist/db/schema.sql",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "start": "node dist/index.js",
+    "worker": "node dist/worker.js",
+    "migrate": "node dist/db/migrate-cli.js",
+    "test": "vitest run --config vitest.config.ts --passWithNoTests"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.4",
+    "@hono/zod-validator": "^0.5.0",
+    "@trybacked/core": "workspace:*",
+    "@trybacked/platform-admin": "workspace:*",
+    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/registry": "workspace:*",
+    "hono": "^4.13.5",
+    "pg": "^8.16.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.11",
+    "vitest": "^3.0.5"
+  }
+}

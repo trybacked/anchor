@@ -18,7 +18,13 @@
     "version-packages": "changeset version && pnpm install --lockfile-only --ignore-scripts",
     "release": "pnpm build && changeset publish",
     "cli": "node apps/cli/dist/cli.js",
-    "generate:schema": "pnpm --filter @trybacked/core run generate:schema"
+    "smoke:semantic-nl": "node scripts/semantic-nl-smoke.mjs",
+    "smoke:semantic-nl-benchmark": "node scripts/semantic-nl-benchmark.mjs --count 50",
+    "smoke:semantic-nl-baseline": "node scripts/semantic-nl-baseline.mjs",
+    "generate:schema": "pnpm --filter @trybacked/core run generate:schema",
+    "deploy:check": "node deploy/scripts/check-stack.mjs",
+    "deploy:smoke": "bash deploy/scripts/smoke-stack.sh",
+    "check:ci": "pnpm lint && pnpm format:check && pnpm build && pnpm typecheck && pnpm generate:schema && pnpm --filter @trybacked/api-server generate:openapi && git diff --exit-code schema/anchor-schema-v1.json apps/api-server/openapi.json && pnpm test:coverage"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",

@@ -15,6 +15,10 @@ export function printRootHelp(ui: Ui): void {
   ui.log(
     `  ${ui.command(SERVICES.ANCHOR.padEnd(8))}  ${ui.dim("Ontology engine (pull, sync, deploy)")}`,
   );
+  ui.log(`  ${ui.command("tenant".padEnd(8))}  ${ui.dim("Multi-tenant provisioning (create)")}`);
+  ui.log(
+    `  ${ui.command("platform".padEnd(8))}  ${ui.dim("Platform SP bootstrap and remote registry status")}`,
+  );
   ui.blank();
   ui.log(
     `${ui.dim("Run")} ${ui.command(`${CLI_NAME} ${SERVICES.ANCHOR}`)} ${ui.dim("for the full command list.")}`,

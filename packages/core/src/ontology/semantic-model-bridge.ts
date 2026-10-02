@@ -19,10 +19,6 @@ function mapPropertyType(semanticType: string): OntologyPropertyType {
   return SEMANTIC_TO_ONTOLOGY_TYPE[semanticType] ?? "string";
 }
 
-/**
- * Maps a v1 {@link SemanticModel} into the canonical {@link Ontology} shape for validation and future export.
- * Display names become property ids via columnName (stable within the source dataset).
- */
 export function semanticModelToOntology(
   model: SemanticModel,
   options: { ontologyId: string; version?: number },

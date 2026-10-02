@@ -62,7 +62,6 @@ export type EnrichProposalFromDiscoveryResult = {
   addedRelationIds: string[];
 };
 
-/** Adds schema-derived relations missing from the LLM proposal (non-destructive merge). */
 export function enrichProposalFromDiscovery(
   proposal: Proposal,
   discovery: DiscoveryReport,

@@ -1,23 +1,21 @@
-import { ObjectQueryCompileError, ObjectQuerySchema } from "@trybacked/compiler";
-import type { SemanticModel } from "@trybacked/core";
+import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
+import { createAnchorService, serviceError } from "@trybacked/service";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
-import { entityNotFoundMessage } from "./errors.js";
-import {
-  getDefinition,
-  getEntity,
-  listEntities,
-  listRelations,
-  searchModel,
-  type SearchModelOptions,
-} from "./mapping.js";
-import { capQueryObjectsPayload, MCP_DEFAULT_OBJECT_QUERY_LIMIT } from "./response-cap.js";
+import type { SearchModelOptions } from "./mapping.js";
+
+export type SemanticAskHandler = (body: {
+  question: string;
+  evidence?: boolean | undefined;
+}) => Promise<unknown>;
 
 export interface ToolContext {
   model: SemanticModel;
+  ontology?: Ontology | undefined;
   searchModelOptions?: SearchModelOptions;
   queryRuntime?: OntologyQueryRuntime;
+  semanticAsk?: SemanticAskHandler | undefined;
 }
 
 export type ToolResult =
@@ -42,12 +40,24 @@ export interface ToolDefinition {
   handler: (context: ToolContext, args: Record<string, unknown>) => ToolResult;
 }
 
+function serviceFromContext(context: ToolContext) {
+  return createAnchorService({
+    model: context.model,
+    executionProfile: "mcp",
+    ...(context.ontology !== undefined ? { ontology: context.ontology } : {}),
+    ...(context.searchModelOptions !== undefined
+      ? { searchModelOptions: context.searchModelOptions }
+      : {}),
+    ...(context.queryRuntime !== undefined ? { queryRuntime: context.queryRuntime } : {}),
+  });
+}
+
 export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: TOOL_NAMES.listEntities,
     title: "List entities",
     description: "List semantic model entities (id, name, description, status).",
-    handler: ({ model }) => listEntities(model),
+    handler: (context) => serviceFromContext(context).listEntities(),
   },
   {
     name: TOOL_NAMES.getEntity,
@@ -55,13 +65,9 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       "Return an entity with properties (semanticType, role, provenance) and entity provenance.",
     inputSchema: { id: z.string().min(1).describe("Entity id, e.g. 'customer'") },
-    handler: ({ model }, args) => {
+    handler: (context, args) => {
       const id = readToolString(args, "id");
-      const detail = getEntity(model, id);
-      if (detail === null) {
-        return { error: entityNotFoundMessage(id) };
-      }
-      return detail;
+      return serviceFromContext(context).getEntity(id);
     },
   },
   {
@@ -76,9 +82,11 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
         .optional()
         .describe("Optional entity id — returns relations touching this entity"),
     },
-    handler: ({ model }, args) => {
+    handler: (context, args) => {
       const entityId = args["id"];
-      return listRelations(model, typeof entityId === "string" ? entityId : undefined);
+      return serviceFromContext(context).listRelations(
+        typeof entityId === "string" ? entityId : undefined,
+      );
     },
   },
   {
@@ -87,8 +95,8 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       "Search entities, properties, relations, and rules. Uses semantic document-chunk vectors when available, with substring fallback.",
     inputSchema: { query: z.string().min(1).describe("Text to search, e.g. 'cliente'") },
-    handler: ({ model, searchModelOptions }, args) =>
-      searchModel(model, readToolString(args, "query"), searchModelOptions),
+    handler: (context, args) =>
+      serviceFromContext(context).searchModel(readToolString(args, "query")),
   },
   {
     name: TOOL_NAMES.getDefinition,
@@ -96,24 +104,32 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       "Return a confirmed business definition with provenance, or a structured not-found response.",
     inputSchema: {
-      term: z.string().min(1).describe("Rule id, name, or phrase, e.g. 'fattura scaduta'"),
+      term: z.string().min(1).describe("Rule id, name, or phrase, e.g. 'overdue invoice'"),
     },
-    handler: ({ model }, args) => getDefinition(model, readToolString(args, "term")),
+    handler: (context, args) =>
+      serviceFromContext(context).getDefinition(readToolString(args, "term")),
   },
 ];
 
-/**
- * Registered only when a query runtime is configured: queries the published
- * ontology and returns rows from the backing warehouse.
- */
 export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
   name: TOOL_NAMES.queryObjects,
   title: "Query objects",
   description:
     'Query one published ontology object with filters. mode "count" returns a single total (use for how-many questions). ' +
-    'mode "rows" returns table rows (default limit 15, max 1000). Wide objects (e.g. contract) need low limits or count mode.',
+    'mode "rows" returns table rows (default limit 15, max 1000). Wide objects (e.g. contract) need low limits or count mode. ' +
+    "Use joins + filters.objectId for multi-hop questions (e.g. contracts for project X). Ops contains/not_contains and textSearch for full-text lite.",
   inputSchema: {
     objectId: z.string().min(1).describe("Object id, e.g. 'customer'"),
+    joins: z
+      .array(z.object({ relationshipId: z.string().min(1) }))
+      .optional()
+      .describe("Chain of ontology relationship ids from the root object"),
+    select: z
+      .array(z.string().min(1))
+      .optional()
+      .describe(
+        'Root property ids or "objectId.propertyId" for joined projection (uses INNER JOIN)',
+      ),
     mode: z
       .enum(["rows", "count"])
       .optional()
@@ -121,51 +137,215 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
     filters: z
       .array(
         z.object({
+          objectId: z
+            .string()
+            .min(1)
+            .optional()
+            .describe("Filter this object (default root); must appear on the join graph"),
           propertyId: z.string().min(1).describe("Property id (column) of the object"),
-          op: z.enum(["eq", "neq", "gt", "gte", "lt", "lte"]),
-          value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
+          op: z.enum([
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "contains",
+            "not_contains",
+            "in",
+            "not_in",
+            "is_null",
+            "is_not_null",
+            "starts_with",
+          ]),
+          value: z.union([
+            z.string(),
+            z.number(),
+            z.boolean(),
+            z.null(),
+            z.array(z.union([z.string(), z.number(), z.boolean()])),
+          ]),
         }),
       )
       .optional()
       .describe("Property filters combined with AND"),
+    textSearch: z
+      .object({
+        query: z.string().min(1),
+        objectId: z.string().min(1).optional(),
+        propertyIds: z.array(z.string().min(1)).optional(),
+      })
+      .optional()
+      .describe("Case-insensitive OR search across string columns"),
     limit: z
       .number()
       .int()
       .positive()
       .optional()
       .describe("Row limit for mode rows (default 15 in MCP, max 1000); ignored for count"),
+    groupBy: z
+      .array(z.string().min(1))
+      .optional()
+      .describe("Property ids for GROUP BY when using aggregations"),
+    aggregations: z
+      .array(
+        z.object({
+          op: z.enum(["sum", "count", "min", "max", "avg"]),
+          propertyId: z.string().min(1).optional(),
+          alias: z.string().min(1).optional(),
+        }),
+      )
+      .optional()
+      .describe("Aggregate metrics (overrides mode rows/count for SELECT shape)"),
+    orderBy: z.string().min(1).optional(),
+    orderDirection: z.enum(["asc", "desc"]).optional(),
   },
-  handler: async ({ queryRuntime }, args) => {
-    if (queryRuntime === undefined) {
-      return { error: "Object queries are unavailable: no published ontology or warehouse." };
+  handler: async (context, args) => {
+    const { objectId } = args;
+    if (typeof objectId !== "string" || objectId.length === 0) {
+      return serviceError("bad_request", "Invalid query: objectId is required");
     }
-    const parsed = ObjectQuerySchema.safeParse(args);
-    if (!parsed.success) {
-      return { error: `Invalid query: ${parsed.error.issues[0]?.message ?? "bad input"}` };
-    }
-    try {
-      const mode = parsed.data.mode;
-      const query =
-        mode === "count"
-          ? parsed.data
-          : {
-              ...parsed.data,
-              limit: parsed.data.limit ?? MCP_DEFAULT_OBJECT_QUERY_LIMIT,
-            };
-      const result = await queryRuntime.queryObjects(query);
-      const payload = capQueryObjectsPayload({
-        objectId: result.objectId,
-        columns: result.columns,
-        rows: result.rows,
-        rowCount: result.rowCount,
-        mode,
-      });
-      return payload;
-    } catch (error) {
-      if (error instanceof ObjectQueryCompileError) {
-        return { error: error.message };
-      }
-      throw error;
-    }
+    return serviceFromContext(context).objectQuery(args);
   },
 };
+
+export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
+  {
+    name: TOOL_NAMES.searchDocuments,
+    title: "Search documents",
+    description:
+      "Hybrid chunk search over the document archive (keyword + optional vectors, merged with RRF). " +
+      "Returns text segments with document_id, page range, and relevance score.",
+    inputSchema: {
+      query: z.string().min(1).describe("Natural language or keyword query"),
+      limit: z.number().int().positive().max(100).optional().describe("Max chunks (default 10)"),
+      minScore: z.number().min(0).max(1).optional().describe("Minimum relevance (default 0.35)"),
+      documentIds: z
+        .array(z.string())
+        .optional()
+        .describe("Optional filter — only search within these document ids"),
+    },
+    handler: async (context, args) =>
+      serviceFromContext(context).chunkSearch({
+        query: readToolString(args, "query"),
+        ...(typeof args["limit"] === "number" ? { limit: args["limit"] } : {}),
+        ...(typeof args["minScore"] === "number" ? { minScore: args["minScore"] } : {}),
+        ...(Array.isArray(args["documentIds"])
+          ? {
+              documentIds: args["documentIds"].filter((id): id is string => typeof id === "string"),
+            }
+          : {}),
+      }),
+  },
+  {
+    name: TOOL_NAMES.getEntityProfile,
+    title: "Entity profile",
+    description:
+      'Answer "what does X do?" by matching ontology objects, relation counts, and document element citations (optional entity_profiles facts when present).',
+    inputSchema: {
+      name: z.string().min(1).describe("Party or organization name (substring match)"),
+      matchLimit: z.number().int().positive().max(10).optional(),
+      factLimit: z.number().int().positive().max(100).optional(),
+      documentLimit: z.number().int().positive().max(100).optional(),
+    },
+    handler: async (context, args) =>
+      serviceFromContext(context).entityProfile({
+        name: readToolString(args, "name"),
+        ...(typeof args["matchLimit"] === "number" ? { matchLimit: args["matchLimit"] } : {}),
+        ...(typeof args["factLimit"] === "number" ? { factLimit: args["factLimit"] } : {}),
+        ...(typeof args["documentLimit"] === "number"
+          ? { documentLimit: args["documentLimit"] }
+          : {}),
+      }),
+  },
+  {
+    name: TOOL_NAMES.traverseGraph,
+    title: "Traverse graph",
+    description:
+      "Follow one or more ontology relations from a starting key (multi-hop join on the warehouse). " +
+      "Use list_relations to pick relationId; depth 1–3.",
+    inputSchema: {
+      relationId: z.string().min(1).describe("Relation id from list_relations"),
+      value: z
+        .union([z.string(), z.number()])
+        .describe("Starting key on the relation source column"),
+      direction: z.enum(["forward", "reverse"]).optional(),
+      depth: z.number().int().min(1).max(3).optional(),
+      limit: z.number().int().positive().max(1000).describe("Max result rows"),
+    },
+    handler: async (context, args) => {
+      const relationId = readToolString(args, "relationId");
+      const value = args["value"];
+      const limit = args["limit"];
+      if (typeof limit !== "number") {
+        return serviceError("bad_request", "Invalid traverse: limit is required");
+      }
+      if (typeof value !== "string" && typeof value !== "number") {
+        return serviceError("bad_request", "Invalid traverse: value is required");
+      }
+      return serviceFromContext(context).graphTraverse({
+        relationId,
+        value,
+        limit,
+        ...(args["direction"] === "forward" || args["direction"] === "reverse"
+          ? { direction: args["direction"] }
+          : {}),
+        ...(typeof args["depth"] === "number" ? { depth: args["depth"] } : {}),
+      });
+    },
+  },
+];
+
+export const ASK_SEMANTIC_TOOL_DEFINITION: ToolDefinition = {
+  name: TOOL_NAMES.askSemantic,
+  title: "Ask semantic",
+  description:
+    "Natural-language question → routed semantic plan (single warehouse query or document search template). " +
+    "Returns rows/count, SQL, provenance, and execution steps. Requires AI Gateway configuration.",
+  inputSchema: {
+    question: z.string().min(1).describe("Natural language question"),
+    evidence: z
+      .boolean()
+      .optional()
+      .describe("When true, attach document chunk evidence to row provenance when available"),
+  },
+  handler: async (context, args) => {
+    if (context.semanticAsk === undefined) {
+      return serviceError(
+        "unavailable",
+        "Semantic chat is not configured (missing ontology, warehouse, or LLM).",
+      );
+    }
+    const result = await context.semanticAsk({
+      question: readToolString(args, "question"),
+      ...(args["evidence"] === true ? { evidence: true } : {}),
+    });
+    return result as Record<string, unknown>;
+  },
+};
+
+export function askSemanticToolForContext(
+  semanticAsk: SemanticAskHandler | undefined,
+): ToolDefinition[] {
+  return semanticAsk === undefined ? [] : [ASK_SEMANTIC_TOOL_DEFINITION];
+}
+
+export function warehouseReaderToolsForRuntime(
+  queryRuntime: OntologyQueryRuntime | undefined,
+): ToolDefinition[] {
+  if (queryRuntime === undefined) {
+    return [];
+  }
+  return WAREHOUSE_READER_TOOL_DEFINITIONS.filter((tool) => {
+    if (tool.name === TOOL_NAMES.searchDocuments) {
+      return queryRuntime.chunkSearch !== undefined;
+    }
+    if (tool.name === TOOL_NAMES.getEntityProfile) {
+      return queryRuntime.entityProfile !== undefined;
+    }
+    if (tool.name === TOOL_NAMES.traverseGraph) {
+      return queryRuntime.graphTraverse !== undefined;
+    }
+    return false;
+  });
+}

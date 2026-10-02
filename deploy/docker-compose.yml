@@ -1,0 +1,138 @@
+# Platform stack: gateway (public) + single multi-tenant api-server (internal).
+#
+#   cd anchor/deploy
+#   cp .env.example .env && cp users.yaml.example users.yaml
+#   pnpm deploy:check && docker compose up -d --build
+name: backed-stack
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: backed
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-backed-local-dev}"
+      POSTGRES_DB: backed_control
+    volumes:
+      - control-plane-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backed -d backed_control"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  control-plane:
+    build:
+      context: ..
+      dockerfile: apps/control-plane/Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8791"
+    environment:
+      HOST: "0.0.0.0"
+      CONTROL_PLANE_PORT: "8791"
+      DATABASE_URL: "postgresql://backed:${POSTGRES_PASSWORD:-backed-local-dev}@postgres:5432/backed_control"
+      CONTROL_PLANE_ADMIN_TOKEN: "${CONTROL_PLANE_ADMIN_TOKEN}"
+      CONTROL_PLANE_INTERNAL_TOKEN: "${CONTROL_PLANE_INTERNAL_TOKEN}"
+      BACKED_DATABRICKS_HOST: "${BACKED_DATABRICKS_HOST}"
+      BACKED_DATABRICKS_TOKEN: "${BACKED_DATABRICKS_TOKEN}"
+      BACKED_DATABRICKS_WAREHOUSE_ID: "${BACKED_DATABRICKS_WAREHOUSE_ID}"
+      BACKED_PLATFORM_PRINCIPAL: "${BACKED_PLATFORM_PRINCIPAL:-}"
+      CONTROL_PLANE_SHARED_SPACES_JSON: '${CONTROL_PLANE_SHARED_SPACES_JSON:-{"anac":{"catalog":"backed","schema":"anac"}}}'
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  provisioner:
+    build:
+      context: ..
+      dockerfile: apps/control-plane/Dockerfile
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    # worker.js applies schema on start and serves GET /health/live for healthchecks
+    environment:
+      DATABASE_URL: "postgresql://backed:${POSTGRES_PASSWORD:-backed-local-dev}@postgres:5432/backed_control"
+      CONTROL_PLANE_ADMIN_TOKEN: "${CONTROL_PLANE_ADMIN_TOKEN}"
+      CONTROL_PLANE_INTERNAL_TOKEN: "${CONTROL_PLANE_INTERNAL_TOKEN}"
+      BACKED_DATABRICKS_HOST: "${BACKED_DATABRICKS_HOST}"
+      BACKED_DATABRICKS_TOKEN: "${BACKED_DATABRICKS_TOKEN}"
+      BACKED_DATABRICKS_WAREHOUSE_ID: "${BACKED_DATABRICKS_WAREHOUSE_ID}"
+      BACKED_PLATFORM_PRINCIPAL: "${BACKED_PLATFORM_PRINCIPAL:-}"
+      CONTROL_PLANE_SHARED_SPACES_JSON: '${CONTROL_PLANE_SHARED_SPACES_JSON:-{"anac":{"catalog":"backed","schema":"anac"}}}'
+    env_file:
+      - .env
+    depends_on:
+      control-plane:
+        condition: service_started
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: apps/gateway/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_PUBLIC_PORT:-8080}:8790"
+    environment:
+      HOST: "0.0.0.0"
+      GATEWAY_HOST: "0.0.0.0"
+      GATEWAY_PORT: "8790"
+      GATEWAY_PLATFORM_UPSTREAM: "http://platform-api:8787"
+      GATEWAY_PLATFORM_TOKEN: "${GATEWAY_PLATFORM_TOKEN}"
+      GATEWAY_TENANTS_REGISTRY: /etc/backed/tenants.yaml
+      GATEWAY_AUTH_MODE: "${GATEWAY_AUTH_MODE:-file}"
+      BACKED_REGISTRY_SOURCE: "${BACKED_REGISTRY_SOURCE:-file}"
+      BACKED_REGISTRY_URL: "http://control-plane:8791/v1/registry"
+      BACKED_REGISTRY_TOKEN: "${CONTROL_PLANE_INTERNAL_TOKEN}"
+      BACKED_CONTROL_PLANE_URL: "http://control-plane:8791"
+      GATEWAY_USERS_FILE: /deploy/users.yaml
+      GATEWAY_SESSION_SECRET: "${GATEWAY_SESSION_SECRET}"
+      GATEWAY_COOKIE_SECURE: "${GATEWAY_COOKIE_SECURE:-0}"
+      GATEWAY_RATE_LIMIT_PER_MINUTE: "${GATEWAY_RATE_LIMIT_PER_MINUTE:-120}"
+    env_file:
+      - .env
+    volumes:
+      - ./users.yaml:/deploy/users.yaml:ro
+      - ${TENANTS_REGISTRY_HOST:-../../tenants.yaml}:/etc/backed/tenants.yaml:ro
+    depends_on:
+      platform-api:
+        condition: service_healthy
+
+  platform-api:
+    build:
+      context: ..
+      dockerfile: apps/api-server/Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8787"
+    environment:
+      HOST: "0.0.0.0"
+      ANCHOR_API_PORT: "8787"
+      ANCHOR_API_TOKEN: "${ANCHOR_API_TOKEN}"
+      ANCHOR_TENANTS_REGISTRY: /etc/backed/tenants.yaml
+      BACKED_REGISTRY_SOURCE: "${BACKED_REGISTRY_SOURCE:-file}"
+      BACKED_REGISTRY_URL: "http://control-plane:8791/v1/registry"
+      BACKED_REGISTRY_TOKEN: "${CONTROL_PLANE_INTERNAL_TOKEN}"
+      ANCHOR_TENANT_CACHE_TTL_SECONDS: "${ANCHOR_TENANT_CACHE_TTL_SECONDS:-300}"
+      ANCHOR_AUDIT_LOG_PATH: /var/log/anchor/audit.jsonl
+      ANCHOR_AUDIT_LOG_STDERR: "1"
+      BACKED_DATABRICKS_HOST: "${BACKED_DATABRICKS_HOST}"
+      BACKED_DATABRICKS_TOKEN: "${BACKED_DATABRICKS_TOKEN}"
+      BACKED_DATABRICKS_WAREHOUSE_ID: "${BACKED_DATABRICKS_WAREHOUSE_ID}"
+      AI_GATEWAY_API_KEY: "${AI_GATEWAY_API_KEY:-}"
+    env_file:
+      - .env
+    volumes:
+      - ${TENANTS_REGISTRY_HOST:-../../tenants.yaml}:/etc/backed/tenants.yaml:ro
+      - anchor-audit:/var/log/anchor
+    healthcheck:
+      test: ["CMD", "node", "scripts/docker-healthcheck.mjs"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  anchor-audit:
+  control-plane-db:

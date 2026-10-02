@@ -206,6 +206,6 @@ anchor/
 | `@trybacked/provider-databricks` | Databricks SQL warehouse adapter                   |
 | `@trybacked/mcp`                 | Agent tools over the published ontology            |
 | `@trybacked/cli`                 | Command line (`npm install -g @trybacked/cli`)     |
-| `@backed/diff`                   | Run and ontology diffs (workspace only)            |
+| `@trybacked/diff`                | Run and ontology diffs (workspace only)            |
 
 Dependencies flow toward `core`, never the reverse.

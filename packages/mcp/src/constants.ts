@@ -14,6 +14,10 @@ export const TOOL_NAMES = {
   searchModel: "search_model",
   getDefinition: "get_definition",
   queryObjects: "query_objects",
+  searchDocuments: "search_documents",
+  getEntityProfile: "get_entity_profile",
+  traverseGraph: "traverse_graph",
+  askSemantic: "ask_semantic",
 } as const;
 export const MCP_SURFACE_TOOLS = [
   TOOL_NAMES.listEntities,
@@ -22,6 +26,13 @@ export const MCP_SURFACE_TOOLS = [
   TOOL_NAMES.searchModel,
   TOOL_NAMES.getDefinition,
 ] as const;
-/** Registered only when a query runtime (published ontology + executor) is provided. */
+
 export const MCP_QUERY_TOOL = TOOL_NAMES.queryObjects;
+
+export const MCP_WAREHOUSE_READER_TOOLS = [
+  TOOL_NAMES.searchDocuments,
+  TOOL_NAMES.getEntityProfile,
+  TOOL_NAMES.traverseGraph,
+] as const;
+
 export type McpSurfaceTool = (typeof TOOL_NAMES)[keyof typeof TOOL_NAMES];

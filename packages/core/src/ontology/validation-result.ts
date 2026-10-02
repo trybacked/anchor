@@ -1,5 +1,3 @@
-/** Shared result type for ontology and model structural validation. */
-
 export type ValidationSeverity = "error" | "warning";
 
 export type ValidationIssue = {

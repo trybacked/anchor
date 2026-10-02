@@ -1,6 +1,7 @@
 export { PublicationRecordSchema } from "./publication.js";
 export type { PublicationRecord } from "./publication.js";
 export {
+  buildPublicationRecord,
   loadPublishedOntology,
   publishSemanticModel,
   readPublicationRecord,
@@ -21,3 +22,10 @@ export {
   updateOntologyRegistry,
 } from "./registry.js";
 export type { OntologyRegistry, OntologyRegistryEntry } from "./registry.js";
+export { RemotePublicationSchema, createVolumeOntologyStore } from "./remote-store.js";
+export type {
+  BlobStore,
+  OntologyStore,
+  RemotePublication,
+  VolumeOntologyLayout,
+} from "./remote-store.js";

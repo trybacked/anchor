@@ -20,7 +20,7 @@ import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
 const MS_PER_SECOND = 1000;
-/** Auto-confirm every proposed element (no human review step). */
+
 const AUTO_CONFIRM_CONFIDENCE_THRESHOLD = 0;
 
 function resolveOntologyId(root: string): string {

@@ -30,7 +30,9 @@ describe("MCP tool registry", () => {
     const getEntity = MCP_TOOL_DEFINITIONS.find((tool) => tool.name === TOOL_NAMES.getEntity);
     expect(getEntity).toBeDefined();
     const result = getEntity?.handler({ model: EMPTY_MODEL }, { id: 42 });
-    expect(result).toEqual({ error: expect.stringContaining("not found") });
+    expect(result).toMatchObject({
+      error: { code: "not_found", message: expect.stringContaining("not found") },
+    });
   });
 });
 
@@ -71,6 +73,8 @@ describe("query_objects tool", () => {
       rows: [{ id: 1, city: "Milano" }],
       rowCount: 1,
       mode: "rows",
+      sql: "SELECT ...",
+      provenance: [],
     });
   });
 
@@ -79,7 +83,9 @@ describe("query_objects tool", () => {
       { model: EMPTY_MODEL },
       { objectId: "customer" },
     );
-    expect(result).toEqual({ error: expect.stringContaining("unavailable") });
+    expect(result).toMatchObject({
+      error: { code: "unavailable", message: expect.stringContaining("unavailable") },
+    });
   });
 
   it("returns a structured error for invalid input", async () => {
@@ -90,6 +96,8 @@ describe("query_objects tool", () => {
       { model: EMPTY_MODEL, queryRuntime },
       { objectId: "" },
     );
-    expect(result).toEqual({ error: expect.stringContaining("Invalid query") });
+    expect(result).toMatchObject({
+      error: { code: "bad_request", message: expect.stringContaining("Invalid query") },
+    });
   });
 });

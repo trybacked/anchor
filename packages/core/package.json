@@ -43,6 +43,10 @@
     "./workspace": {
       "types": "./dist/workspace.d.ts",
       "default": "./dist/workspace.js"
+    },
+    "./graph-traverse": {
+      "types": "./dist/graph-traverse.d.ts",
+      "default": "./dist/graph-traverse.js"
     }
   },
   "files": [

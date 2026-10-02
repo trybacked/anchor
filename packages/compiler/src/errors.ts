@@ -1,5 +1,12 @@
 export type ObjectQueryCompileErrorCode =
-  "unknown_object" | "missing_dataset_mapping" | "unknown_property" | "invalid_filter";
+  | "unknown_object"
+  | "missing_dataset_mapping"
+  | "unknown_property"
+  | "invalid_filter"
+  | "invalid_aggregation"
+  | "unknown_relationship"
+  | "invalid_join"
+  | "unknown_join_object";
 
 export class ObjectQueryCompileError extends Error {
   readonly code: ObjectQueryCompileErrorCode;

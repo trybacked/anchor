@@ -37,7 +37,7 @@ describe("compileObjectQuery", () => {
       limit: 10,
     });
     expect(compiled.sql).toBe(
-      "SELECT `id`, `city`, `active` FROM `main`.`sales`.`customers` WHERE `city` = :p0 AND `id` >= :p1 LIMIT 10",
+      "SELECT `o0`.`id`, `o0`.`city`, `o0`.`active` FROM `main`.`sales`.`customers` AS `o0` WHERE `o0`.`city` = :p0 AND `o0`.`id` >= :p1 LIMIT 10",
     );
     expect(compiled.parameters).toEqual([
       { name: "p0", value: "Milano" },
@@ -49,7 +49,7 @@ describe("compileObjectQuery", () => {
   it("applies the default limit and no WHERE clause without filters", () => {
     const compiled = compileObjectQuery(ontology, { objectId: "customer", filters: [] });
     expect(compiled.sql).toBe(
-      "SELECT `id`, `city`, `active` FROM `main`.`sales`.`customers` LIMIT 100",
+      "SELECT `o0`.`id`, `o0`.`city`, `o0`.`active` FROM `main`.`sales`.`customers` AS `o0` LIMIT 100",
     );
     expect(compiled.parameters).toEqual([]);
   });
@@ -61,7 +61,7 @@ describe("compileObjectQuery", () => {
       mode: "count",
     });
     expect(compiled.sql).toBe(
-      "SELECT COUNT(*) AS `count` FROM `main`.`sales`.`customers` WHERE `city` = :p0",
+      "SELECT COUNT(*) AS `count` FROM `main`.`sales`.`customers` AS `o0` WHERE `o0`.`city` = :p0",
     );
     expect(compiled.columns).toEqual(["count"]);
     expect(compiled.parameters).toEqual([{ name: "p0", value: "Milano" }]);
@@ -75,7 +75,7 @@ describe("compileObjectQuery", () => {
         { propertyId: "active", op: "neq", value: null },
       ],
     });
-    expect(compiled.sql).toContain("WHERE `city` IS NULL AND `active` IS NOT NULL");
+    expect(compiled.sql).toContain("WHERE `o0`.`city` IS NULL AND `o0`.`active` IS NOT NULL");
     expect(compiled.parameters).toEqual([]);
   });
 
@@ -92,7 +92,7 @@ describe("compileObjectQuery", () => {
       ],
     };
     const compiled = compileObjectQuery(hostile, { objectId: "odd", filters: [] });
-    expect(compiled.sql).toBe("SELECT `co``l` FROM `main`.`we``ird` LIMIT 100");
+    expect(compiled.sql).toBe("SELECT `o0`.`co``l` FROM `main`.`we``ird` AS `o0` LIMIT 100");
   });
 
   it("rejects unknown objects", () => {

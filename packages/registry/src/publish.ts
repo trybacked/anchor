@@ -13,7 +13,6 @@ import {
   updateOntologyRegistry,
 } from "./registry.js";
 
-/** Reads the active publication record, or null when absent. */
 export function readPublicationRecord(root: string): PublicationRecord | null {
   const filePath = publicationPath(root);
   try {
@@ -24,7 +23,23 @@ export function readPublicationRecord(root: string): PublicationRecord | null {
   }
 }
 
-/** Publishes a reviewed model as the next ontology version. */
+export function buildPublicationRecord(
+  model: SemanticModel,
+  options: { ontologyId: string; version: number; now?: Date },
+): PublicationRecord {
+  const now = options.now ?? new Date();
+  const ontology = markOntologyPublished(
+    semanticModelToOntology(model, { ontologyId: options.ontologyId, version: options.version }),
+    now.toISOString(),
+  );
+  return PublicationRecordSchema.parse({
+    version: options.version,
+    publishedAt: now.toISOString(),
+    runId: model.metadata.runId,
+    ontology,
+  });
+}
+
 export function publishSemanticModel(
   root: string,
   model: SemanticModel,
@@ -33,15 +48,10 @@ export function publishSemanticModel(
   const now = options.now ?? new Date();
   const previous = readPublicationRecord(root);
   const version = (previous?.version ?? 0) + 1;
-  const ontology = markOntologyPublished(
-    semanticModelToOntology(model, { ontologyId: options.ontologyId, version }),
-    now.toISOString(),
-  );
-  const record = PublicationRecordSchema.parse({
+  const record = buildPublicationRecord(model, {
+    ontologyId: options.ontologyId,
     version,
-    publishedAt: now.toISOString(),
-    runId: model.metadata.runId,
-    ontology,
+    now,
   });
   const filePath = publicationPath(root);
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -51,12 +61,10 @@ export function publishSemanticModel(
   return record;
 }
 
-/** Restores a previous publication version as active. */
 export function rollbackPublication(root: string, version: number): PublicationRecord {
   return restorePublicationVersion(root, version);
 }
 
-/** Loads the currently published ontology, or null when nothing is published. */
 export function loadPublishedOntology(root: string): PublicationRecord["ontology"] | null {
   const record = readPublicationRecord(root);
   return record?.ontology ?? null;

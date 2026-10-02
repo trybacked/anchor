@@ -14,13 +14,13 @@ export const GovernanceElementKindSchema = z.enum([
 export const OntologyGovernancePatchSchema = z.object({
   action: AuditActionSchema,
   elementKind: GovernanceElementKindSchema,
-  /** Target element id (object id, relationship id, or object id for property paths). */
+
   targetId: z.string().min(1),
-  /** Property id when `elementKind` is `property`. */
+
   propertyId: z.string().min(1).optional(),
-  /** Secondary target for merge/split (e.g. merge source id). */
+
   secondaryId: z.string().min(1).optional(),
-  /** Human-readable label after modify/rename. */
+
   name: z.string().min(1).optional(),
   payload: z.record(z.string(), z.unknown()).optional(),
 });

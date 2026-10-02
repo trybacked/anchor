@@ -1,13 +1,17 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { SemanticModel } from "@trybacked/core";
+import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
+import { isServiceErrorResult } from "@trybacked/service";
 import type { McpSurfaceTool } from "./constants.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";
 import {
+  askSemanticToolForContext,
   MCP_TOOL_DEFINITIONS,
   QUERY_OBJECTS_TOOL_DEFINITION,
+  warehouseReaderToolsForRuntime,
+  type SemanticAskHandler,
   type ToolContext,
   type ToolDefinition,
 } from "./tools.js";
@@ -22,6 +26,8 @@ export interface ModelMcpServerOptions {
   usageRecorder?: ServeUsageRecorder;
   searchModelOptions?: SearchModelOptions;
   queryRuntime?: OntologyQueryRuntime;
+  ontology?: Ontology | undefined;
+  semanticAsk?: SemanticAskHandler | undefined;
 }
 
 function jsonContent(data: unknown): {
@@ -46,24 +52,13 @@ function errorContent(text: string): {
   };
 }
 
-function isToolErrorResult(result: unknown): result is { error: string } {
-  return (
-    typeof result === "object" &&
-    result !== null &&
-    "error" in result &&
-    typeof result.error === "string"
-  );
-}
-
 async function withUsage<T>(
   operation: McpSurfaceTool,
   usageRecorder: ServeUsageRecorder | undefined,
   handler: () => T | Promise<T>,
 ): Promise<T> {
   if (usageRecorder !== undefined) {
-    void usageRecorder.record(operation).catch(() => {
-      // Metering must not block or fail local MCP tools.
-    });
+    void usageRecorder.record(operation).catch(() => {});
   }
   return handler();
 }
@@ -76,14 +71,18 @@ export function createModelMcpServer(
   const usageRecorder = options.usageRecorder;
   const toolContext: ToolContext = {
     model,
+    ...(options.ontology !== undefined ? { ontology: options.ontology } : {}),
     ...(options.searchModelOptions !== undefined
       ? { searchModelOptions: options.searchModelOptions }
       : {}),
     ...(options.queryRuntime !== undefined ? { queryRuntime: options.queryRuntime } : {}),
+    ...(options.semanticAsk !== undefined ? { semanticAsk: options.semanticAsk } : {}),
   };
   const tools: ToolDefinition[] = [
     ...MCP_TOOL_DEFINITIONS,
     ...(options.queryRuntime !== undefined ? [QUERY_OBJECTS_TOOL_DEFINITION] : []),
+    ...warehouseReaderToolsForRuntime(options.queryRuntime),
+    ...askSemanticToolForContext(options.semanticAsk),
   ];
 
   for (const tool of tools) {
@@ -97,8 +96,8 @@ export function createModelMcpServer(
       async (args) =>
         withUsage(tool.name, usageRecorder, async () => {
           const result = await tool.handler(toolContext, args);
-          if (isToolErrorResult(result)) {
-            return errorContent(result.error);
+          if (isServiceErrorResult(result)) {
+            return errorContent(result.error.message);
           }
           return jsonContent(result);
         }),

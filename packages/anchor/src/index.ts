@@ -1,0 +1,33 @@
+export { AnchorApiError, createAnchorClient } from "./client.js";
+export type { AnchorClient, AnchorClientOptions } from "./client.js";
+
+export type {
+  ChunkSearchBody,
+  ChunkSearchResponse,
+  DefinitionResult,
+  DocumentPreviewResponse,
+  DocumentProvenance,
+  EntityDetail,
+  EntityProfileBody,
+  EntityProfileResponse,
+  EntityProvenance,
+  EntitySearchBody,
+  EntitySearchResponse,
+  EntitySummary,
+  GetDefinitionResponse,
+  GetDocumentResponse,
+  GetEntityResponse,
+  GraphTraverseBody,
+  GraphTraverseResponse,
+  HealthResponse,
+  ListEntitiesResponse,
+  ListRelationsResponse,
+  ObjectQueryBody,
+  ObjectQueryResponse,
+  RelationSummary,
+  RowProvenance,
+  SearchMatch,
+  SemanticAskResponse,
+  SemanticAskResult,
+  SemanticAskStep,
+} from "@trybacked/service";
