@@ -22,6 +22,11 @@ export async function ensureRegistryVolume(admin: AdminSqlClient, catalog: strin
   await admin.execute(`CREATE VOLUME IF NOT EXISTS \`${catalog}\`.\`backed\`.\`registry\``);
 }
 
+export async function ensureDocsRawVolume(admin: AdminSqlClient, catalog: string): Promise<void> {
+  await admin.execute(`CREATE SCHEMA IF NOT EXISTS \`${catalog}\`.\`docs\``);
+  await admin.execute(`CREATE VOLUME IF NOT EXISTS \`${catalog}\`.\`docs\`.\`raw\``);
+}
+
 export async function createTenantCatalog(
   admin: AdminSqlClient,
   catalog: string,

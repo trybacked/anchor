@@ -101,7 +101,14 @@ Single rule: `GATEWAY_PLATFORM_TOKEN` = `ANCHOR_API_TOKEN`.
 
 ## Document uploads (workshop)
 
-Platform-api needs **READ + WRITE** on `{catalog}.docs.raw` and **CAN_MANAGE_RUN** on the `{catalog}-docs-refresh` Databricks job for the platform service principal. New tenants get this via `@trybacked/platform-admin` provisioning; existing catalogs may need a one-time grant update.
+Platform-api needs **READ + WRITE** on `{catalog}.docs.raw` and **CAN_MANAGE_RUN** on the `{catalog}-docs-refresh` Databricks job for the platform service principal. New tenants get `docs` schema + `raw` volume via `ensureDocsRawVolume` in provisioning. **Existing** catalogs (created before that step) need a one-time:
+
+```sql
+CREATE SCHEMA IF NOT EXISTS `{catalog}`.`docs`;
+CREATE VOLUME IF NOT EXISTS `{catalog}`.`docs`.`raw`;
+```
+
+Then re-run platform grants (or `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`{catalog}\`.\`docs\`.\`raw\` TO \`{platform_principal}\``).
 
 ## Databricks bootstrap
 
