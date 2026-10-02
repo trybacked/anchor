@@ -18,6 +18,7 @@ export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export const GatewaySessionSchema = z.object({
   username: z.string().min(1),
   tenants: z.array(z.string().min(1)),
+  roles: z.record(z.string(), z.enum(["viewer", "editor", "publisher", "admin"])).optional(),
 });
 export type GatewaySession = z.infer<typeof GatewaySessionSchema>;
 

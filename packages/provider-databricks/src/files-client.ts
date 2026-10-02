@@ -60,9 +60,13 @@ export type DatabricksFilesClient = {
   deleteFile: (path: string) => Promise<void>;
 };
 
+export type DatabricksBlobStoreWriteOptions = {
+  overwrite?: boolean | undefined;
+};
+
 export type DatabricksBlobStore = {
   read: (path: string) => Promise<string | null>;
-  write: (path: string, text: string) => Promise<void>;
+  write: (path: string, text: string, options?: DatabricksBlobStoreWriteOptions) => Promise<void>;
 };
 
 function contentTypeFromFilename(filename: string): string {
@@ -259,8 +263,10 @@ export function createDatabricksBlobStore(config: DatabricksProviderConfig): Dat
         throw error;
       }
     },
-    write: async (path, text) => {
-      await client.writeFile(path, new TextEncoder().encode(text));
+    write: async (path: string, text: string, options?: DatabricksBlobStoreWriteOptions) => {
+      await client.writeFile(path, new TextEncoder().encode(text), {
+        overwrite: options?.overwrite === true,
+      });
     },
   };
 }

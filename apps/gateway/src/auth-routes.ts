@@ -20,6 +20,10 @@ export function registerAuthRoutes(
     }
     const token = await createSessionToken(config.sessionSecret, user, config.sessionTtlSeconds);
     setSessionCookie(c, config, token);
-    return c.json({ username: user.username, tenants: user.tenants });
+    return c.json({
+      username: user.username,
+      tenants: user.tenants,
+      ...(user.roles !== undefined ? { roles: user.roles } : {}),
+    });
   });
 }

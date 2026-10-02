@@ -60,6 +60,13 @@ await tenant.query.objects({ objectId: "contract", mode: "count" });
 | `tenant(id).graph`      | `profile`, `traverse`                                                   |
 | `tenant(id).ai`         | `ask`                                                                   |
 | `tenant(id).files`      | `upload`, `list`, `delete`, `refresh`, `getRefresh`, `waitForRefresh`   |
+| `tenant(id).authoring.ontology` | `getDraft`, `apply`, `applyPack`, `validate`, `diff`, `publish`, `versions`, `rollback`, `import`, `export`, `packs`, `changes` |
+| `tenant(id).authoring.warehouse` | `schemas`, `tables`, `columns` |
+| `tenant(id).authoring.datasets` | `list`, `create` |
+| `tenant(id).authoring.members` | `list`, `set`, `remove` |
+| `tenant(id).authoring.jobs` | `get`, `wait` |
+
+Authoring routes: `{gateway}/t/{tenant}/v1/authoring/...` (requires control plane + roles). See [docs/ONTOLOGY-AUTHORING.md](../../../docs/ONTOLOGY-AUTHORING.md).
 
 Types are re-exported from `@trybacked/service` and `@trybacked/core` (gateway contract).
 

@@ -18,6 +18,7 @@ export function buildTenantsRegistry(
       catalog: org.catalog,
       mcp: org.mcp_name,
       shared,
+      ...(org.ontology_version > 0 ? { ontologyVersion: org.ontology_version } : {}),
     };
   }
   return {

@@ -7,6 +7,7 @@ const UserRecordSchema = z.object({
   username: z.string().min(1),
   passwordHash: z.string().min(1),
   tenants: z.array(z.string().min(1)).default([]),
+  roles: z.record(z.enum(["viewer", "editor", "publisher", "admin"])).optional(),
 });
 
 const UsersFileSchema = z.object({

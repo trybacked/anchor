@@ -12,6 +12,7 @@ const TenantEntrySchema = z.object({
   catalog: z.string().min(1),
   mcp: z.string().min(1),
   shared: z.array(z.string().min(1)),
+  ontologyVersion: z.number().int().nonnegative().optional(),
 });
 
 export const TenantsRegistrySchema = z.object({

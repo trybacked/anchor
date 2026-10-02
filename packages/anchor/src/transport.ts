@@ -16,6 +16,7 @@ export type RequestOptions = {
 
 export type Transport = {
   requestJson: <T>(method: string, url: string, options?: RequestOptions) => Promise<T>;
+  requestText: (method: string, url: string, options?: RequestOptions) => Promise<string>;
   requestRaw: (method: string, url: string, options?: RequestOptions) => Promise<Response>;
   buildUrl: (path: string) => string;
 };
@@ -112,6 +113,22 @@ export function createTransport(baseUrl: string, options: TransportOptions): Tra
         ...(body !== undefined ? { body } : {}),
       });
       return handleResponse(response);
+    },
+
+    requestText: async (method: string, url: string, req: RequestOptions = {}): Promise<string> => {
+      const headers: Record<string, string> = {
+        Accept: "text/plain",
+        ...options.headers,
+        ...(await authHeaders()),
+        ...req.headers,
+      };
+      const response = await fetchFn(url, {
+        method,
+        headers,
+        ...(options.credentials !== undefined ? { credentials: options.credentials } : {}),
+      });
+      const ok = await handleResponse(response);
+      return ok.text();
     },
   };
 }

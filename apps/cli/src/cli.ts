@@ -6,6 +6,7 @@ import {
   UnknownAnchorCommandError,
 } from "./anchor-commands.js";
 import { platformBootstrapCommand, platformStatusCommand } from "./commands/platform-bootstrap.js";
+import { ontologyImportCommand } from "./commands/ontology-import.js";
 import { tenantCreateCommand } from "./commands/tenant-create.js";
 import { printCliVersion } from "./commands/version.js";
 import { formatCliCommand, isHelpFlag, isVersionFlag, SERVICES } from "./config.js";
@@ -74,6 +75,16 @@ async function main(): Promise<void> {
       return;
     }
     getUi().writeError(`Unknown platform subcommand: ${second}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (first === "ontology") {
+    if (second === "import") {
+      await ontologyImportCommand(rest);
+      return;
+    }
+    getUi().writeError("Usage: backed ontology import <tenantId> <model.yaml>");
     process.exitCode = 1;
     return;
   }

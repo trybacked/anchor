@@ -23,6 +23,7 @@
     "@trybacked/core": "workspace:*",
     "@trybacked/platform-admin": "workspace:*",
     "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/ontology-authoring": "workspace:*",
     "@trybacked/registry": "workspace:*",
     "hono": "^4.13.5",
     "pg": "^8.16.0",

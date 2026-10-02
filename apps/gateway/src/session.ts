@@ -1,15 +1,23 @@
 import { sign, verify } from "hono/jwt";
+import type { TenantRole } from "@trybacked/core";
 import type { GatewaySessionPayload, GatewayUser } from "./types.js";
 
 export async function createSessionToken(
   secret: string,
-  user: { username: string; tenants: string[] },
+  user: {
+    username: string;
+    tenants: string[];
+    roles?: Record<string, TenantRole> | undefined;
+    workosRoles?: string[] | undefined;
+  },
   ttlSeconds: number,
 ): Promise<string> {
   const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
   const payload: GatewaySessionPayload = {
     sub: user.username,
     tenants: user.tenants,
+    ...(user.roles !== undefined ? { roles: user.roles } : {}),
+    ...(user.workosRoles !== undefined ? { workosRoles: user.workosRoles } : {}),
     exp,
   };
   return sign(payload, secret, "HS256");
@@ -32,7 +40,21 @@ export async function verifySessionToken(
     const tenants = Array.isArray(tenantsRaw)
       ? tenantsRaw.filter((value): value is string => typeof value === "string")
       : [];
-    return { username: sub, tenants };
+    const rolesRaw = "roles" in payload ? payload.roles : undefined;
+    const workosRolesRaw = "workosRoles" in payload ? payload.workosRoles : undefined;
+    const roles =
+      rolesRaw !== undefined && typeof rolesRaw === "object" && rolesRaw !== null
+        ? (rolesRaw as Record<string, TenantRole>)
+        : undefined;
+    const workosRoles = Array.isArray(workosRolesRaw)
+      ? workosRolesRaw.filter((value): value is string => typeof value === "string")
+      : undefined;
+    return {
+      username: sub,
+      tenants,
+      ...(roles !== undefined ? { roles } : {}),
+      ...(workosRoles !== undefined ? { workosRoles } : {}),
+    };
   } catch {
     return undefined;
   }
