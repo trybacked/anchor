@@ -10,7 +10,8 @@ if (!token?.trim()) {
     [
       "Cannot publish @trybacked/*: npm registry auth is missing.",
       "",
-      "CI: add repository secret NPM_TOKEN (npm automation token with publish access to @trybacked).",
+      "CI: add repository secret NPM_TOKEN on github.com/trybacked/anchor (Settings → Secrets → Actions).",
+      "     Use an npm automation token with publish access to the @trybacked scope, then re-run the Release workflow.",
       "Local: npm login or export NODE_AUTH_TOKEN before pnpm release.",
       "",
       "See .changeset/README.md — Release to npm.",

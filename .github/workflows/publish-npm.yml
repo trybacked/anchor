@@ -30,9 +30,18 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
           cache: pnpm
+        env:
+          # Must be on this step so setup-node writes ~/.npmrc (not only on the changesets step).
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      - name: Validate npm token
+        if: ${{ secrets.NPM_TOKEN != '' }}
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Version PRs only need GITHUB_TOKEN. Publish needs secrets.NPM_TOKEN (automation token for @trybacked).
       - name: Create Release Pull Request or Publish
