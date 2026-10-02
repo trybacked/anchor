@@ -4,10 +4,7 @@ import type { Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import type { GatewayConfig } from "./config.js";
 import { OAUTH_PENDING_COOKIE, setOAuthCookie } from "./cookies.js";
-import {
-  getRegisteredOAuthClient,
-  verifyRegisteredClientSecret,
-} from "./oauth-client-store.js";
+import { getRegisteredOAuthClient, verifyRegisteredClientSecret } from "./oauth-client-store.js";
 import {
   createAuthorizationCode,
   signOAuthPending,
@@ -139,10 +136,7 @@ export function registerOAuthAppRoutes(
     } else {
       const secret = body.client_secret;
       const pepper = config.controlPlaneInternalToken ?? "";
-      if (
-        secret === undefined ||
-        !verifyRegisteredClientSecret(client, secret, pepper)
-      ) {
+      if (secret === undefined || !verifyRegisteredClientSecret(client, secret, pepper)) {
         return c.json({ error: "invalid_client" }, 401);
       }
     }

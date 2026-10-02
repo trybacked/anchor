@@ -58,7 +58,9 @@ async function fetchClientsFromControlPlane(
   }
   if (!response.ok) {
     console.error("Failed to load OAuth clients from control plane:", response.status);
-    return cache !== undefined ? { clients: cache.clients, etag: cache.etag } : { clients: [], etag: undefined };
+    return cache !== undefined
+      ? { clients: cache.clients, etag: cache.etag }
+      : { clients: [], etag: undefined };
   }
   const payload = (await response.json()) as { clients?: InternalClientPayload[] };
   const clients = Array.isArray(payload.clients) ? payload.clients.map(mapClient) : [];

@@ -29,10 +29,7 @@ export function setSessionCookie(c: GatewayContext, config: GatewayConfig, token
 export function setOAuthCookie(
   c: GatewayContext,
   config: GatewayConfig,
-  name:
-    | typeof OAUTH_STATE_COOKIE
-    | typeof OAUTH_RETURN_COOKIE
-    | typeof OAUTH_PENDING_COOKIE,
+  name: typeof OAUTH_STATE_COOKIE | typeof OAUTH_RETURN_COOKIE | typeof OAUTH_PENDING_COOKIE,
   value: string,
 ): void {
   setCookie(c, name, value, writeOptions(config, OAUTH_COOKIE_TTL_SECONDS));
@@ -45,7 +42,12 @@ export function clearOAuthFlowCookies(c: GatewayContext, config: GatewayConfig):
 }
 
 export function clearSessionCookies(c: GatewayContext, config: GatewayConfig): void {
-  for (const name of [SESSION_COOKIE_NAME, OAUTH_STATE_COOKIE, OAUTH_RETURN_COOKIE, OAUTH_PENDING_COOKIE]) {
+  for (const name of [
+    SESSION_COOKIE_NAME,
+    OAUTH_STATE_COOKIE,
+    OAUTH_RETURN_COOKIE,
+    OAUTH_PENDING_COOKIE,
+  ]) {
     deleteCookie(c, name, { path: "/", secure: config.cookieSecure });
   }
 }

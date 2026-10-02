@@ -1,8 +1,5 @@
 import { tenantBasePath } from "./gateway-paths.js";
-import {
-  mergeGatewayAuthOpenApi,
-  SESSION_COOKIE_SCHEME,
-} from "./openapi-gateway-auth.js";
+import { mergeGatewayAuthOpenApi, SESSION_COOKIE_SCHEME } from "./openapi-gateway-auth.js";
 import {
   PLATFORM_PUBLIC_HEALTH_PREFIX,
   type OpenApiDocument,

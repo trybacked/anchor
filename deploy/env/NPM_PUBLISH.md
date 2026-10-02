@@ -55,10 +55,10 @@ pnpm version-packages   # in locale: applica bump + CHANGELOG
 
 ## Pacchetti pubblici tipici
 
-| Pacchetto | Uso |
-|-----------|-----|
+| Pacchetto           | Uso                                        |
+| ------------------- | ------------------------------------------ |
 | `@trybacked/anchor` | Client HTTP gateway/platform (Chiedi, app) |
-| `@trybacked/core` | Tipi e contratti condivisi |
+| `@trybacked/core`   | Tipi e contratti condivisi                 |
 
 App private (`gateway`, `api-server`, `control-plane`) **non** vanno su npm.
 

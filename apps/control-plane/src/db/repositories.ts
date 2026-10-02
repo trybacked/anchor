@@ -251,9 +251,7 @@ export async function insertOAuthClient(
 }
 
 export async function listOAuthClients(pool: pg.Pool): Promise<OAuthClientRow[]> {
-  const result = await pool.query<OAuthClientRow>(
-    "SELECT * FROM oauth_clients ORDER BY client_id",
-  );
+  const result = await pool.query<OAuthClientRow>("SELECT * FROM oauth_clients ORDER BY client_id");
   return result.rows.map((row) => mapOAuthClientRow(row));
 }
 

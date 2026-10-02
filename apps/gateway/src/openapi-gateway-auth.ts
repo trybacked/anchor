@@ -32,9 +32,19 @@ export function gatewayAuthOpenApiPaths(): NonNullable<OpenApiDocument["paths"]>
           "Redirects to WorkOS AuthKit, then back to your registered `redirect_uri` with `?code=&state=`. " +
           "WorkOS callback remains `{gateway}/callback`.",
         parameters: [
-          { name: "response_type", in: "query", required: true, schema: { type: "string", enum: ["code"] } },
+          {
+            name: "response_type",
+            in: "query",
+            required: true,
+            schema: { type: "string", enum: ["code"] },
+          },
           { name: "client_id", in: "query", required: true, schema: { type: "string" } },
-          { name: "redirect_uri", in: "query", required: true, schema: { type: "string", format: "uri" } },
+          {
+            name: "redirect_uri",
+            in: "query",
+            required: true,
+            schema: { type: "string", format: "uri" },
+          },
           { name: "state", in: "query", required: true, schema: { type: "string" } },
           { name: "code_challenge", in: "query", required: false, schema: { type: "string" } },
           {
@@ -67,7 +77,10 @@ export function gatewayAuthOpenApiPaths(): NonNullable<OpenApiDocument["paths"]>
                   code: { type: "string" },
                   client_id: { type: "string" },
                   redirect_uri: { type: "string", format: "uri" },
-                  code_verifier: { type: "string", description: "Required for public clients (PKCE)" },
+                  code_verifier: {
+                    type: "string",
+                    description: "Required for public clients (PKCE)",
+                  },
                   client_secret: { type: "string", description: "Confidential clients only" },
                 },
               },
@@ -102,9 +115,7 @@ export function gatewayAuthOpenApiPaths(): NonNullable<OpenApiDocument["paths"]>
         summary: "Sign in (first-party, cookie session)",
         description:
           "Starts WorkOS AuthKit for interactive docs on this host. Optional `next` must be a **relative** path (e.g. `/docs`).",
-        parameters: [
-          { name: "next", in: "query", required: false, schema: { type: "string" } },
-        ],
+        parameters: [{ name: "next", in: "query", required: false, schema: { type: "string" } }],
         responses: {
           "302": { description: "Redirect to WorkOS" },
         },
@@ -122,7 +133,11 @@ export function gatewayAuthOpenApiPaths(): NonNullable<OpenApiDocument["paths"]>
         responses: {
           "200": {
             description: "JSON when Accept is not HTML",
-            content: { "application/json": { schema: { type: "object", properties: { ok: { type: "boolean" } } } } },
+            content: {
+              "application/json": {
+                schema: { type: "object", properties: { ok: { type: "boolean" } } },
+              },
+            },
           },
           "302": { description: "Redirect to /login when Accept includes text/html" },
         },
@@ -132,7 +147,8 @@ export function gatewayAuthOpenApiPaths(): NonNullable<OpenApiDocument["paths"]>
       get: {
         tags: [GATEWAY_OAUTH_TAG],
         summary: "Current session",
-        description: "Requires `backed_session` cookie **or** `Authorization: Bearer` from `/oauth/token`.",
+        description:
+          "Requires `backed_session` cookie **or** `Authorization: Bearer` from `/oauth/token`.",
         security: [{ backedSession: [] }, { backedBearer: [] }],
         responses: {
           "200": {

@@ -8,11 +8,7 @@ export function hashClientSecret(secret: string, pepper: string): string {
   return createHash("sha256").update(`${pepper}:${secret}`, "utf8").digest("hex");
 }
 
-export function verifyClientSecret(
-  secret: string,
-  pepper: string,
-  expectedHash: string,
-): boolean {
+export function verifyClientSecret(secret: string, pepper: string, expectedHash: string): boolean {
   const actual = hashClientSecret(secret, pepper);
   return actual.length === expectedHash.length && timingSafeEqual(actual, expectedHash);
 }
