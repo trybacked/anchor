@@ -12,6 +12,7 @@ import { grantDocsRefreshJobRunIfPresent } from "./admin-jobs.js";
 import {
   createAdminSqlClient,
   createTenantCatalog,
+  ensureDocsRawVolume,
   ensureRegistryVolume,
   grantPlatformPrincipalOnTenant,
   grantSharedSpacesToPrincipal,
@@ -57,6 +58,7 @@ export async function provisionTenantCloud(
 
   await createTenantCatalog(admin, catalog, tenantId);
   await ensureRegistryVolume(admin, catalog);
+  await ensureDocsRawVolume(admin, catalog);
 
   const spName = `backed-tenant-${tenantId}`;
   const { applicationId } = await ensureServicePrincipal(adminConfig, spName, deps);

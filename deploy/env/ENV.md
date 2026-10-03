@@ -32,8 +32,8 @@ Interactive docs (Scalar): **`GET /docs`**, **`GET /docs/platform`** (platform b
 | `BACKED_REGISTRY_SOURCE`       | R                  | ✓     | ✓       | `file` or `http`                                                                                                                                                                         |
 | `BACKED_REGISTRY_URL`          | R if http          | ✓     | ✓       | e.g. `http://control-plane:8791/v1/registry`                                                                                                                                             |
 | `BACKED_REGISTRY_TOKEN`        | R if http          | ✓     | ✓       | = `CONTROL_PLANE_INTERNAL_TOKEN`                                                                                                                                                         |
-| `BACKED_CONTROL_PLANE_URL`     | R if workos        | —     | ✓       | Control-plane base URL (no path)                                                                                                                                                         |
-| `CONTROL_PLANE_INTERNAL_TOKEN` | R if workos        | ✓     | ✓       | Gateway → `POST /v1/me/tenants`                                                                                                                                                          |
+| `BACKED_CONTROL_PLANE_URL`     | R if workos        | O*    | ✓       | Control-plane base URL (no path). **Also required** for `/t/{tenant}/v1/authoring/*` proxy (Chiedi Model Studio). Local Compose: set if you use authoring API.                           |
+| `CONTROL_PLANE_INTERNAL_TOKEN` | R if workos        | ✓     | ✓       | Gateway → WorkOS tenant resolve **and** authoring proxy (`Authorization` + `X-Backed-User`)                                                                                              |
 | `WORKOS_API_KEY`               | R if workos        | O     | ✓       | WorkOS Dashboard (`sk_live_…` / `sk_test_…`)                                                                                                                                             |
 | `WORKOS_CLIENT_ID`             | R if workos        | O     | ✓       | `client_…`                                                                                                                                                                               |
 | `WORKOS_REDIRECT_URI`          | R if workos        | O     | ✓       | **Must be** `{gateway URL}/callback` (not Carta `/auth/callback`)                                                                                                                        |
@@ -71,7 +71,11 @@ Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control p
 | `BACKED_PLATFORM_PRINCIPAL`        | O   | ✓     | ✓       |
 | `CONTROL_PLANE_SHARED_SPACES_JSON` | O   | ✓     | ✓       | Default shared ANAC                              |
 
-Provisioner = same image as control-plane, command `node dist/worker.js` (no HTTP port).
+Provisioner = same image as control-plane, command `node dist/worker.js` (no HTTP port). Handles `create_tenant` and **`publish_ontology`** (writes UC registry, bumps `organizations.ontology_version`).
+
+After deploy or schema changes: `pnpm migrate` in control-plane (applies `schema.sql`, including `ontology_*` tables).
+
+Ontology authoring API reference: [docs/ONTOLOGY-AUTHORING.md](../../../docs/ONTOLOGY-AUTHORING.md).
 
 ### Postgres (Railway template)
 
@@ -101,7 +105,14 @@ Single rule: `GATEWAY_PLATFORM_TOKEN` = `ANCHOR_API_TOKEN`.
 
 ## Document uploads (workshop)
 
-Platform-api needs **READ + WRITE** on `{catalog}.docs.raw` and **CAN_MANAGE_RUN** on the `{catalog}-docs-refresh` Databricks job for the platform service principal. New tenants get this via `@trybacked/platform-admin` provisioning; existing catalogs may need a one-time grant update.
+Platform-api needs **READ + WRITE** on `{catalog}.docs.raw` and **CAN_MANAGE_RUN** on the `{catalog}-docs-refresh` Databricks job for the platform service principal. New tenants get `docs` schema + `raw` volume via `ensureDocsRawVolume` in provisioning. **Existing** catalogs (created before that step) need a one-time:
+
+```sql
+CREATE SCHEMA IF NOT EXISTS `{catalog}`.`docs`;
+CREATE VOLUME IF NOT EXISTS `{catalog}`.`docs`.`raw`;
+```
+
+Then re-run platform grants (or `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`{catalog}\`.\`docs\`.\`raw\` TO \`{platform_principal}\``).
 
 ## Databricks bootstrap
 

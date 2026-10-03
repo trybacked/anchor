@@ -6,6 +6,11 @@ import {
   type AuthModule,
   type HealthModule,
 } from "./modules/auth.js";
+import { createAuthoringDatasetsModule } from "./modules/authoring-datasets.js";
+import { createAuthoringJobsModule } from "./modules/authoring-jobs.js";
+import { createAuthoringMembersModule } from "./modules/authoring-members.js";
+import { createAuthoringOntologyModule } from "./modules/authoring-ontology.js";
+import { createAuthoringWarehouseModule } from "./modules/authoring-warehouse.js";
 import { createDocumentsModule } from "./modules/documents.js";
 import { createFilesModule } from "./modules/files.js";
 import { createGraphModule } from "./modules/graph.js";
@@ -24,6 +29,13 @@ export type TenantClient = {
   graph: ReturnType<typeof createGraphModule>;
   ai: ReturnType<typeof createAiModule>;
   files: ReturnType<typeof createFilesModule>;
+  authoring: {
+    ontology: ReturnType<typeof createAuthoringOntologyModule>;
+    warehouse: ReturnType<typeof createAuthoringWarehouseModule>;
+    datasets: ReturnType<typeof createAuthoringDatasetsModule>;
+    members: ReturnType<typeof createAuthoringMembersModule>;
+    jobs: ReturnType<typeof createAuthoringJobsModule>;
+  };
 };
 
 export type GatewayBackedClientOptions = TransportOptions & {
@@ -66,6 +78,13 @@ function createTenantClient(
     graph: createGraphModule(transport, ctx),
     ai: createAiModule(transport, ctx),
     files: createFilesModule(transport, ctx),
+    authoring: {
+      ontology: createAuthoringOntologyModule(transport, ctx),
+      warehouse: createAuthoringWarehouseModule(transport, ctx),
+      datasets: createAuthoringDatasetsModule(transport, ctx),
+      members: createAuthoringMembersModule(transport, ctx),
+      jobs: createAuthoringJobsModule(transport, ctx),
+    },
   };
 }
 

@@ -31,6 +31,76 @@ function copyForwardHeaders(source: Headers): Headers {
   return headers;
 }
 
+function workosRolesHeader(
+  user: { workosRoles?: string[] | undefined; roles?: Record<string, string> | undefined },
+  tenantId: string | undefined,
+): string | undefined {
+  if (tenantId !== undefined && user.roles?.[tenantId] !== undefined) {
+    return user.roles[tenantId];
+  }
+  if (user.workosRoles !== undefined && user.workosRoles.length > 0) {
+    return user.workosRoles.join(",");
+  }
+  return undefined;
+}
+
+export async function forwardToControlPlane(
+  config: GatewayConfig,
+  tenantId: string,
+  user: {
+    username: string;
+    workosRoles?: string[] | undefined;
+    roles?: Record<string, string> | undefined;
+  },
+  request: Request,
+  upstreamPath: string,
+  deps: ProxyDeps = {},
+): Promise<Response> {
+  const controlPlaneUrl = config.controlPlaneUrl;
+  const token = config.controlPlaneInternalToken;
+  if (controlPlaneUrl === undefined || token === undefined) {
+    return new Response(JSON.stringify({ error: "Control plane not configured" }), {
+      status: 503,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  const fetchFn = deps.fetchImpl ?? fetch;
+  const url = new URL(upstreamPath, `${controlPlaneUrl.replace(/\/+$/, "")}/`);
+  const headers = copyForwardHeaders(request.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+  headers.set("X-Backed-User", user.username);
+  headers.set("X-Backed-Tenant", tenantId);
+  const roles = workosRolesHeader(user, tenantId);
+  if (roles !== undefined) {
+    headers.set("X-Backed-Roles", roles);
+  }
+  const init: RequestInit = { method: request.method, headers };
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    init.body = await request.arrayBuffer();
+  }
+  try {
+    const upstreamResponse = await fetchFn(url, init);
+    const responseHeaders = new Headers();
+    const contentType = upstreamResponse.headers.get("content-type");
+    if (contentType !== null) {
+      responseHeaders.set("content-type", contentType);
+    }
+    const etag = upstreamResponse.headers.get("etag");
+    if (etag !== null) {
+      responseHeaders.set("etag", etag);
+    }
+    return new Response(upstreamResponse.body, {
+      status: upstreamResponse.status,
+      headers: responseHeaders,
+    });
+  } catch {
+    return new Response(JSON.stringify({ error: "Control plane unavailable" }), {
+      status: 502,
+      headers: { "content-type": "application/json" },
+    });
+  }
+}
+
 export async function forwardToPlatform(
   config: GatewayConfig,
   tenantId: string | undefined,
@@ -122,14 +192,12 @@ export async function handleTenantProxy(
     return c.json({ error: "Bad path" }, 400);
   }
   const query = new URL(c.req.url).search;
-  return forwardToPlatform(
-    config,
-    tenantId,
-    user.username,
-    c.req.raw,
-    `${upstreamPath}${query}`,
-    deps,
-  );
+  const fullPath = `${upstreamPath}${query}`;
+  if (upstreamPath.startsWith("/v1/authoring")) {
+    const authoringPath = `/v1/tenants/${encodeURIComponent(tenantId)}/authoring${upstreamPath.slice("/v1/authoring".length)}${query}`;
+    return forwardToControlPlane(config, tenantId, user, c.req.raw, authoringPath, deps);
+  }
+  return forwardToPlatform(config, tenantId, user.username, c.req.raw, fullPath, deps);
 }
 
 export async function handleDefaultTenantProxy(

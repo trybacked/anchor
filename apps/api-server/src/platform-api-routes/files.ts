@@ -67,17 +67,28 @@ export const platformApiFileRoutes: RouteFactory[] = [
           // optional future use
         }
       }
-      const form = await c.req.parseBody({ all: true });
+      let form: Record<string, unknown>;
+      try {
+        form = await c.req.parseBody({ all: true });
+      } catch {
+        return c.json({ error: "Invalid multipart body" }, 400);
+      }
       const file = fileFromFormValue(form["file"]);
       if (file === null) {
         return c.json({ error: "Missing multipart field file" }, 400);
       }
+      const filenameRaw = form["filename"];
+      const filenameField =
+        typeof filenameRaw === "string" && filenameRaw.trim().length > 0
+          ? filenameRaw.trim()
+          : undefined;
+      const filename = filenameField ?? (file.name.trim().length > 0 ? file.name : "upload.bin");
       const folderRaw = form["folder"];
       const folder =
         typeof folderRaw === "string" && folderRaw.trim().length > 0 ? folderRaw.trim() : undefined;
       const buffer = new Uint8Array(await file.arrayBuffer());
       const result = await requireDocumentFilesService(c).upload(buffer, {
-        filename: file.name,
+        filename,
         ...(folder !== undefined ? { folder } : {}),
       });
       const errorResponse = respondIfServiceError(c, result);

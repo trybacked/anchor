@@ -33,6 +33,7 @@ type CacheEntry = {
   service: AnchorService;
   loadedAt: number;
   registryVersion: string;
+  ontologyVersion: number;
 };
 
 export type TenantRuntimeRegistry = {
@@ -65,7 +66,15 @@ export function createTenantRuntimeRegistry(options: {
     service: DocumentFilesService;
     loadedAt: number;
     registryVersion: string;
+    ontologyVersion: number;
   };
+
+  function tenantOntologyVersion(
+    registry: Awaited<ReturnType<typeof loadRegistry>>,
+    tenantId: string,
+  ): number {
+    return registry.tenants[tenantId]?.ontologyVersion ?? 0;
+  }
   const filesCache = new Map<string, FilesCacheEntry>();
   const maxUploadBytes = options.maxUploadBytes ?? 50 * 1024 * 1024;
   const docsSchemaFromEnv = options.env["BACKED_DOCUMENTS_SCHEMA"]?.trim();
@@ -137,11 +146,14 @@ export function createTenantRuntimeRegistry(options: {
         lastRegistryVersion = snapshot.version;
       }
       const now = Date.now();
+      const registry = snapshot.registry;
+      const ontologyVersion = tenantOntologyVersion(registry, tenantId);
       const cached = cache.get(tenantId);
       if (
         cached !== undefined &&
         now - cached.loadedAt < ttlMs &&
-        cached.registryVersion === snapshot.version
+        cached.registryVersion === snapshot.version &&
+        cached.ontologyVersion === ontologyVersion
       ) {
         return cached.service;
       }
@@ -150,6 +162,7 @@ export function createTenantRuntimeRegistry(options: {
         service,
         loadedAt: now,
         registryVersion: snapshot.version,
+        ontologyVersion,
       });
       return service;
     },
@@ -162,11 +175,14 @@ export function createTenantRuntimeRegistry(options: {
         lastRegistryVersion = snapshot.version;
       }
       const now = Date.now();
+      const registry = snapshot.registry;
+      const ontologyVersion = tenantOntologyVersion(registry, tenantId);
       const cached = filesCache.get(tenantId);
       if (
         cached !== undefined &&
         now - cached.loadedAt < ttlMs &&
-        cached.registryVersion === snapshot.version
+        cached.registryVersion === snapshot.version &&
+        cached.ontologyVersion === ontologyVersion
       ) {
         return cached.service;
       }
@@ -185,6 +201,7 @@ export function createTenantRuntimeRegistry(options: {
         service,
         loadedAt: now,
         registryVersion: snapshot.version,
+        ontologyVersion,
       });
       return service;
     },

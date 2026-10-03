@@ -48,8 +48,13 @@ export async function grantPlatformPrincipalOnTenant(options: {
     executeAdminSql({
       profile,
       warehouseId,
-      statement: `GRANT READ VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
-    }).catch(() => undefined),
+      statement: `GRANT USE SCHEMA ON SCHEMA \`${catalog}\`.\`docs\` TO \`${platformPrincipal}\``,
+    }),
+    executeAdminSql({
+      profile,
+      warehouseId,
+      statement: `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
+    }),
   );
 
   for (const key of sharedKeys) {

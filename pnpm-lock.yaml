@@ -133,6 +133,9 @@ importers:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@trybacked/ontology-authoring':
+        specifier: workspace:*
+        version: link:../../packages/ontology-authoring
       '@trybacked/platform-admin':
         specifier: workspace:*
         version: link:../../packages/platform-admin
@@ -258,6 +261,16 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+
+  packages/ontology-authoring:
+    dependencies:
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
   packages/platform-admin:
     dependencies:

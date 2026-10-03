@@ -7,9 +7,13 @@ export const RemotePublicationSchema = PublicationRecordSchema.extend({
 
 export type RemotePublication = z.infer<typeof RemotePublicationSchema>;
 
+export type BlobStoreWriteOptions = {
+  overwrite?: boolean | undefined;
+};
+
 export type BlobStore = {
   read: (path: string) => Promise<string | null>;
-  write: (path: string, text: string) => Promise<void>;
+  write: (path: string, text: string, options?: BlobStoreWriteOptions) => Promise<void>;
 };
 
 export type VolumeOntologyLayout = {
@@ -58,8 +62,10 @@ export function createVolumeOntologyStore(
         modelYaml,
       });
       const payload = `${JSON.stringify(remote, null, 2)}\n`;
-      await blobs.write(versionPath(catalog, record.version, layout), payload);
-      await blobs.write(currentPath(catalog, layout), payload);
+      await blobs.write(versionPath(catalog, record.version, layout), payload, {
+        overwrite: false,
+      });
+      await blobs.write(currentPath(catalog, layout), payload, { overwrite: true });
     },
   };
 }

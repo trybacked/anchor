@@ -1,7 +1,9 @@
 import {
   markOntologyPublished,
+  parseModelYaml,
   publicationPath,
   semanticModelToOntology,
+  serializeModelYaml,
   type SemanticModel,
 } from "@trybacked/core";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -68,4 +70,17 @@ export function rollbackPublication(root: string, version: number): PublicationR
 export function loadPublishedOntology(root: string): PublicationRecord["ontology"] | null {
   const record = readPublicationRecord(root);
   return record?.ontology ?? null;
+}
+
+export function buildRemotePublication(
+  model: SemanticModel,
+  options: { ontologyId: string; version: number; now?: Date },
+): { record: PublicationRecord; modelYaml: string } {
+  const record = buildPublicationRecord(model, options);
+  const modelYaml = serializeModelYaml(model);
+  return { record, modelYaml };
+}
+
+export function parsePublicationModelYaml(modelYaml: string): SemanticModel {
+  return parseModelYaml(modelYaml);
 }

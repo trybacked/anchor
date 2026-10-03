@@ -41,3 +41,57 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
 );
 
 CREATE INDEX IF NOT EXISTS oauth_clients_updated_idx ON oauth_clients (updated_at);
+
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ontology_version INT NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS ontology_drafts (
+  tenant_id TEXT PRIMARY KEY REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  revision INT NOT NULL DEFAULT 0,
+  model JSONB NOT NULL,
+  based_on_version INT,
+  updated_by TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ontology_versions (
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  version INT NOT NULL,
+  model JSONB NOT NULL,
+  ontology JSONB NOT NULL,
+  published_by TEXT,
+  published_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  notes TEXT,
+  artifact_path TEXT,
+  PRIMARY KEY (tenant_id, version)
+);
+
+CREATE TABLE IF NOT EXISTS ontology_changes (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  revision INT NOT NULL,
+  command JSONB NOT NULL,
+  actor TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ontology_changes_tenant_idx ON ontology_changes (tenant_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS tenant_role_bindings (
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  subject_type TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  role TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, subject_type, subject)
+);
+
+CREATE TABLE IF NOT EXISTS derived_datasets (
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  schema_name TEXT NOT NULL DEFAULT 'curated',
+  sql TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  last_error TEXT,
+  created_by TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (tenant_id, name)
+);

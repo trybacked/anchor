@@ -59,6 +59,7 @@ function beginWorkOSAuthorization(
   workos: WorkOS,
   clientId: string,
   redirectUri: string,
+  options?: { screenHint?: "sign-in" | "sign-up" },
 ): Response {
   const state = crypto.randomUUID();
   setOAuthCookie(c, config, OAUTH_STATE_COOKIE, state);
@@ -67,6 +68,7 @@ function beginWorkOSAuthorization(
     redirectUri,
     provider: "authkit",
     state,
+    ...(options?.screenHint !== undefined ? { screenHint: options.screenHint } : {}),
   });
   return c.redirect(url);
 }
@@ -79,8 +81,8 @@ export function registerWorkOSAuthRoutes(
   const clientId = config.workosClientId ?? "";
   const redirectUri = config.workosRedirectUri ?? "";
 
-  const startWorkOSLogin = (c: GatewayContext) =>
-    beginWorkOSAuthorization(c, config, workos, clientId, redirectUri);
+  const startWorkOSLogin = (c: GatewayContext, options?: { screenHint?: "sign-in" | "sign-up" }) =>
+    beginWorkOSAuthorization(c, config, workos, clientId, redirectUri, options);
 
   registerOAuthAppRoutes(app, config, startWorkOSLogin);
 

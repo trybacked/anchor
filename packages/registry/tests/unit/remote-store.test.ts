@@ -11,7 +11,10 @@ function memoryBlobStore(): BlobStore & { files: Map<string, string> } {
   return {
     files,
     read: async (path) => files.get(path) ?? null,
-    write: async (path, text) => {
+    write: async (path, text, options) => {
+      if (options?.overwrite !== true && files.has(path)) {
+        throw new Error(`File already exists: ${path}`);
+      }
       files.set(path, text);
     },
   };

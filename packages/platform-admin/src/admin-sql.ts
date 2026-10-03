@@ -22,6 +22,11 @@ export async function ensureRegistryVolume(admin: AdminSqlClient, catalog: strin
   await admin.execute(`CREATE VOLUME IF NOT EXISTS \`${catalog}\`.\`backed\`.\`registry\``);
 }
 
+export async function ensureDocsRawVolume(admin: AdminSqlClient, catalog: string): Promise<void> {
+  await admin.execute(`CREATE SCHEMA IF NOT EXISTS \`${catalog}\`.\`docs\``);
+  await admin.execute(`CREATE VOLUME IF NOT EXISTS \`${catalog}\`.\`docs\`.\`raw\``);
+}
+
 export async function createTenantCatalog(
   admin: AdminSqlClient,
   catalog: string,
@@ -67,18 +72,17 @@ export async function grantSharedSpacesToPrincipal(
   }
 }
 
-async function grantReadDocsRawVolumeIfPresent(
+async function grantDocsRawVolumeAccess(
   admin: AdminSqlClient,
   catalog: string,
   platformPrincipal: string,
 ): Promise<void> {
-  try {
-    await admin.execute(
-      `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
-    );
-  } catch {
-    return;
-  }
+  await admin.execute(
+    `GRANT USE SCHEMA ON SCHEMA \`${catalog}\`.\`docs\` TO \`${platformPrincipal}\``,
+  );
+  await admin.execute(
+    `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
+  );
 }
 
 export async function grantPlatformPrincipalOnTenant(
@@ -95,7 +99,7 @@ export async function grantPlatformPrincipalOnTenant(
   await admin.execute(
     `GRANT READ VOLUME ON VOLUME \`${catalog}\`.\`backed\`.\`registry\` TO \`${platformPrincipal}\``,
   );
-  await grantReadDocsRawVolumeIfPresent(admin, catalog, platformPrincipal);
+  await grantDocsRawVolumeAccess(admin, catalog, platformPrincipal);
   for (const key of sharedKeys) {
     const space = registry.shared_spaces[key];
     if (space === undefined) {

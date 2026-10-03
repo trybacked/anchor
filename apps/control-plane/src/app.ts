@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import type pg from "pg";
 import { z } from "zod";
 import { requireAdmin, requireInternal } from "./auth.js";
+import { registerAuthoringRoutes } from "./authoring/routes.js";
 import type { ControlPlaneConfig } from "./config.js";
 import {
   deleteOAuthClient,
@@ -194,9 +195,11 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     if (org === undefined) {
       return c.json({ error: "Not found" }, 404);
     }
-    const job = await enqueueJob(pool, org.id, "sync_ontology", { tenantId });
+    const job = await enqueueJob(pool, org.id, "publish_ontology", { tenantId });
     return c.json({ job }, 202);
   });
+
+  registerAuthoringRoutes(app, config, pool);
 
   app.get("/v1/jobs/:jobId", requireAdmin(config), async (c) => {
     const jobId = c.req.param("jobId");

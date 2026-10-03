@@ -62,10 +62,15 @@ export async function completeOAuthAppRedirect(
   return appendQuery(pending.redirectUri, { code, state: pending.state });
 }
 
+export type StartWorkOSLogin = (
+  c: GatewayContext,
+  options?: { screenHint?: "sign-in" | "sign-up" },
+) => Response;
+
 export function registerOAuthAppRoutes(
   app: Hono<{ Variables: GatewayVariables }>,
   config: GatewayConfig,
-  startWorkOSLogin: (c: GatewayContext) => Response,
+  startWorkOSLogin: StartWorkOSLogin,
 ): void {
   app.get("/oauth/authorize", async (c) => {
     const responseType = c.req.query("response_type");
@@ -115,7 +120,9 @@ export function registerOAuthAppRoutes(
       OAUTH_PENDING_TTL_SECONDS,
     );
     setOAuthCookie(c, config, OAUTH_PENDING_COOKIE, pendingToken);
-    return startWorkOSLogin(c);
+    const prompt = c.req.query("prompt");
+    const screenHint = prompt === "login" ? ("sign-in" as const) : undefined;
+    return startWorkOSLogin(c, ...(screenHint !== undefined ? [{ screenHint }] : []));
   });
 
   app.post("/oauth/token", zValidator("json", OAuthTokenRequestSchema), async (c) => {

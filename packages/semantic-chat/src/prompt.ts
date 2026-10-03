@@ -54,6 +54,7 @@ export function buildSemanticTranslationPrompt(
     "For route template, set templateId and params only — never invent execution steps.",
     'For route "single", omit templateId and params. Omit objectSet unless the user explicitly scopes a document id or date column.',
     "Do not use textSearch when a specific property filter (eq, in, contains) is enough.",
+    'mode "count" must never include textSearch (invalid plan). Whole-object totals: mode count, filters []. Scoped counts: mode count with filters only (e.g. op contains).',
     'Prefer mode "count" for how-many questions. Use joins + filters on related entityId for multi-hop questions.',
     "For groupBy breakdowns use mode rows with aggregations (e.g. count alias), not mode count.",
     "For joined columns set joins and select entries like organization.<propertyId>.",

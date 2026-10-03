@@ -2,7 +2,9 @@ export { PublicationRecordSchema } from "./publication.js";
 export type { PublicationRecord } from "./publication.js";
 export {
   buildPublicationRecord,
+  buildRemotePublication,
   loadPublishedOntology,
+  parsePublicationModelYaml,
   publishSemanticModel,
   readPublicationRecord,
   rollbackPublication,

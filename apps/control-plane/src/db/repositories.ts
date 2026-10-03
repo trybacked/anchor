@@ -11,6 +11,7 @@ export type OrganizationRow = {
   workos_organization_id: string | null;
   status: string;
   service_principal_app_id: string | null;
+  ontology_version: number;
 };
 
 export type JobRow = {

@@ -2,6 +2,7 @@ export { grantDocsRefreshJobRunIfPresent } from "./admin-jobs.js";
 export {
   createAdminSqlClient,
   createTenantCatalog,
+  ensureDocsRawVolume,
   ensureRegistryVolume,
   grantPlatformPrincipalOnTenant,
   grantSharedSpacesToPrincipal,

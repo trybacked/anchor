@@ -80,6 +80,12 @@ export function validateObjectQueryAgainstOntology(
     }
   }
 
+  if (validated.mode === "count" && validated.textSearch !== undefined) {
+    throw new SemanticPlanValidationError(
+      'mode "count" must not use textSearch. Use filters: [] for a whole-object total, or filters with op "contains" / "eq" / "in" on a propertyId for a scoped count.',
+    );
+  }
+
   if (validated.textSearch !== undefined) {
     const searchObject = validated.textSearch.objectId ?? validated.objectId;
     assertObjectExists(ontology, searchObject);
