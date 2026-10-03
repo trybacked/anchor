@@ -66,8 +66,10 @@ export async function createAnchorServiceForModel(options: {
     translate: translator,
   });
 
+  const baseCapabilities = service.capabilities.bind(service);
+
   return Object.assign(service, {
-    capabilities: () => ({ ...service.capabilities(), semanticChat: true }),
+    capabilities: () => ({ ...baseCapabilities(), semanticChat: true }),
     semanticAsk: async (body: { question: string; evidence?: boolean | undefined }) => {
       const answer = await engine.ask(body.question, { evidence: body.evidence });
       const response: SemanticAskResponse = {
