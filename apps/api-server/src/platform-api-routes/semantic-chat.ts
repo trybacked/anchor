@@ -1,3 +1,7 @@
+import {
+  SemanticChatTranslationError,
+  SemanticPlanValidationError,
+} from "@trybacked/semantic-chat";
 import { SemanticAskBodySchema } from "@trybacked/service";
 import { getAnchorService } from "../platform-api-handler-utils.js";
 import { postJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
@@ -30,11 +34,21 @@ export const platformApiSemanticChatRoutes: RouteFactory[] = [
           503,
         );
       }
-      const answer = await service.semanticAsk({
-        question: body.question,
-        ...(body.evidence !== undefined ? { evidence: body.evidence } : {}),
-      });
-      return c.json(answer);
+      try {
+        const answer = await service.semanticAsk({
+          question: body.question,
+          ...(body.evidence !== undefined ? { evidence: body.evidence } : {}),
+        });
+        return c.json(answer);
+      } catch (error) {
+        if (
+          error instanceof SemanticPlanValidationError ||
+          error instanceof SemanticChatTranslationError
+        ) {
+          return c.json({ error: error.message }, 422);
+        }
+        throw error;
+      }
     },
   ),
 ];
