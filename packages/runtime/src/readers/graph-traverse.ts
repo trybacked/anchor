@@ -9,6 +9,7 @@ import {
   type TraverseDirection,
 } from "@trybacked/core/graph-traverse";
 import type { SqlStatementExecutor } from "../execute.js";
+import { toSqlLimitLiteral } from "./sql-limit-literal.js";
 import type { DocumentsDatasetResolver } from "./dataset.js";
 import { resolveEntityTable } from "./dataset.js";
 
@@ -173,12 +174,8 @@ WHERE ${quoteIdentifier(aliasFor(startEntityId))}.${quoteIdentifier(startColumn)
 FROM ${clause.fromClause}
 ${clause.joins.join("\n")}
 WHERE ${quoteIdentifier(aliasFor(startEntityId))}.${quoteIdentifier(startColumn)} = :startValue${extraWhere}
-LIMIT :rowLimit`;
+LIMIT ${toSqlLimitLiteral(input.limit, 500)}`;
 
-    return executor(sql, [
-      { name: "startValue", value: input.value },
-      { name: "rowLimit", value: input.limit },
-      ...parameters,
-    ]);
+    return executor(sql, [{ name: "startValue", value: input.value }, ...parameters]);
   };
 }

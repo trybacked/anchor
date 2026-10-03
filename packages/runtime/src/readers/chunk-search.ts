@@ -7,6 +7,7 @@ import {
 } from "./constants.js";
 import type { DocumentsDatasetResolver } from "./dataset.js";
 import { reciprocalRankFusion, type RankedRow } from "./rrf.js";
+import { toSqlLimitLiteral } from "./sql-limit-literal.js";
 
 export type ChunkSearchInput = {
   query: string;
@@ -88,16 +89,16 @@ async function fetchSemanticRankedList(options: {
     excludeTypes,
   } = options;
   try {
+    const semLimitLiteral = toSqlLimitLiteral(semLimit, MAX_CHUNK_SEARCH_LIMIT * 3);
     const semanticSql = `SELECT ${selectColumns}, score
 FROM vector_search(
   index => :vsIndex,
   query_text => :vsQuery,
-  num_results => :vsLimit
+  num_results => ${semLimitLiteral}
 )`;
     const semanticRows = await executor(semanticSql, [
       { name: "vsIndex", value: vectorSearchIndex },
       { name: "vsQuery", value: query },
-      { name: "vsLimit", value: semLimit },
     ]);
     const filtered = semanticRows.filter((row) => {
       const score = row["score"];
@@ -155,16 +156,16 @@ export function createChunkSearchReader(options: {
 
     const selectColumns = `${quoteIdentifier("element_id")}, ${quoteIdentifier("document_id")}, ${quoteIdentifier("filename")}, ${quoteIdentifier("folder")}, ${quoteIdentifier("element_type")}, ${quoteIdentifier("page_number")}, ${quoteIdentifier("element_index")}, ${quoteIdentifier("content")}`;
 
+    const kwLimitLiteral = toSqlLimitLiteral(limit * 3, MAX_CHUNK_SEARCH_LIMIT * 3);
     const keywordSql = `SELECT ${selectColumns}
 FROM ${table}
 WHERE LOWER(${quoteIdentifier("content")}) LIKE LOWER(:pattern)${docFilter}${typeFilter}
 ORDER BY LENGTH(${quoteIdentifier("content")}) ASC
-LIMIT :kwLimit`;
+LIMIT ${kwLimitLiteral}`;
     const keywordRows = await executor(keywordSql, [
       { name: "pattern", value: pattern },
       ...docParams,
       ...typeParams,
-      { name: "kwLimit", value: limit * 3 },
     ]);
     lists.push(
       keywordRows.map((row, rank) => ({

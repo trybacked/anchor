@@ -2,6 +2,7 @@ import type { ObjectQuery } from "@trybacked/compiler";
 import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { ObjectQueryResult, SqlStatementExecutor } from "../execute.js";
 import type { ChunkSearchInput } from "./chunk-search.js";
+import { toSqlLimitLiteral } from "./sql-limit-literal.js";
 import {
   DEFAULT_PROFILE_DOCUMENT_LIMIT,
   DEFAULT_PROFILE_FACT_LIMIT,
@@ -120,12 +121,9 @@ FROM ${profilesTable}
 WHERE LOWER(${quoteIdentifier("normalized_name")}) LIKE LOWER(:pattern)
    OR LOWER(${quoteIdentifier("name")}) LIKE LOWER(:pattern)
 ORDER BY ${quoteIdentifier("mention_count")} DESC NULLS LAST
-LIMIT :factLimit`;
+LIMIT ${toSqlLimitLiteral(factLimit, DEFAULT_PROFILE_FACT_LIMIT * 10)}`;
   try {
-    return await executor(sql, [
-      { name: "pattern", value: pattern },
-      { name: "factLimit", value: factLimit },
-    ]);
+    return await executor(sql, [{ name: "pattern", value: pattern }]);
   } catch {
     return [];
   }
