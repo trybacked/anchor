@@ -1,6 +1,5 @@
 import type { Ontology } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
-import { createDefaultPlanTemplateRegistry } from "../../src/template-registry.js";
 import { validateRoutedPlan } from "../../src/validate-plan.js";
 
 const ontology: Ontology = {
@@ -22,10 +21,8 @@ const ontology: Ontology = {
 };
 
 describe("validateRoutedPlan", () => {
-  const registry = createDefaultPlanTemplateRegistry();
-
   it("accepts single route with objectQuery", () => {
-    const result = validateRoutedPlan(ontology, registry, {
+    const result = validateRoutedPlan(ontology, {
       route: "single",
       objectQuery: {
         entityId: "contract",
@@ -36,25 +33,13 @@ describe("validateRoutedPlan", () => {
     expect(result.route).toBe("single");
   });
 
-  it("accepts template route with params", () => {
-    const result = validateRoutedPlan(ontology, registry, {
-      route: "template",
-      templateId: "search-then-filter",
-      params: { query: "ascensore", month: "2025-06" },
-    });
-    expect(result.route).toBe("template");
-    if (result.route === "template") {
-      expect(result.instantiated.steps).toHaveLength(2);
-    }
-  });
-
-  it("rejects unknown template id", () => {
+  it("rejects template route", () => {
     expect(() =>
-      validateRoutedPlan(ontology, registry, {
+      validateRoutedPlan(ontology, {
         route: "template",
-        templateId: "missing",
-        params: { query: "x", month: "2025-06" },
+        templateId: "search_then_filter",
+        params: { query: "test" },
       }),
-    ).toThrow();
+    ).toThrow(/single/);
   });
 });

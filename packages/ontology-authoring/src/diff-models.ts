@@ -1,6 +1,10 @@
 import type { Entity, Property, Relation, SemanticModel } from "@trybacked/core";
 import type { AuthoringDiffChange } from "./types.js";
 
+function stableJson(value: unknown): string {
+  return JSON.stringify(value ?? null);
+}
+
 function propertyKey(entityId: string, column: string): string {
   return `${entityId}.${column}`;
 }
@@ -112,8 +116,70 @@ export function diffSemanticModels(
   }
 
   diffRelationColumns(beforeRelations, afterRelations, changes);
+  diffModelSemantics(before, after, changes);
+  diffEntitySemantics(beforeEntities, afterEntities, changes);
 
   return changes;
+}
+
+function diffModelSemantics(
+  before: SemanticModel,
+  after: SemanticModel,
+  changes: AuthoringDiffChange[],
+): void {
+  const beforeGlossary = stableJson(before.semantics?.glossary ?? []);
+  const afterGlossary = stableJson(after.semantics?.glossary ?? []);
+  if (beforeGlossary !== afterGlossary) {
+    changes.push({
+      kind: "changed",
+      subject: "semantics.glossary",
+      detail: "Glossary terms updated",
+    });
+  }
+  const beforeExamples = stableJson(before.semantics?.examples ?? []);
+  const afterExamples = stableJson(after.semantics?.examples ?? []);
+  if (beforeExamples !== afterExamples) {
+    changes.push({
+      kind: "changed",
+      subject: "semantics.examples",
+      detail: "Verified examples updated",
+    });
+  }
+}
+
+function diffEntitySemantics(
+  beforeEntities: Map<string, Entity>,
+  afterEntities: Map<string, Entity>,
+  changes: AuthoringDiffChange[],
+): void {
+  for (const [id, beforeEntity] of beforeEntities) {
+    const afterEntity = afterEntities.get(id);
+    if (afterEntity === undefined) {
+      continue;
+    }
+    if (stableJson(beforeEntity.semantics) !== stableJson(afterEntity.semantics)) {
+      changes.push({
+        kind: "changed",
+        subject: id,
+        detail: `Entity semantics updated for "${beforeEntity.name}"`,
+      });
+    }
+    const beforeProps = indexProperties(beforeEntity);
+    const afterProps = indexProperties(afterEntity);
+    for (const [column, beforeProperty] of beforeProps) {
+      const afterProperty = afterProps.get(column);
+      if (afterProperty === undefined) {
+        continue;
+      }
+      if (stableJson(beforeProperty.semantics) !== stableJson(afterProperty.semantics)) {
+        changes.push({
+          kind: "changed",
+          subject: propertyKey(id, column),
+          detail: `Property semantics updated for "${beforeProperty.name}"`,
+        });
+      }
+    }
+  }
 }
 
 function diffRelationColumns(

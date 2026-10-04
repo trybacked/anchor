@@ -1,5 +1,12 @@
 import type { AuthoringCommand } from "@trybacked/core";
-import type { Entity, Property, Relation, Rule, SemanticModel } from "@trybacked/core";
+import type {
+  Entity,
+  OntologySemanticsBlock,
+  Property,
+  Relation,
+  Rule,
+  SemanticModel,
+} from "@trybacked/core";
 import { MODEL_FORMAT_VERSION } from "@trybacked/core";
 import { commandsForPack } from "./packs/index.js";
 
@@ -46,6 +53,10 @@ export function emptySemanticModel(runId: string): SemanticModel {
     relations: [],
     rules: [],
   };
+}
+
+function semanticsBlock(model: SemanticModel): OntologySemanticsBlock {
+  return model.semantics ?? { glossary: [], examples: [] };
 }
 
 export function applyCommand(model: SemanticModel, command: AuthoringCommand): SemanticModel {
@@ -225,6 +236,76 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
       const catalog = command.catalog ?? "backed";
       const packCommands = commandsForPack(command.packId, catalog);
       return applyCommands(model, packCommands);
+    }
+    case "setPropertySemantics": {
+      const entity = findEntity(model, command.entityId);
+      const property = entity.properties.find((entry) => entry.columnName === command.columnName);
+      if (property === undefined) {
+        throw new AuthoringCommandError(
+          `Property "${command.columnName}" not found on "${command.entityId}"`,
+        );
+      }
+      const updatedProperty: Property = {
+        ...property,
+        semantics: { ...property.semantics, ...command.semantics },
+      };
+      const updated: Entity = {
+        ...entity,
+        properties: entity.properties.map((entry) =>
+          entry.columnName === command.columnName ? updatedProperty : entry,
+        ),
+      };
+      return {
+        ...model,
+        entities: model.entities.map((entry) => (entry.id === command.entityId ? updated : entry)),
+      };
+    }
+    case "setEntitySemantics": {
+      const entity = findEntity(model, command.entityId);
+      const updated: Entity = {
+        ...entity,
+        semantics: { ...entity.semantics, ...command.semantics },
+      };
+      return {
+        ...model,
+        entities: model.entities.map((entry) => (entry.id === command.entityId ? updated : entry)),
+      };
+    }
+    case "upsertGlossaryTerm": {
+      const block = semanticsBlock(model);
+      const without = block.glossary.filter((entry) => entry.id !== command.term.id);
+      return {
+        ...model,
+        semantics: { ...block, glossary: [...without, command.term] },
+      };
+    }
+    case "removeGlossaryTerm": {
+      const block = semanticsBlock(model);
+      return {
+        ...model,
+        semantics: {
+          ...block,
+          glossary: block.glossary.filter((entry) => entry.id !== command.termId),
+        },
+      };
+    }
+    case "upsertExample": {
+      const block = semanticsBlock(model);
+      const without = block.examples.filter((entry) => entry.id !== command.example.id);
+      return {
+        ...model,
+        semantics: { ...block, examples: [...without, command.example] },
+      };
+    }
+    case "removeExample": {
+      const block = semanticsBlock(model);
+      return {
+        ...model,
+        semantics: {
+          ...block,
+          examples: block.examples.filter((entry) => entry.id !== command.exampleId),
+        },
+      };
     }
     default: {
       const exhaustive: never = command;

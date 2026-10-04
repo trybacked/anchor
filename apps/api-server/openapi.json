@@ -40,7 +40,7 @@
     },
     {
       "name": "semantic-chat",
-      "description": "Natural-language answers over governed data"
+      "description": "Workshop AI ask — natural-language questions over contracts, dates, organizations (governed agent + warehouse)"
     }
   ],
   "components": {
@@ -909,10 +909,27 @@
         }
       }
     },
+    "/v1/chat/ask/status": {
+      "get": {
+        "operationId": "chatAskStatus",
+        "summary": "Whether natural-language ask is available for this tenant",
+        "tags": ["semantic-chat"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "available true when POST /v1/chat/ask will run; otherwise reason code"
+          }
+        }
+      }
+    },
     "/v1/chat/ask": {
       "post": {
         "operationId": "semanticAsk",
-        "summary": "Natural-language question",
+        "summary": "Ask a natural-language question over governed data",
         "tags": ["semantic-chat"],
         "security": [
           {
@@ -927,18 +944,20 @@
                 "$ref": "#/components/schemas/SemanticAskBody"
               },
               "example": {
-                "question": "How many contracts in June 2025?",
-                "evidence": true
+                "question": "Quanti contratti nel mese di ingest 2025-06?"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "NL answer with route (single|template), execution steps, SQL, rows/count, and provenance"
+            "description": "Answer text plus optional clarification, agentSteps (SQL trace), claims, usage, runId"
+          },
+          "422": {
+            "description": "Agent or validation error"
           },
           "503": {
-            "description": "Unavailable"
+            "description": "Ask not available (see GET /v1/chat/ask/status)"
           }
         }
       }

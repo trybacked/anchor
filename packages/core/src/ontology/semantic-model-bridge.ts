@@ -44,6 +44,7 @@ export function semanticModelToOntology(
         evidence: entity.provenance.evidence,
       },
       source: "inferred" as const,
+      ...(entity.semantics !== undefined ? { semantics: entity.semantics } : {}),
       properties: entity.properties.map((property) => ({
         id: property.columnName,
         name: property.name,
@@ -57,6 +58,7 @@ export function semanticModelToOntology(
           evidence: property.provenance.evidence,
         },
         source: "inferred" as const,
+        ...(property.semantics !== undefined ? { semantics: property.semantics } : {}),
       })),
     })),
     relationships: model.relations.map((relation) => ({
@@ -91,5 +93,6 @@ export function semanticModelToOntology(
       source: "inferred" as const,
     })),
     actions: [],
+    ...(model.semantics !== undefined ? { semantics: model.semantics } : {}),
   };
 }

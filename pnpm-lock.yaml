@@ -108,6 +108,9 @@ importers:
       '@trybacked/semantic-chat':
         specifier: workspace:*
         version: link:../../packages/semantic-chat
+      '@trybacked/service':
+        specifier: workspace:*
+        version: link:../../packages/service
       yaml:
         specifier: ^2.7.0
         version: 2.9.0

@@ -91,7 +91,8 @@ export const OPENAPI_TAG_DESCRIPTIONS: Record<string, string> = {
   "chunk-search": "Semantic search over document chunks",
   "entity-profile-reader": "Enriched entity profiles",
   "graph-traverse": "Multi-hop graph traversal",
-  "semantic-chat": "Natural-language answers over governed data",
+  "semantic-chat":
+    "Workshop AI ask — natural-language questions over contracts, dates, organizations (governed agent + warehouse)",
   files: "Upload and manage raw document files before pipeline refresh",
 };
 

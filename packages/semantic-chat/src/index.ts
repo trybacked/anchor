@@ -1,4 +1,29 @@
 export {
+  runSemanticAgent,
+  createSemanticAgentModelFromEnv,
+  SemanticAgentError,
+} from "./agent/run-agent.js";
+export {
+  attachSemanticAsk,
+  describeSemanticAskAvailability,
+  type AttachSemanticAskOptions,
+  type SemanticAskAvailability,
+  type SemanticAskHandler,
+  type TenantAiAskCapabilities,
+} from "./create-semantic-ask.js";
+export { tenantAiAskEnabled } from "./tenant-ai-ask.js";
+export { validateAnswerGrounding, SemanticGroundingError } from "./agent/grounding.js";
+export { buildAgentTools } from "./agent/build-tools.js";
+export type {
+  SemanticAgentResult,
+  SemanticAgentStep,
+  SemanticAgentUsage,
+  SemanticAnswerClaim,
+  SemanticClarification,
+  AgentBudget,
+} from "./agent/types.js";
+export { buildAgentSystemPrompt } from "./agent/prompt-builder.js";
+export {
   createSemanticChatEngine,
   SemanticChatTranslationError,
   type ExecutePlanInput,
@@ -7,26 +32,9 @@ export {
   type SemanticChatEngineOptions,
   type SemanticExecutionStepSummary,
   type SemanticQueryResult,
-  type SemanticQueryTranslator,
 } from "./engine.js";
-export {
-  collectTemplateRowLimits,
-  instantiatePlanTemplate,
-  type InstantiatedPlan,
-  type InstantiatedPlanStep,
-  type TemplateParamValues,
-} from "./instantiate-template.js";
 export { normalizeSemanticQueryPlan, type NormalizedSemanticQueryPlan } from "./normalize.js";
-export { parseJsonFromLlmResponse } from "./parse-llm-json.js";
 export {
-  PlanTemplateSchema,
-  PlanTemplateStepSchema,
-  parsePlanTemplate,
-  type PlanTemplate,
-  type PlanTemplateStep,
-} from "./plan-template.js";
-export {
-  AggregateOpSchema,
   ObjectQueryRequestSchema,
   ObjectSetDefinitionSchema,
   RoutedSemanticPlanSchema,
@@ -38,7 +46,6 @@ export {
   type RowFilter,
   type SemanticQueryPlan,
 } from "./plan-types.js";
-export { buildOntologyContextForTranslation } from "./ontology-context.js";
 export {
   buildQueryExecutionProvenance,
   buildRowProvenance,
@@ -46,18 +53,9 @@ export {
   type EntityProvenance,
   type RowProvenance,
 } from "./provenance.js";
-export { renderAnswer } from "./render-answer.js";
-export { buildSemanticTranslationPrompt, ROUTED_SEMANTIC_PLAN_JSON_SHAPE } from "./prompt.js";
-export {
-  createDefaultPlanTemplateRegistry,
-  createPlanTemplateRegistry,
-  type PlanTemplateRegistry,
-} from "./template-registry.js";
-export { SEARCH_THEN_FILTER_TEMPLATE } from "./templates/search-then-filter.js";
 export {
   SemanticPlanValidationError,
   validateObjectQueryAgainstOntology,
   validateRoutedPlan,
   type ValidatedRoutedPlan,
-  type ValidatedTemplateExecution,
 } from "./validate-plan.js";

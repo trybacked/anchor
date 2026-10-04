@@ -8,11 +8,17 @@ const SharedSpaceSchema = z.object({
   privileges: z.array(z.string()).optional(),
 });
 
+const TenantCapabilitiesSchema = z.object({
+  aiAsk: z.boolean().optional(),
+  semanticAgent: z.boolean().optional(),
+});
+
 const TenantEntrySchema = z.object({
   catalog: z.string().min(1),
   mcp: z.string().min(1),
   shared: z.array(z.string().min(1)),
   ontologyVersion: z.number().int().nonnegative().optional(),
+  capabilities: TenantCapabilitiesSchema.optional(),
 });
 
 export const TenantsRegistrySchema = z.object({

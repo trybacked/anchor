@@ -6,6 +6,7 @@ import type pg from "pg";
 import { z } from "zod";
 import { requireAdmin, requireInternal } from "./auth.js";
 import { registerAuthoringRoutes } from "./authoring/routes.js";
+import { registerSemanticRoutes } from "./semantic/routes.js";
 import type { ControlPlaneConfig } from "./config.js";
 import {
   deleteOAuthClient,
@@ -200,6 +201,7 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
   });
 
   registerAuthoringRoutes(app, config, pool);
+  registerSemanticRoutes(app, config, pool);
 
   app.get("/v1/jobs/:jobId", requireAdmin(config), async (c) => {
     const jobId = c.req.param("jobId");

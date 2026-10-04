@@ -12,11 +12,11 @@ import {
 import { loadPublishedOntology } from "../packages/registry/dist/index.js";
 import { buildQueryRuntimeFromEnv } from "../packages/runtime/dist/index.js";
 import {
-  createSemanticChatEngine,
-  SemanticChatTranslationError,
-  SemanticPlanValidationError,
+  createSemanticAgentModelFromEnv,
+  runSemanticAgent,
+  SemanticAgentError,
 } from "../packages/semantic-chat/dist/index.js";
-import { createVercelAiTranslatorFromEnv } from "../packages/semantic-chat/dist/adapters/vercel-ai.js";
+import { createAnchorService } from "../packages/service/dist/index.js";
 import { assertCase } from "./semantic-nl-assertions.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -53,15 +53,38 @@ function parseArgs(argv) {
   return resolve(workspace ?? defaultWorkspace);
 }
 
+function agentAnswerShape(agent, question) {
+  const queryStep = agent.steps.find((step) => step.toolName === "query_objects");
+  const queryInput = queryStep?.input ?? {};
+  const queryResult = queryStep ? agent.toolResults.get(queryStep.toolCallId) : undefined;
+  const result =
+    typeof queryResult === "object" && queryResult !== null && "rowCount" in queryResult
+      ? {
+          objectId: String(queryResult.objectId ?? queryInput.objectId ?? ""),
+          mode: String(queryResult.mode ?? queryInput.mode ?? "rows"),
+          rowCount: Number(queryResult.rowCount ?? 0),
+          rows: Array.isArray(queryResult.rows) ? queryResult.rows : [],
+          sql: typeof queryResult.sql === "string" ? queryResult.sql : undefined,
+        }
+      : undefined;
+  return {
+    question,
+    route: "agent",
+    plan: { objectQuery: queryInput },
+    result,
+    steps: agent.steps,
+    attempts: 1,
+  };
+}
+
 async function main() {
   const workspaceRoot = parseArgs(process.argv.slice(2));
   loadEnvFile(join(repoRoot, ".env"));
   loadEnvFile(join(workspaceRoot, ".env"));
   const tenant = workspaceRoot.split("/").pop() ?? "gerace";
   loadEnvFile(join(process.env["HOME"] ?? "", ".config", "backed", `${tenant}.env`));
-
-  const translate = createVercelAiTranslatorFromEnv(process.env);
-  if (translate === undefined) {
+  const agentModel = createSemanticAgentModelFromEnv(process.env);
+  if (agentModel === undefined) {
     console.error("Missing AI_GATEWAY_API_KEY. Set it in anchor/.env or the environment.");
     process.exitCode = 1;
     return;
@@ -89,10 +112,15 @@ async function main() {
     env: process.env,
   });
 
-  const engine = createSemanticChatEngine({ ontology, queryRuntime: runtime, translate });
+  const service = createAnchorService({
+    model,
+    ontology,
+    queryRuntime: runtime,
+    executionProfile: "api",
+  });
+
   const suite = JSON.parse(readFileSync(casesPath, "utf8"));
-  const modelId =
-    process.env["SEMANTIC_CHAT_MODEL"] ?? process.env["SEMANTIC_MODEL"] ?? "openai/gpt-4o-mini";
+  const modelId = agentModel.modelId;
 
   console.error(`Workspace: ${workspaceRoot}`);
   console.error(`Model: ${modelId}`);
@@ -107,12 +135,19 @@ async function main() {
     let answer;
     let error;
     try {
-      answer = await engine.ask(testCase.question);
+      const agent = await runSemanticAgent({
+        ontology,
+        service,
+        question: testCase.question,
+        modelId: agentModel.modelId,
+        apiKey: agentModel.apiKey,
+        ...(agentModel.fallbackModelId !== undefined
+          ? { fallbackModelId: agentModel.fallbackModelId }
+          : {}),
+      });
+      answer = agentAnswerShape(agent, testCase.question);
     } catch (caught) {
-      if (
-        caught instanceof SemanticPlanValidationError ||
-        caught instanceof SemanticChatTranslationError
-      ) {
+      if (caught instanceof SemanticAgentError) {
         error = caught;
       } else {
         error = caught instanceof Error ? caught : new Error(String(caught));
@@ -124,27 +159,21 @@ async function main() {
     if (failures.length === 0) {
       passed += 1;
       const summary =
-        answer !== undefined
-          ? `route=${answer.route} ${answer.result.mode} ${answer.result.objectId} rows=${String(answer.result.rowCount)} attempts=${String(answer.attempts)}`
+        answer?.result !== undefined
+          ? `route=agent ${answer.result.mode} ${answer.result.objectId} rows=${String(answer.result.rowCount)}`
           : `failed as expected (${error?.name ?? "error"})`;
       console.log(`PASS  ${testCase.id}  ${ms}ms  ${summary}`);
     } else if (testCase.optional === true) {
       advisory += 1;
-      console.log(`WARN  ${testCase.id}  ${ms}ms  (optional / LLM may hallucinate a valid plan)`);
+      console.log(`WARN  ${testCase.id}  ${ms}ms  (optional)`);
       for (const message of failures) {
         console.log(`      - ${message}`);
-      }
-      if (answer !== undefined) {
-        console.log(`      plan: ${JSON.stringify(answer.plan.objectQuery)}`);
       }
     } else {
       failed += 1;
       console.log(`FAIL  ${testCase.id}  ${ms}ms`);
       for (const message of failures) {
         console.log(`      - ${message}`);
-      }
-      if (answer !== undefined) {
-        console.log(`      plan: ${JSON.stringify(answer.plan.objectQuery)}`);
       }
     }
   }

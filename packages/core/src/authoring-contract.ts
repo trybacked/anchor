@@ -7,6 +7,12 @@ import {
   RuleSchema,
   SemanticModelSchema,
 } from "./model.js";
+import {
+  EntitySemanticsSchema,
+  GlossaryTermSchema,
+  PropertySemanticsSchema,
+  VerifiedExampleSchema,
+} from "./semantics.js";
 
 export const TenantRoleSchema = z.enum(["viewer", "editor", "publisher", "admin"]);
 export type TenantRole = z.infer<typeof TenantRoleSchema>;
@@ -86,6 +92,33 @@ export const AuthoringCommandSchema = z.discriminatedUnion("type", [
     type: z.literal("applyPack"),
     packId: z.string().min(1),
     catalog: z.string().min(1).optional(),
+  }),
+  z.object({
+    type: z.literal("setPropertySemantics"),
+    entityId: z.string().min(1),
+    columnName: z.string().min(1),
+    semantics: PropertySemanticsSchema,
+  }),
+  z.object({
+    type: z.literal("setEntitySemantics"),
+    entityId: z.string().min(1),
+    semantics: EntitySemanticsSchema,
+  }),
+  z.object({
+    type: z.literal("upsertGlossaryTerm"),
+    term: GlossaryTermSchema,
+  }),
+  z.object({
+    type: z.literal("removeGlossaryTerm"),
+    termId: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("upsertExample"),
+    example: VerifiedExampleSchema,
+  }),
+  z.object({
+    type: z.literal("removeExample"),
+    exampleId: z.string().min(1),
   }),
 ]);
 

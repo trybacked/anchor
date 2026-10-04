@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { ConfidenceSchema, ElementStatusSchema } from "../model.js";
+import {
+  EntitySemanticsSchema,
+  OntologySemanticsBlockSchema,
+  PropertySemanticsSchema,
+} from "../semantics.js";
 import { OntologyLifecycleStageSchema } from "./lifecycle.js";
 
 export const ONTOLOGY_FORMAT_VERSION = "1" as const;
@@ -40,6 +45,7 @@ export const OntologyPropertySchema = z.object({
   status: ElementStatusSchema.optional(),
   lifecycle: OntologyLifecycleStageSchema.optional(),
   source: z.enum(["inferred", "manual"]).optional(),
+  semantics: PropertySemanticsSchema.optional(),
 });
 
 export const OntologyObjectSchema = z.object({
@@ -53,6 +59,7 @@ export const OntologyObjectSchema = z.object({
   status: ElementStatusSchema.optional(),
   lifecycle: OntologyLifecycleStageSchema.optional(),
   source: z.enum(["inferred", "manual"]).optional(),
+  semantics: EntitySemanticsSchema.optional(),
 });
 
 export const OntologyRelationshipCardinalitySchema = z.enum([
@@ -128,6 +135,7 @@ export const OntologySchema = z.object({
   relationships: z.array(OntologyRelationshipSchema),
   logic: z.array(OntologyLogicSchema).default([]),
   actions: z.array(OntologyActionSchema).default([]),
+  semantics: OntologySemanticsBlockSchema.optional(),
 });
 
 export type OntologyPropertyType = z.infer<typeof OntologyPropertyTypeSchema>;

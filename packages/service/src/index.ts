@@ -58,6 +58,18 @@ export type {
   SemanticAskBody,
 } from "./contracts.js";
 export {
+  searchOntologySchema,
+  getPropertyValues,
+  createReadOnlyToolHandlers,
+  SearchSchemaInputSchema,
+  GetPropertyValuesInputSchema,
+  type SchemaSearchHit,
+  type GetPropertyValuesInput,
+  type GetPropertyValuesResult,
+  type PropertyValueHit,
+  type ReadOnlyToolHandlers,
+} from "./tools/index.js";
+export {
   applyQueryExecutionBudget,
   assertAggregateRowBudget,
   maxRowLimitForProfile,
@@ -102,4 +114,11 @@ export {
   type SemanticAskResponse,
   type SemanticAskResult,
   type SemanticAskStep,
+  type SemanticAnswerClaim,
+  type SemanticAgentStepRecord,
+  type SemanticAgentUsage,
+  type SemanticClarificationResponse,
+  type ChatAskStatusResponse,
+  type ChatAskUnavailableReason,
 } from "./responses.js";
+export { getChatAskStatus } from "./chat-ask-status.js";

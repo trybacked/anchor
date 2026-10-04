@@ -21,6 +21,7 @@
     "smoke:semantic-nl": "node scripts/semantic-nl-smoke.mjs",
     "smoke:semantic-nl-benchmark": "node scripts/semantic-nl-benchmark.mjs --count 50",
     "smoke:semantic-nl-baseline": "node scripts/semantic-nl-baseline.mjs",
+    "eval:semantic": "node scripts/eval-semantic-agent.mjs",
     "generate:schema": "pnpm --filter @trybacked/core run generate:schema",
     "deploy:check": "node deploy/scripts/check-stack.mjs",
     "deploy:smoke": "bash deploy/scripts/smoke-stack.sh",

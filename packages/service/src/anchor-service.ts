@@ -351,5 +351,8 @@ export function createAnchorService(options: AnchorServiceOptions) {
 export type AnchorServiceBase = ReturnType<typeof createAnchorService>;
 
 export type AnchorService = AnchorServiceBase & {
-  semanticAsk?: (body: { question: string; evidence?: boolean }) => Promise<SemanticAskResponse>;
+  semanticAsk?: (body: {
+    question: string;
+    evidence?: boolean | undefined;
+  }) => Promise<SemanticAskResponse>;
 };

@@ -39,5 +39,21 @@ describe("applyCommand", () => {
     ]);
     expect(result.entities.map((entity) => entity.id).sort()).toEqual(["contract", "organization"]);
     expect(result.relations).toHaveLength(1);
+    expect(result.semantics?.glossary.length).toBeGreaterThan(0);
+  });
+
+  it("sets property semantics", () => {
+    const withPack = applyCommands(emptySemanticModel("sem-test"), [
+      { type: "applyPack", packId: "anac" },
+    ]);
+    const updated = applyCommand(withPack, {
+      type: "setPropertySemantics",
+      entityId: "contract",
+      columnName: "source_year_month",
+      semantics: { description: "Batch ingest month (YYYY-MM)" },
+    });
+    const contract = updated.entities.find((entity) => entity.id === "contract");
+    const property = contract?.properties.find((entry) => entry.columnName === "source_year_month");
+    expect(property?.semantics?.description).toBe("Batch ingest month (YYYY-MM)");
   });
 });

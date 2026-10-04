@@ -124,6 +124,7 @@ export function createTenantRuntimeRegistry(options: {
       catalog: entry.catalog,
       databricksConfig: options.databricksConfig,
       env: options.env,
+      tenantCapabilities: entry.capabilities,
       audit: {
         ...(options.audit?.onOperation !== undefined
           ? { onOperation: options.audit.onOperation }

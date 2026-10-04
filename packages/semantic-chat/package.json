@@ -23,10 +23,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./adapters/vercel-ai": {
-      "types": "./dist/adapters/vercel-ai.d.ts",
-      "default": "./dist/adapters/vercel-ai.js"
     }
   },
   "scripts": {

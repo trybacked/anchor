@@ -14,6 +14,12 @@ export type HealthResponse = {
   capabilities: Record<string, boolean>;
 };
 
+export type ChatAskUnavailableReason = "missing_llm_gateway" | "disabled_for_tenant";
+
+export type ChatAskStatusResponse =
+  | { available: true }
+  | { available: false; reason: ChatAskUnavailableReason };
+
 export type ObjectQueryResponse = QueryObjectsToolPayload;
 
 export type ChunkSearchResponse = {
@@ -41,10 +47,37 @@ export type GetEntityResponse = EntityDetail;
 
 export type SemanticAskStep = {
   id: string;
-  type: "chunkSearch" | "objectQuery";
+  type: "chunkSearch" | "objectQuery" | "agentTool";
   rowCount?: number | undefined;
   documentIds?: string[] | undefined;
   sql?: string | undefined;
+  toolName?: string | undefined;
+};
+
+export type SemanticAnswerClaim = {
+  text: string;
+  toolCallId: string;
+};
+
+export type SemanticAgentStepRecord = {
+  toolCallId: string;
+  toolName: string;
+  input: Record<string, unknown>;
+  rowCount?: number | undefined;
+  sql?: string | undefined;
+  durationMs: number;
+};
+
+export type SemanticAgentUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  latencyMs: number;
+};
+
+export type SemanticClarificationResponse = {
+  question: string;
+  options: string[];
 };
 
 export type SemanticAskResult = {
@@ -58,16 +91,24 @@ export type SemanticAskResult = {
 
 export type SemanticAskResponse = {
   text: string;
+  answer?: string | undefined;
   question: string;
-  route: "single" | "template";
+  runId?: string | undefined;
+  route: "single" | "template" | "agent";
   templateId?: string | undefined;
-  plan: Record<string, unknown>;
-  result: SemanticAskResult;
-  provenance: RowProvenance[];
+  plan?: Record<string, unknown> | undefined;
+  result?: SemanticAskResult | undefined;
+  provenance?: RowProvenance[] | undefined;
   ontologyVersion: number;
-  parameterNames: string[];
+  parameterNames?: string[] | undefined;
   attempts: number;
-  steps: SemanticAskStep[];
+  steps?: SemanticAskStep[] | undefined;
+  claims?: SemanticAnswerClaim[] | undefined;
+  assumptions?: string[] | undefined;
+  followUps?: string[] | undefined;
+  agentSteps?: SemanticAgentStepRecord[] | undefined;
+  usage?: SemanticAgentUsage | undefined;
+  clarification?: SemanticClarificationResponse | undefined;
 };
 
 export type GetDefinitionResponse = DefinitionResult;

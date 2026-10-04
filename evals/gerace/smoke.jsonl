@@ -1,0 +1,3 @@
+{"id":"count-ingest-2025-06","question":"Quanti contratti nel mese di ingest 2025-06?","expect":{"toolsInclude":["query_objects"],"filtersInclude":[{"propertyId":"source_year_month","op":"eq","value":"2025-06"}],"mode":"count"}}
+{"id":"rows-sample-june","question":"Mostra al massimo 5 contratti per ingest 2025-06 con CIG e oggetto gara.","expect":{"toolsInclude":["query_objects"],"mode":"rows","maxRowCount":5}}
+{"id":"order-desc-importo","question":"Top 3 contratti per importo lotto nel mese ingest 2025-06.","expect":{"toolsInclude":["query_objects"],"orderBy":"importo_lotto","orderDirection":"desc"}}

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { writeFileSync, existsSync, readFileSync } from "node:fs";
+import { writeFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readModelYaml } from "../packages/core/dist/index.js";
@@ -11,23 +11,42 @@ import {
 } from "../packages/provider-databricks/dist/index.js";
 import { loadPublishedOntology } from "../packages/registry/dist/index.js";
 import { buildQueryRuntimeFromEnv } from "../packages/runtime/dist/index.js";
-import { createSemanticChatEngine } from "../packages/semantic-chat/dist/index.js";
+import {
+  createSemanticAgentModelFromEnv,
+  runSemanticAgent,
+} from "../packages/semantic-chat/dist/index.js";
+import { createAnchorService } from "../packages/service/dist/index.js";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(scriptDir, "..");
 const defaultWorkspace = join(repoRoot, "..", "ontology", "gerace");
 
-const MONTHS = [
-  { ym: "2025-06", label: "June 2025" },
-  { ym: "2025-05", label: "May 2025" },
-  { ym: "2025-04", label: "April 2025" },
-  { ym: "2025-03", label: "March 2025" },
-  { ym: "2025-02", label: "February 2025" },
-];
-
-const REGIONS = ["Sicilia", "Lombardia", "Lazio", "Campania", "Veneto", "Piemonte", "Toscana"];
-
-const KEYWORDS = ["servizi", "lavori", "fornitura", "manutenzione", "consulenza", "appalto"];
+function loadEvalQuestions(tenant, limit) {
+  const dir = join(repoRoot, "evals", tenant);
+  if (!existsSync(dir)) {
+    return [];
+  }
+  const questions = [];
+  for (const file of readdirSync(dir).filter((name) => name.endsWith(".jsonl"))) {
+    for (const line of readFileSync(join(dir, file), "utf8").split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed.length === 0) continue;
+      const row = JSON.parse(trimmed);
+      if (typeof row.question === "string") {
+        questions.push({
+          id: row.id ?? `eval-${String(questions.length + 1)}`,
+          category: "eval-dataset",
+          question: row.question,
+          expect: row.expect,
+        });
+      }
+      if (questions.length >= limit) {
+        return questions;
+      }
+    }
+  }
+  return questions;
+}
 
 function loadEnvFile(path) {
   if (!existsSync(path)) return;
@@ -45,7 +64,11 @@ function loadEnvFile(path) {
   }
 }
 
-function buildQuestions(count) {
+function buildQuestions(count, tenant) {
+  const fromEvals = loadEvalQuestions(tenant, count);
+  if (fromEvals.length > 0) {
+    return fromEvals;
+  }
   const questions = [];
   let index = 0;
 
@@ -55,28 +78,8 @@ function buildQuestions(count) {
     questions.push({ id: `q${String(index).padStart(2, "0")}`, category, question });
   };
 
-  for (const month of MONTHS) {
-    push("count-month", `How many contracts are in the ${month.label} ingest month?`);
-    push("count-month-alt", `Give me the total contracts for source_year_month ${month.ym}.`);
-  }
-
-  for (const keyword of KEYWORDS) {
-    push(
-      "contains-subject",
-      `How many contracts in June 2025 ingest month have tender subject containing "${keyword}"?`,
-    );
-  }
-
-  for (const region of REGIONS) {
-    push(
-      "multi-hop-region",
-      `How many contracts in 2025-06 involve entities with regional section ${region}?`,
-    );
-  }
-
-  for (const limit of [3, 5, 8, 10, 15]) {
-    push("rows-sample", `Show at most ${String(limit)} contracts for the June 2025 ingest month.`);
-  }
+  push("count-month", "How many contracts are in the June 2025 ingest month?");
+  push("rows-sample", "Show at most 5 contracts for the June 2025 ingest month.");
 
   for (let variant = 0; variant < 6; variant += 1) {
     push(
@@ -85,7 +88,7 @@ function buildQuestions(count) {
     );
   }
 
-  for (const region of REGIONS.slice(0, 4)) {
+  for (const region of ["Sicilia", "Lombardia", "Lazio", "Campania"]) {
     push(
       "groupby-region",
       `For 2025-06, up to 10 rows: contracts by regional section (including ${region} if present).`,
@@ -155,24 +158,12 @@ async function main() {
   let inputTokens = 0;
   let outputTokens = 0;
 
-  const apiKey = process.env["AI_GATEWAY_API_KEY"]?.trim();
-  if (apiKey === undefined || apiKey.length === 0) {
+  const agentModel = createSemanticAgentModelFromEnv(process.env);
+  if (agentModel === undefined) {
     console.error("Missing AI_GATEWAY_API_KEY.");
     process.exitCode = 1;
     return;
   }
-
-  const { createVercelAiTranslator } =
-    await import("../packages/semantic-chat/dist/adapters/vercel-ai.js");
-  const instrumentedTranslate = createVercelAiTranslator({
-    modelId,
-    apiKey,
-    usageSink: (usage) => {
-      llmCalls += 1;
-      inputTokens += usage.inputTokens;
-      outputTokens += usage.outputTokens;
-    },
-  });
 
   if (!hasDatabricksEnv(process.env)) {
     console.error("Missing BACKED_DATABRICKS_* env.");
@@ -196,13 +187,14 @@ async function main() {
     env: process.env,
   });
 
-  const engine = createSemanticChatEngine({
+  const service = createAnchorService({
+    model,
     ontology,
     queryRuntime: runtime,
-    translate: instrumentedTranslate,
+    executionProfile: "api",
   });
 
-  const questions = buildQuestions(count);
+  const questions = buildQuestions(count, tenant);
   const results = [];
   const wallStart = Date.now();
 
@@ -219,11 +211,25 @@ async function main() {
     let objectId;
     let rowCount;
     try {
-      const answer = await engine.ask(item.question);
-      attempts = answer.attempts;
-      mode = answer.result.mode;
-      objectId = answer.result.objectId;
-      rowCount = answer.result.rowCount;
+      const agent = await runSemanticAgent({
+        ontology,
+        service,
+        question: item.question,
+        modelId: agentModel.modelId,
+        apiKey: agentModel.apiKey,
+      });
+      attempts = 1;
+      const queryStep = agent.steps.find((step) => step.toolName === "query_objects");
+      const queryResult =
+        queryStep !== undefined ? agent.toolResults.get(queryStep.toolCallId) : undefined;
+      if (typeof queryResult === "object" && queryResult !== null) {
+        mode = String(queryResult.mode ?? queryStep?.input?.mode ?? "");
+        objectId = String(queryResult.objectId ?? queryStep?.input?.objectId ?? "");
+        rowCount = Number(queryResult.rowCount ?? 0);
+      }
+      inputTokens += agent.usage.inputTokens;
+      outputTokens += agent.usage.outputTokens;
+      llmCalls += 1;
     } catch (error) {
       status = "error";
       errorName = error instanceof Error ? error.name : "Error";

@@ -84,6 +84,31 @@ CREATE TABLE IF NOT EXISTS tenant_role_bindings (
   PRIMARY KEY (tenant_id, subject_type, subject)
 );
 
+CREATE TABLE IF NOT EXISTS semantic_runs (
+  run_id UUID PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  actor TEXT NOT NULL,
+  outcome TEXT NOT NULL,
+  model TEXT,
+  steps JSONB NOT NULL DEFAULT '[]'::jsonb,
+  usage JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS semantic_runs_tenant_idx ON semantic_runs (tenant_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS semantic_feedback (
+  id BIGSERIAL PRIMARY KEY,
+  run_id UUID NOT NULL REFERENCES semantic_runs (run_id) ON DELETE CASCADE,
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  rating TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  correction TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS semantic_feedback_run_idx ON semantic_feedback (run_id);
+
 CREATE TABLE IF NOT EXISTS derived_datasets (
   tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
   name TEXT NOT NULL,

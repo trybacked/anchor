@@ -43,9 +43,6 @@ describe("semantic-chat golden plans", () => {
     const engine = createSemanticChatEngine({
       ontology,
       queryRuntime: runtime,
-      translate: async () => {
-        throw new Error("LLM must not run");
-      },
     });
     const answer = await engine.executePlan(fixture.plan);
     expect(answer.result.objectId).toBe(fixture.expectObjectId);

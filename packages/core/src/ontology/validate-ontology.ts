@@ -2,6 +2,7 @@ import type { Ontology, OntologyObject, OntologyProperty } from "./spec.js";
 import { OntologyPropertyTypeSchema, OntologySchema } from "./spec.js";
 import type { ValidationIssue } from "./validation-result.js";
 import { validationResult } from "./validation-result.js";
+import { validateSemanticsReferences } from "./validate-semantics.js";
 
 function indexById<T extends { id: string }>(items: T[]): Map<string, T> {
   return new Map(items.map((item) => [item.id, item]));
@@ -217,6 +218,8 @@ export function validateOntology(ontology: Ontology): ReturnType<typeof validati
       }
     }
   }
+
+  issues.push(...validateSemanticsReferences(parsed));
 
   return validationResult(issues);
 }

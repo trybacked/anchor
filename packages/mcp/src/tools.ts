@@ -1,6 +1,11 @@
 import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
-import { createAnchorService, serviceError } from "@trybacked/service";
+import {
+  createAnchorService,
+  getPropertyValues,
+  searchOntologySchema,
+  serviceError,
+} from "@trybacked/service";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";
@@ -97,6 +102,55 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     inputSchema: { query: z.string().min(1).describe("Text to search, e.g. 'cliente'") },
     handler: (context, args) =>
       serviceFromContext(context).searchModel(readToolString(args, "query")),
+  },
+  {
+    name: TOOL_NAMES.searchSchema,
+    title: "Search schema",
+    description:
+      "Rank ontology objects and properties by relevance (names, synonyms, descriptions, glossary).",
+    inputSchema: {
+      query: z.string().min(1).describe("Natural language hint, e.g. 'ingest month'"),
+      limit: z.number().int().positive().max(30).optional(),
+    },
+    handler: (context, args) => {
+      if (context.ontology === undefined) {
+        return serviceError("unavailable", "Ontology is not loaded for schema search.");
+      }
+      const query = readToolString(args, "query");
+      const limit = typeof args["limit"] === "number" ? args["limit"] : 15;
+      return { hits: searchOntologySchema(context.ontology, query, limit) };
+    },
+  },
+  {
+    name: TOOL_NAMES.getPropertyValues,
+    title: "Property values",
+    description: "Top distinct values with counts for an object property (optional prefix).",
+    inputSchema: {
+      objectId: z.string().min(1),
+      propertyId: z.string().min(1),
+      prefix: z.string().optional(),
+      limit: z.number().int().positive().max(50).optional(),
+    },
+    handler: async (context, args) => {
+      if (context.ontology === undefined) {
+        return serviceError("unavailable", "Ontology is not loaded.");
+      }
+      const objectId = readToolString(args, "objectId");
+      const propertyId = readToolString(args, "propertyId");
+      try {
+        return await getPropertyValues(serviceFromContext(context), context.ontology, {
+          objectId,
+          propertyId,
+          ...(typeof args["prefix"] === "string" ? { prefix: args["prefix"] } : {}),
+          ...(typeof args["limit"] === "number" ? { limit: args["limit"] } : {}),
+        });
+      } catch (error) {
+        return serviceError(
+          "bad_request",
+          error instanceof Error ? error.message : "Property values query failed.",
+        );
+      }
+    },
   },
   {
     name: TOOL_NAMES.getDefinition,

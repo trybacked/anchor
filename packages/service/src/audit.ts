@@ -1,7 +1,13 @@
 import { createHash } from "node:crypto";
 
 export type AnchorOperationAuditEvent = {
-  operation: "objectQuery" | "chunkSearch" | "entityProfile" | "graphTraverse" | "semanticAsk";
+  operation:
+    | "objectQuery"
+    | "chunkSearch"
+    | "entityProfile"
+    | "graphTraverse"
+    | "semanticAsk"
+    | "agentRun";
   objectId?: string | undefined;
   mode?: string | undefined;
   rowCount?: number | undefined;

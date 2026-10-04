@@ -10,6 +10,7 @@ import { createAuthoringDatasetsModule } from "./modules/authoring-datasets.js";
 import { createAuthoringJobsModule } from "./modules/authoring-jobs.js";
 import { createAuthoringMembersModule } from "./modules/authoring-members.js";
 import { createAuthoringOntologyModule } from "./modules/authoring-ontology.js";
+import { createAuthoringSemanticModule } from "./modules/authoring-semantic.js";
 import { createAuthoringWarehouseModule } from "./modules/authoring-warehouse.js";
 import { createDocumentsModule } from "./modules/documents.js";
 import { createFilesModule } from "./modules/files.js";
@@ -31,6 +32,7 @@ export type TenantClient = {
   files: ReturnType<typeof createFilesModule>;
   authoring: {
     ontology: ReturnType<typeof createAuthoringOntologyModule>;
+    semantic: ReturnType<typeof createAuthoringSemanticModule>;
     warehouse: ReturnType<typeof createAuthoringWarehouseModule>;
     datasets: ReturnType<typeof createAuthoringDatasetsModule>;
     members: ReturnType<typeof createAuthoringMembersModule>;
@@ -80,6 +82,7 @@ function createTenantClient(
     files: createFilesModule(transport, ctx),
     authoring: {
       ontology: createAuthoringOntologyModule(transport, ctx),
+      semantic: createAuthoringSemanticModule(transport, ctx),
       warehouse: createAuthoringWarehouseModule(transport, ctx),
       datasets: createAuthoringDatasetsModule(transport, ctx),
       members: createAuthoringMembersModule(transport, ctx),
