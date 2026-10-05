@@ -344,5 +344,7 @@ export type AnchorService = AnchorServiceBase & {
   semanticAsk?: (body: {
     question: string;
     evidence?: boolean | undefined;
+    /** User interface language (primary subtag); answers are rendered in it. */
+    locale?: string | undefined;
   }) => Promise<SemanticAskResponse>;
 };

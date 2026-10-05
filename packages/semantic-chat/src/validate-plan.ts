@@ -28,6 +28,24 @@ function assertPropertyExists(ontology: Ontology, objectId: string, propertyId: 
     );
   }
 }
+/** A scalar count has no ordering; for rows the sort key must be a real property. */
+function validateOrdering(ontology: Ontology, query: ObjectQuery): ObjectQuery {
+  if (query.mode === "count") {
+    const scalar = { ...query };
+    delete scalar.orderBy;
+    delete scalar.orderDirection;
+    return scalar;
+  }
+  if (query.orderBy !== undefined) {
+    const [objectId, propertyId] = query.orderBy.includes(".")
+      ? query.orderBy.split(".", 2)
+      : [query.objectId, query.orderBy];
+    if (objectId !== undefined && propertyId !== undefined) {
+      assertPropertyExists(ontology, objectId, propertyId);
+    }
+  }
+  return query;
+}
 export function validateObjectQueryAgainstOntology(
   ontology: Ontology,
   query: ObjectQuery,
@@ -77,7 +95,8 @@ export function validateObjectQueryAgainstOntology(
       assertPropertyExists(ontology, objectId, propertyId);
     }
   }
-  const withSelectDefault = applySemanticChatSelectDefault(ontology, validated);
+  const ordered = validateOrdering(ontology, validated);
+  const withSelectDefault = applySemanticChatSelectDefault(ontology, ordered);
   try {
     return applyQueryExecutionBudget(withSelectDefault, "semantic_chat");
   } catch (error) {

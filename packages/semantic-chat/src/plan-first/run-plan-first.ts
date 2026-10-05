@@ -1,3 +1,4 @@
+import type { ObjectQuery } from "@trybacked/compiler";
 import { applySemanticCatalogs, type Ontology, type SemanticCatalog } from "@trybacked/core";
 import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
 import { isServiceErrorResult, type AnchorService } from "@trybacked/service";
@@ -41,6 +42,8 @@ export type RunPlanFirstOptions = {
   service: AnchorService;
   question: string;
   model: LanguageModel;
+  /** User interface language; wins over the planner's guess when present. */
+  locale?: string | undefined;
   semanticCatalogs?: readonly SemanticCatalog[] | undefined;
 };
 
@@ -69,7 +72,12 @@ export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFi
   );
   let plan: SemanticPlan;
   try {
-    plan = await planSemanticQuery({ ontology, question: options.question, model: options.model });
+    plan = await planSemanticQuery({
+      ontology,
+      question: options.question,
+      model: options.model,
+      locale: options.locale,
+    });
   } catch (error) {
     return fallback(
       `planner failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -80,7 +88,7 @@ export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFi
   if (plan.kind === "unanswerable") {
     return fallback(plan.reason ?? "planner declined", plan, started);
   }
-  let validated;
+  let validated: ObjectQuery;
   try {
     validated = validateAgentObjectQuery(
       ontology,
@@ -113,7 +121,7 @@ export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFi
     ontology,
     query: validated,
     result,
-    locale: plan.locale,
+    locale: options.locale ?? plan.locale,
     toolCallId: PLAN_QUERY_TOOL_CALL_ID,
   });
   return {

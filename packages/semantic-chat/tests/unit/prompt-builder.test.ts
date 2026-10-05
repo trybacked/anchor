@@ -18,4 +18,13 @@ describe("system prompts", () => {
     expect(prompt).toContain("### contract (Contract)");
     expect(prompt).not.toContain("submit_answer");
   });
+
+  it("planner prompt carries the interface language when known", () => {
+    expect(buildPlannerSystemPrompt(contractOntology(), "ai in calabria", "it")).toContain(
+      'interface language is "it"',
+    );
+    expect(buildPlannerSystemPrompt(contractOntology(), "ai in calabria")).not.toContain(
+      "interface language",
+    );
+  });
 });

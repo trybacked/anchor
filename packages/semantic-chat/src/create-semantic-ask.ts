@@ -20,10 +20,7 @@ import {
 import { runPlanFirst, type PlanFirstResult } from "./plan-first/run-plan-first.js";
 import { tenantAiAskEnabled, type TenantAiAskCapabilities } from "./tenant-ai-ask.js";
 export type { TenantAiAskCapabilities };
-export type SemanticAskHandler = (body: {
-  question: string;
-  evidence?: boolean | undefined;
-}) => Promise<SemanticAskResponse>;
+export type SemanticAskHandler = NonNullable<AnchorService["semanticAsk"]>;
 export type AttachSemanticAskOptions = {
   ontology: Ontology;
   env: NodeJS.ProcessEnv;
@@ -136,7 +133,10 @@ export function attachSemanticAsk(
       ...(fallbackModelId !== undefined ? { fallbackModelId } : {}),
     });
 
-  async function answer(question: string): Promise<SemanticAskResponse> {
+  async function answer(
+    question: string,
+    locale: string | undefined,
+  ): Promise<SemanticAskResponse> {
     if (strategy === "plan-first") {
       const started = Date.now();
       const outcome = await runPlanFirst({
@@ -144,6 +144,7 @@ export function attachSemanticAsk(
         service: base,
         question,
         model: resolveModel(modelId),
+        locale,
       });
       if (outcome.kind === "answered") {
         return planFirstResponse(question, ontologyVersion, outcome.result);
@@ -164,7 +165,7 @@ export function attachSemanticAsk(
       throw new SemanticAgentError("AI ask is disabled for this tenant.");
     }
     const started = Date.now();
-    const response = await answer(body.question);
+    const response = await answer(body.question, body.locale);
     options.onOperation?.({
       operation: "semanticAsk",
       durationMs: Date.now() - started,

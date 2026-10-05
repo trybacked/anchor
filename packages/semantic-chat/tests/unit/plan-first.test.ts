@@ -63,6 +63,19 @@ describe("runPlanFirst", () => {
     expect(outcome.result.steps.map((step) => step.toolName)).toEqual(["query_objects"]);
   });
 
+  it("renders in the interface language even when the planner guessed another", async () => {
+    const outcome = await runPlanFirst({
+      ontology: contractOntology(),
+      service: fakeService(),
+      question: "ai in calabria",
+      model: plannerModel({ ...COUNT_PLAN, locale: "en" }),
+      locale: "it",
+      semanticCatalogs: [],
+    });
+    expect(outcome.kind).toBe("answered");
+    if (outcome.kind === "answered") expect(outcome.result.answer).toContain("Criteri:");
+  });
+
   it("falls back when the planner declines", async () => {
     const outcome = await runPlanFirst({
       ontology: contractOntology(),

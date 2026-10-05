@@ -1,5 +1,10 @@
 import { SemanticAgentError, SemanticPlanValidationError } from "@trybacked/semantic-chat";
-import { getChatAskStatus, resolveChatAsk, SemanticAskBodySchema } from "@trybacked/service";
+import {
+  getChatAskStatus,
+  preferredLanguage,
+  resolveChatAsk,
+  SemanticAskBodySchema,
+} from "@trybacked/service";
 import { getAnchorService } from "../platform-api-handler-utils.js";
 import { platformRoute, postJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
@@ -51,9 +56,11 @@ export const platformApiSemanticChatRoutes: RouteFactory[] = [
         return c.json({ error: ASK_UNAVAILABLE_MESSAGES[resolution.reason] }, 503);
       }
       try {
+        const locale = preferredLanguage(c.req.header("accept-language"));
         const answer = await resolution.ask({
           question: body.question,
           ...(body.evidence !== undefined ? { evidence: body.evidence } : {}),
+          ...(locale !== undefined ? { locale } : {}),
         });
         return c.json(answer);
       } catch (error) {

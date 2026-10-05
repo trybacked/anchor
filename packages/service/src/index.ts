@@ -125,3 +125,4 @@ export {
   type ChatAskResolution,
   type SemanticAskHandler,
 } from "./chat-ask-status.js";
+export { preferredLanguage } from "./accept-language.js";

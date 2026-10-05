@@ -45,4 +45,25 @@ describe("validateObjectQueryAgainstOntology", () => {
     expect(validated.mode).toBe("count");
     expect(validated.textSearch).toBeUndefined();
   });
+  it("drops ordering from a count, which is a scalar", () => {
+    const validated = validateObjectQueryAgainstOntology(ontology, {
+      objectId: "contract",
+      mode: "count",
+      filters: [],
+      orderBy: ":none",
+      orderDirection: "asc",
+    });
+    expect(validated.orderBy).toBeUndefined();
+    expect(validated.orderDirection).toBeUndefined();
+  });
+  it("rejects a rows sort key that is not a property", () => {
+    expect(() =>
+      validateObjectQueryAgainstOntology(ontology, {
+        objectId: "contract",
+        mode: "rows",
+        filters: [],
+        orderBy: "ghost",
+      }),
+    ).toThrow(SemanticPlanValidationError);
+  });
 });

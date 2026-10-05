@@ -54,19 +54,36 @@ export type SemanticPlan =
       usage: PlanUsage;
     };
 
-export function buildPlannerSystemPrompt(ontology: Ontology, question: string): string {
-  return [PLANNER_POLICY, ...buildSemanticContextSections(ontology, question)].join("\n\n");
+function localeHint(locale: string | undefined): string[] {
+  return locale === undefined
+    ? []
+    : [
+        `The user's interface language is "${locale}": use it for locale and assumptions unless the question is unmistakably written in another language.`,
+      ];
+}
+
+export function buildPlannerSystemPrompt(
+  ontology: Ontology,
+  question: string,
+  locale?: string,
+): string {
+  return [
+    PLANNER_POLICY,
+    ...localeHint(locale),
+    ...buildSemanticContextSections(ontology, question),
+  ].join("\n\n");
 }
 
 export async function planSemanticQuery(options: {
   ontology: Ontology;
   question: string;
   model: LanguageModel;
+  locale?: string | undefined;
 }): Promise<SemanticPlan> {
   const generation = await generateText({
     model: options.model,
     output: Output.object({ schema: PlannerOutputSchema }),
-    system: buildPlannerSystemPrompt(options.ontology, options.question),
+    system: buildPlannerSystemPrompt(options.ontology, options.question, options.locale),
     prompt: options.question,
     temperature: 0,
     timeout: PLANNER_TIMEOUT_MS,
