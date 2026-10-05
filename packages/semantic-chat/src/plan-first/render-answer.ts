@@ -90,6 +90,13 @@ function capitalize(text: string): string {
   return text.length === 0 ? text : `${text[0]?.toUpperCase() ?? ""}${text.slice(1)}`;
 }
 
+/** Names the owning object next to the property, unless the property already says it. */
+function qualified(property: string, object: string): string {
+  return property.toLowerCase().includes(object.toLowerCase())
+    ? property
+    : `${property} (${object})`;
+}
+
 function columnLabel(
   ontology: Ontology,
   rootObjectId: string,
@@ -99,7 +106,10 @@ function columnLabel(
   if (column.includes(".")) {
     const [objectId, propertyId] = column.split(".", 2);
     if (objectId !== undefined && propertyId !== undefined) {
-      return `${propertyLabel(ontology, objectId, propertyId, locale)} (${objectLabel(ontology, objectId, locale, "singular")})`;
+      return qualified(
+        propertyLabel(ontology, objectId, propertyId, locale),
+        objectLabel(ontology, objectId, locale, "singular"),
+      );
     }
   }
   return propertyLabel(ontology, rootObjectId, column, locale);

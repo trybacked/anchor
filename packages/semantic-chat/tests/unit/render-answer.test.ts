@@ -153,6 +153,52 @@ describe("renderPlanAnswer", () => {
     expect(renderPlanAnswer({ ...base, result: result(1) }).text).toBe("Ci sono **1** contratto.");
   });
 
+  it("names the owning object next to a joined property, without repeating it", () => {
+    const ontology = labelledContractOntology();
+    const organization: Ontology["objects"][number] = {
+      id: "organization",
+      name: "Organization",
+      semantics: { labels: { it: { singular: "ente appaltante", plural: "enti appaltanti" } } },
+      properties: [
+        { id: "nome", name: "Nome", type: "string", semantics: { labels: { it: "nome" } } },
+        {
+          id: "ente_appaltante",
+          name: "Ente",
+          type: "string",
+          semantics: { labels: { it: "ente appaltante" } },
+        },
+      ],
+    };
+    const rendered = renderPlanAnswer({
+      ontology: { ...ontology, objects: [...ontology.objects, organization] },
+      query: {
+        objectId: "contract",
+        mode: "count",
+        filters: [
+          { objectId: "organization", propertyId: "nome", op: "contains", value: "Gerace" },
+          {
+            objectId: "organization",
+            propertyId: "ente_appaltante",
+            op: "contains",
+            value: "Comune",
+          },
+        ],
+      },
+      result: {
+        objectId: "contract",
+        columns: ["count"],
+        rows: [{ count: 9 }],
+        rowCount: 1,
+        mode: "count",
+      },
+      locale: "it",
+      toolCallId: "plan-query",
+    });
+    expect(rendered.text).toContain("nome (ente appaltante) contiene «Gerace»");
+    expect(rendered.text).toContain("ente appaltante contiene «Comune»");
+    expect(rendered.text).not.toContain("ente appaltante (ente appaltante)");
+  });
+
   it("shows how a filtered column is written when nothing matched", () => {
     const rendered = renderPlanAnswer({
       ontology: labelledContractOntology(),

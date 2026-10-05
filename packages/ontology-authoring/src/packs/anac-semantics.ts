@@ -186,7 +186,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           description: "Official name of the contracting authority.",
           synonyms: ["nome ente", "denominazione"],
           sampleValues: ["COMUNE DI GERACE", "REGIONE TOSCANA"],
-          labels: { it: "ente appaltante", en: "contracting authority" },
+          labels: { it: "nome", en: "name" },
         },
         sezione_regionale: {
           description:
@@ -194,7 +194,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           valueFormat: "SEZIONE REGIONALE <REGIONE>",
           sampleValues: ["SEZIONE REGIONALE CALABRIA", "SEZIONE REGIONALE LOMBARDIA"],
           synonyms: ["regione", "sezione regionale", "region"],
-          labels: { it: "regione dell'ente", en: "authority region" },
+          labels: { it: "regione", en: "region" },
         },
         contracts_count: {
           semanticRole: "measure",
