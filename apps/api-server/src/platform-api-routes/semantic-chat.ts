@@ -16,7 +16,6 @@ export const platformApiSemanticChatRoutes: RouteFactory[] = [
       path: `${V1_PATH_PREFIX}/chat/ask/status`,
       summary: "Whether natural-language ask is available for this tenant",
       tags: ["semantic-chat"],
-      requires: "tenant",
       responses: {
         "200": {
           description: "available true when POST /v1/chat/ask will run; otherwise reason code",
@@ -34,7 +33,6 @@ export const platformApiSemanticChatRoutes: RouteFactory[] = [
       path: `${V1_PATH_PREFIX}/chat/ask`,
       summary: "Ask a natural-language question over governed data",
       tags: ["semantic-chat"],
-      requires: "tenant",
       jsonBody: jsonBody("SemanticAskBody", SemanticAskBodySchema, {
         question: "How many customers were onboarded last month?",
       }),
