@@ -2,6 +2,7 @@ import type { Ontology } from "@trybacked/core";
 import type {
   AnchorOperationAuditHook,
   AnchorService,
+  SemanticAskBody,
   SemanticAskResponse,
 } from "@trybacked/service";
 import {
@@ -21,6 +22,8 @@ import { runPlanFirst, type PlanFirstResult } from "./plan-first/run-plan-first.
 import { tenantAiAskEnabled, type TenantAiAskCapabilities } from "./tenant-ai-ask.js";
 export type { TenantAiAskCapabilities };
 export type SemanticAskHandler = NonNullable<AnchorService["semanticAsk"]>;
+/** What the planner and the agent need from a request; audit-only fields stay out. */
+type AskContext = Pick<SemanticAskBody, "question" | "locale" | "history">;
 export type AttachSemanticAskOptions = {
   ontology: Ontology;
   env: NodeJS.ProcessEnv;
@@ -120,11 +123,11 @@ export function attachSemanticAsk(
   const ontologyVersion = options.ontology.metadata.version;
   const tenantField = options.tenant !== undefined ? { tenant: options.tenant } : {};
 
-  const runAgent = (question: string) =>
+  const runAgent = (context: AskContext) =>
     runSemanticAgent({
       ontology: options.ontology,
       service: base,
-      question,
+      ...context,
       modelId,
       apiKey,
       resolveModel,
@@ -133,31 +136,27 @@ export function attachSemanticAsk(
       ...(fallbackModelId !== undefined ? { fallbackModelId } : {}),
     });
 
-  async function answer(
-    question: string,
-    locale: string | undefined,
-  ): Promise<SemanticAskResponse> {
+  async function answer(context: AskContext): Promise<SemanticAskResponse> {
     if (strategy === "plan-first") {
       const started = Date.now();
       const outcome = await runPlanFirst({
         ontology: options.ontology,
         service: base,
-        question,
+        ...context,
         model: resolveModel(modelId),
-        locale,
       });
       if (outcome.kind === "answered") {
-        return planFirstResponse(question, ontologyVersion, outcome.result);
+        return planFirstResponse(context.question, ontologyVersion, outcome.result);
       }
       options.onOperation?.({
         operation: "planFallback",
         durationMs: Date.now() - started,
-        question: questionPreview(question),
+        question: questionPreview(context.question),
         reason: outcome.reason,
         ...tenantField,
       });
     }
-    return agentResponse(question, ontologyVersion, await runAgent(question));
+    return agentResponse(context.question, ontologyVersion, await runAgent(context));
   }
 
   const semanticAsk: SemanticAskHandler = async (body) => {
@@ -165,13 +164,18 @@ export function attachSemanticAsk(
       throw new SemanticAgentError("AI ask is disabled for this tenant.");
     }
     const started = Date.now();
-    const response = await answer(body.question, body.locale);
+    const response = await answer({
+      question: body.question,
+      locale: body.locale,
+      history: body.history,
+    });
     options.onOperation?.({
       operation: "semanticAsk",
       durationMs: Date.now() - started,
       rowCount: response.agentSteps?.at(-1)?.rowCount,
       question: questionPreview(body.question),
       runId: response.runId,
+      conversationId: body.conversationId,
       route: response.route,
       ...tenantField,
     });

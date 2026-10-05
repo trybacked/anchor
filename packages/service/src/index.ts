@@ -45,6 +45,9 @@ export {
   EntityProfileBodySchema,
   GraphTraverseBodySchema,
   SemanticAskBodySchema,
+  ConversationTurnSchema,
+  SEMANTIC_ASK_MAX_HISTORY_TURNS,
+  SEMANTIC_ASK_MAX_TURN_CHARS,
 } from "./contracts.js";
 export type {
   ObjectQueryBody,
@@ -53,6 +56,7 @@ export type {
   EntityProfileBody,
   GraphTraverseBody,
   SemanticAskBody,
+  ConversationTurn,
 } from "./contracts.js";
 export {
   searchOntologySchema,

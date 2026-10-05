@@ -18,6 +18,7 @@ export type AnchorOperationAuditEvent = {
   tenant?: string | undefined;
   question?: string | undefined;
   runId?: string | undefined;
+  conversationId?: string | undefined;
   route?: string | undefined;
   reason?: string | undefined;
 };

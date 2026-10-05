@@ -1,7 +1,11 @@
 import type { ObjectQuery } from "@trybacked/compiler";
 import { applySemanticCatalogs, type Ontology, type SemanticCatalog } from "@trybacked/core";
 import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
-import { isServiceErrorResult, type AnchorService } from "@trybacked/service";
+import {
+  isServiceErrorResult,
+  type AnchorService,
+  type ConversationTurn,
+} from "@trybacked/service";
 import type { LanguageModel } from "ai";
 import { randomUUID } from "node:crypto";
 import type { SemanticAgentStep, SemanticAgentUsage, SemanticAnswerClaim } from "../agent/types.js";
@@ -44,6 +48,8 @@ export type RunPlanFirstOptions = {
   model: LanguageModel;
   /** User interface language; wins over the planner's guess when present. */
   locale?: string | undefined;
+  /** Earlier turns of the same chat, oldest first. */
+  history?: readonly ConversationTurn[] | undefined;
   semanticCatalogs?: readonly SemanticCatalog[] | undefined;
 };
 
@@ -87,6 +93,7 @@ export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFi
       question: options.question,
       model: options.model,
       locale: options.locale,
+      history: options.history,
     });
   } catch (error) {
     return fallback(describePlannerFailure(error), undefined, started);

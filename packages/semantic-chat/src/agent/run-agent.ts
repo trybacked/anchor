@@ -1,7 +1,7 @@
 import { createGatewayProvider } from "@ai-sdk/gateway";
 import { applySemanticCatalogs, type Ontology, type SemanticCatalog } from "@trybacked/core";
 import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
-import type { AnchorService } from "@trybacked/service";
+import type { AnchorService, ConversationTurn } from "@trybacked/service";
 import { generateText, stepCountIs, type LanguageModel } from "ai";
 import { randomUUID } from "node:crypto";
 import { assertQuestionDoesNotMentionUnknownProperties } from "../query-intent.js";
@@ -11,7 +11,7 @@ import {
   AGENT_FORCE_ANSWER_AFTER_WAREHOUSE_OK,
   AGENT_GROUNDING_REPAIR_MAX_STEPS,
 } from "./limits.js";
-import { buildAgentSystemPrompt } from "./prompt-builder.js";
+import { buildAgentSystemPrompt, type AgentPromptContext } from "./prompt-builder.js";
 import {
   DEFAULT_AGENT_BUDGET,
   SemanticAgentError,
@@ -27,6 +27,8 @@ export type RunSemanticAgentOptions = {
   ontology: Ontology;
   service: AnchorService;
   question: string;
+  locale?: string | undefined;
+  history?: readonly ConversationTurn[] | undefined;
   apiKey: string;
   modelId: string;
   fallbackModelId?: string | undefined;
@@ -40,6 +42,7 @@ type AgentRun = {
   ontology: Ontology;
   service: AnchorService;
   question: string;
+  prompt: AgentPromptContext;
   resolveModel: ModelResolver;
   steps: SemanticAgentStep[];
   toolResults: Map<string, unknown>;
@@ -108,7 +111,7 @@ async function generate(
     },
   });
   const finalStep = budget.maxSteps - 1;
-  const system = buildAgentSystemPrompt(run.ontology, run.question);
+  const system = buildAgentSystemPrompt(run.prompt);
   const generation = await generateText({
     model: run.resolveModel(modelId),
     system: systemSuffix !== undefined ? `${system}\n\n${systemSuffix}` : system,
@@ -240,6 +243,12 @@ export async function runSemanticAgent(
     ontology,
     service: options.service,
     question: options.question,
+    prompt: {
+      ontology,
+      question: options.question,
+      locale: options.locale,
+      history: options.history,
+    },
     resolveModel: options.resolveModel ?? createGatewayModelResolver(options.apiKey),
     steps: [],
     toolResults: new Map(),

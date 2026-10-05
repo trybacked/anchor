@@ -13,6 +13,18 @@ Natural-language questions over the **published ontology** and **warehouse** (co
 
 Requires tenant header/path as for other `/v1/*` routes.
 
+### Request body
+
+| Field            | Type                                              | Meaning                                                                                |
+| ---------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `question`       | string                                            | Current question                                                                       |
+| `locale`         | string (BCP-47)                                   | Interface language; wins over `Accept-Language`. Answers are rendered in it            |
+| `conversationId` | string                                            | Client chat id, echoed into the audit trail only                                       |
+| `history`        | `{ role, text, query? }[]` (max 12, oldest first) | Earlier turns of the same chat. `query` is the `plan.objectQuery` of an assistant turn |
+| `evidence`       | boolean                                           | Legacy flag, ignored by the current strategies                                         |
+
+The server is stateless: conversation memory lives in the client and travels with each request. The planner and the agent receive the recent thread (last 8 turns, each clipped) and treat the question as a follow-up when it refers to earlier turns, starting from the most recent `query`.
+
 ## When ask works
 
 1. Ontology published for the tenant.
@@ -23,14 +35,14 @@ No per-tenant enable flag by default. To block one tenant: `capabilities.aiAsk: 
 
 ## Runtime configuration (platform-api env)
 
-| Variable                                  | Purpose                                         |
-| ----------------------------------------- | ----------------------------------------------- |
-| `AI_GATEWAY_API_KEY`                      | Required for ask                                |
-| `SEMANTIC_CHAT_MODEL` or `SEMANTIC_MODEL` | Gateway model id (default `openai/gpt-4o-mini`) |
-| `SEMANTIC_CHAT_FALLBACK_MODEL`            | Optional second model if the primary call fails |
-| `SEMANTIC_ASK_STRATEGY`                   | `plan-first` (default) or `agent`               |
-| `SEMANTIC_AGENT_MAX_STEPS`                | Tool-step cap (default **6**)                   |
-| `SEMANTIC_AGENT_MAX_SQL_CALLS`            | Warehouse call cap (default **2**)              |
+| Variable                                  | Purpose                                                     |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| `AI_GATEWAY_API_KEY`                      | Required for ask                                            |
+| `SEMANTIC_CHAT_MODEL` or `SEMANTIC_MODEL` | Gateway model id (default `openai/gpt-4o-mini`)             |
+| `SEMANTIC_CHAT_FALLBACK_MODEL`            | Optional second model if the primary call fails             |
+| `SEMANTIC_ASK_STRATEGY`                   | `plan-first` (default) or `agent`                           |
+| `SEMANTIC_AGENT_MAX_STEPS`                | Tool-step cap (default **6**)                               |
+| `SEMANTIC_AGENT_MAX_SQL_CALLS`            | Warehouse call cap (default **2**)                          |
 | `SEMANTIC_AGENT_SKIP_REPAIR_AFTER_MS`     | Skip grounding repair if main pass ≥ ms (default **35000**) |
 
 Shared **semantic catalogs** (synonyms, default time dimensions, glossary) are applied automatically from ontology-authoring packs when the ask runs; tenants do not configure this per ask.

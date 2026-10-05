@@ -1,7 +1,9 @@
 import type { ObjectQuery } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
+import type { ConversationTurn } from "@trybacked/service";
 import { generateText, type LanguageModel } from "ai";
 import { QUERY_CONSTRUCTION_RULES, buildSemanticContextSections } from "../agent/prompt-builder.js";
+import { buildConversationSection, buildLocaleSection } from "../conversation.js";
 import { PLANNER_OUTPUT_CONTRACT, parsePlannerOutput } from "./planner-output.js";
 
 export { PlannerOutputSchema, PlannerOutputError, type PlannerOutput } from "./planner-output.js";
@@ -38,36 +40,29 @@ export type SemanticPlan =
       usage: PlanUsage;
     };
 
-function localeHint(locale: string | undefined): string[] {
-  return locale === undefined
-    ? []
-    : [
-        `The user's interface language is "${locale}": use it for locale and assumptions unless the question is unmistakably written in another language.`,
-      ];
-}
+export type PlannerContext = {
+  ontology: Ontology;
+  question: string;
+  locale?: string | undefined;
+  history?: readonly ConversationTurn[] | undefined;
+};
 
-export function buildPlannerSystemPrompt(
-  ontology: Ontology,
-  question: string,
-  locale?: string,
-): string {
+export function buildPlannerSystemPrompt(context: PlannerContext): string {
   return [
     PLANNER_POLICY,
     PLANNER_OUTPUT_CONTRACT,
-    ...localeHint(locale),
-    ...buildSemanticContextSections(ontology, question),
+    ...buildLocaleSection(context.locale),
+    ...buildConversationSection(context.history),
+    ...buildSemanticContextSections(context.ontology, context.question),
   ].join("\n\n");
 }
 
-export async function planSemanticQuery(options: {
-  ontology: Ontology;
-  question: string;
-  model: LanguageModel;
-  locale?: string | undefined;
-}): Promise<SemanticPlan> {
+export async function planSemanticQuery(
+  options: PlannerContext & { model: LanguageModel },
+): Promise<SemanticPlan> {
   const generation = await generateText({
     model: options.model,
-    system: buildPlannerSystemPrompt(options.ontology, options.question, options.locale),
+    system: buildPlannerSystemPrompt(options),
     prompt: options.question,
     temperature: 0,
     timeout: PLANNER_TIMEOUT_MS,

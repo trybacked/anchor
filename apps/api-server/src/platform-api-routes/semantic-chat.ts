@@ -56,10 +56,9 @@ export const platformApiSemanticChatRoutes: RouteFactory[] = [
         return c.json({ error: ASK_UNAVAILABLE_MESSAGES[resolution.reason] }, 503);
       }
       try {
-        const locale = preferredLanguage(c.req.header("accept-language"));
+        const locale = body.locale ?? preferredLanguage(c.req.header("accept-language"));
         const answer = await resolution.ask({
-          question: body.question,
-          ...(body.evidence !== undefined ? { evidence: body.evidence } : {}),
+          ...body,
           ...(locale !== undefined ? { locale } : {}),
         });
         return c.json(answer);

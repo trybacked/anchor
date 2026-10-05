@@ -1,5 +1,10 @@
 import type { Ontology } from "@trybacked/core";
-import { MAX_SCHEMA_SEARCH_HITS, searchOntologySchema } from "@trybacked/service";
+import {
+  MAX_SCHEMA_SEARCH_HITS,
+  searchOntologySchema,
+  type ConversationTurn,
+} from "@trybacked/service";
+import { buildConversationSection, buildLocaleSection } from "../conversation.js";
 import { renderSemanticContext } from "./agent-ontology-view.js";
 import {
   AGENT_PROMPT_MAX_EXAMPLES,
@@ -97,8 +102,18 @@ export function buildSemanticContextSections(ontology: Ontology, question: strin
     section("## Verified examples", examples),
   ].filter((part): part is string => part !== undefined);
 }
-export function buildAgentSystemPrompt(ontology: Ontology, question: string): string {
-  return [PLATFORM_POLICY, ANSWER_STYLE, ...buildSemanticContextSections(ontology, question)].join(
-    "\n\n",
-  );
+export type AgentPromptContext = {
+  ontology: Ontology;
+  question: string;
+  locale?: string | undefined;
+  history?: readonly ConversationTurn[] | undefined;
+};
+export function buildAgentSystemPrompt(context: AgentPromptContext): string {
+  return [
+    PLATFORM_POLICY,
+    ANSWER_STYLE,
+    ...buildLocaleSection(context.locale),
+    ...buildConversationSection(context.history),
+    ...buildSemanticContextSections(context.ontology, context.question),
+  ].join("\n\n");
 }

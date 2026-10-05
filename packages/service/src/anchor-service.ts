@@ -9,6 +9,7 @@ import type {
   EntitySearchBody,
   GraphTraverseBody,
   ObjectQueryBody,
+  SemanticAskBody,
 } from "./contracts.js";
 import {
   applyQueryExecutionBudget,
@@ -341,10 +342,5 @@ export function createAnchorService(options: AnchorServiceOptions) {
 }
 export type AnchorServiceBase = ReturnType<typeof createAnchorService>;
 export type AnchorService = AnchorServiceBase & {
-  semanticAsk?: (body: {
-    question: string;
-    evidence?: boolean | undefined;
-    /** User interface language (primary subtag); answers are rendered in it. */
-    locale?: string | undefined;
-  }) => Promise<SemanticAskResponse>;
+  semanticAsk?: (body: SemanticAskBody) => Promise<SemanticAskResponse>;
 };
