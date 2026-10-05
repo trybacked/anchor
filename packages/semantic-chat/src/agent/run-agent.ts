@@ -5,6 +5,7 @@ import type { AnchorService } from "@trybacked/service";
 import { generateText, stepCountIs, type LanguageModel } from "ai";
 import { randomUUID } from "node:crypto";
 import { assertQuestionDoesNotMentionUnknownProperties } from "../query-intent.js";
+import { agentSkipRepairAfterMsFromEnv } from "./agent-budget-from-env.js";
 import { buildAgentTools, type AgentToolEvent } from "./build-tools.js";
 import { groundAnswer, SemanticGroundingError } from "./grounding.js";
 import { AGENT_GROUNDING_REPAIR_MAX_STEPS } from "./limits.js";
@@ -28,6 +29,7 @@ export type RunSemanticAgentOptions = {
   modelId: string;
   fallbackModelId?: string | undefined;
   budget?: AgentBudget | undefined;
+  skipRepairAfterMs?: number | undefined;
   semanticCatalogs?: readonly SemanticCatalog[] | undefined;
   resolveModel?: ModelResolver | undefined;
 };
@@ -163,7 +165,16 @@ async function repairGrounding(
   run: AgentRun,
   options: RunSemanticAgentOptions,
   budget: AgentBudget,
+  mainPassStartedMs: number,
 ): Promise<TokenUsage> {
+  const skipAfter = options.skipRepairAfterMs;
+  if (skipAfter !== undefined && Date.now() - mainPassStartedMs >= skipAfter) {
+    const failure = groundingFailure(run);
+    if (failure !== undefined) {
+      throw new SemanticAgentError(failure.message);
+    }
+    return NO_USAGE;
+  }
   const failure = groundingFailure(run);
   if (failure === undefined) return NO_USAGE;
   run.terminal = undefined;
@@ -226,8 +237,9 @@ export async function runSemanticAgent(
     toolResults: new Map(),
     terminal: undefined,
   };
+  const mainStarted = Date.now();
   const mainUsage = await generateWithFallback(run, options, budget);
-  const repairUsage = await repairGrounding(run, options, budget);
+  const repairUsage = await repairGrounding(run, options, budget, mainStarted);
   const tokens = addUsage(mainUsage, repairUsage);
   return toResult(randomUUID(), run, { ...tokens, latencyMs: Date.now() - started });
 }

@@ -10,6 +10,8 @@ export type AnchorOperationAuditEvent = {
   principal?: string | undefined;
   user?: string | undefined;
   tenant?: string | undefined;
+  question?: string | undefined;
+  runId?: string | undefined;
 };
 export type AnchorOperationAuditHook = (event: AnchorOperationAuditEvent) => void;
 export function hashSql(sql: string): string {

@@ -192,6 +192,14 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
       datasetId: ANAC_ORGANIZATIONS_DATASET,
     },
     {
+      id: "region-topic-question",
+      term: "tema + regione (es. gare su un argomento in una regione)",
+      definition:
+        "Filter contract rows: join organization_has_contracts, organization.sezione_regionale contains the region, and a contains or textSearch on oggetto_gara for the topic. Default to the ingest month when no period is given. One query is enough.",
+      datasetId: ANAC_CONTRACTS_DATASET,
+      propertyId: "oggetto_gara",
+    },
+    {
       id: "authority-regional-section",
       term: "entities / authorities with regional section",
       definition:
@@ -201,6 +209,27 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
     },
   ],
   examples: [
+    {
+      id: "contracts-topic-in-region",
+      question: "C'è qualcosa sull'intelligenza artificiale in Calabria?",
+      tags: ["join", "region", "text"],
+      expectedObjectQuery: {
+        objectId: "contract",
+        mode: "rows",
+        joins: [{ relationshipId: "organization_has_contracts" }],
+        filters: [
+          { propertyId: "source_year_month", op: "eq", value: "2025-06" },
+          {
+            objectId: "organization",
+            propertyId: "sezione_regionale",
+            op: "contains",
+            value: "Calabria",
+          },
+          { propertyId: "oggetto_gara", op: "contains", value: "intelligenza artificiale" },
+        ],
+        limit: 5,
+      },
+    },
     {
       id: "count-contracts-entities-sicilia-smoke",
       question:

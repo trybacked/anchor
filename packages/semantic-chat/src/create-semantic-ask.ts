@@ -5,6 +5,10 @@ import type {
   SemanticAskResponse,
 } from "@trybacked/service";
 import {
+  agentBudgetFromEnv,
+  agentSkipRepairAfterMsFromEnv,
+} from "./agent/agent-budget-from-env.js";
+import {
   createSemanticAgentModelFromEnv,
   runSemanticAgent,
   SemanticAgentError,
@@ -68,14 +72,20 @@ export function attachSemanticAsk(
       question: body.question,
       modelId: agentModel.modelId,
       apiKey: agentModel.apiKey,
+      budget: agentBudgetFromEnv(options.env),
+      skipRepairAfterMs: agentSkipRepairAfterMsFromEnv(options.env),
       ...(agentModel.fallbackModelId !== undefined
         ? { fallbackModelId: agentModel.fallbackModelId }
         : {}),
     });
+    const questionPreview =
+      body.question.length > 160 ? `${body.question.slice(0, 157)}…` : body.question;
     options.onOperation?.({
       operation: "semanticAsk",
       durationMs: Date.now() - agentStarted,
       rowCount: agent.steps.at(-1)?.rowCount,
+      question: questionPreview,
+      runId: agent.runId,
       ...(options.tenant !== undefined ? { tenant: options.tenant } : {}),
     });
     options.onOperation?.({

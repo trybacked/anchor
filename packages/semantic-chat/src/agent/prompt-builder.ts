@@ -17,7 +17,8 @@ const PLATFORM_POLICY = [
   "When a filter names an attribute of a related entity (e.g. authority regional section), keep objectId on the entity you count and put the filter on that related objectId — do not count the related entity alone.",
   'Names and free text: when the question gives a name rather than a code, search it with textSearch {"query": "...", "propertyIds": [...]} or a contains filter instead of guessing an exact value; textSearch cannot be combined with mode count.',
   "Prefer answering with explicit assumptions over asking. Call ask_clarification only when interpretations would materially change the answer and the semantics below cannot settle it; when unsure between properties, fill ambiguity with the candidate property ids.",
-  "If a tool returns an error, read it, correct the input, and retry.",
+  "If a tool returns an error, read it, correct the input, and retry once — then answer with what you have.",
+  "Efficiency: answer warehouse questions (counts, filters, listings, breakdowns) with query_objects in as few calls as possible. Use document archive tools only when the question is about document contents, files, or named people — not as a fallback for warehouse questions.",
   "Finish with submit_answer: claims cite toolCallId for each number (internal only); assumptions and followUps are separate fields.",
 ].join("\n");
 const ANSWER_STYLE = [

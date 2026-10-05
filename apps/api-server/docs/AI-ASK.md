@@ -28,6 +28,9 @@ No per-tenant enable flag by default. To block one tenant: `capabilities.aiAsk: 
 | `AI_GATEWAY_API_KEY`                      | Required for ask                                |
 | `SEMANTIC_CHAT_MODEL` or `SEMANTIC_MODEL` | Gateway model id (default `openai/gpt-4o-mini`) |
 | `SEMANTIC_CHAT_FALLBACK_MODEL`            | Optional second model if the primary call fails |
+| `SEMANTIC_AGENT_MAX_STEPS`                | Tool-step cap (default **8**)                   |
+| `SEMANTIC_AGENT_MAX_SQL_CALLS`            | Warehouse call cap (default **4**)              |
+| `SEMANTIC_AGENT_SKIP_REPAIR_AFTER_MS`     | Skip grounding repair if main pass ≥ ms (default **35000**) |
 
 Shared **semantic catalogs** (synonyms, default time dimensions, glossary) are applied automatically from ontology-authoring packs when the agent runs; tenants do not configure this per ask.
 
@@ -35,7 +38,7 @@ Shared **semantic catalogs** (synonyms, default time dimensions, glossary) are a
 
 - **Route:** always **`agent`** (no template/plan route on HTTP).
 - **Tools:** same governed surface as MCP — especially `query_objects` with filters, joins, `textSearch`, `groupBy` / aggregations, `orderBy`.
-- **Budget (defaults):** 12 tool steps, 6 warehouse-backed calls, 50 rows max per `query_objects` (see `@trybacked/semantic-chat` `DEFAULT_AGENT_BUDGET`).
+- **Budget (defaults):** 8 tool steps, 4 warehouse-backed calls, 50 rows max per `query_objects`; document archive tools are omitted for contract/region questions on ANAC-only tenants (see `@trybacked/semantic-chat`).
 - **Grounding:** every number in the answer must exist in a tool result; claims are rebound to the matching `toolCallId` when unambiguous. If the same value appears in multiple successful queries, the agent must cite the correct call or grounding fails. One repair pass may run if grounding fails.
 - **Warehouse budget:** only **successful** warehouse tool calls count toward the SQL budget, so compile/SQL errors can be retried without instantly exhausting the limit.
 - **Clarification:** `ask_clarification` only when ontology semantics cannot resolve material ambiguity (policy in `clarification-policy`).
