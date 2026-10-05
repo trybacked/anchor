@@ -152,7 +152,9 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           synonyms: ["nome ente", "denominazione"],
         },
         sezione_regionale: {
-          description: "Regional section of the contracting authority (e.g. Sicilia, Lombardia).",
+          description:
+            'Regional section of the contracting authority; stored as a label such as "SEZIONE REGIONALE SICILIA" or "NON CLASSIFICATO", so filter with contains on the region name, never eq.',
+          valueFormat: "SEZIONE REGIONALE <REGIONE>",
           synonyms: ["regione", "sezione regionale", "region"],
         },
         contracts_count: {
@@ -260,7 +262,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           {
             objectId: "organization",
             propertyId: "sezione_regionale",
-            op: "eq",
+            op: "contains",
             value: "Sicilia",
           },
         ],
@@ -280,7 +282,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           {
             objectId: "organization",
             propertyId: "sezione_regionale",
-            op: "eq",
+            op: "contains",
             value: "Sicilia",
           },
         ],

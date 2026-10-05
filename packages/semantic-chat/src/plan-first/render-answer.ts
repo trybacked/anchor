@@ -18,7 +18,7 @@ type Messages = {
   total: (count: string, entity: string) => string;
   noResults: (entity: string) => string;
   listing: (shown: string, entity: string) => string;
-  breakdown: (entity: string) => string;
+  breakdown: (entity: string, groups: string) => string;
   criteria: string;
   filterOps: Record<ObjectQueryFilterOp, string>;
   textSearch: (query: string) => string;
@@ -28,7 +28,7 @@ const EN: Messages = {
   total: (count, entity) => `**${count}** ${entity}`,
   noResults: (entity) => `No ${entity} match these criteria.`,
   listing: (shown, entity) => `**${shown}** ${entity}:`,
-  breakdown: (entity) => `${entity} by group:`,
+  breakdown: (entity, groups) => `${entity} by ${groups}:`,
   criteria: "Criteria",
   filterOps: {
     eq: "is",
@@ -52,7 +52,7 @@ const IT: Messages = {
   total: (count, entity) => `**${count}** ${entity}`,
   noResults: (entity) => `Nessun risultato per ${entity} con questi criteri.`,
   listing: (shown, entity) => `**${shown}** ${entity}:`,
-  breakdown: (entity) => `${entity} per gruppo:`,
+  breakdown: (entity, groups) => `${entity} per ${groups}:`,
   criteria: "Criteri",
   filterOps: {
     eq: "uguale a",
@@ -142,6 +142,23 @@ function countValue(result: RenderableResult): number {
   return Number.isFinite(numeric) ? numeric : result.rowCount;
 }
 
+/** Group keys in bold, then measures: a lone measure is shown bare, several keep their alias. */
+function renderBreakdownRow(
+  groupCount: number,
+  columns: string[],
+  row: Record<string, unknown>,
+  locale: string,
+): string {
+  const keys = columns.slice(0, groupCount).map((column) => formatValue(row[column], locale));
+  const measures = columns.slice(groupCount);
+  const values = measures.map((column) =>
+    measures.length === 1
+      ? formatValue(row[column], locale)
+      : `${column}: ${formatValue(row[column], locale)}`,
+  );
+  return `- **${keys.join(" · ")}**: ${values.join(" · ")}`;
+}
+
 function renderRow(
   ontology: Ontology,
   rootObjectId: string,
@@ -181,12 +198,22 @@ export function renderPlanAnswer(options: {
     lines.push(messages.noResults(entity));
   } else {
     const shown = result.rows.slice(0, MAX_LISTED_ROWS);
-    const grouped = (query.groupBy ?? []).length > 0;
+    const groupBy = query.groupBy ?? [];
     const formattedCount = formatValue(result.rowCount, locale);
-    lines.push(
-      grouped ? messages.breakdown(entity) : messages.listing(formattedCount, entity),
-      ...shown.map((row) => renderRow(ontology, query.objectId, result.columns, row, locale)),
-    );
+    if (groupBy.length > 0) {
+      const groups = groupBy
+        .map((column) => columnLabel(ontology, query.objectId, column))
+        .join(" · ");
+      lines.push(
+        messages.breakdown(entity, groups),
+        ...shown.map((row) => renderBreakdownRow(groupBy.length, result.columns, row, locale)),
+      );
+    } else {
+      lines.push(
+        messages.listing(formattedCount, entity),
+        ...shown.map((row) => renderRow(ontology, query.objectId, result.columns, row, locale)),
+      );
+    }
     claims.push({ text: formattedCount, toolCallId });
   }
   if (criteria !== undefined) lines.push("", `_${criteria}_`);

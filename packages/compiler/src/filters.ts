@@ -17,6 +17,28 @@ function isComparisonOp(op: ObjectQueryFilterOp): op is ComparisonOp {
 export function escapeLikePattern(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
+/**
+ * Terms this short are acronyms or codes ("AI", "PNRR"): a substring match
+ * would hit unrelated words ("vivAIstici"), so they match as whole words.
+ */
+export const WHOLE_WORD_MAX_TERM_LENGTH = 3;
+function wholeWordRegex(term: string): string {
+  const quoted = `\\Q${term.replaceAll("\\E", "\\E\\\\E\\Q")}\\E`;
+  return `(?i)(?<![\\p{L}\\p{N}])${quoted}(?![\\p{L}\\p{N}])`;
+}
+/**
+ * Case-insensitive text match; binds one parameter and returns a predicate
+ * builder so the same bound term can be applied to several columns (OR).
+ */
+function textMatchPredicate(term: string, parameters: SqlParameter[]): (column: string) => string {
+  const name = `p${String(parameters.length)}`;
+  if (term.length <= WHOLE_WORD_MAX_TERM_LENGTH) {
+    parameters.push({ name, value: wholeWordRegex(term) });
+    return (column) => `${column} RLIKE :${name}`;
+  }
+  parameters.push({ name, value: `%${escapeLikePattern(term)}%` });
+  return (column) => `LOWER(${column}) LIKE LOWER(:${name})`;
+}
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
 }
@@ -49,13 +71,12 @@ export function compileObjectFilter(
         `Operator "${filter.op}" requires a string value (property "${filter.propertyId}").`,
       );
     }
-    const name = `p${String(parameters.length)}`;
-    const pattern =
-      filter.op === "starts_with"
-        ? `${escapeLikePattern(filter.value)}%`
-        : `%${escapeLikePattern(filter.value)}%`;
-    parameters.push({ name, value: pattern });
-    const predicate = `LOWER(${column}) LIKE LOWER(:${name})`;
+    if (filter.op === "starts_with") {
+      const name = `p${String(parameters.length)}`;
+      parameters.push({ name, value: `${escapeLikePattern(filter.value)}%` });
+      return `LOWER(${column}) LIKE LOWER(:${name})`;
+    }
+    const predicate = textMatchPredicate(filter.value, parameters)(column);
     return filter.op === "not_contains" ? `NOT (${predicate})` : predicate;
   }
   if (filter.op === "in" || filter.op === "not_in") {
@@ -134,12 +155,10 @@ export function compileTextSearch(
       `textSearch on object "${object.id}" has no string columns to search.`,
     );
   }
-  const name = `p${String(parameters.length)}`;
-  parameters.push({ name, value: `%${escapeLikePattern(trimmed)}%` });
+  const match = textMatchPredicate(trimmed, parameters);
   const parts = targets.map((propertyId) => {
     assertKnownProperty(object, propertyId);
-    const column = `${quoteIdentifier(tableAlias)}.${quoteIdentifier(propertyId)}`;
-    return `LOWER(${column}) LIKE LOWER(:${name})`;
+    return match(`${quoteIdentifier(tableAlias)}.${quoteIdentifier(propertyId)}`);
   });
   return `(${parts.join(" OR ")})`;
 }

@@ -70,6 +70,35 @@ describe("renderPlanAnswer", () => {
     expect(listed.text).toContain("- **B719A2AE0D** · Region: Calabria");
   });
 
+  it("renders a breakdown with group labels and bare single measure", () => {
+    const rendered = renderPlanAnswer({
+      ontology: contractOntology(),
+      query: {
+        objectId: "contract",
+        mode: "rows",
+        filters: [],
+        groupBy: ["region"],
+        aggregations: [{ op: "count", alias: "count" }],
+      },
+      result: {
+        objectId: "contract",
+        columns: ["region", "count"],
+        rows: [
+          { region: "Calabria", count: 358 },
+          { region: "Sicilia", count: 16052 },
+        ],
+        rowCount: 2,
+        mode: "rows",
+      },
+      locale: "it",
+      toolCallId: "plan-query",
+    });
+    expect(rendered.text).toContain("Contract per Region:");
+    expect(rendered.text).toContain("- **Calabria**: 358");
+    expect(rendered.text).toContain("- **Sicilia**: 16.052");
+    expect(rendered.text).not.toContain("count:");
+  });
+
   it("falls back to English for unknown locales", () => {
     const rendered = renderPlanAnswer({
       ontology: contractOntology(),
