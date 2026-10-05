@@ -28,14 +28,12 @@ function resolveDatasetId(object: OntologyObject): string {
   }
   return object.sourceDatasetId;
 }
+/** True when any projected column (select or groupBy) belongs to a joined object. */
 export function queryUsesPhysicalJoins(
   rootObjectId: string,
-  select: string[] | undefined,
+  projected: readonly string[],
 ): boolean {
-  if (select === undefined || select.length === 0) {
-    return false;
-  }
-  return select.some((item) => {
+  return projected.some((item) => {
     const dot = item.indexOf(".");
     if (dot <= 0) {
       return false;

@@ -12,7 +12,7 @@ export const QUERY_CONSTRUCTION_RULES = [
   "Periods: when the question gives a month or period without naming a date field, filter the object's default time dimension and record that choice in assumptions. Respect valueFormat (e.g. YYYY-MM). For several periods use one filter with op in and all values — not separate queries.",
   "Modes: mode count for totals; mode rows with select and limit for listings; groupBy plus aggregations for breakdowns; orderBy plus orderDirection for rankings.",
   'Cross-object questions: objectId stays the object being counted or listed; constrain a related object with joins [{"relationshipId": "..."}] plus filters entries carrying that related objectId. Never switch the root object to the one you only filter on.',
-  "Breakdowns: with groupBy plus aggregations, orderBy must name a projected column — a groupBy property or an aggregation alias — so set alias on the aggregation you want to rank by.",
+  'Breakdowns: with groupBy plus aggregations, orderBy must name a projected column — a groupBy property or an aggregation alias — so set alias on the aggregation you want to rank by. To break down by an attribute of a related object, add the join and write the groupBy entry as "objectId.propertyId" (e.g. "organization.region").',
   "When a filter names an attribute of a related entity, keep objectId on the entity you count and put the filter on that related objectId — do not count the related entity alone.",
   'Names and free text: when the question gives a name or topic rather than a code, use a contains filter (or textSearch {"query": "...", "propertyIds": [...]} for rows) instead of guessing an exact value; textSearch cannot be combined with mode count.',
 ].join("\n");

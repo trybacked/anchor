@@ -56,6 +56,30 @@ describe("validateObjectQueryAgainstOntology", () => {
     expect(validated.orderBy).toBeUndefined();
     expect(validated.orderDirection).toBeUndefined();
   });
+  it("accepts a breakdown by a joined property ordered by the aggregation alias", () => {
+    const withOrganization: Ontology = {
+      ...ontology,
+      objects: [
+        ...ontology.objects,
+        {
+          id: "organization",
+          name: "Organization",
+          properties: [{ id: "region", name: "Region", type: "string", role: "attribute" }],
+        },
+      ],
+    };
+    const validated = validateObjectQueryAgainstOntology(withOrganization, {
+      objectId: "contract",
+      mode: "rows",
+      joins: [{ relationshipId: "organization_has_contracts" }],
+      filters: [],
+      groupBy: ["organization.region"],
+      aggregations: [{ op: "count", alias: "count" }],
+      orderBy: "count",
+      orderDirection: "desc",
+    });
+    expect(validated.groupBy).toEqual(["organization.region"]);
+  });
   it("rejects a rows sort key that is not a property", () => {
     expect(() =>
       validateObjectQueryAgainstOntology(ontology, {

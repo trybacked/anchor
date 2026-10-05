@@ -122,6 +122,24 @@ describe("compileObjectQuery joins", () => {
     );
     expect(compiled.columns).toContain("organization.denominazione_amministrazione_appaltante");
   });
+  it("groups by a joined object property through an INNER JOIN", () => {
+    const compiled = compileObjectQuery(procurementOntology, {
+      objectId: "contract",
+      joins: [{ relationshipId: "organization_has_contracts" }],
+      groupBy: ["organization.denominazione_amministrazione_appaltante"],
+      aggregations: [{ op: "count", alias: "count" }],
+      orderBy: "count",
+      orderDirection: "desc",
+      limit: 30,
+    });
+    expect(compiled.sql).toBe(
+      "SELECT `o1`.`denominazione_amministrazione_appaltante` AS `organization.denominazione_amministrazione_appaltante`, COUNT(*) AS `count` FROM `backed`.`anac`.`contracts` AS `o0`\nINNER JOIN `backed`.`anac`.`organizations` AS `o1` ON `o0`.`cf_amministrazione_appaltante` = `o1`.`cf_amministrazione_appaltante` GROUP BY `o1`.`denominazione_amministrazione_appaltante` ORDER BY `count` desc LIMIT 30",
+    );
+    expect(compiled.columns).toEqual([
+      "organization.denominazione_amministrazione_appaltante",
+      "count",
+    ]);
+  });
   it("compiles textSearch as OR across string columns", () => {
     const compiled = compileObjectQuery(procurementOntology, {
       objectId: "contract",

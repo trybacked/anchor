@@ -217,6 +217,38 @@ function compileOrderClause(
   }
   return ` ORDER BY ${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(orderBy)} ${direction}`;
 }
+type ProjectedColumn = {
+  /** Qualified column reference, e.g. `"o"."sezione_regionale"`. */
+  sql: string;
+  /** Column name in the result set: the property id, or `objectId.propertyId` when joined. */
+  outputName: string;
+};
+/** Resolves a property id or `objectId.propertyId` (joined) to a column reference. */
+function resolveProjectedColumn(
+  ontology: Ontology,
+  query: ReturnType<typeof ObjectQuerySchema.parse>,
+  from: FromClause,
+  item: string,
+): ProjectedColumn {
+  const dot = item.indexOf(".");
+  if (dot > 0) {
+    const objectId = item.slice(0, dot);
+    const propertyId = item.slice(dot + 1);
+    const { object, alias } = resolveFilterTarget(ontology, query, from, objectId);
+    assertKnownProperty(object, propertyId);
+    return {
+      sql: `${quoteIdentifier(alias)}.${quoteIdentifier(propertyId)}`,
+      outputName: `${objectId}.${propertyId}`,
+    };
+  }
+  assertKnownProperty(resolveObject(ontology, query.objectId), item);
+  return { sql: `${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(item)}`, outputName: item };
+}
+function selectExpression(column: ProjectedColumn): string {
+  return column.outputName.includes(".")
+    ? `${column.sql} AS ${quoteIdentifier(column.outputName)}`
+    : column.sql;
+}
 function resolveSelectColumns(
   ontology: Ontology,
   query: ReturnType<typeof ObjectQuerySchema.parse>,
@@ -227,34 +259,20 @@ function resolveSelectColumns(
 } {
   const rootObject = resolveObject(ontology, query.objectId);
   const items = query.select ?? rootObject.properties.map((property) => property.id);
-  const selectParts: string[] = [];
-  const columns: string[] = [];
-  for (const item of items) {
-    const dot = item.indexOf(".");
-    if (dot > 0) {
-      const objectId = item.slice(0, dot);
-      const propertyId = item.slice(dot + 1);
-      const { object, alias } = resolveFilterTarget(ontology, query, from, objectId);
-      assertKnownProperty(object, propertyId);
-      const outputName = `${objectId}.${propertyId}`;
-      selectParts.push(
-        `${quoteIdentifier(alias)}.${quoteIdentifier(propertyId)} AS ${quoteIdentifier(outputName)}`,
-      );
-      columns.push(outputName);
-      continue;
-    }
-    assertKnownProperty(rootObject, item);
-    selectParts.push(`${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(item)}`);
-    columns.push(item);
-  }
-  return { selectList: selectParts.join(", "), columns };
+  const resolved = items.map((item) => resolveProjectedColumn(ontology, query, from, item));
+  return {
+    selectList: resolved.map(selectExpression).join(", "),
+    columns: resolved.map((column) => column.outputName),
+  };
 }
 export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): CompiledObjectQuery {
   const query = ObjectQuerySchema.parse(input);
   const rootObject = resolveObject(ontology, query.objectId);
   const parameters: SqlParameter[] = [];
   const hasJoins = (query.joins ?? []).length > 0;
-  const usePhysicalJoins = hasJoins && queryUsesPhysicalJoins(query.objectId, query.select);
+  const usePhysicalJoins =
+    hasJoins &&
+    queryUsesPhysicalJoins(query.objectId, [...(query.select ?? []), ...(query.groupBy ?? [])]);
   if (hasJoins && query.mode === "count" && usePhysicalJoins) {
     throw new ObjectQueryCompileError(
       "invalid_join",
@@ -271,12 +289,10 @@ export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): Comp
     );
   }
   if (aggregations.length > 0) {
-    for (const propertyId of query.groupBy ?? []) {
-      assertKnownProperty(rootObject, propertyId);
-    }
-    const groupColumns = (query.groupBy ?? []).map(
-      (propertyId) => `${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(propertyId)}`,
+    const groups = (query.groupBy ?? []).map((item) =>
+      resolveProjectedColumn(ontology, query, from, item),
     );
+    const groupColumns = groups.map((column) => column.sql);
     const aggExpressions = aggregations.map((aggregation, index) => {
       if (aggregation.op === "count" && aggregation.propertyId === undefined) {
         return `COUNT(*) AS ${quoteIdentifier(resolveAggregationAlias(aggregation, index))}`;
@@ -285,10 +301,10 @@ export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): Comp
       const column = `${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(aggregation.propertyId ?? "")}`;
       return `${aggregation.op.toUpperCase()}(${column}) AS ${quoteIdentifier(resolveAggregationAlias(aggregation, index))}`;
     });
-    const selectList = [...groupColumns, ...aggExpressions].join(", ");
+    const selectList = [...groups.map(selectExpression), ...aggExpressions].join(", ");
     const groupClause = groupColumns.length > 0 ? ` GROUP BY ${groupColumns.join(", ")}` : "";
     const resultColumns = [
-      ...(query.groupBy ?? []),
+      ...groups.map((column) => column.outputName),
       ...aggregations.map((aggregation, index) => resolveAggregationAlias(aggregation, index)),
     ];
     const orderClause = compileOrderClause(ontology, query, from, resultColumns);

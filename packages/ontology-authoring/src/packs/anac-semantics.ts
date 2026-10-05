@@ -231,6 +231,22 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
       },
     },
     {
+      id: "contracts-by-region",
+      question: "Quanti contratti per regione a giugno 2025?",
+      tags: ["join", "region", "breakdown"],
+      expectedObjectQuery: {
+        objectId: "contract",
+        mode: "rows",
+        joins: [{ relationshipId: "organization_has_contracts" }],
+        filters: [{ propertyId: "source_year_month", op: "eq", value: "2025-06" }],
+        groupBy: ["organization.sezione_regionale"],
+        aggregations: [{ op: "count", alias: "count" }],
+        orderBy: "count",
+        orderDirection: "desc",
+        limit: 30,
+      },
+    },
+    {
       id: "count-contracts-entities-sicilia-smoke",
       question:
         "How many contracts in month 2025-06 involve entities with regional section Sicilia?",
