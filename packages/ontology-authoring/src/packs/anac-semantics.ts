@@ -194,6 +194,14 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
       datasetId: ANAC_ORGANIZATIONS_DATASET,
     },
     {
+      id: "topic-acronyms",
+      term: "acronimi nel tema (AI, IA, IoT, PNRR…)",
+      definition:
+        'Tender subjects (oggetto_gara) are written in Italian and in full: search the expanded Italian wording (AI / IA → "intelligenza artificiale", IoT → "internet delle cose"), not the acronym, which collides with Italian function words such as the preposition "ai". Keep the acronym only when it is the official name of a programme (PNRR, CONSIP).',
+      datasetId: ANAC_CONTRACTS_DATASET,
+      propertyId: "oggetto_gara",
+    },
+    {
       id: "region-topic-question",
       term: "tema + regione (es. gare su un argomento in una regione)",
       definition:
