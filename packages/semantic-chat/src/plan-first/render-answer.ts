@@ -1,5 +1,5 @@
 import type { ObjectQuery, ObjectQueryFilterOp } from "@trybacked/compiler";
-import type { Ontology } from "@trybacked/core";
+import { findProperty, objectLabel, propertyLabel, type Ontology } from "@trybacked/core";
 
 export type RenderableResult = {
   objectId: string;
@@ -20,16 +20,18 @@ type Messages = {
   listing: (shown: string, entity: string) => string;
   breakdown: (entity: string, groups: string) => string;
   criteria: string;
+  valueHint: (label: string, values: string) => string;
   filterOps: Record<ObjectQueryFilterOp, string>;
   textSearch: (query: string) => string;
 };
 
 const EN: Messages = {
-  total: (count, entity) => `**${count}** ${entity}`,
+  total: (count, entity) => `There are **${count}** ${entity}.`,
   noResults: (entity) => `No ${entity} match these criteria.`,
-  listing: (shown, entity) => `**${shown}** ${entity}:`,
+  listing: (shown, entity) => `Here are **${shown}** ${entity}:`,
   breakdown: (entity, groups) => `${entity} by ${groups}:`,
   criteria: "Criteria",
+  valueHint: (label, values) => `In the data, ${label} is written like this: ${values}.`,
   filterOps: {
     eq: "is",
     neq: "is not",
@@ -49,11 +51,12 @@ const EN: Messages = {
 };
 
 const IT: Messages = {
-  total: (count, entity) => `**${count}** ${entity}`,
-  noResults: (entity) => `Nessun risultato per ${entity} con questi criteri.`,
-  listing: (shown, entity) => `**${shown}** ${entity}:`,
+  total: (count, entity) => `Ci sono **${count}** ${entity}.`,
+  noResults: (entity) => `Nessun risultato: non ci sono ${entity} con questi criteri.`,
+  listing: (shown, entity) => `Ecco **${shown}** ${entity}:`,
   breakdown: (entity, groups) => `${entity} per ${groups}:`,
   criteria: "Criteri",
+  valueHint: (label, values) => `Nei dati, ${label} è scritta così: ${values}.`,
   filterOps: {
     eq: "uguale a",
     neq: "diverso da",
@@ -69,36 +72,37 @@ const IT: Messages = {
     is_not_null: "valorizzato",
     starts_with: "inizia con",
   },
-  textSearch: (query) => `testo contiene «${query}»`,
+  textSearch: (query) => `il testo contiene «${query}»`,
 };
 
 const MESSAGES_BY_LANGUAGE: Record<string, Messages> = { en: EN, it: IT };
 const MAX_LISTED_ROWS = 10;
+/** Enough to show the shape of a column's values without turning the answer into a dump. */
+const MAX_HINTED_VALUES = 3;
+const MAX_HINTED_PROPERTIES = 2;
 
 function messagesFor(locale: string): Messages {
   const language = locale.toLowerCase().split(/[-_]/)[0] ?? "en";
   return MESSAGES_BY_LANGUAGE[language] ?? EN;
 }
 
-function entityLabel(ontology: Ontology, objectId: string): string {
-  const object = ontology.objects.find((candidate) => candidate.id === objectId);
-  return object?.name ?? objectId;
+function capitalize(text: string): string {
+  return text.length === 0 ? text : `${text[0]?.toUpperCase() ?? ""}${text.slice(1)}`;
 }
 
-function propertyLabel(ontology: Ontology, objectId: string, propertyId: string): string {
-  const object = ontology.objects.find((candidate) => candidate.id === objectId);
-  const property = object?.properties.find((candidate) => candidate.id === propertyId);
-  return property?.name ?? propertyId;
-}
-
-function columnLabel(ontology: Ontology, rootObjectId: string, column: string): string {
+function columnLabel(
+  ontology: Ontology,
+  rootObjectId: string,
+  column: string,
+  locale: string,
+): string {
   if (column.includes(".")) {
     const [objectId, propertyId] = column.split(".", 2);
     if (objectId !== undefined && propertyId !== undefined) {
-      return `${entityLabel(ontology, objectId)} · ${propertyLabel(ontology, objectId, propertyId)}`;
+      return `${propertyLabel(ontology, objectId, propertyId, locale)} (${objectLabel(ontology, objectId, locale, "singular")})`;
     }
   }
-  return propertyLabel(ontology, rootObjectId, column);
+  return propertyLabel(ontology, rootObjectId, column, locale);
 }
 
 function formatValue(value: unknown, locale: string): string {
@@ -123,16 +127,44 @@ function describeCriteria(
 ): string | undefined {
   const parts = (query.filters ?? []).map((filter) => {
     const objectId = filter.objectId ?? query.objectId;
-    const label =
-      objectId === query.objectId
-        ? propertyLabel(ontology, objectId, filter.propertyId)
-        : `${entityLabel(ontology, objectId)} · ${propertyLabel(ontology, objectId, filter.propertyId)}`;
+    const label = columnLabel(
+      ontology,
+      query.objectId,
+      objectId === query.objectId ? filter.propertyId : `${objectId}.${filter.propertyId}`,
+      locale,
+    );
     const op = messages.filterOps[filter.op];
     if (filter.op === "is_null" || filter.op === "is_not_null") return `${label} ${op}`;
     return `${label} ${op} «${formatValue(filter.value, locale)}»`;
   });
   if (query.textSearch !== undefined) parts.push(messages.textSearch(query.textSearch.query));
   return parts.length > 0 ? `${messages.criteria}: ${parts.join("; ")}` : undefined;
+}
+
+/**
+ * An empty result is often a value written differently in the warehouse ("REGGIO CALABRIA"
+ * vs "Reggio Calabria"), so show how the filtered columns actually look when the semantic
+ * layer declares sample values.
+ */
+function valueHints(
+  ontology: Ontology,
+  query: ObjectQuery,
+  locale: string,
+  messages: Messages,
+): string[] {
+  return (query.filters ?? [])
+    .flatMap((filter) => {
+      const objectId = filter.objectId ?? query.objectId;
+      const samples = findProperty(ontology, objectId, filter.propertyId)?.semantics?.sampleValues;
+      if (samples === undefined || samples.length === 0) return [];
+      const label = propertyLabel(ontology, objectId, filter.propertyId, locale);
+      const values = samples
+        .slice(0, MAX_HINTED_VALUES)
+        .map((value) => `«${value}»`)
+        .join(", ");
+      return [messages.valueHint(label, values)];
+    })
+    .slice(0, MAX_HINTED_PROPERTIES);
 }
 
 function countValue(result: RenderableResult): number {
@@ -170,7 +202,7 @@ function renderRow(
     const value = formatValue(row[column], locale);
     return index === 0
       ? `**${value}**`
-      : `${columnLabel(ontology, rootObjectId, column)}: ${value}`;
+      : `${columnLabel(ontology, rootObjectId, column, locale)}: ${value}`;
   });
   return `- ${cells.join(" · ")}`;
 }
@@ -184,38 +216,48 @@ export function renderPlanAnswer(options: {
 }): RenderedAnswer {
   const { ontology, query, result, locale, toolCallId } = options;
   const messages = messagesFor(locale);
-  const entity = entityLabel(ontology, query.objectId);
+  const entity = (form: "singular" | "plural") =>
+    objectLabel(ontology, query.objectId, locale, form);
   const criteria = describeCriteria(ontology, query, locale, messages);
   const lines: string[] = [];
   const claims: RenderedAnswer["claims"] = [];
+  let empty = false;
 
   if (result.mode === "count") {
     const count = countValue(result);
     const formatted = formatValue(count, locale);
-    lines.push(count === 0 ? messages.noResults(entity) : messages.total(formatted, entity));
+    empty = count === 0;
+    lines.push(
+      empty
+        ? messages.noResults(entity("plural"))
+        : messages.total(formatted, entity(count === 1 ? "singular" : "plural")),
+    );
     claims.push({ text: formatted, toolCallId });
   } else if (result.rows.length === 0) {
-    lines.push(messages.noResults(entity));
+    empty = true;
+    lines.push(messages.noResults(entity("plural")));
   } else {
     const shown = result.rows.slice(0, MAX_LISTED_ROWS);
     const groupBy = query.groupBy ?? [];
     const formattedCount = formatValue(result.rowCount, locale);
     if (groupBy.length > 0) {
       const groups = groupBy
-        .map((column) => columnLabel(ontology, query.objectId, column))
+        .map((column) => columnLabel(ontology, query.objectId, column, locale))
         .join(" · ");
       lines.push(
-        messages.breakdown(entity, groups),
+        capitalize(messages.breakdown(entity("plural"), groups)),
         ...shown.map((row) => renderBreakdownRow(groupBy.length, result.columns, row, locale)),
       );
     } else {
       lines.push(
-        messages.listing(formattedCount, entity),
+        messages.listing(formattedCount, entity(result.rowCount === 1 ? "singular" : "plural")),
         ...shown.map((row) => renderRow(ontology, query.objectId, result.columns, row, locale)),
       );
     }
     claims.push({ text: formattedCount, toolCallId });
   }
   if (criteria !== undefined) lines.push("", `_${criteria}_`);
+  if (empty)
+    lines.push(...valueHints(ontology, query, locale, messages).map((hint) => `\n${hint}`));
   return { text: lines.join("\n"), claims };
 }

@@ -189,6 +189,17 @@
                             "label",
                             "identifier"
                           ]
+                        },
+                        "labels": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "propertyNames": {
+                            "minLength": 2,
+                            "maxLength": 8
+                          }
                         }
                       },
                       "additionalProperties": false
@@ -226,6 +237,31 @@
                   "defaultTimeDimension": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "labels": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "singular": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "plural": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "singular",
+                        "plural"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "propertyNames": {
+                      "minLength": 2,
+                      "maxLength": 8
+                    }
                   }
                 },
                 "additionalProperties": false

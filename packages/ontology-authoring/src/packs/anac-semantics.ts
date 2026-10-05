@@ -25,6 +25,10 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           "contract",
           "tender",
         ],
+        labels: {
+          it: { singular: "contratto", plural: "contratti" },
+          en: { singular: "contract", plural: "contracts" },
+        },
         defaultTimeDimension: "source_year_month",
         displayProperties: [
           "cig",
@@ -40,6 +44,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           semanticRole: "identifier",
           description: "Codice Identificativo Gara (CIG), unique per contract lot.",
           synonyms: ["codice cig", "codice identificativo gara"],
+          labels: { it: "codice CIG", en: "CIG code" },
         },
         source_year_month: {
           semanticRole: "partition",
@@ -53,6 +58,8 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
             "ingest month",
             "load month",
           ],
+          sampleValues: ["2025-06", "2025-05"],
+          labels: { it: "mese dei dati", en: "data month" },
         },
         data_pubblicazione: {
           semanticRole: "time_dimension",
@@ -66,6 +73,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
             "publication date",
             "published",
           ],
+          labels: { it: "data di pubblicazione", en: "publication date" },
         },
         anno_pubblicazione: {
           semanticRole: "time_dimension",
@@ -86,6 +94,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
         oggetto_gara: {
           description: "Free-text subject of the tender; filter with contains.",
           synonyms: ["oggetto", "oggetto della gara", "tender subject"],
+          labels: { it: "oggetto della gara", en: "tender subject" },
         },
         oggetto_lotto: {
           description: "Free-text subject of the single lot.",
@@ -95,6 +104,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           semanticRole: "measure",
           description: "Lot amount in EUR. Default amount for ranking contracts.",
           synonyms: ["importo", "valore", "importo del lotto", "amount", "value"],
+          labels: { it: "importo del lotto", en: "lot amount" },
         },
         importo_complessivo_gara: {
           semanticRole: "measure",
@@ -103,8 +113,25 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
         },
         denominazione_amministrazione_appaltante: {
           semanticRole: "label",
-          description: "Name of the contracting authority, denormalized on the contract row.",
-          synonyms: ["nome ente", ...CONTRACTING_AUTHORITY_SYNONYMS],
+          description:
+            'Name of the contracting authority, denormalized on the contract row. Also the only way to reach a municipality or a named body: filter with contains on the name in upper case (e.g. "GERACE").',
+          synonyms: ["nome ente", "comune", "città", ...CONTRACTING_AUTHORITY_SYNONYMS],
+          sampleValues: ["COMUNE DI GERACE", "REGIONE TOSCANA"],
+          labels: { it: "ente appaltante", en: "contracting authority" },
+        },
+        provincia: {
+          description:
+            'Province where the contract is performed, denormalized on the contract row as an upper-case label ("REGGIO CALABRIA", "ROMA"); filter with contains on the province name. This is the only province field — sezione_regionale holds regions and never matches a province.',
+          valueFormat: "<PROVINCIA IN MAIUSCOLO>",
+          sampleValues: ["ROMA", "MILANO", "REGGIO CALABRIA"],
+          synonyms: ["provincia", "province", "città metropolitana"],
+          labels: { it: "provincia", en: "province" },
+        },
+        luogo_istat: {
+          description:
+            "ISTAT code of the place of performance. Use only when the question gives an ISTAT code; never to resolve a municipality by name.",
+          synonyms: ["codice istat", "luogo istat", "istat code"],
+          labels: { it: "codice ISTAT del luogo", en: "ISTAT place code" },
         },
         cf_amministrazione_appaltante: {
           semanticRole: "identifier",
@@ -112,8 +139,11 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
         },
         sezione_regionale: {
           description:
-            "Regional section denormalized on the contract row. When the question refers to entities / authorities / contracting bodies (not the contract row alone), filter organization.sezione_regionale via organization_has_contracts instead of this field.",
+            'Regional section (region, never a province) denormalized on the contract row, stored as a label such as "SEZIONE REGIONALE CALABRIA"; filter with contains on the region name. When the question refers to entities / authorities / contracting bodies (not the contract row alone), filter organization.sezione_regionale via organization_has_contracts instead of this field.',
+          valueFormat: "SEZIONE REGIONALE <REGIONE>",
+          sampleValues: ["SEZIONE REGIONALE CALABRIA", "SEZIONE REGIONALE LOMBARDIA"],
           synonyms: ["regione", "sezione regionale", "region"],
+          labels: { it: "regione", en: "region" },
         },
         tipo_scelta_contraente: {
           description: "Procurement procedure type.",
@@ -122,6 +152,7 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
         stato: {
           description: "Lifecycle status of the tender.",
           synonyms: ["stato della gara", "status"],
+          labels: { it: "stato della gara", en: "tender status" },
         },
       },
     },
@@ -133,6 +164,10 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           "organization",
           ...CONTRACTING_AUTHORITY_SYNONYMS,
         ],
+        labels: {
+          it: { singular: "ente appaltante", plural: "enti appaltanti" },
+          en: { singular: "contracting authority", plural: "contracting authorities" },
+        },
         displayProperties: [
           "denominazione_amministrazione_appaltante",
           "cf_amministrazione_appaltante",
@@ -150,12 +185,16 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
           semanticRole: "label",
           description: "Official name of the contracting authority.",
           synonyms: ["nome ente", "denominazione"],
+          sampleValues: ["COMUNE DI GERACE", "REGIONE TOSCANA"],
+          labels: { it: "ente appaltante", en: "contracting authority" },
         },
         sezione_regionale: {
           description:
             'Regional section of the contracting authority; stored as a label such as "SEZIONE REGIONALE SICILIA" or "NON CLASSIFICATO", so filter with contains on the region name, never eq.',
           valueFormat: "SEZIONE REGIONALE <REGIONE>",
+          sampleValues: ["SEZIONE REGIONALE CALABRIA", "SEZIONE REGIONALE LOMBARDIA"],
           synonyms: ["regione", "sezione regionale", "region"],
+          labels: { it: "regione dell'ente", en: "authority region" },
         },
         contracts_count: {
           semanticRole: "measure",
@@ -200,6 +239,22 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
         'Tender subjects (oggetto_gara) are written in Italian and in full: search the expanded Italian wording (AI / IA → "intelligenza artificiale", IoT → "internet delle cose"), not the acronym, which collides with Italian function words such as the preposition "ai". Keep the acronym only when it is the official name of a programme (PNRR, CONSIP).',
       datasetId: ANAC_CONTRACTS_DATASET,
       propertyId: "oggetto_gara",
+    },
+    {
+      id: "province-question",
+      term: "provincia (es. provincia di Reggio Calabria)",
+      definition:
+        'A province is contract.provincia, filtered with contains on the upper-case province name ("REGGIO CALABRIA"). Never answer a province question with sezione_regionale: it holds regions only and would return zero rows.',
+      datasetId: ANAC_CONTRACTS_DATASET,
+      propertyId: "provincia",
+    },
+    {
+      id: "municipality-question",
+      term: "comune / città (es. quanti contratti a Gerace)",
+      definition:
+        'There is no municipality column. Match the contracting authority instead: denominazione_amministrazione_appaltante contains the municipality name in upper case (e.g. "GERACE"), and state in assumptions that the match is on the authority name. luogo_istat only carries ISTAT codes.',
+      datasetId: ANAC_CONTRACTS_DATASET,
+      propertyId: "denominazione_amministrazione_appaltante",
     },
     {
       id: "region-topic-question",
@@ -254,6 +309,34 @@ export const ANAC_SEMANTIC_CATALOG: SemanticCatalog = {
         orderBy: "count",
         orderDirection: "desc",
         limit: 30,
+      },
+    },
+    {
+      id: "count-contracts-province",
+      question: "Quanti contratti nella provincia di Reggio Calabria?",
+      tags: ["count", "province"],
+      expectedObjectQuery: {
+        objectId: "contract",
+        mode: "count",
+        filters: [{ propertyId: "provincia", op: "contains", value: "REGGIO CALABRIA" }],
+      },
+    },
+    {
+      id: "count-contracts-municipality",
+      question: "Quanti contratti a Gerace?",
+      tags: ["count", "municipality"],
+      notes:
+        "No municipality column: the match is on the contracting authority name, which must be stated in assumptions.",
+      expectedObjectQuery: {
+        objectId: "contract",
+        mode: "count",
+        filters: [
+          {
+            propertyId: "denominazione_amministrazione_appaltante",
+            op: "contains",
+            value: "GERACE",
+          },
+        ],
       },
     },
     {

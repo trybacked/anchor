@@ -115,6 +115,26 @@ describe("applySemanticCatalogs", () => {
     const contract = applySemanticCatalogs(ontology(), [partial]).objects[0]!;
     expect(contract.semantics).toEqual({ displayProperties: ["month", "amount"] });
   });
+  it("keeps authored display labels, which do not depend on tenant properties", () => {
+    const labelled: SemanticCatalog = {
+      ...catalog,
+      datasets: {
+        "shared.contracts": {
+          entity: {
+            labels: { it: { singular: "contratto", plural: "contratti" } },
+            displayProperties: ["ghost"],
+          },
+          properties: { month: { labels: { it: "mese dei dati" } } },
+        },
+      },
+    };
+    const contract = applySemanticCatalogs(ontology(), [labelled]).objects[0]!;
+    expect(contract.semantics?.labels?.["it"]?.plural).toBe("contratti");
+    expect(contract.semantics?.displayProperties).toEqual([]);
+    expect(
+      contract.properties.find((property) => property.id === "month")?.semantics?.labels,
+    ).toEqual({ it: "mese dei dati" });
+  });
   it("is idempotent", () => {
     const once = applySemanticCatalogs(ontology(), [catalog]);
     expect(applySemanticCatalogs(once, [catalog])).toEqual(once);

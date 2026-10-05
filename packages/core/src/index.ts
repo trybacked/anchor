@@ -81,6 +81,7 @@ export type {
 } from "./model.js";
 export {
   EntitySemanticsSchema,
+  EntityDisplayLabelSchema,
   GlossaryTermSchema,
   OntologySemanticsBlockSchema,
   PropertySemanticsSchema,
@@ -88,6 +89,7 @@ export {
   VerifiedExampleSchema,
 } from "./semantics.js";
 export type {
+  EntityDisplayLabel,
   EntitySemantics,
   GlossaryTerm,
   OntologySemanticsBlock,
@@ -95,6 +97,13 @@ export type {
   SemanticPropertyRole,
   VerifiedExample,
 } from "./semantics.js";
+export {
+  findObject,
+  findProperty,
+  objectLabel,
+  propertyLabel,
+  type EntityLabelForm,
+} from "./display-labels.js";
 export {
   applySemanticCatalogs,
   CatalogGlossaryTermSchema,
