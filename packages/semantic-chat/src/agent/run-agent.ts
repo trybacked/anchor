@@ -4,10 +4,10 @@ import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
 import type { AnchorService } from "@trybacked/service";
 import { generateText, stepCountIs, type LanguageModel } from "ai";
 import { randomUUID } from "node:crypto";
+import { assertQuestionDoesNotMentionUnknownProperties } from "../query-intent.js";
 import { buildAgentTools, type AgentToolEvent } from "./build-tools.js";
 import { groundAnswer, SemanticGroundingError } from "./grounding.js";
 import { AGENT_GROUNDING_REPAIR_MAX_STEPS } from "./limits.js";
-import { assertQuestionDoesNotMentionUnknownProperties } from "../query-intent.js";
 import { buildAgentSystemPrompt } from "./prompt-builder.js";
 import {
   DEFAULT_AGENT_BUDGET,
