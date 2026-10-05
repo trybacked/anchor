@@ -5,7 +5,6 @@ import {
   validateObjectQueryAgainstOntology,
 } from "../../src/validate-plan.js";
 import { normalizeSemanticQueryPlan } from "../../src/normalize.js";
-
 const ontology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -20,7 +19,6 @@ const ontology: Ontology = {
   logic: [],
   actions: [],
 };
-
 describe("validateObjectQueryAgainstOntology", () => {
   it('rejects mode "count" combined with textSearch', () => {
     const normalized = normalizeSemanticQueryPlan({
@@ -35,7 +33,6 @@ describe("validateObjectQueryAgainstOntology", () => {
       SemanticPlanValidationError,
     );
   });
-
   it('accepts mode "count" with contains filter instead of textSearch', () => {
     const normalized = normalizeSemanticQueryPlan({
       objectQuery: {

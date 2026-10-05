@@ -1,7 +1,6 @@
 import type { AuthoringCommand } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { applyCommand, applyCommands, emptySemanticModel } from "../../src/apply-command.js";
-
 describe("applyCommand", () => {
   it("adds and removes an entity", () => {
     const base = emptySemanticModel("test-run");
@@ -32,7 +31,6 @@ describe("applyCommand", () => {
     const removed = applyCommand(withEntity, { type: "removeEntity", entityId: "item" });
     expect(removed.entities).toHaveLength(0);
   });
-
   it("applies applyPack for anac", () => {
     const result = applyCommands(emptySemanticModel("pack-test"), [
       { type: "applyPack", packId: "anac" },
@@ -41,7 +39,6 @@ describe("applyCommand", () => {
     expect(result.relations).toHaveLength(1);
     expect(result.semantics?.glossary.length).toBeGreaterThan(0);
   });
-
   it("sets property semantics", () => {
     const withPack = applyCommands(emptySemanticModel("sem-test"), [
       { type: "applyPack", packId: "anac" },

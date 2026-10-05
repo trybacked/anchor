@@ -2,16 +2,17 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { describe, expect, it } from "vitest";
 import { CLI_PATH, NODE_EXECUTABLE, PMI_MINIMAL_FIXTURE } from "../helpers/paths.js";
-
 function parseToolJson(result: Awaited<ReturnType<Client["callTool"]>>): unknown {
-  const content = result.content as Array<{ type: string; text?: string }>;
+  const content = result.content as Array<{
+    type: string;
+    text?: string;
+  }>;
   const block = content[0];
   if (block === undefined || block.type !== "text" || block.text === undefined) {
     throw new Error("Expected text MCP response");
   }
   return JSON.parse(block.text);
 }
-
 async function withMcpClient<T>(cwd: string, run: (client: Client) => Promise<T>): Promise<T> {
   const transport = new StdioClientTransport({
     command: NODE_EXECUTABLE,
@@ -31,7 +32,6 @@ async function withMcpClient<T>(cwd: string, run: (client: Client) => Promise<T>
     await client.close();
   }
 }
-
 describe("backed anchor deploy e2e", () => {
   it("runs the five MCP operations on pmi-minimal", async () => {
     await withMcpClient(PMI_MINIMAL_FIXTURE, async (client) => {

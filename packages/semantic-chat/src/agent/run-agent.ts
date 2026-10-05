@@ -1,23 +1,25 @@
 import { createGatewayProvider } from "@ai-sdk/gateway";
-import type { Ontology } from "@trybacked/core";
+import { applySemanticCatalogs, type Ontology, type SemanticCatalog } from "@trybacked/core";
+import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
 import type { AnchorService } from "@trybacked/service";
-import { generateText, stepCountIs } from "ai";
+import { generateText, stepCountIs, type LanguageModel } from "ai";
 import { randomUUID } from "node:crypto";
-import { buildAgentTools } from "./build-tools.js";
-import { SemanticGroundingError, validateAnswerGrounding } from "./grounding.js";
+import { buildAgentTools, type AgentToolEvent } from "./build-tools.js";
+import { groundAnswer, SemanticGroundingError } from "./grounding.js";
+import { AGENT_GROUNDING_REPAIR_MAX_STEPS } from "./limits.js";
+import { assertQuestionDoesNotMentionUnknownProperties } from "../query-intent.js";
 import { buildAgentSystemPrompt } from "./prompt-builder.js";
 import {
   DEFAULT_AGENT_BUDGET,
   SemanticAgentError,
   type AgentBudget,
+  type AgentTerminal,
   type SemanticAgentResult,
   type SemanticAgentStep,
-  type SemanticAnswerClaim,
-  type SemanticClarification,
+  type SemanticAgentUsage,
 } from "./types.js";
-
 export { SemanticAgentError } from "./types.js";
-
+export type ModelResolver = (modelId: string) => LanguageModel;
 export type RunSemanticAgentOptions = {
   ontology: Ontology;
   service: AnchorService;
@@ -26,245 +28,216 @@ export type RunSemanticAgentOptions = {
   modelId: string;
   fallbackModelId?: string | undefined;
   budget?: AgentBudget | undefined;
+  semanticCatalogs?: readonly SemanticCatalog[] | undefined;
+  resolveModel?: ModelResolver | undefined;
 };
-
-type AgentRunState = {
-  terminalAnswer: string | undefined;
-  claims: SemanticAnswerClaim[];
-  assumptions: string[];
-  followUps: string[] ;
-  clarification: SemanticClarification | undefined;
-};
-
-async function runAgentGeneration(options: {
+type TokenUsage = Omit<SemanticAgentUsage, "latencyMs">;
+type AgentRun = {
   ontology: Ontology;
   service: AnchorService;
   question: string;
-  apiKey: string;
-  modelId: string;
-  budget: AgentBudget;
-  systemSuffix?: string | undefined;
+  resolveModel: ModelResolver;
   steps: SemanticAgentStep[];
   toolResults: Map<string, unknown>;
-  state: AgentRunState;
-}): Promise<{ inputTokens: number; outputTokens: number; totalTokens: number }> {
-  const sqlCalls = { count: 0 };
-
-  const recordStep = (
-    toolCallId: string,
-    toolName: string,
-    input: Record<string, unknown>,
-    result: unknown,
-    durationMs: number,
-  ) => {
-    const rowCount =
-      typeof result === "object" &&
-      result !== null &&
-      "rowCount" in result &&
-      typeof (result as { rowCount: unknown }).rowCount === "number"
-        ? (result as { rowCount: number }).rowCount
-        : undefined;
-    const sql =
-      typeof result === "object" &&
-      result !== null &&
-      "sql" in result &&
-      typeof (result as { sql: unknown }).sql === "string"
-        ? (result as { sql: string }).sql
-        : undefined;
-    options.steps.push({
-      toolCallId,
-      toolName,
-      input,
-      durationMs,
-      ...(rowCount !== undefined ? { rowCount } : {}),
-      ...(sql !== undefined ? { sql } : {}),
-    });
-    options.toolResults.set(toolCallId, result);
+  terminal: AgentTerminal | undefined;
+};
+function gatewayModelResolver(apiKey: string): ModelResolver {
+  const gateway = createGatewayProvider({ apiKey });
+  return (modelId) => gateway(modelId);
+}
+const NO_USAGE: TokenUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+function addUsage(left: TokenUsage, right: TokenUsage): TokenUsage {
+  return {
+    inputTokens: left.inputTokens + right.inputTokens,
+    outputTokens: left.outputTokens + right.outputTokens,
+    totalTokens: left.totalTokens + right.totalTokens,
   };
-
-  const tools = buildAgentTools({
-    ontology: options.ontology,
-    service: options.service,
-    budget: options.budget,
-    sqlCalls,
-    recordStep,
-    onTerminalAnswer: (input) => {
-      options.state.terminalAnswer = input.answer;
-      options.state.claims = input.claims;
-      options.state.assumptions = input.assumptions;
-      options.state.followUps = input.followUps;
+}
+function readResultField<T>(
+  result: unknown,
+  key: string,
+  guard: (value: unknown) => value is T,
+): T | undefined {
+  if (typeof result !== "object" || result === null || !(key in result)) return undefined;
+  const value = (result as Record<string, unknown>)[key];
+  return guard(value) ? value : undefined;
+}
+const isNumber = (value: unknown): value is number => typeof value === "number";
+const isString = (value: unknown): value is string => typeof value === "string";
+function recordStep(run: AgentRun, event: AgentToolEvent): void {
+  const base = {
+    toolCallId: event.toolCallId,
+    toolName: event.toolName,
+    input: event.input,
+    durationMs: event.durationMs,
+  };
+  if (event.status === "error") {
+    run.steps.push({ ...base, status: "error", error: event.error });
+    return;
+  }
+  const rowCount = readResultField(event.result, "rowCount", isNumber);
+  const sql = readResultField(event.result, "sql", isString);
+  run.steps.push({
+    ...base,
+    status: "ok",
+    ...(rowCount !== undefined ? { rowCount } : {}),
+    ...(sql !== undefined ? { sql } : {}),
+  });
+  run.toolResults.set(event.toolCallId, event.result);
+}
+async function generate(
+  run: AgentRun,
+  modelId: string,
+  budget: AgentBudget,
+  systemSuffix?: string,
+): Promise<TokenUsage> {
+  const toolkit = buildAgentTools({
+    ontology: run.ontology,
+    service: run.service,
+    question: run.question,
+    budget,
+    recordStep: (event) => {
+      recordStep(run, event);
     },
-    onClarification: (input) => {
-      options.state.clarification = {
-        question: input.question,
-        options: input.options,
-      };
+    onTerminal: (terminal) => {
+      run.terminal ??= terminal;
     },
   });
-
-  const model = createGatewayProvider({ apiKey: options.apiKey })(options.modelId);
-  const system =
-    buildAgentSystemPrompt(options.ontology, options.question) +
-    (options.systemSuffix !== undefined ? `\n\n${options.systemSuffix}` : "");
-
+  const finalStep = budget.maxSteps - 1;
+  const system = buildAgentSystemPrompt(run.ontology, run.question);
   const generation = await generateText({
-    model,
-    system,
-    prompt: options.question,
-    tools,
-    stopWhen: stepCountIs(options.budget.maxSteps),
+    model: run.resolveModel(modelId),
+    system: systemSuffix !== undefined ? `${system}\n\n${systemSuffix}` : system,
+    prompt: run.question,
+    tools: toolkit.tools,
+    toolChoice: "required",
+    stopWhen: [stepCountIs(budget.maxSteps), () => run.terminal !== undefined],
+    prepareStep: ({ stepNumber }) => {
+      if (stepNumber >= finalStep) {
+        return { activeTools: ["submit_answer"] };
+      }
+      const available = toolkit.availableToolNames();
+      return available.length === Object.keys(toolkit.tools).length
+        ? undefined
+        : { activeTools: available };
+    },
     temperature: 0,
   });
-
   return {
     inputTokens: generation.usage.inputTokens ?? 0,
     outputTokens: generation.usage.outputTokens ?? 0,
     totalTokens: generation.usage.totalTokens ?? 0,
   };
 }
-
+async function generateWithFallback(
+  run: AgentRun,
+  options: RunSemanticAgentOptions,
+  budget: AgentBudget,
+): Promise<TokenUsage> {
+  try {
+    return await generate(run, options.modelId, budget);
+  } catch (error) {
+    const fallback = options.fallbackModelId;
+    if (fallback === undefined || fallback === options.modelId) throw error;
+    return generate(run, fallback, budget);
+  }
+}
+function groundingFailure(run: AgentRun): SemanticGroundingError | undefined {
+  const terminal = run.terminal;
+  if (terminal?.kind !== "answer") return undefined;
+  try {
+    const grounded = groundAnswer({
+      answer: terminal.answer,
+      claims: terminal.claims,
+      steps: run.steps,
+      toolResults: run.toolResults,
+    });
+    run.terminal = { ...terminal, claims: grounded.claims };
+    return undefined;
+  } catch (error) {
+    if (error instanceof SemanticGroundingError) return error;
+    throw error;
+  }
+}
+async function repairGrounding(
+  run: AgentRun,
+  options: RunSemanticAgentOptions,
+  budget: AgentBudget,
+): Promise<TokenUsage> {
+  const failure = groundingFailure(run);
+  if (failure === undefined) return NO_USAGE;
+  run.terminal = undefined;
+  const usage = await generate(
+    run,
+    options.modelId,
+    { ...budget, maxSteps: Math.min(budget.maxSteps, AGENT_GROUNDING_REPAIR_MAX_STEPS) },
+    `Grounding check failed: ${failure.message} Citations are matched to your tool results automatically, so this means no result holds that value: re-run the query that would return it, or drop the number, then call submit_answer again.`,
+  );
+  const stillFailing = groundingFailure(run);
+  if (stillFailing !== undefined) throw new SemanticAgentError(stillFailing.message);
+  return usage;
+}
+function toResult(runId: string, run: AgentRun, usage: SemanticAgentUsage): SemanticAgentResult {
+  const terminal = run.terminal;
+  if (terminal === undefined) {
+    throw new SemanticAgentError("Agent ended without an answer or clarification.");
+  }
+  const trace = { runId, steps: run.steps, usage, toolResults: run.toolResults };
+  switch (terminal.kind) {
+    case "answer":
+      return {
+        ...trace,
+        answer: terminal.answer,
+        claims: terminal.claims,
+        assumptions: terminal.assumptions,
+        followUps: terminal.followUps,
+      };
+    case "clarification":
+      return {
+        ...trace,
+        answer: terminal.question,
+        claims: [],
+        assumptions: [],
+        followUps: terminal.options,
+        clarification: { question: terminal.question, options: terminal.options },
+      };
+    default: {
+      const unreachable: never = terminal;
+      throw new SemanticAgentError(`Unhandled terminal ${JSON.stringify(unreachable)}`);
+    }
+  }
+}
 export async function runSemanticAgent(
   options: RunSemanticAgentOptions,
 ): Promise<SemanticAgentResult> {
   const started = Date.now();
-  const runId = randomUUID();
   const budget = options.budget ?? DEFAULT_AGENT_BUDGET;
-  const steps: SemanticAgentStep[] = [];
-  const toolResults = new Map<string, unknown>();
-  const state: AgentRunState = {
-    terminalAnswer: undefined,
-    claims: [],
-    assumptions: [],
-    followUps: [],
-    clarification: undefined,
+  const ontology = applySemanticCatalogs(
+    options.ontology,
+    options.semanticCatalogs ?? SHARED_SEMANTIC_CATALOGS,
+  );
+  assertQuestionDoesNotMentionUnknownProperties(ontology, options.question);
+  const run: AgentRun = {
+    ontology,
+    service: options.service,
+    question: options.question,
+    resolveModel: options.resolveModel ?? gatewayModelResolver(options.apiKey),
+    steps: [],
+    toolResults: new Map(),
+    terminal: undefined,
   };
-
-  let usageTotals = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-
-  try {
-    const firstUsage = await runAgentGeneration({
-      ontology: options.ontology,
-      service: options.service,
-      question: options.question,
-      apiKey: options.apiKey,
-      modelId: options.modelId,
-      budget,
-      steps,
-      toolResults,
-      state,
-    });
-    usageTotals = {
-      inputTokens: usageTotals.inputTokens + firstUsage.inputTokens,
-      outputTokens: usageTotals.outputTokens + firstUsage.outputTokens,
-      totalTokens: usageTotals.totalTokens + firstUsage.totalTokens,
-    };
-  } catch (error) {
-    if (options.fallbackModelId !== undefined && options.fallbackModelId !== options.modelId) {
-      const fallbackUsage = await runAgentGeneration({
-        ontology: options.ontology,
-        service: options.service,
-        question: options.question,
-        apiKey: options.apiKey,
-        modelId: options.fallbackModelId,
-        budget,
-        steps,
-        toolResults,
-        state,
-      });
-      usageTotals = {
-        inputTokens: usageTotals.inputTokens + fallbackUsage.inputTokens,
-        outputTokens: usageTotals.outputTokens + fallbackUsage.outputTokens,
-        totalTokens: usageTotals.totalTokens + fallbackUsage.totalTokens,
-      };
-    } else {
-      throw error;
-    }
-  }
-
-  const usage = {
-    ...usageTotals,
-    latencyMs: Date.now() - started,
-  };
-
-  if (state.clarification !== undefined) {
-    return {
-      runId,
-      answer: state.clarification.question,
-      claims: [],
-      assumptions: [],
-      followUps: state.clarification.options,
-      steps,
-      usage,
-      clarification: state.clarification,
-      toolResults,
-    };
-  }
-
-  if (state.terminalAnswer === undefined) {
-    throw new SemanticAgentError("Agent finished without submit_answer or ask_clarification.");
-  }
-
-  const tryGround = (): void => {
-    validateAnswerGrounding({
-      answer: state.terminalAnswer ?? "",
-      claims: state.claims,
-      toolResults,
-    });
-  };
-
-  try {
-    tryGround();
-  } catch (error) {
-    if (!(error instanceof SemanticGroundingError)) {
-      throw error;
-    }
-    state.terminalAnswer = undefined;
-    state.claims = [];
-    const repairUsage = await runAgentGeneration({
-      ontology: options.ontology,
-      service: options.service,
-      question: options.question,
-      apiKey: options.apiKey,
-      modelId: options.modelId,
-      budget: { ...budget, maxSteps: Math.min(budget.maxSteps, 6) },
-      systemSuffix: `Grounding check failed: ${error.message}. Fix claims so every number cites a toolCallId whose result contains that value, then call submit_answer again.`,
-      steps,
-      toolResults,
-      state,
-    });
-    usageTotals = {
-      inputTokens: usageTotals.inputTokens + repairUsage.inputTokens,
-      outputTokens: usageTotals.outputTokens + repairUsage.outputTokens,
-      totalTokens: usageTotals.totalTokens + repairUsage.totalTokens,
-    };
-    usage.inputTokens = usageTotals.inputTokens;
-    usage.outputTokens = usageTotals.outputTokens;
-    usage.totalTokens = usageTotals.totalTokens;
-    usage.latencyMs = Date.now() - started;
-
-    if (state.terminalAnswer === undefined) {
-      throw new SemanticAgentError(error.message);
-    }
-    tryGround();
-  }
-
-  return {
-    runId,
-    answer: state.terminalAnswer,
-    claims: state.claims,
-    assumptions: state.assumptions,
-    followUps: state.followUps,
-    steps,
-    usage,
-    toolResults,
-  };
+  const mainUsage = await generateWithFallback(run, options, budget);
+  const repairUsage = await repairGrounding(run, options, budget);
+  const tokens = addUsage(mainUsage, repairUsage);
+  return toResult(randomUUID(), run, { ...tokens, latencyMs: Date.now() - started });
 }
-
-export function createSemanticAgentModelFromEnv(env: NodeJS.ProcessEnv): {
-  modelId: string;
-  fallbackModelId?: string | undefined;
-  apiKey: string;
-} | undefined {
+export function createSemanticAgentModelFromEnv(env: NodeJS.ProcessEnv):
+  | {
+      modelId: string;
+      fallbackModelId?: string | undefined;
+      apiKey: string;
+    }
+  | undefined {
   const apiKey = env["AI_GATEWAY_API_KEY"]?.trim();
   if (apiKey === undefined || apiKey.length === 0) {
     return undefined;
@@ -274,8 +247,6 @@ export function createSemanticAgentModelFromEnv(env: NodeJS.ProcessEnv): {
   return {
     modelId,
     apiKey,
-    ...(fallbackModelId !== undefined && fallbackModelId.length > 0
-      ? { fallbackModelId }
-      : {}),
+    ...(fallbackModelId !== undefined && fallbackModelId.length > 0 ? { fallbackModelId } : {}),
   };
 }

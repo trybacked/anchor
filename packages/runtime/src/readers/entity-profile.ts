@@ -2,16 +2,18 @@ import type { ObjectQuery } from "@trybacked/compiler";
 import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { ObjectQueryResult, SqlStatementExecutor } from "../execute.js";
 import type { ChunkSearchInput } from "./chunk-search.js";
-import { toSqlLimitLiteral } from "./sql-limit-literal.js";
 import {
   DEFAULT_PROFILE_DOCUMENT_LIMIT,
   DEFAULT_PROFILE_FACT_LIMIT,
   DEFAULT_PROFILE_MATCH_LIMIT,
+  MAX_PROFILE_FACT_LIMIT,
   MAX_PROFILE_MATCH_LIMIT,
+  PROFILE_RELATION_MATCHES,
+  PROFILE_RELATIONS_PER_MATCH,
 } from "./constants.js";
 import type { DocumentsDatasetResolver } from "./dataset.js";
 import type { GraphTraverseInput } from "./graph-traverse.js";
-
+import { toSqlLimitLiteral } from "./sql-limit-literal.js";
 export type EntityProfileInput = {
   name: string;
   matchLimit?: number | undefined;
@@ -19,19 +21,16 @@ export type EntityProfileInput = {
   documentLimit?: number | undefined;
   profileObjectIds?: string[] | undefined;
 };
-
 export type EntityProfileMatch = {
   objectId: string;
   objectName: string;
   row: Record<string, unknown>;
 };
-
 export type EntityProfileRelationCount = {
   relationId: string;
   direction: "forward" | "reverse";
   count: number;
 };
-
 export type EntityProfileDocumentHit = {
   documentId: string;
   filename?: string | undefined;
@@ -39,7 +38,6 @@ export type EntityProfileDocumentHit = {
   snippet: string;
   hitCount: number;
 };
-
 export type EntityProfileResult = {
   query: string;
   matches: EntityProfileMatch[];
@@ -47,7 +45,6 @@ export type EntityProfileResult = {
   documents: EntityProfileDocumentHit[];
   facts: Record<string, unknown>[];
 };
-
 type EntityProfileDeps = {
   ontology: Ontology;
   model: SemanticModel;
@@ -58,11 +55,9 @@ type EntityProfileDeps = {
   graphTraverse: (input: GraphTraverseInput) => Promise<Record<string, unknown>[]>;
   chunkSearch: (input: ChunkSearchInput) => Promise<Record<string, unknown>[]>;
 };
-
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
 }
-
 function stringNameProperties(objectId: string, ontology: Ontology): string[] {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -72,7 +67,6 @@ function stringNameProperties(objectId: string, ontology: Ontology): string[] {
     .filter((property) => property.type === "string")
     .map((property) => property.id);
 }
-
 function pickDisplayName(
   objectId: string,
   row: Record<string, unknown>,
@@ -93,7 +87,6 @@ function pickDisplayName(
   }
   return object.name;
 }
-
 function primaryKeyValue(
   row: Record<string, unknown>,
   objectId: string,
@@ -108,7 +101,6 @@ function primaryKeyValue(
   }
   return null;
 }
-
 async function loadOptionalFacts(
   executor: SqlStatementExecutor,
   profilesTable: string,
@@ -121,14 +113,13 @@ FROM ${profilesTable}
 WHERE LOWER(${quoteIdentifier("normalized_name")}) LIKE LOWER(:pattern)
    OR LOWER(${quoteIdentifier("name")}) LIKE LOWER(:pattern)
 ORDER BY ${quoteIdentifier("mention_count")} DESC NULLS LAST
-LIMIT ${toSqlLimitLiteral(factLimit, DEFAULT_PROFILE_FACT_LIMIT * 10)}`;
+LIMIT ${toSqlLimitLiteral(factLimit, MAX_PROFILE_FACT_LIMIT)}`;
   try {
     return await executor(sql, [{ name: "pattern", value: pattern }]);
   } catch {
     return [];
   }
 }
-
 function groupDocumentHits(
   chunks: Record<string, unknown>[],
   documentLimit: number,
@@ -166,7 +157,6 @@ function groupDocumentHits(
     .sort((left, right) => right.hitCount - left.hitCount)
     .slice(0, documentLimit);
 }
-
 export function createEntityProfileReader(
   deps: EntityProfileDeps,
 ): (input: EntityProfileInput) => Promise<EntityProfileResult> {
@@ -180,7 +170,6 @@ export function createEntityProfileReader(
     graphTraverse,
     chunkSearch,
   } = deps;
-
   return async (input) => {
     const matchLimit = Math.min(
       input.matchLimit ?? DEFAULT_PROFILE_MATCH_LIMIT,
@@ -188,13 +177,11 @@ export function createEntityProfileReader(
     );
     const documentLimit = input.documentLimit ?? DEFAULT_PROFILE_DOCUMENT_LIMIT;
     const factLimit = input.factLimit ?? DEFAULT_PROFILE_FACT_LIMIT;
-
     const candidateObjectIds =
       input.profileObjectIds ??
       ontology.objects
         .filter((object) => stringNameProperties(object.id, ontology).length > 0)
         .map((object) => object.id);
-
     const matches: EntityProfileMatch[] = [];
     for (const objectId of candidateObjectIds) {
       if (matches.length >= matchLimit) {
@@ -221,9 +208,8 @@ export function createEntityProfileReader(
         });
       }
     }
-
     const relations: EntityProfileRelationCount[] = [];
-    for (const match of matches.slice(0, 3)) {
+    for (const match of matches.slice(0, PROFILE_RELATION_MATCHES)) {
       const pk = primaryKeyValue(match.row, match.objectId, ontology);
       if (pk === null) {
         continue;
@@ -232,7 +218,7 @@ export function createEntityProfileReader(
         (relation) =>
           relation.fromEntity === match.objectId || relation.toEntity === match.objectId,
       );
-      for (const relation of entityRelations.slice(0, 8)) {
+      for (const relation of entityRelations.slice(0, PROFILE_RELATIONS_PER_MATCH)) {
         const direction = relation.fromEntity === match.objectId ? "forward" : "reverse";
         const countRows = await graphTraverse({
           relationId: relation.id,
@@ -250,18 +236,15 @@ export function createEntityProfileReader(
         });
       }
     }
-
     const chunks = await chunkSearch({
       query: input.name,
       limit: documentLimit * 3,
     });
     const documentsGrouped = groupDocumentHits(chunks, documentLimit);
-
     const facts =
       entityProfilesAvailable && factLimit > 0
         ? await loadOptionalFacts(executor, documents.entityProfilesTable, input.name, factLimit)
         : [];
-
     return {
       query: input.name,
       matches,

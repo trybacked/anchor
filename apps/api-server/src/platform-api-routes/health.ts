@@ -1,7 +1,6 @@
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { HTTP_OK } from "../platform-api-route-meta.js";
 import { buildPlatformHealthSnapshot } from "./health-snapshot.js";
-
 export const platformApiHealthRoutes: RouteFactory[] = [
   platformRoute(
     {

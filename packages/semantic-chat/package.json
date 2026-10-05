@@ -37,6 +37,7 @@
     "@ai-sdk/gateway": "^4",
     "@trybacked/compiler": "workspace:*",
     "@trybacked/core": "workspace:*",
+    "@trybacked/ontology-authoring": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/service": "workspace:*",
     "ai": "^7",

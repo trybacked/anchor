@@ -4,30 +4,24 @@ import { jsonServiceErrorResponse, respondIfServiceError } from "../platform-api
 import type { RouteFactory } from "../platform-api-route-factory.js";
 import { platformRoute, postJsonRoute } from "../platform-api-route-factory.js";
 import { V1_PATH_PREFIX } from "../platform-api-route-meta.js";
-
 const ListFilesQuerySchema = z.object({
   folder: z.string().optional(),
 });
-
 const FilePathQuerySchema = z.object({
   path: z.string().min(1),
 });
-
 const FileRefreshBodySchema = z.object({
   fullRefresh: z.boolean().optional(),
 });
-
 const RefreshRunIdParamSchema = z.object({
   runId: z.coerce.number().int().positive(),
 });
-
 function fileFromFormValue(value: unknown): File | null {
   if (value instanceof File) {
     return value;
   }
   return null;
 }
-
 function requireDocumentFilesService(c: {
   get: (key: "documentFilesService") => DocumentFilesService | undefined;
 }) {
@@ -37,7 +31,6 @@ function requireDocumentFilesService(c: {
   }
   return service;
 }
-
 export const platformApiFileRoutes: RouteFactory[] = [
   platformRoute(
     {
@@ -64,7 +57,13 @@ export const platformApiFileRoutes: RouteFactory[] = [
       if (contentLength !== undefined && Number(contentLength) > 0) {
         const maxHeader = c.req.header("x-backed-max-upload-bytes");
         if (maxHeader !== undefined) {
-          // optional future use
+          const maxBytes = Number(maxHeader);
+          if (Number.isFinite(maxBytes) && Number(contentLength) > maxBytes) {
+            return c.json(
+              { error: `Payload exceeds maximum size of ${String(maxBytes)} bytes` },
+              413,
+            );
+          }
         }
       }
       let form: Record<string, unknown>;

@@ -1,6 +1,5 @@
 import type { DiscoveryReport } from "@trybacked/core";
 import type { Cardinality, Entity, Proposal, Relation } from "@trybacked/core";
-
 function resolveEntityId(entities: Entity[], tableOrId: string): string | undefined {
   const byId = entities.find((entity) => entity.id === tableOrId);
   if (byId !== undefined) {
@@ -8,7 +7,6 @@ function resolveEntityId(entities: Entity[], tableOrId: string): string | undefi
   }
   return entities.find((entity) => entity.sourceTable === tableOrId)?.id;
 }
-
 function mapCardinality(cardinality: string): Cardinality {
   switch (cardinality) {
     case "one_to_one":
@@ -21,11 +19,9 @@ function mapCardinality(cardinality: string): Cardinality {
       return "one_to_many";
   }
 }
-
 function provenanceEvidence(evidence: string | string[]): string {
   return Array.isArray(evidence) ? evidence.join("; ") : evidence;
 }
-
 export function relationshipToRelation(
   relationship: DiscoveryReport["ontology"]["relationships"][number],
   entities: Entity[],
@@ -56,19 +52,16 @@ export function relationshipToRelation(
     },
   };
 }
-
 export type EnrichProposalFromDiscoveryResult = {
   proposal: Proposal;
   addedRelationIds: string[];
 };
-
 export function enrichProposalFromDiscovery(
   proposal: Proposal,
   discovery: DiscoveryReport,
 ): EnrichProposalFromDiscoveryResult {
   const existingRelationIds = new Set(proposal.relations.map((relation) => relation.id));
   const addedRelations: Relation[] = [];
-
   for (const relationship of discovery.ontology.relationships) {
     if (existingRelationIds.has(relationship.id)) {
       continue;
@@ -90,11 +83,9 @@ export function enrichProposalFromDiscovery(
     addedRelations.push(relation);
     existingRelationIds.add(relation.id);
   }
-
   if (addedRelations.length === 0) {
     return { proposal, addedRelationIds: [] };
   }
-
   return {
     proposal: {
       ...proposal,

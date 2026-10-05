@@ -6,7 +6,6 @@ import {
 } from "@trybacked/service";
 import type { z } from "zod";
 import type { PlatformHandlerContext } from "./platform-api-types.js";
-
 export function getAnchorService(c: PlatformHandlerContext): AnchorService {
   const service = c.get("anchorService");
   if (service === undefined) {
@@ -14,21 +13,18 @@ export function getAnchorService(c: PlatformHandlerContext): AnchorService {
   }
   return service;
 }
-
 export function jsonServiceErrorResponse(
   c: PlatformHandlerContext,
   result: ServiceErrorResult,
 ): Response {
   return c.json({ error: result.error.message }, serviceErrorHttpStatus(result.error.code));
 }
-
 export function respondIfServiceError(c: PlatformHandlerContext, result: unknown): Response | null {
   if (!isServiceErrorResult(result)) {
     return null;
   }
   return jsonServiceErrorResponse(c, result);
 }
-
 export async function readJsonBody<T extends z.ZodTypeAny>(
   c: PlatformHandlerContext,
   schema: T,

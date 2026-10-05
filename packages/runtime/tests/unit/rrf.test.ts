@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { reciprocalRankFusion } from "../../src/readers/rrf.js";
-
 describe("reciprocalRankFusion", () => {
   it("merges two ranked lists by id", () => {
     const merged = reciprocalRankFusion(

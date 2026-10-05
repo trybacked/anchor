@@ -1,15 +1,19 @@
 const RRF_K = 60;
-
 export type RankedRow = {
   id: string;
   row: Record<string, unknown>;
 };
-
 export function reciprocalRankFusion(
   lists: RankedRow[][],
   limit: number,
 ): Record<string, unknown>[] {
-  const scores = new Map<string, { score: number; row: Record<string, unknown> }>();
+  const scores = new Map<
+    string,
+    {
+      score: number;
+      row: Record<string, unknown>;
+    }
+  >();
   for (const list of lists) {
     list.forEach((item, rank) => {
       const contribution = 1 / (RRF_K + rank + 1);

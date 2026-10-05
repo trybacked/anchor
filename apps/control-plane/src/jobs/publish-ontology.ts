@@ -11,7 +11,6 @@ import {
   getLatestOntologyVersion,
   insertOntologyVersion,
 } from "../db/ontology-repositories.js";
-
 async function validateWarehouseMappings(
   config: DatabricksProviderConfig,
   model: SemanticModel,
@@ -54,12 +53,19 @@ async function validateWarehouseMappings(
   }
   return errors;
 }
-
 export async function runPublishOntologyJob(
   pool: pg.Pool,
   adminConfig: DatabricksProviderConfig,
-  input: { tenantId: string; catalog: string; actor: string; notes?: string | undefined },
-): Promise<{ version: number; artifactPath: string }> {
+  input: {
+    tenantId: string;
+    catalog: string;
+    actor: string;
+    notes?: string | undefined;
+  },
+): Promise<{
+  version: number;
+  artifactPath: string;
+}> {
   const draft = await getOntologyDraft(pool, input.tenantId);
   if (draft === undefined) {
     throw new Error("No ontology draft to publish");
@@ -95,7 +101,6 @@ export async function runPublishOntologyJob(
   });
   return { version: nextVersion, artifactPath };
 }
-
 export function exportDraftYaml(model: SemanticModel): string {
   return serializeModelYaml(model);
 }

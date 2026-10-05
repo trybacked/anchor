@@ -4,14 +4,12 @@ import {
   DOCUMENTS_TABLE,
   ENTITY_PROFILES_TABLE,
 } from "@trybacked/core/tables";
-
 export type DocumentsDatasetResolver = {
   qualifyTable: (tableName: string) => string;
   documentsTable: string;
   documentElementsTable: string;
   entityProfilesTable: string;
 };
-
 function inferCatalogFromOntology(ontology: Ontology): string | undefined {
   for (const object of ontology.objects) {
     const datasetId = object.sourceDatasetId;
@@ -25,7 +23,6 @@ function inferCatalogFromOntology(ontology: Ontology): string | undefined {
   }
   return undefined;
 }
-
 export function createDocumentsDatasetResolver(options: {
   ontology: Ontology;
   catalog?: string | undefined;
@@ -45,7 +42,6 @@ export function createDocumentsDatasetResolver(options: {
     entityProfilesTable: qualifyTable(ENTITY_PROFILES_TABLE),
   };
 }
-
 export function resolveEntityTable(
   model: SemanticModel,
   ontology: Ontology,
@@ -65,11 +61,9 @@ export function resolveEntityTable(
   }
   return null;
 }
-
 export function findEntity(model: SemanticModel, entityId: string): Entity | undefined {
   return model.entities.find((candidate) => candidate.id === entityId);
 }
-
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
 }

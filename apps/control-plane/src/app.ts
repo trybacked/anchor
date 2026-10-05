@@ -6,7 +6,6 @@ import type pg from "pg";
 import { z } from "zod";
 import { requireAdmin, requireInternal } from "./auth.js";
 import { registerAuthoringRoutes } from "./authoring/routes.js";
-import { registerSemanticRoutes } from "./semantic/routes.js";
 import type { ControlPlaneConfig } from "./config.js";
 import {
   deleteOAuthClient,
@@ -25,27 +24,23 @@ import {
 } from "./db/repositories.js";
 import { generateClientSecret, hashClientSecret } from "./oauth-client-secret.js";
 import { buildTenantsRegistry } from "./registry-builder.js";
-
+import { registerSemanticRoutes } from "./semantic/routes.js";
 const CreateOrganizationSchema = z.object({
   tenantId: z.string().min(1),
   shared: z.array(z.string().min(1)).optional(),
   workosOrganizationId: z.string().min(1).optional(),
 });
-
 const ResolveTenantsSchema = z.object({
   workosOrganizationIds: z.array(z.string().min(1)),
 });
-
 const PatchOrganizationWorkosSchema = z.object({
   workosOrganizationId: z.string().min(1),
 });
-
 const ClientIdSchema = z
   .string()
   .min(3)
   .max(64)
   .regex(/^[a-z0-9][a-z0-9_-]*$/);
-
 const CreateOAuthClientSchema = z.object({
   clientId: ClientIdSchema,
   name: z.string().min(1).max(128),
@@ -53,7 +48,6 @@ const CreateOAuthClientSchema = z.object({
   corsOrigins: z.array(z.string().url()).optional(),
   confidential: z.boolean().optional(),
 });
-
 const PatchOAuthClientSchema = z
   .object({
     name: z.string().min(1).max(128).optional(),
@@ -67,7 +61,6 @@ const PatchOAuthClientSchema = z
       message: "At least one field is required",
     },
   );
-
 function toPublicOAuthClient(row: Awaited<ReturnType<typeof getOAuthClientById>>) {
   if (row === undefined) {
     return undefined;
@@ -82,24 +75,19 @@ function toPublicOAuthClient(row: Awaited<ReturnType<typeof getOAuthClientById>>
     updatedAt: row.updated_at,
   };
 }
-
 function toInternalOAuthClient(row: NonNullable<Awaited<ReturnType<typeof getOAuthClientById>>>) {
   return {
     ...toPublicOAuthClient(row),
     clientSecretHash: row.client_secret_hash,
   };
 }
-
 function oauthClientIdFromPath(raw: string | undefined): string | undefined {
   const trimmed = raw?.trim() ?? "";
   return trimmed.length > 0 ? trimmed : undefined;
 }
-
 export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool): Hono {
   const app = new Hono();
-
   app.get("/health/live", (c) => c.json({ ok: true as const }));
-
   app.get("/v1/registry", requireInternal(config), async (c) => {
     const orgs = await listActiveOrganizations(pool);
     const registry = buildTenantsRegistry(config, orgs);
@@ -111,7 +99,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     }
     return c.json(registry, 200, { ETag: etag });
   });
-
   app.post(
     "/v1/me/tenants",
     requireInternal(config),
@@ -122,12 +109,10 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       return c.json({ tenants });
     },
   );
-
   app.get("/v1/organizations", requireAdmin(config), async (c) => {
     const orgs = await listOrganizations(pool);
     return c.json({ organizations: orgs });
   });
-
   app.get("/v1/organizations/:tenantId", requireAdmin(config), async (c) => {
     const tenantId = c.req.param("tenantId");
     if (tenantId === undefined) {
@@ -139,7 +124,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     }
     return c.json(org);
   });
-
   app.post(
     "/v1/organizations",
     requireAdmin(config),
@@ -155,7 +139,7 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       if (existing !== undefined) {
         return c.json({ error: "Organization already exists" }, 409);
       }
-      const shared = body.shared ?? ["anac"];
+      const shared = body.shared ?? config.defaultSharedSpaces;
       const org = await insertOrganization(pool, {
         tenantId: body.tenantId,
         sharedSpaces: shared,
@@ -168,7 +152,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       return c.json({ organization: org, job }, 201);
     },
   );
-
   app.patch(
     "/v1/organizations/:tenantId/workos",
     requireAdmin(config),
@@ -186,7 +169,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       return c.json(org);
     },
   );
-
   app.post("/v1/organizations/:tenantId/ontology/sync", requireAdmin(config), async (c) => {
     const tenantId = c.req.param("tenantId");
     if (tenantId === undefined) {
@@ -199,10 +181,8 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     const job = await enqueueJob(pool, org.id, "publish_ontology", { tenantId });
     return c.json({ job }, 202);
   });
-
   registerAuthoringRoutes(app, config, pool);
   registerSemanticRoutes(app, config, pool);
-
   app.get("/v1/jobs/:jobId", requireAdmin(config), async (c) => {
     const jobId = c.req.param("jobId");
     if (jobId === undefined) {
@@ -214,7 +194,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     }
     return c.json(job);
   });
-
   app.get("/v1/oauth-clients", requireInternal(config), async (c) => {
     const rows = await listOAuthClients(pool);
     const body = JSON.stringify({
@@ -230,7 +209,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       ETag: etag,
     });
   });
-
   app.get("/v1/oauth-clients/:clientId", requireInternal(config), async (c) => {
     const clientId = oauthClientIdFromPath(c.req.param("clientId"));
     if (clientId === undefined) {
@@ -242,12 +220,10 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     }
     return c.json(toInternalOAuthClient(row));
   });
-
   app.get("/v1/admin/oauth-clients", requireAdmin(config), async (c) => {
     const rows = await listOAuthClients(pool);
     return c.json({ clients: rows.map((row) => toPublicOAuthClient(row)) });
   });
-
   app.post(
     "/v1/admin/oauth-clients",
     requireAdmin(config),
@@ -279,7 +255,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       );
     },
   );
-
   app.patch(
     "/v1/admin/oauth-clients/:clientId",
     requireAdmin(config),
@@ -301,7 +276,6 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       return c.json({ client: toPublicOAuthClient(row) });
     },
   );
-
   app.delete("/v1/admin/oauth-clients/:clientId", requireAdmin(config), async (c) => {
     const clientId = oauthClientIdFromPath(c.req.param("clientId"));
     if (clientId === undefined) {
@@ -313,6 +287,5 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     }
     return c.json({ ok: true as const });
   });
-
   return app;
 }

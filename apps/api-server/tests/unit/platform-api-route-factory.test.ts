@@ -3,7 +3,6 @@ import { z } from "zod";
 import { describe, expect, it } from "vitest";
 import { postJsonRoute, postServiceJsonRoute } from "../../src/platform-api-route-factory.js";
 import { jsonBody } from "../../src/platform-api-route-meta.js";
-
 describe("platform-api route factory", () => {
   it("postJsonRoute sets method post and parses body with jsonBody.schema", async () => {
     const schema = z.object({ n: z.number() });
@@ -17,7 +16,6 @@ describe("platform-api route factory", () => {
       },
       (_c, body) => Response.json(body),
     );
-
     expect(factory.meta.method).toBe("post");
     const handle = factory.createHandler({
       getService: () => {
@@ -26,7 +24,6 @@ describe("platform-api route factory", () => {
       platformRegistry: undefined,
       serveOpenApiDocument: () => ({}),
     });
-
     const response = await handle({
       req: { json: async () => ({ n: 42 }) },
       json: (data: unknown) => Response.json(data),
@@ -34,10 +31,8 @@ describe("platform-api route factory", () => {
         throw new Error("unused");
       },
     } as never);
-
     expect(await response.json()).toEqual({ n: 42 });
   });
-
   it("postServiceJsonRoute maps service errors to JSON status", async () => {
     const schema = z.object({ q: z.string() });
     const factory = postServiceJsonRoute(
@@ -51,27 +46,23 @@ describe("platform-api route factory", () => {
       async (_service, body) =>
         body.q === "fail" ? serviceError("unavailable", "feature unavailable") : { ok: true },
     );
-
     const service = {} as never;
     const handle = factory.createHandler({
       getService: () => service,
       platformRegistry: undefined,
       serveOpenApiDocument: () => ({}),
     });
-
     const honoJson = (data: unknown, status?: number) =>
       new Response(JSON.stringify(data), {
         status: status ?? 200,
         headers: { "content-type": "application/json" },
       });
-
     const fail = await handle({
       req: { json: async () => ({ q: "fail" }) },
       json: honoJson,
       get: () => service,
     } as never);
     expect(fail.status).toBe(503);
-
     const ok = await handle({
       req: { json: async () => ({ q: "ok" }) },
       json: honoJson,

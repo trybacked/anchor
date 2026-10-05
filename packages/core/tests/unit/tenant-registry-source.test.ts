@@ -8,7 +8,6 @@ import {
   createRegistrySourceFromEnv,
   resolveRegistrySourceFromEnv,
 } from "../../src/tenant-registry-source.js";
-
 const MINIMAL_TENANTS_YAML = `
 enrollment:
   host: https://example.cloud.databricks.com
@@ -20,19 +19,16 @@ shared_spaces:
     schema: anac
 tenants: {}
 `;
-
 describe("tenant-registry-source", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
-
   it("resolveRegistrySourceFromEnv defaults to file path", () => {
     expect(resolveRegistrySourceFromEnv({})).toEqual({
       mode: "file",
       filePath: "/etc/backed/tenants.yaml",
     });
   });
-
   it("resolveRegistrySourceFromEnv requires http url and token", () => {
     expect(() => resolveRegistrySourceFromEnv({ BACKED_REGISTRY_SOURCE: "http" })).toThrow(
       "BACKED_REGISTRY_URL",
@@ -44,7 +40,6 @@ describe("tenant-registry-source", () => {
       }),
     ).toThrow("BACKED_REGISTRY_TOKEN");
   });
-
   it("createFileRegistrySource loads yaml from disk", async () => {
     const dir = mkdtempSync(join(tmpdir(), "backed-registry-"));
     const path = join(dir, "tenants.yaml");
@@ -54,7 +49,6 @@ describe("tenant-registry-source", () => {
     expect(snapshot.registry.enrollment.host).toBe("https://example.cloud.databricks.com");
     expect(Number(snapshot.version)).toBeGreaterThan(0);
   });
-
   it("createHttpRegistrySource fetches and caches by ttl", async () => {
     vi.useFakeTimers();
     const registryJson = {
@@ -87,12 +81,10 @@ describe("tenant-registry-source", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(first.registry).toEqual(registryJson);
     expect(second).toBe(first);
-
-    vi.advanceTimersByTime(61_000);
+    vi.advanceTimersByTime(61000);
     await source.load();
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
-
   it("createHttpRegistrySource throws on error status", async () => {
     const fetchImpl = vi.fn(async () => new Response("nope", { status: 503 }));
     const source = createHttpRegistrySource({
@@ -102,7 +94,6 @@ describe("tenant-registry-source", () => {
     });
     await expect(source.load()).rejects.toThrow("Registry HTTP 503");
   });
-
   it("createRegistrySourceFromEnv wires http mode", async () => {
     const fetchImpl = vi.fn(
       async () =>

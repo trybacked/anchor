@@ -6,7 +6,6 @@ import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { describe, expect, it } from "vitest";
 import { createSemanticChatEngine } from "../../src/engine.js";
 import type { SemanticQueryPlan } from "../../src/plan-types.js";
-
 const ontology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -21,9 +20,7 @@ const ontology: Ontology = {
   logic: [],
   actions: [],
 };
-
 const goldenDir = join(dirname(fileURLToPath(import.meta.url)), "../golden");
-
 describe("semantic-chat golden plans", () => {
   it("executes count-contracts.json without LLM", async () => {
     const fixture = JSON.parse(readFileSync(join(goldenDir, "count-contracts.json"), "utf8")) as {

@@ -1,7 +1,6 @@
 import type { Ontology } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { compileObjectQuery } from "../../src/index.js";
-
 const procurementOntology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -62,7 +61,6 @@ const procurementOntology: Ontology = {
   logic: [],
   actions: [],
 };
-
 describe("compileObjectQuery joins", () => {
   it("compiles multi-hop joins with filters on related objects and contains", () => {
     const compiled = compileObjectQuery(procurementOntology, {
@@ -74,7 +72,6 @@ describe("compileObjectQuery joins", () => {
       ],
       limit: 20,
     });
-
     expect(compiled.joinedObjectIds).toEqual(["contract", "project"]);
     expect(compiled.sql).toContain("FROM `backed`.`anac`.`contracts` AS `o0`");
     expect(compiled.sql).toContain("EXISTS (SELECT 1 FROM `backed`.`docs`.`projects` AS `o1`");
@@ -87,7 +84,6 @@ describe("compileObjectQuery joins", () => {
     ]);
     expect(compiled.sql).toContain("LIMIT 20");
   });
-
   it("compiles count mode over a join graph", () => {
     const compiled = compileObjectQuery(procurementOntology, {
       objectId: "contract",
@@ -106,7 +102,6 @@ describe("compileObjectQuery joins", () => {
       "SELECT COUNT(*) AS `count` FROM `backed`.`anac`.`contracts` AS `o0` WHERE EXISTS (SELECT 1 FROM `backed`.`anac`.`organizations` AS `o1`\n\nWHERE `o0`.`cf_amministrazione_appaltante` = `o1`.`cf_amministrazione_appaltante` AND LOWER(`o1`.`denominazione_amministrazione_appaltante`) LIKE LOWER(:p0))",
     );
   });
-
   it("uses INNER JOIN when select includes joined object properties", () => {
     const compiled = compileObjectQuery(procurementOntology, {
       objectId: "contract",
@@ -127,7 +122,6 @@ describe("compileObjectQuery joins", () => {
     );
     expect(compiled.columns).toContain("organization.denominazione_amministrazione_appaltante");
   });
-
   it("compiles textSearch as OR across string columns", () => {
     const compiled = compileObjectQuery(procurementOntology, {
       objectId: "contract",
@@ -139,7 +133,6 @@ describe("compileObjectQuery joins", () => {
     );
     expect(compiled.parameters).toEqual([{ name: "p0", value: "%inconsistenza pagamenti%" }]);
   });
-
   it("rejects a join that does not touch the current object", () => {
     expect(() =>
       compileObjectQuery(procurementOntology, {

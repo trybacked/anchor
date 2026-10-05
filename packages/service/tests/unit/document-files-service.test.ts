@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDocumentFilesService } from "../../src/files/document-files-service.js";
 import { isServiceErrorResult } from "../../src/service-error.js";
-
 describe("createDocumentFilesService", () => {
   it("computes documentId from volume path", async () => {
     const files = {
@@ -30,7 +29,6 @@ describe("createDocumentFilesService", () => {
       expect(result.documentId).toMatch(/^[a-f0-9]{64}$/);
     }
   });
-
   it("rejects oversize uploads", async () => {
     const service = createDocumentFilesService({
       catalog: "backed",
@@ -49,7 +47,6 @@ describe("createDocumentFilesService", () => {
     const result = await service.upload(new Uint8Array([1, 2]), { filename: "a.pdf" });
     expect(isServiceErrorResult(result)).toBe(true);
   });
-
   it("normalizes browser filenames before upload", async () => {
     const files = {
       writeFile: vi.fn(async () => undefined),

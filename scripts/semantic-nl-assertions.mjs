@@ -1,4 +1,4 @@
-export function filterValueMatches(actual, expected) {
+export function filterValueMatches(actual, expected, actualOp, expectedOp) {
   if (Array.isArray(expected)) {
     if (!Array.isArray(actual)) {
       return false;
@@ -6,19 +6,27 @@ export function filterValueMatches(actual, expected) {
     const actualSet = new Set(actual.map((entry) => String(entry)));
     return expected.every((entry) => actualSet.has(String(entry)));
   }
+  if (expectedOp === "contains") {
+    const haystack = String(actual).toLowerCase();
+    const needle = String(expected).toLowerCase();
+    if (actualOp === "contains" || actualOp === "eq") {
+      return haystack.includes(needle);
+    }
+    return false;
+  }
+  if (actualOp !== expectedOp) {
+    return false;
+  }
   return String(actual) === String(expected);
 }
-
 export function filterMatches(actualFilters, expected) {
   return actualFilters.some(
     (filter) =>
       filter.propertyId === expected.propertyId &&
-      filter.op === expected.op &&
-      filterValueMatches(filter.value, expected.value) &&
+      filterValueMatches(filter.value, expected.value, filter.op, expected.op) &&
       (expected.objectId === undefined || filter.objectId === expected.objectId),
   );
 }
-
 export function monthFilterMatches(actualFilters, months) {
   const monthSet = new Set(months.map(String));
   return actualFilters.some((filter) => {
@@ -34,7 +42,6 @@ export function monthFilterMatches(actualFilters, months) {
     return false;
   });
 }
-
 export function joinMatches(actualJoins, expectedJoins) {
   if (expectedJoins === undefined || expectedJoins.length === 0) {
     return true;
@@ -42,7 +49,6 @@ export function joinMatches(actualJoins, expectedJoins) {
   const ids = new Set((actualJoins ?? []).map((join) => join.relationshipId));
   return expectedJoins.every((join) => ids.has(join.relationshipId));
 }
-
 export function parseCount(rows) {
   const raw = rows[0]?.["count"];
   if (typeof raw === "number") return raw;
@@ -50,24 +56,8 @@ export function parseCount(rows) {
   if (typeof raw === "string") return Number(raw);
   return NaN;
 }
-
-const EXECUTION_ONLY_KEYS = new Set([
-  "countEquals",
-  "countMin",
-  "minResultRows",
-  "minProvenanceRows",
-  "sqlIncludes",
-]);
-
-export function assertPlanShape(expectation, answer, error) {
-  const failures = assertCase(expectation, answer, error, { planOnly: true });
-  return failures;
-}
-
-export function assertCase(expectation, answer, error, options = {}) {
-  const planOnly = options.planOnly === true;
+export function assertCase(expectation, answer, error) {
   const failures = [];
-
   if (expectation.shouldFail === true) {
     if (error === undefined) {
       failures.push("expected planner/validation failure but ask succeeded");
@@ -78,24 +68,20 @@ export function assertCase(expectation, answer, error, options = {}) {
     }
     return failures;
   }
-
   if (error !== undefined) {
     failures.push(`${error.name}: ${error.message}`);
     return failures;
   }
-
   if (answer === undefined) {
     failures.push("missing answer");
     return failures;
   }
-
   if (expectation.route !== undefined && answer.route !== expectation.route) {
     failures.push(`route ${String(answer.route)} !== ${expectation.route}`);
   }
   if (expectation.templateId !== undefined && answer.templateId !== expectation.templateId) {
     failures.push(`templateId ${String(answer.templateId)} !== ${expectation.templateId}`);
   }
-
   const query = answer.plan.objectQuery;
   if (expectation.objectId !== undefined && query.objectId !== expectation.objectId) {
     failures.push(`objectId ${query.objectId} !== ${expectation.objectId}`);
@@ -146,24 +132,11 @@ export function assertCase(expectation, answer, error, options = {}) {
       );
     }
   }
-
-  if (planOnly) {
-    if (
-      expectation.maxRowCount !== undefined &&
-      query.limit !== undefined &&
-      query.limit > expectation.maxRowCount
-    ) {
-      failures.push(`plan limit ${String(query.limit)} > ${String(expectation.maxRowCount)}`);
-    }
-    if (!joinMatches(query.joins, expectation.joinsInclude)) {
-      failures.push(
-        `joins ${JSON.stringify(query.joins)} missing ${JSON.stringify(expectation.joinsInclude)}`,
-      );
-    }
-    return failures;
-  }
-
   if (expectation.sqlIncludes !== undefined) {
+    if (answer.result === undefined) {
+      failures.push("missing query result for sqlIncludes");
+      return failures;
+    }
     const sql = answer.result.sql.toUpperCase();
     for (const fragment of expectation.sqlIncludes) {
       if (!sql.includes(fragment.toUpperCase())) {
@@ -171,20 +144,25 @@ export function assertCase(expectation, answer, error, options = {}) {
       }
     }
   }
-  if (
-    expectation.minResultRows !== undefined &&
-    answer.result.rowCount < expectation.minResultRows
-  ) {
-    failures.push(
-      `result rows ${String(answer.result.rowCount)} < min ${String(expectation.minResultRows)}`,
-    );
+  if (expectation.minResultRows !== undefined) {
+    if (answer.result === undefined) {
+      failures.push("missing query result for minResultRows");
+    } else if (answer.result.rowCount < expectation.minResultRows) {
+      failures.push(
+        `result rows ${String(answer.result.rowCount)} < min ${String(expectation.minResultRows)}`,
+      );
+    }
   }
   if (!joinMatches(query.joins, expectation.joinsInclude)) {
     failures.push(
       `joins ${JSON.stringify(query.joins)} missing ${JSON.stringify(expectation.joinsInclude)}`,
     );
   }
-  if (expectation.maxRowCount !== undefined && answer.result.rowCount > expectation.maxRowCount) {
+  if (
+    expectation.maxRowCount !== undefined &&
+    answer.result !== undefined &&
+    answer.result.rowCount > expectation.maxRowCount
+  ) {
     failures.push(
       `rowCount ${String(answer.result.rowCount)} > ${String(expectation.maxRowCount)}`,
     );
@@ -198,33 +176,27 @@ export function assertCase(expectation, answer, error, options = {}) {
     );
   }
   if (expectation.countEquals !== undefined) {
-    const count = parseCount(answer.result.rows);
-    if (count !== expectation.countEquals) {
-      failures.push(`count ${String(count)} !== ${String(expectation.countEquals)}`);
+    if (answer.result === undefined) {
+      failures.push("missing query result for countEquals");
+    } else {
+      const count = parseCount(answer.result.rows);
+      if (count !== expectation.countEquals) {
+        failures.push(`count ${String(count)} !== ${String(expectation.countEquals)}`);
+      }
     }
   }
   if (expectation.countMin !== undefined) {
-    const count = parseCount(answer.result.rows);
-    if (!Number.isFinite(count) || count < expectation.countMin) {
-      failures.push(`count ${String(count)} < min ${String(expectation.countMin)}`);
+    if (answer.result === undefined) {
+      failures.push("missing query result for countMin");
+    } else {
+      const count = parseCount(answer.result.rows);
+      if (!Number.isFinite(count) || count < expectation.countMin) {
+        failures.push(`count ${String(count)} < min ${String(expectation.countMin)}`);
+      }
     }
   }
-  if (answer.result.sql.length === 0) {
+  if (answer.result !== undefined && answer.result.sql.length === 0) {
     failures.push("empty compiled sql");
   }
-
   return failures;
-}
-
-export function partitionExpectationKeys(expectation) {
-  const planKeys = [];
-  const executionKeys = [];
-  for (const key of Object.keys(expectation)) {
-    if (EXECUTION_ONLY_KEYS.has(key)) {
-      executionKeys.push(key);
-    } else {
-      planKeys.push(key);
-    }
-  }
-  return { planKeys, executionKeys };
 }

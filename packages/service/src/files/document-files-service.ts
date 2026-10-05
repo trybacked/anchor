@@ -1,11 +1,8 @@
 import { createHash } from "node:crypto";
 import { serviceError, type ServiceErrorResult } from "../service-error.js";
-
 const FOLDER_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const FILENAME_PATTERN = /^[a-z0-9][a-z0-9_.-]*$/;
-
 export type RefreshRunStatus = "queued" | "running" | "succeeded" | "failed" | "canceled";
-
 export type UploadedFile = {
   path: string;
   documentId: string;
@@ -13,7 +10,6 @@ export type UploadedFile = {
   folder?: string | undefined;
   sizeBytes: number;
 };
-
 export type FileEntry = {
   path: string;
   documentId: string;
@@ -22,23 +18,22 @@ export type FileEntry = {
   sizeBytes?: number | undefined;
   lastModified?: number | undefined;
 };
-
 export type ListFilesResponse = {
   prefix: string;
   entries: FileEntry[];
 };
-
 export type RefreshRun = {
   runId: number;
   status: RefreshRunStatus;
   message?: string | undefined;
 };
-
 export type DocumentVolumeClient = {
   writeFile: (
     path: string,
     data: Uint8Array,
-    options?: { overwrite?: boolean | undefined },
+    options?: {
+      overwrite?: boolean | undefined;
+    },
   ) => Promise<void>;
   listDirectory: (path: string) => Promise<
     Array<{
@@ -51,13 +46,16 @@ export type DocumentVolumeClient = {
   >;
   deleteFile: (path: string) => Promise<void>;
 };
-
 export type DocumentJobsClient = {
   findJobIdByName: (name: string) => Promise<number | null>;
   runNow: (
     jobId: number,
-    options?: { fullRefresh?: boolean | undefined },
-  ) => Promise<{ runId: number }>;
+    options?: {
+      fullRefresh?: boolean | undefined;
+    },
+  ) => Promise<{
+    runId: number;
+  }>;
   getRun: (runId: number) => Promise<{
     runId: number;
     state: string;
@@ -65,22 +63,28 @@ export type DocumentJobsClient = {
     stateMessage?: string | undefined;
   }>;
 };
-
 export type DocumentFilesService = {
   upload: (
     data: Uint8Array,
-    options: { filename: string; folder?: string | undefined },
+    options: {
+      filename: string;
+      folder?: string | undefined;
+    },
   ) => Promise<UploadedFile | ServiceErrorResult>;
   list: (options?: {
     folder?: string | undefined;
   }) => Promise<ListFilesResponse | ServiceErrorResult>;
-  delete: (path: string) => Promise<{ ok: true } | ServiceErrorResult>;
+  delete: (path: string) => Promise<
+    | {
+        ok: true;
+      }
+    | ServiceErrorResult
+  >;
   refresh: (options?: {
     fullRefresh?: boolean | undefined;
   }) => Promise<RefreshRun | ServiceErrorResult>;
   getRefresh: (runId: number) => Promise<RefreshRun | ServiceErrorResult>;
 };
-
 export type CreateDocumentFilesServiceOptions = {
   catalog: string;
   docsSchema?: string | undefined;
@@ -89,15 +93,12 @@ export type CreateDocumentFilesServiceOptions = {
   maxUploadBytes: number;
   isFileExistsError?: (error: unknown) => boolean;
 };
-
 function documentIdFromPath(path: string): string {
   return createHash("sha256").update(path, "utf8").digest("hex");
 }
-
 function volumeRoot(catalog: string, docsSchema: string): string {
   return `/Volumes/${catalog}/${docsSchema}/raw`;
 }
-
 function normalizeSegment(
   value: string,
   label: "folder" | "filename",
@@ -118,8 +119,6 @@ function normalizeSegment(
   }
   return trimmed;
 }
-
-/** Maps browser names (spaces, uppercase) to volume-safe slugs before normalizeSegment. */
 function prepareFilename(raw: string): string | ServiceErrorResult {
   const basename = raw.trim().split(/[/\\]/).pop()?.trim() ?? "";
   if (basename.length === 0) {
@@ -137,7 +136,6 @@ function prepareFilename(raw: string): string | ServiceErrorResult {
   }
   return normalizeSegment(slug, "filename");
 }
-
 function mapRunStatus(lifeCycle: string, resultState?: string): RefreshRunStatus {
   if (lifeCycle === "PENDING" || lifeCycle === "BLOCKED" || lifeCycle === "WAITING_FOR_RETRY") {
     return "queued";
@@ -159,7 +157,6 @@ function mapRunStatus(lifeCycle: string, resultState?: string): RefreshRunStatus
   }
   return "failed";
 }
-
 function resolveVolumePath(
   root: string,
   folder: string | undefined,
@@ -179,16 +176,13 @@ function resolveVolumePath(
   }
   return `${prefix}/${nameResult}`;
 }
-
 function assertUnderRoot(path: string, root: string): boolean {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   return normalized === root || normalized.startsWith(`${root}/`);
 }
-
 function defaultFileExists(error: unknown): boolean {
   return error instanceof Error && error.name === "DatabricksFileExistsError";
 }
-
 export function createDocumentFilesService(
   options: CreateDocumentFilesServiceOptions,
 ): DocumentFilesService {
@@ -196,7 +190,6 @@ export function createDocumentFilesService(
   const root = volumeRoot(options.catalog, docsSchema);
   const refreshJobName = `${options.catalog}-docs-refresh`;
   const isFileExists = options.isFileExistsError ?? defaultFileExists;
-
   return {
     upload: async (data, uploadOptions) => {
       if (data.byteLength > options.maxUploadBytes) {
@@ -232,7 +225,6 @@ export function createDocumentFilesService(
         sizeBytes: data.byteLength,
       };
     },
-
     list: async (listOptions) => {
       let prefix = root;
       if (listOptions?.folder !== undefined && listOptions.folder.trim().length > 0) {
@@ -259,7 +251,6 @@ export function createDocumentFilesService(
       }));
       return { prefix, entries };
     },
-
     delete: async (path) => {
       const normalized = path.trim();
       if (!assertUnderRoot(normalized, root)) {
@@ -271,7 +262,6 @@ export function createDocumentFilesService(
       await options.files.deleteFile(normalized);
       return { ok: true as const };
     },
-
     refresh: async (refreshOptions) => {
       const jobId = await options.jobs.findJobIdByName(refreshJobName);
       if (jobId === null) {
@@ -290,7 +280,6 @@ export function createDocumentFilesService(
         ...(run.stateMessage !== undefined ? { message: run.stateMessage } : {}),
       };
     },
-
     getRefresh: async (runId) => {
       if (!Number.isFinite(runId) || runId <= 0) {
         return serviceError("bad_request", "Invalid run id");

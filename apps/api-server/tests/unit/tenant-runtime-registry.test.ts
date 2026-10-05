@@ -11,7 +11,6 @@ import {
 } from "@trybacked/registry";
 import { createAnchorService } from "@trybacked/service";
 import { describe, expect, it, vi } from "vitest";
-
 vi.mock("../../src/service-factory.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/service-factory.js")>();
   const { readModelYaml } = await import("@trybacked/core");
@@ -27,8 +26,9 @@ import {
   OntologyNotPublishedError,
   TenantNotFoundError,
 } from "../../src/tenant-runtime-registry.js";
-
-function memoryBlobStore(): BlobStore & { files: Map<string, string> } {
+function memoryBlobStore(): BlobStore & {
+  files: Map<string, string>;
+} {
   const files = new Map<string, string>();
   return {
     files,
@@ -38,19 +38,24 @@ function memoryBlobStore(): BlobStore & { files: Map<string, string> } {
     },
   };
 }
-
 const fixtureRoot = join(
   dirname(fileURLToPath(import.meta.url)),
   "../../../../fixtures/pmi-minimal",
 );
-
 const databricksStub: DatabricksProviderConfig = {
   host: "example.cloud.databricks.com",
   token: "token",
   warehouseId: "wh",
 };
-
-function writeRegistry(dir: string, tenants: Record<string, { catalog: string }>): string {
+function writeRegistry(
+  dir: string,
+  tenants: Record<
+    string,
+    {
+      catalog: string;
+    }
+  >,
+): string {
   const path = join(dir, "tenants.yaml");
   const lines = [
     "enrollment:",
@@ -69,7 +74,6 @@ function writeRegistry(dir: string, tenants: Record<string, { catalog: string }>
   writeFileSync(path, `${lines.join("\n")}\n`, "utf8");
   return path;
 }
-
 describe("tenant runtime registry", () => {
   it("resolves tenant and caches until TTL", async () => {
     const dir = mkdtempSync(join(tmpdir(), "trr-"));
@@ -80,7 +84,6 @@ describe("tenant runtime registry", () => {
     const record = publishSemanticModel(fixtureRoot, model, { ontologyId: "demo" });
     const modelYaml = readFileSync(join(fixtureRoot, "model.yaml"), "utf8");
     await store.publish("backed_demo", record, modelYaml);
-
     let builds = 0;
     const registry = createTenantRuntimeRegistry({
       registryPath,
@@ -95,14 +98,12 @@ describe("tenant runtime registry", () => {
       },
       cacheTtlSeconds: 60,
     });
-
     const a = await registry.resolve("demo");
     const b = await registry.resolve("demo");
     expect(a).toBe(b);
     expect(builds).toBe(1);
     expect(registry.cachedTenantIds()).toEqual(["demo"]);
   });
-
   it("throws for unknown tenant and missing publication", async () => {
     const dir = mkdtempSync(join(tmpdir(), "trr-"));
     const registryPath = writeRegistry(dir, { demo: { catalog: "backed_demo" } });
@@ -114,7 +115,6 @@ describe("tenant runtime registry", () => {
       ontologyStore: store,
       cacheTtlSeconds: 1,
     });
-
     await expect(registry.resolve("missing")).rejects.toBeInstanceOf(TenantNotFoundError);
     await expect(registry.resolve("demo")).rejects.toBeInstanceOf(OntologyNotPublishedError);
   });

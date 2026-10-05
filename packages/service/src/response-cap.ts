@@ -1,9 +1,5 @@
 import type { RowProvenance } from "./provenance.js";
-
-export const MCP_TOOL_RESULT_MAX_BYTES = 900_000;
-
-export const MCP_DEFAULT_OBJECT_QUERY_LIMIT = 15;
-
+export const MCP_TOOL_RESULT_MAX_BYTES = 900000;
 export type QueryObjectsToolPayload = {
   objectId: string;
   columns: string[];
@@ -16,16 +12,13 @@ export type QueryObjectsToolPayload = {
   originalRowCount?: number;
   truncationReason?: string;
 };
-
 export function capQueryObjectsPayload(payload: QueryObjectsToolPayload): QueryObjectsToolPayload {
   if (JSON.stringify(payload).length <= MCP_TOOL_RESULT_MAX_BYTES) {
     return payload;
   }
-
   const originalRowCount = payload.rowCount;
   let low = 0;
   let high = payload.rows.length;
-
   while (low < high) {
     const mid = Math.ceil((low + high) / 2);
     const candidate: QueryObjectsToolPayload = {
@@ -39,7 +32,6 @@ export function capQueryObjectsPayload(payload: QueryObjectsToolPayload): QueryO
       high = mid - 1;
     }
   }
-
   const kept = payload.rows.slice(0, low);
   return {
     ...payload,

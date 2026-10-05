@@ -1,7 +1,6 @@
 import type { SemanticModel } from "../model.js";
 import type { Ontology, OntologyPropertyType } from "./spec.js";
 import { ONTOLOGY_FORMAT_VERSION } from "./spec.js";
-
 const SEMANTIC_TO_ONTOLOGY_TYPE: Record<string, OntologyPropertyType> = {
   text: "string",
   number: "float",
@@ -14,14 +13,15 @@ const SEMANTIC_TO_ONTOLOGY_TYPE: Record<string, OntologyPropertyType> = {
   fiscal_code: "string",
   category: "string",
 };
-
 function mapPropertyType(semanticType: string): OntologyPropertyType {
   return SEMANTIC_TO_ONTOLOGY_TYPE[semanticType] ?? "string";
 }
-
 export function semanticModelToOntology(
   model: SemanticModel,
-  options: { ontologyId: string; version?: number },
+  options: {
+    ontologyId: string;
+    version?: number;
+  },
 ): Ontology {
   const version = options.version ?? 1;
   return {

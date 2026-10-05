@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 import { publishSemanticModel } from "../../src/publish.js";
 import type { BlobStore } from "../../src/remote-store.js";
 import { createVolumeOntologyStore } from "../../src/remote-store.js";
-
-function memoryBlobStore(): BlobStore & { files: Map<string, string> } {
+function memoryBlobStore(): BlobStore & {
+  files: Map<string, string>;
+} {
   const files = new Map<string, string>();
   return {
     files,
@@ -19,7 +20,6 @@ function memoryBlobStore(): BlobStore & { files: Map<string, string> } {
     },
   };
 }
-
 const baseModel = {
   metadata: {
     formatVersion: "1" as const,
@@ -50,11 +50,9 @@ const baseModel = {
   relations: [],
   rules: [],
 };
-
 function sampleRecord(root: string) {
   return publishSemanticModel(root, baseModel, { ontologyId: "gerace" });
 }
-
 describe("createVolumeOntologyStore", () => {
   it("publish writes version file and current.json", async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "remote-store-"));
@@ -74,7 +72,6 @@ describe("createVolumeOntologyStore", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-
   it("increments version paths on publish", async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "remote-store-"));
     try {

@@ -7,7 +7,6 @@ import {
 } from "@trybacked/core";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
-
 export type OntologyDraftRow = {
   tenant_id: string;
   revision: number;
@@ -16,7 +15,6 @@ export type OntologyDraftRow = {
   updated_by: string | null;
   updated_at: Date;
 };
-
 export type OntologyVersionRow = {
   tenant_id: string;
   version: number;
@@ -27,14 +25,12 @@ export type OntologyVersionRow = {
   notes: string | null;
   artifact_path: string | null;
 };
-
 export type RoleBindingRow = {
   tenant_id: string;
   subject_type: "user" | "workos_role";
   subject: string;
   role: TenantRole;
 };
-
 export type DerivedDatasetRow = {
   tenant_id: string;
   name: string;
@@ -44,11 +40,9 @@ export type DerivedDatasetRow = {
   last_error: string | null;
   created_by: string | null;
 };
-
 function parseModel(value: unknown): SemanticModel {
   return SemanticModelSchema.parse(value);
 }
-
 export async function getOntologyDraft(
   pool: pg.Pool,
   tenantId: string,
@@ -70,7 +64,6 @@ export async function getOntologyDraft(
     model: parseModel(row.model),
   };
 }
-
 export async function upsertOntologyDraft(
   pool: pg.Pool,
   input: {
@@ -109,7 +102,6 @@ export async function upsertOntologyDraft(
   const row = result.rows[0] as NonNullable<(typeof result.rows)[0]>;
   return { ...row, model: parseModel(row.model) };
 }
-
 export async function applyDraftCommandsTx(
   pool: pg.Pool,
   input: {
@@ -119,14 +111,19 @@ export async function applyDraftCommandsTx(
     commands: AuthoringCommand[];
     actor: string;
   },
-): Promise<{ revision: number; model: SemanticModel } | "revision_conflict"> {
+): Promise<
+  | {
+      revision: number;
+      model: SemanticModel;
+    }
+  | "revision_conflict"
+> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const current = await client.query<{ revision: number }>(
-      "SELECT revision FROM ontology_drafts WHERE tenant_id = $1 FOR UPDATE",
-      [input.tenantId],
-    );
+    const current = await client.query<{
+      revision: number;
+    }>("SELECT revision FROM ontology_drafts WHERE tenant_id = $1 FOR UPDATE", [input.tenantId]);
     const revision = current.rows[0]?.revision;
     if (revision === undefined || revision !== input.expectedRevision) {
       await client.query("ROLLBACK");
@@ -156,7 +153,6 @@ export async function applyDraftCommandsTx(
     client.release();
   }
 }
-
 export async function listOntologyVersions(
   pool: pg.Pool,
   tenantId: string,
@@ -175,7 +171,6 @@ export async function listOntologyVersions(
   );
   return result.rows;
 }
-
 export async function getOntologyVersion(
   pool: pg.Pool,
   tenantId: string,
@@ -201,10 +196,11 @@ export async function getOntologyVersion(
     ontology: row.ontology as Record<string, unknown>,
   };
 }
-
 export async function insertOntologyVersion(
   pool: pg.Pool,
-  row: Omit<OntologyVersionRow, "published_at"> & { publishedAt?: Date },
+  row: Omit<OntologyVersionRow, "published_at"> & {
+    publishedAt?: Date;
+  },
 ): Promise<void> {
   await pool.query(
     `INSERT INTO ontology_versions
@@ -225,20 +221,24 @@ export async function insertOntologyVersion(
     [row.tenant_id, row.version],
   );
 }
-
 export async function getLatestOntologyVersion(pool: pg.Pool, tenantId: string): Promise<number> {
-  const result = await pool.query<{ version: number | null }>(
-    "SELECT MAX(version) AS version FROM ontology_versions WHERE tenant_id = $1",
-    [tenantId],
-  );
+  const result = await pool.query<{
+    version: number | null;
+  }>("SELECT MAX(version) AS version FROM ontology_versions WHERE tenant_id = $1", [tenantId]);
   return result.rows[0]?.version ?? 0;
 }
-
 export async function listOntologyChanges(
   pool: pg.Pool,
   tenantId: string,
   limit: number,
-): Promise<{ revision: number; command: AuthoringCommand; actor: string; createdAt: string }[]> {
+): Promise<
+  {
+    revision: number;
+    command: AuthoringCommand;
+    actor: string;
+    createdAt: string;
+  }[]
+> {
   const result = await pool.query<{
     revision: number;
     command: unknown;
@@ -256,7 +256,6 @@ export async function listOntologyChanges(
     createdAt: row.created_at.toISOString(),
   }));
 }
-
 export async function listRoleBindings(pool: pg.Pool, tenantId: string): Promise<RoleBindingRow[]> {
   const result = await pool.query<RoleBindingRow>(
     "SELECT tenant_id, subject_type, subject, role FROM tenant_role_bindings WHERE tenant_id = $1",
@@ -264,7 +263,6 @@ export async function listRoleBindings(pool: pg.Pool, tenantId: string): Promise
   );
   return result.rows;
 }
-
 export async function upsertRoleBinding(pool: pg.Pool, binding: RoleBindingRow): Promise<void> {
   await pool.query(
     `INSERT INTO tenant_role_bindings (tenant_id, subject_type, subject, role)
@@ -273,7 +271,6 @@ export async function upsertRoleBinding(pool: pg.Pool, binding: RoleBindingRow):
     [binding.tenant_id, binding.subject_type, binding.subject, binding.role],
   );
 }
-
 export async function deleteRoleBinding(
   pool: pg.Pool,
   tenantId: string,
@@ -287,7 +284,6 @@ export async function deleteRoleBinding(
   );
   return (result.rowCount ?? 0) > 0;
 }
-
 export async function resolveTenantRole(
   pool: pg.Pool,
   tenantId: string,
@@ -311,7 +307,6 @@ export async function resolveTenantRole(
   }
   return "viewer";
 }
-
 export async function listDerivedDatasets(
   pool: pg.Pool,
   tenantId: string,
@@ -322,7 +317,6 @@ export async function listDerivedDatasets(
   );
   return result.rows;
 }
-
 export async function insertDerivedDataset(pool: pg.Pool, row: DerivedDatasetRow): Promise<void> {
   await pool.query(
     `INSERT INTO derived_datasets (tenant_id, name, schema_name, sql, status, created_by)

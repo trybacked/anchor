@@ -18,11 +18,8 @@ import { findWorkspaceRoot } from "../env.js";
 import { pullNextSteps } from "../messages.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
-
 const MS_PER_SECOND = 1000;
-
 const AUTO_CONFIRM_CONFIDENCE_THRESHOLD = 0;
-
 function resolveOntologyId(root: string): string {
   try {
     return readWorkspaceConfig(root).ontologyId ?? path.basename(root);
@@ -30,7 +27,6 @@ function resolveOntologyId(root: string): string {
     return path.basename(root);
   }
 }
-
 export const pullCommand: CommandHandler = async (args) => {
   const ui = initUi();
   let parsed;
@@ -61,21 +57,18 @@ export const pullCommand: CommandHandler = async (args) => {
     }
     const profilePath = writeRunArtifact(root, runId, "profile", profile);
     ui.writeSuccess(`Profile → ${ui.path(profilePath)}`);
-
     const discovery = discoverFromProfile(profile, { ontologyId: resolveOntologyId(root) });
     const discoveryPath = writeRunArtifact(root, runId, "discovery", discovery);
     ui.writeSuccess(`Discovery → ${ui.path(discoveryPath)}`);
     ui.detail(
       `${String(discovery.ontology.objects.length)} object(s), ${String(discovery.ontology.relationships.length)} relationship(s)`,
     );
-
     const proposal = proposalFromDiscovery(discovery, {
       runId,
       reviewConfidenceThreshold: AUTO_CONFIRM_CONFIDENCE_THRESHOLD,
     });
     const proposalPath = writeRunArtifact(root, runId, "proposal", proposal);
     ui.writeSuccess(`Proposal → ${ui.path(proposalPath)}`);
-
     const generatedAt = new Date();
     const { model } = applyReview(
       proposal,

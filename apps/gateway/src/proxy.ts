@@ -3,7 +3,6 @@ import type { Context } from "hono";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayVariables } from "./types.js";
 import { assertTenantInRegistry, resolvePlatformUpstream } from "./upstreams.js";
-
 const HOP_BY_HOP = new Set([
   "connection",
   "keep-alive",
@@ -16,11 +15,9 @@ const HOP_BY_HOP = new Set([
   "host",
   "cookie",
 ]);
-
 export type ProxyDeps = {
   fetchImpl?: typeof fetch;
 };
-
 function copyForwardHeaders(source: Headers): Headers {
   const headers = new Headers();
   source.forEach((value, key) => {
@@ -30,9 +27,11 @@ function copyForwardHeaders(source: Headers): Headers {
   });
   return headers;
 }
-
 function workosRolesHeader(
-  user: { workosRoles?: string[] | undefined; roles?: Record<string, string> | undefined },
+  user: {
+    workosRoles?: string[] | undefined;
+    roles?: Record<string, string> | undefined;
+  },
   tenantId: string | undefined,
 ): string | undefined {
   if (tenantId !== undefined && user.roles?.[tenantId] !== undefined) {
@@ -43,7 +42,6 @@ function workosRolesHeader(
   }
   return undefined;
 }
-
 export async function forwardToControlPlane(
   config: GatewayConfig,
   tenantId: string,
@@ -100,7 +98,6 @@ export async function forwardToControlPlane(
     });
   }
 }
-
 export async function forwardToPlatform(
   config: GatewayConfig,
   tenantId: string | undefined,
@@ -118,7 +115,6 @@ export async function forwardToPlatform(
   if (tenantId !== undefined) {
     headers.set("X-Backed-Tenant", tenantId);
   }
-
   const init: RequestInit = {
     method: request.method,
     headers,
@@ -126,7 +122,6 @@ export async function forwardToPlatform(
   if (request.method !== "GET" && request.method !== "HEAD") {
     init.body = await request.arrayBuffer();
   }
-
   try {
     const upstreamResponse = await fetchFn(url, init);
     const responseHeaders = new Headers();
@@ -154,7 +149,6 @@ export async function forwardToPlatform(
     });
   }
 }
-
 export function tenantPathFromRequest(pathname: string, tenantId: string): string | undefined {
   const prefix = `/t/${tenantId}`;
   if (!pathname.startsWith(prefix)) {
@@ -166,9 +160,10 @@ export function tenantPathFromRequest(pathname: string, tenantId: string): strin
   }
   return rest.startsWith("/") ? rest : `/${rest}`;
 }
-
 export async function handleTenantProxy(
-  c: Context<{ Variables: GatewayVariables }>,
+  c: Context<{
+    Variables: GatewayVariables;
+  }>,
   config: GatewayConfig,
   registrySource: TenantRegistrySource,
   tenantId: string,
@@ -199,9 +194,10 @@ export async function handleTenantProxy(
   }
   return forwardToPlatform(config, tenantId, user.username, c.req.raw, fullPath, deps);
 }
-
 export async function handleDefaultTenantProxy(
-  c: Context<{ Variables: GatewayVariables }>,
+  c: Context<{
+    Variables: GatewayVariables;
+  }>,
   config: GatewayConfig,
   registrySource: TenantRegistrySource,
   deps: ProxyDeps,

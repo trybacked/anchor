@@ -14,16 +14,14 @@ import {
 import { isValidCodeVerifier, verifyPkceChallenge } from "./oauth-pkce.js";
 import { createSessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";
-
 const AUTH_CODE_TTL_SECONDS = 120;
 const OAUTH_PENDING_TTL_SECONDS = 600;
-
-type GatewayContext = Context<{ Variables: GatewayVariables }>;
-
+type GatewayContext = Context<{
+  Variables: GatewayVariables;
+}>;
 function redirectUriMatches(allowed: string[], candidate: string): boolean {
   return allowed.some((entry) => entry === candidate);
 }
-
 function appendQuery(url: string, params: Record<string, string>): string {
   const parsed = new URL(url);
   for (const [key, value] of Object.entries(params)) {
@@ -31,15 +29,16 @@ function appendQuery(url: string, params: Record<string, string>): string {
   }
   return parsed.toString();
 }
-
 export function readOAuthPendingCookie(c: GatewayContext): string | undefined {
   return getCookie(c, OAUTH_PENDING_COOKIE);
 }
-
 export async function completeOAuthAppRedirect(
   config: GatewayConfig,
   pendingToken: string,
-  user: { username: string; tenants: string[] },
+  user: {
+    username: string;
+    tenants: string[];
+  },
 ): Promise<string | undefined> {
   const pending = await verifyOAuthPending(config.sessionSecret, pendingToken);
   if (pending === undefined) {
@@ -61,14 +60,16 @@ export async function completeOAuthAppRedirect(
   );
   return appendQuery(pending.redirectUri, { code, state: pending.state });
 }
-
 export type StartWorkOSLogin = (
   c: GatewayContext,
-  options?: { screenHint?: "sign-in" | "sign-up" },
+  options?: {
+    screenHint?: "sign-in" | "sign-up";
+  },
 ) => Response;
-
 export function registerOAuthAppRoutes(
-  app: Hono<{ Variables: GatewayVariables }>,
+  app: Hono<{
+    Variables: GatewayVariables;
+  }>,
   config: GatewayConfig,
   startWorkOSLogin: StartWorkOSLogin,
 ): void {
@@ -79,7 +80,6 @@ export function registerOAuthAppRoutes(
     const state = c.req.query("state");
     const codeChallenge = c.req.query("code_challenge");
     const codeChallengeMethod = c.req.query("code_challenge_method") ?? "S256";
-
     if (responseType !== "code") {
       return c.json({ error: "unsupported_response_type" }, 400);
     }
@@ -89,7 +89,6 @@ export function registerOAuthAppRoutes(
     if (state.length === 0 || state.length > 512) {
       return c.json({ error: "invalid_state" }, 400);
     }
-
     const client = await getRegisteredOAuthClient(config, clientId);
     if (client === undefined) {
       return c.json({ error: "invalid_client" }, 401);
@@ -97,7 +96,6 @@ export function registerOAuthAppRoutes(
     if (!redirectUriMatches(client.redirectUris, redirectUri)) {
       return c.json({ error: "invalid_redirect_uri" }, 400);
     }
-
     const isPublic = client.clientSecretHash === null;
     if (isPublic) {
       if (codeChallenge === undefined || codeChallenge.length === 0) {
@@ -107,7 +105,6 @@ export function registerOAuthAppRoutes(
         return c.json({ error: "invalid_code_challenge_method" }, 400);
       }
     }
-
     const pendingToken = await signOAuthPending(
       config.sessionSecret,
       {
@@ -124,7 +121,6 @@ export function registerOAuthAppRoutes(
     const screenHint = prompt === "login" ? ("sign-in" as const) : undefined;
     return startWorkOSLogin(c, ...(screenHint !== undefined ? [{ screenHint }] : []));
   });
-
   app.post("/oauth/token", zValidator("json", OAuthTokenRequestSchema), async (c) => {
     const body = c.req.valid("json");
     const client = await getRegisteredOAuthClient(config, body.client_id);
@@ -134,7 +130,6 @@ export function registerOAuthAppRoutes(
     if (!redirectUriMatches(client.redirectUris, body.redirect_uri)) {
       return c.json({ error: "invalid_redirect_uri" }, 400);
     }
-
     const isPublic = client.clientSecretHash === null;
     if (isPublic) {
       if (body.code_verifier === undefined || !isValidCodeVerifier(body.code_verifier)) {
@@ -147,7 +142,6 @@ export function registerOAuthAppRoutes(
         return c.json({ error: "invalid_client" }, 401);
       }
     }
-
     const codePayload = await verifyAuthorizationCode(config.sessionSecret, body.code);
     if (codePayload === undefined) {
       return c.json({ error: "invalid_grant" }, 400);
@@ -158,7 +152,6 @@ export function registerOAuthAppRoutes(
     ) {
       return c.json({ error: "invalid_grant" }, 400);
     }
-
     if (codePayload.code_challenge !== undefined) {
       const verifier = body.code_verifier;
       if (verifier === undefined) {
@@ -169,13 +162,11 @@ export function registerOAuthAppRoutes(
         return c.json({ error: "invalid_grant" }, 400);
       }
     }
-
     const accessToken = await createSessionToken(
       config.sessionSecret,
       { username: codePayload.sub, tenants: codePayload.tenants },
       config.sessionTtlSeconds,
     );
-
     return c.json({
       access_token: accessToken,
       token_type: "Bearer" as const,

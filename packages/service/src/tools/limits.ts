@@ -1,0 +1,2 @@
+export const DEFAULT_SCHEMA_SEARCH_HITS = 15;
+export const MAX_SCHEMA_SEARCH_HITS = 30;

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,15 +14,14 @@ import {
   createSemanticAgentModelFromEnv,
   runSemanticAgent,
   SemanticAgentError,
+  SemanticPlanValidationError,
 } from "../packages/semantic-chat/dist/index.js";
 import { createAnchorService } from "../packages/service/dist/index.js";
-import { assertCase } from "./semantic-nl-assertions.mjs";
-
+import { agentAnswerShape, assertAgentCase } from "./semantic-agent-eval-shape.mjs";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(scriptDir, "..");
 const defaultWorkspace = join(repoRoot, "..", "ontology", "gerace");
 const casesPath = join(scriptDir, "semantic-nl-smoke.cases.json");
-
 function loadEnvFile(path) {
   if (!existsSync(path)) {
     return;
@@ -41,7 +39,6 @@ function loadEnvFile(path) {
     }
   }
 }
-
 function parseArgs(argv) {
   let workspace = process.env["ANCHOR_WORKSPACE_ROOT"];
   for (let index = 0; index < argv.length; index += 1) {
@@ -52,31 +49,6 @@ function parseArgs(argv) {
   }
   return resolve(workspace ?? defaultWorkspace);
 }
-
-function agentAnswerShape(agent, question) {
-  const queryStep = agent.steps.find((step) => step.toolName === "query_objects");
-  const queryInput = queryStep?.input ?? {};
-  const queryResult = queryStep ? agent.toolResults.get(queryStep.toolCallId) : undefined;
-  const result =
-    typeof queryResult === "object" && queryResult !== null && "rowCount" in queryResult
-      ? {
-          objectId: String(queryResult.objectId ?? queryInput.objectId ?? ""),
-          mode: String(queryResult.mode ?? queryInput.mode ?? "rows"),
-          rowCount: Number(queryResult.rowCount ?? 0),
-          rows: Array.isArray(queryResult.rows) ? queryResult.rows : [],
-          sql: typeof queryResult.sql === "string" ? queryResult.sql : undefined,
-        }
-      : undefined;
-  return {
-    question,
-    route: "agent",
-    plan: { objectQuery: queryInput },
-    result,
-    steps: agent.steps,
-    attempts: 1,
-  };
-}
-
 async function main() {
   const workspaceRoot = parseArgs(process.argv.slice(2));
   loadEnvFile(join(repoRoot, ".env"));
@@ -89,20 +61,17 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-
   if (!hasDatabricksEnv(process.env)) {
     console.error("Missing BACKED_DATABRICKS_* env for warehouse execution.");
     process.exitCode = 1;
     return;
   }
-
   const ontology = loadPublishedOntology(workspaceRoot);
   if (ontology === null) {
     console.error(`No published ontology in ${workspaceRoot}`);
     process.exitCode = 1;
     return;
   }
-
   const model = readModelYaml(workspaceRoot);
   const client = createDatabricksSqlClient(databricksConfigFromEnv(process.env));
   const { runtime } = await buildQueryRuntimeFromEnv({
@@ -111,31 +80,27 @@ async function main() {
     executor: (sql, parameters) => client.execute(sql, parameters),
     env: process.env,
   });
-
   const service = createAnchorService({
     model,
     ontology,
     queryRuntime: runtime,
     executionProfile: "api",
   });
-
   const suite = JSON.parse(readFileSync(casesPath, "utf8"));
   const modelId = agentModel.modelId;
-
   console.error(`Workspace: ${workspaceRoot}`);
   console.error(`Model: ${modelId}`);
   console.error(`Cases: ${String(suite.cases.length)}\n`);
-
   let passed = 0;
   let failed = 0;
   let advisory = 0;
-
   for (const testCase of suite.cases) {
     const started = Date.now();
+    let agent;
     let answer;
     let error;
     try {
-      const agent = await runSemanticAgent({
+      agent = await runSemanticAgent({
         ontology,
         service,
         question: testCase.question,
@@ -147,14 +112,13 @@ async function main() {
       });
       answer = agentAnswerShape(agent, testCase.question);
     } catch (caught) {
-      if (caught instanceof SemanticAgentError) {
+      if (caught instanceof SemanticAgentError || caught instanceof SemanticPlanValidationError) {
         error = caught;
       } else {
         error = caught instanceof Error ? caught : new Error(String(caught));
       }
     }
-
-    const failures = assertCase(testCase.expect ?? {}, answer, error);
+    const failures = assertAgentCase(testCase.expect ?? {}, agent, error, testCase.question);
     const ms = Date.now() - started;
     if (failures.length === 0) {
       passed += 1;
@@ -177,7 +141,6 @@ async function main() {
       }
     }
   }
-
   console.error(
     `\n${String(passed)} passed, ${String(failed)} failed` +
       (advisory > 0 ? `, ${String(advisory)} advisory` : ""),
@@ -186,5 +149,4 @@ async function main() {
     process.exitCode = 1;
   }
 }
-
 await main();

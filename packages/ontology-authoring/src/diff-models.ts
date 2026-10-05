@@ -1,22 +1,17 @@
 import type { Entity, Property, Relation, SemanticModel } from "@trybacked/core";
 import type { AuthoringDiffChange } from "./types.js";
-
 function stableJson(value: unknown): string {
   return JSON.stringify(value ?? null);
 }
-
 function propertyKey(entityId: string, column: string): string {
   return `${entityId}.${column}`;
 }
-
 function indexEntities(entities: Entity[]): Map<string, Entity> {
   return new Map(entities.map((entity) => [entity.id, entity]));
 }
-
 function indexProperties(entity: Entity): Map<string, Property> {
   return new Map(entity.properties.map((property) => [property.columnName, property]));
 }
-
 export function diffSemanticModels(
   before: SemanticModel,
   after: SemanticModel,
@@ -24,7 +19,6 @@ export function diffSemanticModels(
   const changes: AuthoringDiffChange[] = [];
   const beforeEntities = indexEntities(before.entities);
   const afterEntities = indexEntities(after.entities);
-
   for (const [id, entity] of beforeEntities) {
     if (!afterEntities.has(id)) {
       changes.push({
@@ -43,7 +37,6 @@ export function diffSemanticModels(
       });
     }
   }
-
   for (const [id, beforeEntity] of beforeEntities) {
     const afterEntity = afterEntities.get(id);
     if (afterEntity === undefined) {
@@ -93,7 +86,6 @@ export function diffSemanticModels(
       }
     }
   }
-
   const beforeRelations = new Map(before.relations.map((relation) => [relation.id, relation]));
   const afterRelations = new Map(after.relations.map((relation) => [relation.id, relation]));
   for (const [id, relation] of beforeRelations) {
@@ -114,14 +106,11 @@ export function diffSemanticModels(
       });
     }
   }
-
   diffRelationColumns(beforeRelations, afterRelations, changes);
   diffModelSemantics(before, after, changes);
   diffEntitySemantics(beforeEntities, afterEntities, changes);
-
   return changes;
 }
-
 function diffModelSemantics(
   before: SemanticModel,
   after: SemanticModel,
@@ -146,7 +135,6 @@ function diffModelSemantics(
     });
   }
 }
-
 function diffEntitySemantics(
   beforeEntities: Map<string, Entity>,
   afterEntities: Map<string, Entity>,
@@ -181,7 +169,6 @@ function diffEntitySemantics(
     }
   }
 }
-
 function diffRelationColumns(
   beforeRelations: Map<string, Relation>,
   afterRelations: Map<string, Relation>,

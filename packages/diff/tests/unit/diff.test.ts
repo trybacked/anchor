@@ -3,7 +3,6 @@ import type { ProfileReport } from "@trybacked/core";
 import { affectedTablesFromProfileDiff, filterProfileToTables } from "../../src/affected-tables.js";
 import { diffRuns, type ModelElements, type RunSnapshot } from "../../src/diff-runs.js";
 import { formatDiff } from "../../src/format.js";
-
 function col(name: string, sqlType: string, nullable = false) {
   return {
     name,
@@ -18,7 +17,6 @@ function col(name: string, sqlType: string, nullable = false) {
     foreignKeyCandidates: [],
   };
 }
-
 function table(tableName: string, columns: ReturnType<typeof col>[], rowCount = 100) {
   return {
     table: tableName,
@@ -27,12 +25,10 @@ function table(tableName: string, columns: ReturnType<typeof col>[], rowCount = 
     columns,
   };
 }
-
 const baseProfile: ProfileReport = [
   table("orders", [col("id", "INTEGER"), col("customer_id", "INTEGER")]),
   table("customers", [col("id", "INTEGER")]),
 ];
-
 const baseModel: ModelElements = {
   entities: [
     {
@@ -70,11 +66,9 @@ const baseModel: ModelElements = {
   ],
   rules: [],
 };
-
 function snapshot(runId: string, profile: ProfileReport, model?: ModelElements): RunSnapshot {
   return model === undefined ? { runId, profile } : { runId, profile, model };
 }
-
 describe("diffProfile via diffRuns", () => {
   it("detects table and column changes", () => {
     const nextProfile: ProfileReport = [
@@ -85,13 +79,11 @@ describe("diffProfile via diffRuns", () => {
       ]),
       table("products", [col("id", "INTEGER")]),
     ];
-
     const diff = diffRuns(
       snapshot("run-a", baseProfile),
       snapshot("run-b", nextProfile),
       new Date("2026-09-07T20:00:00.000Z"),
     );
-
     expect(diff.changes.map((change) => change.kind)).toEqual([
       "table_added",
       "table_removed",
@@ -100,30 +92,24 @@ describe("diffProfile via diffRuns", () => {
     ]);
   });
 });
-
 describe("diffRuns model changes", () => {
   it("classifies broken relations when anchor columns disappear", () => {
     const nextProfile: ProfileReport = [table("orders", [col("id", "INTEGER")]), baseProfile[1]!];
-
     const diff = diffRuns(
       snapshot("run-a", baseProfile, baseModel),
       snapshot("run-b", nextProfile, { entities: baseModel.entities, relations: [], rules: [] }),
     );
-
     expect(diff.changes.some((change) => change.kind === "relation_broken")).toBe(true);
   });
 });
-
 describe("affectedTablesFromProfileDiff", () => {
   it("returns tables touched by profile diffs", () => {
     const nextProfile: ProfileReport = [
       table("orders", [col("id", "TEXT"), col("total", "DECIMAL", true)]),
       baseProfile[1]!,
     ];
-
     expect(affectedTablesFromProfileDiff(baseProfile, nextProfile)).toEqual(new Set(["orders"]));
   });
-
   it("ignores pipeline infra tables and table removals", () => {
     const previousProfile: ProfileReport = [
       table("doc_publication", [col("document_id", "TEXT")], 2),
@@ -133,10 +119,8 @@ describe("affectedTablesFromProfileDiff", () => {
       table("doc_notice", [col("document_id", "TEXT")], 1),
       table("document_chunks", [col("text", "TEXT")], 3),
     ];
-
     expect(affectedTablesFromProfileDiff(previousProfile, nextProfile)).toEqual(new Set());
   });
-
   it("ignores row-count changes on pipeline infra tables including doc_*", () => {
     const previousProfile: ProfileReport = [
       table("doc_publication", [col("document_id", "TEXT")], 99),
@@ -147,17 +131,14 @@ describe("affectedTablesFromProfileDiff", () => {
     expect(affectedTablesFromProfileDiff(previousProfile, nextProfile)).toEqual(new Set());
   });
 });
-
 describe("filterProfileToTables", () => {
   it("keeps only selected tables", () => {
     expect(filterProfileToTables(baseProfile, new Set(["orders"]))).toEqual([baseProfile[0]]);
   });
 });
-
 describe("formatDiff", () => {
   it("summarizes breaking relation changes", () => {
     const nextProfile: ProfileReport = [table("orders", [col("id", "INTEGER")]), baseProfile[1]!];
-
     const diff = diffRuns(
       snapshot("run-a", baseProfile, baseModel),
       snapshot("run-b", nextProfile, {
@@ -166,7 +147,6 @@ describe("formatDiff", () => {
         rules: [],
       }),
     );
-
     expect(formatDiff(diff)).toContain("broken relation");
   });
 });

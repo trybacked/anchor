@@ -12,17 +12,13 @@ import { printCliVersion } from "./commands/version.js";
 import { formatCliCommand, isHelpFlag, isVersionFlag, SERVICES } from "./config.js";
 import { loadWorkspaceDotEnv } from "./env.js";
 import { getUi, initUi, printAnchorHelp, printRootHelp } from "./ui/index.js";
-
 export const COMMANDS = ANCHOR_COMMANDS;
-
 export function printCliHelp(): void {
   printRootHelp(getUi());
 }
-
 function loadDotEnv(): void {
   loadWorkspaceDotEnv(process.cwd());
 }
-
 async function runAnchorCommand(commandName: string, args: string[]): Promise<void> {
   try {
     await dispatchAnchorCommand(commandName, args);
@@ -38,16 +34,13 @@ async function runAnchorCommand(commandName: string, args: string[]): Promise<vo
     throw error;
   }
 }
-
 async function main(): Promise<void> {
   initUi();
   const argv = process.argv.slice(2);
-
   if (argv.length === 0 || isHelpFlag(argv[0] ?? "")) {
     printRootHelp(getUi());
     return;
   }
-
   const first = argv[0];
   if (first === undefined) {
     printRootHelp(getUi());
@@ -55,12 +48,10 @@ async function main(): Promise<void> {
   }
   const second = argv[1];
   const rest = argv.slice(2);
-
   if (isVersionFlag(first)) {
     printCliVersion();
     return;
   }
-
   if (first === "platform") {
     if (second === undefined || isHelpFlag(second)) {
       getUi().log("Usage: backed platform bootstrap | status");
@@ -78,7 +69,6 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-
   if (first === "ontology") {
     if (second === "import") {
       await ontologyImportCommand(rest);
@@ -88,7 +78,6 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-
   if (first === "tenant") {
     if (second === undefined || isHelpFlag(second)) {
       getUi().log("Usage: backed tenant create <tenant-id>");
@@ -102,7 +91,6 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-
   if (first === SERVICES.ANCHOR) {
     if (second === undefined || isHelpFlag(second)) {
       printAnchorHelp(getUi(), ANCHOR_COMMANDS);
@@ -112,7 +100,6 @@ async function main(): Promise<void> {
     await runAnchorCommand(second, rest);
     return;
   }
-
   const legacyAliases: Record<string, string> = {
     discover: "pull",
     serve: "deploy",
@@ -127,14 +114,12 @@ async function main(): Promise<void> {
     await runAnchorCommand(first, argv.slice(1));
     return;
   }
-
   const ui = getUi();
   ui.writeError(`Unknown command: ${first}`);
   ui.blank();
   printRootHelp(ui);
   process.exitCode = 1;
 }
-
 main().catch((error: unknown) => {
   const ui = getUi();
   ui.writeError(error instanceof Error ? error.message : String(error));

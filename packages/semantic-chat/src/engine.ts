@@ -1,14 +1,13 @@
 import type { Ontology } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { normalizeSemanticQueryPlan, type NormalizedSemanticQueryPlan } from "./normalize.js";
+import { SemanticQueryPlanSchema, type SemanticQueryPlan } from "./plan-types.js";
 import {
   attachEvidenceToProvenance,
   buildQueryExecutionProvenance,
   type RowProvenance,
 } from "./provenance.js";
-import { SemanticQueryPlanSchema, type SemanticQueryPlan } from "./plan-types.js";
 import { validateObjectQueryAgainstOntology } from "./validate-plan.js";
-
 export type SemanticQueryResult = {
   objectId: string;
   columns: string[];
@@ -17,14 +16,12 @@ export type SemanticQueryResult = {
   mode: "rows" | "count";
   sql: string;
 };
-
 export type SemanticExecutionStepSummary = {
   id: string;
   type: "objectQuery";
   rowCount?: number | undefined;
   sql?: string | undefined;
 };
-
 export type SemanticChatAnswer = {
   question: string;
   route: "single";
@@ -36,23 +33,24 @@ export type SemanticChatAnswer = {
   attempts: number;
   steps: SemanticExecutionStepSummary[];
 };
-
 export class SemanticChatTranslationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SemanticChatTranslationError";
   }
 }
-
-export type ExecutePlanInput = SemanticQueryPlan | { kind: "single"; plan: SemanticQueryPlan };
-
+export type ExecutePlanInput =
+  | SemanticQueryPlan
+  | {
+      kind: "single";
+      plan: SemanticQueryPlan;
+    };
 function normalizeExecutePlanInput(input: ExecutePlanInput): SemanticQueryPlan {
   if ("kind" in input) {
     return input.plan;
   }
   return input;
 }
-
 async function executeValidatedPlan(
   ontology: Ontology,
   queryRuntime: OntologyQueryRuntime,
@@ -76,7 +74,6 @@ async function executeValidatedPlan(
       chunkSearch: queryRuntime.chunkSearch,
     });
   }
-
   return {
     question,
     route: "single",
@@ -103,19 +100,19 @@ async function executeValidatedPlan(
     ],
   };
 }
-
 export type SemanticChatEngineOptions = {
   ontology: Ontology;
   queryRuntime: OntologyQueryRuntime;
 };
-
 export function createSemanticChatEngine(options: SemanticChatEngineOptions) {
   const { ontology, queryRuntime } = options;
-
   return {
     async executePlan(
       input: ExecutePlanInput,
-      options?: { evidence?: boolean | undefined; question?: string | undefined },
+      options?: {
+        evidence?: boolean | undefined;
+        question?: string | undefined;
+      },
     ): Promise<SemanticChatAnswer> {
       const plan = normalizeExecutePlanInput(input);
       SemanticQueryPlanSchema.parse(plan);
@@ -133,5 +130,4 @@ export function createSemanticChatEngine(options: SemanticChatEngineOptions) {
     },
   };
 }
-
 export type SemanticChatEngine = ReturnType<typeof createSemanticChatEngine>;

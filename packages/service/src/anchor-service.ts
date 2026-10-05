@@ -37,9 +37,7 @@ import type {
   SemanticAskResponse,
 } from "./responses.js";
 import { isServiceErrorResult, serviceError, type ServiceErrorResult } from "./service-error.js";
-
 export type { ServiceErrorResult } from "./service-error.js";
-
 export type AnchorServiceOptions = {
   model: SemanticModel;
   ontology?: Ontology | undefined;
@@ -49,7 +47,6 @@ export type AnchorServiceOptions = {
   auditPrincipal?: string | undefined;
   executionProfile?: ExecutionBudgetProfile | undefined;
 };
-
 function auditOperation(
   options: AnchorServiceOptions,
   event: Parameters<AnchorOperationAuditHook>[0],
@@ -59,14 +56,11 @@ function auditOperation(
     ...(options.auditPrincipal !== undefined ? { principal: options.auditPrincipal } : {}),
   });
 }
-
 function emptyProvenanceWhenNoOntology(): [] {
   return [];
 }
-
 export function createAnchorService(options: AnchorServiceOptions) {
   const { model, ontology, queryRuntime, searchModelOptions, executionProfile = "api" } = options;
-
   const hasChunkSearch = queryRuntime?.chunkSearch !== undefined;
   const hasEntityProfile = queryRuntime?.entityProfile !== undefined;
   const hasGraphTraverse = queryRuntime?.graphTraverse !== undefined;
@@ -75,13 +69,16 @@ export function createAnchorService(options: AnchorServiceOptions) {
     queryRuntime !== undefined &&
     queryRuntime.documentAccess !== undefined &&
     queryRuntime.volumeFileAccess === true;
-
   type DocumentPreviewAccess = NonNullable<OntologyQueryRuntime["documentAccess"]>;
-
   const documentPreviewGate = async (
     documentId: string,
     page: number,
-  ): Promise<ServiceErrorResult | { access: DocumentPreviewAccess }> => {
+  ): Promise<
+    | ServiceErrorResult
+    | {
+        access: DocumentPreviewAccess;
+      }
+  > => {
     if (queryRuntime?.documentAccess === undefined) {
       return serviceError(
         "unavailable",
@@ -109,10 +106,8 @@ export function createAnchorService(options: AnchorServiceOptions) {
     }
     return { access: queryRuntime.documentAccess };
   };
-
   return {
     listEntities: () => listEntities(model),
-
     getEntity: (id: string) => {
       const detail = getEntity(model, id);
       if (detail === null) {
@@ -120,13 +115,9 @@ export function createAnchorService(options: AnchorServiceOptions) {
       }
       return detail;
     },
-
     listRelations: (entityId?: string) => listRelations(model, entityId),
-
     searchModel: (query: string) => searchModel(model, query, searchModelOptions ?? {}),
-
     getDefinition: (term: string) => getDefinition(model, term),
-
     entitySearch: async (body: EntitySearchBody) => {
       const matches = await searchModel(model, body.query, searchModelOptions ?? {});
       if (body.kinds === undefined || body.kinds.length === 0) {
@@ -135,7 +126,6 @@ export function createAnchorService(options: AnchorServiceOptions) {
       const allowed = new Set(body.kinds);
       return { matches: matches.filter((match) => allowed.has(match.kind)) };
     },
-
     objectQuery: async (input: ObjectQueryBody | Record<string, unknown>) => {
       if (queryRuntime === undefined) {
         return serviceError(
@@ -190,7 +180,6 @@ export function createAnchorService(options: AnchorServiceOptions) {
         throw error;
       }
     },
-
     chunkSearch: async (body: ChunkSearchBody) => {
       if (queryRuntime?.chunkSearch === undefined) {
         return serviceError(
@@ -217,7 +206,6 @@ export function createAnchorService(options: AnchorServiceOptions) {
         );
       }
     },
-
     entityProfile: async (body: EntityProfileBody) => {
       if (queryRuntime?.entityProfile === undefined) {
         return serviceError(
@@ -247,7 +235,6 @@ export function createAnchorService(options: AnchorServiceOptions) {
         );
       }
     },
-
     getDocument: async (documentId: string): Promise<GetDocumentResponse | ServiceErrorResult> => {
       if (queryRuntime?.documentAccess === undefined) {
         return serviceError(
@@ -261,7 +248,6 @@ export function createAnchorService(options: AnchorServiceOptions) {
       }
       return metadata;
     },
-
     describeDocumentPreview: async (
       documentId: string,
       page: number,
@@ -276,11 +262,19 @@ export function createAnchorService(options: AnchorServiceOptions) {
       }
       return descriptor;
     },
-
     readDocumentPreview: async (
       documentId: string,
-      options: { page: number; range?: string | undefined },
-    ): Promise<ServiceErrorResult | { page: number; file: DocumentPreviewFile }> => {
+      options: {
+        page: number;
+        range?: string | undefined;
+      },
+    ): Promise<
+      | ServiceErrorResult
+      | {
+          page: number;
+          file: DocumentPreviewFile;
+        }
+    > => {
       const gate = await documentPreviewGate(documentId, options.page);
       if (isServiceErrorResult(gate)) {
         return gate;
@@ -306,7 +300,6 @@ export function createAnchorService(options: AnchorServiceOptions) {
         );
       }
     },
-
     graphTraverse: async (body: GraphTraverseBody) => {
       if (queryRuntime?.graphTraverse === undefined) {
         return serviceError(
@@ -333,7 +326,6 @@ export function createAnchorService(options: AnchorServiceOptions) {
         );
       }
     },
-
     capabilities: () => ({
       model: true,
       objectQuery: queryRuntime !== undefined,
@@ -347,9 +339,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
     }),
   };
 }
-
 export type AnchorServiceBase = ReturnType<typeof createAnchorService>;
-
 export type AnchorService = AnchorServiceBase & {
   semanticAsk?: (body: {
     question: string;

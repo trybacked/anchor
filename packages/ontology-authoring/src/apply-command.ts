@@ -9,14 +9,12 @@ import type {
 } from "@trybacked/core";
 import { MODEL_FORMAT_VERSION } from "@trybacked/core";
 import { commandsForPack } from "./packs/index.js";
-
 export class AuthoringCommandError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "AuthoringCommandError";
   }
 }
-
 function findEntity(model: SemanticModel, entityId: string): Entity {
   const entity = model.entities.find((entry) => entry.id === entityId);
   if (entity === undefined) {
@@ -24,7 +22,6 @@ function findEntity(model: SemanticModel, entityId: string): Entity {
   }
   return entity;
 }
-
 function findRelation(model: SemanticModel, relationId: string): Relation {
   const relation = model.relations.find((entry) => entry.id === relationId);
   if (relation === undefined) {
@@ -32,7 +29,6 @@ function findRelation(model: SemanticModel, relationId: string): Relation {
   }
   return relation;
 }
-
 function findRule(model: SemanticModel, ruleId: string): Rule {
   const rule = model.rules.find((entry) => entry.id === ruleId);
   if (rule === undefined) {
@@ -40,7 +36,6 @@ function findRule(model: SemanticModel, ruleId: string): Rule {
   }
   return rule;
 }
-
 export function emptySemanticModel(runId: string): SemanticModel {
   const now = new Date().toISOString();
   return {
@@ -54,11 +49,9 @@ export function emptySemanticModel(runId: string): SemanticModel {
     rules: [],
   };
 }
-
 function semanticsBlock(model: SemanticModel): OntologySemanticsBlock {
   return model.semantics ?? { glossary: [], examples: [] };
 }
-
 export function applyCommand(model: SemanticModel, command: AuthoringCommand): SemanticModel {
   switch (command.type) {
     case "addEntity": {
@@ -313,7 +306,6 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
     }
   }
 }
-
 export function applyCommands(model: SemanticModel, commands: AuthoringCommand[]): SemanticModel {
   let current = model;
   for (const command of commands) {

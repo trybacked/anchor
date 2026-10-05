@@ -1,7 +1,6 @@
 import type { Ontology } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { applySemanticChatSelectDefault } from "../../src/plan-defaults.js";
-
 const wideContractOntology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -23,7 +22,6 @@ const wideContractOntology: Ontology = {
   logic: [],
   actions: [],
 };
-
 describe("applySemanticChatSelectDefault", () => {
   it("adds select on wide objects when mode is rows", () => {
     const query = applySemanticChatSelectDefault(wideContractOntology, {
@@ -35,7 +33,6 @@ describe("applySemanticChatSelectDefault", () => {
     expect(query.select).toContain("cig");
     expect(query.select?.length).toBeLessThanOrEqual(10);
   });
-
   it("does not change count queries", () => {
     const query = applySemanticChatSelectDefault(wideContractOntology, {
       objectId: "contract",

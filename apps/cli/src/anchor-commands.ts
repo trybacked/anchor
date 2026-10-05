@@ -1,7 +1,6 @@
 import { deployCommand, initCommand, pullCommand, syncCommand } from "./commands/index.js";
 import { COMMANDS as CLI_COMMAND_NAMES } from "./config.js";
 import type { Command } from "./types.js";
-
 export const ANCHOR_COMMANDS: readonly Command[] = [
   {
     name: CLI_COMMAND_NAMES.INIT,
@@ -24,16 +23,13 @@ export const ANCHOR_COMMANDS: readonly Command[] = [
     handler: deployCommand,
   },
 ];
-
 export const ANCHOR_COMMAND_NAMES = new Set(ANCHOR_COMMANDS.map((command) => command.name));
-
 const LEGACY_ANCHOR_COMMAND_ALIASES: Record<string, string> = {
   discover: CLI_COMMAND_NAMES.PULL,
   serve: CLI_COMMAND_NAMES.DEPLOY,
   publish: CLI_COMMAND_NAMES.SYNC,
   register: CLI_COMMAND_NAMES.SYNC,
 };
-
 export async function dispatchAnchorCommand(commandName: string, args: string[]): Promise<void> {
   const resolvedName = LEGACY_ANCHOR_COMMAND_ALIASES[commandName] ?? commandName;
   const command = ANCHOR_COMMANDS.find((entry) => entry.name === resolvedName);
@@ -42,7 +38,6 @@ export async function dispatchAnchorCommand(commandName: string, args: string[])
   }
   await command.handler(args);
 }
-
 export class UnknownAnchorCommandError extends Error {
   constructor(commandName: string) {
     super(`Unknown anchor command: ${commandName}`);

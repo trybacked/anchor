@@ -1,7 +1,6 @@
 import type { Ontology } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { validateRoutedPlan } from "../../src/validate-plan.js";
-
 const ontology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -19,7 +18,6 @@ const ontology: Ontology = {
   logic: [],
   actions: [],
 };
-
 describe("validateRoutedPlan", () => {
   it("accepts single route with objectQuery", () => {
     const result = validateRoutedPlan(ontology, {
@@ -32,7 +30,6 @@ describe("validateRoutedPlan", () => {
     });
     expect(result.route).toBe("single");
   });
-
   it("rejects template route", () => {
     expect(() =>
       validateRoutedPlan(ontology, {

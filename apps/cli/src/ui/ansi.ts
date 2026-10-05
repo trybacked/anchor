@@ -13,7 +13,6 @@ export const ANSI = {
   brightWhite: `${ESC}97m`,
 } as const;
 const ANSI_SGR_PATTERN = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;]*m`, "g");
-
 export function stripAnsi(text: string): string {
   return text.replace(ANSI_SGR_PATTERN, "");
 }

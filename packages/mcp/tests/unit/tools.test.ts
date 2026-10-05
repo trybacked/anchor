@@ -1,8 +1,17 @@
-import type { OntologyQueryRuntime } from "@trybacked/runtime";
+import {
+  MAX_CHUNK_SEARCH_LIMIT,
+  MAX_PROFILE_MATCH_LIMIT,
+  MAX_TRAVERSE_ROW_LIMIT,
+  type OntologyQueryRuntime,
+} from "@trybacked/runtime";
+import { maxRowLimitForProfile } from "@trybacked/service";
 import { describe, expect, it } from "vitest";
 import { MCP_SURFACE_TOOLS, TOOL_NAMES } from "../../src/constants.js";
-import { MCP_TOOL_DEFINITIONS, QUERY_OBJECTS_TOOL_DEFINITION } from "../../src/tools.js";
-
+import {
+  MCP_TOOL_DEFINITIONS,
+  QUERY_OBJECTS_TOOL_DEFINITION,
+  WAREHOUSE_READER_TOOL_DEFINITIONS,
+} from "../../src/tools.js";
 const EMPTY_MODEL = {
   metadata: {
     formatVersion: "1" as const,
@@ -13,19 +22,51 @@ const EMPTY_MODEL = {
   relations: [],
   rules: [],
 };
-
+function advertisedMax(schema: unknown): number | undefined {
+  const node = schema as {
+    unwrap?: () => unknown;
+    maxValue?: number | null;
+  };
+  if (typeof node.unwrap === "function") {
+    return advertisedMax(node.unwrap());
+  }
+  return typeof node.maxValue === "number" ? node.maxValue : undefined;
+}
+function toolField(toolName: string, field: string): unknown {
+  const tool = [
+    ...MCP_TOOL_DEFINITIONS,
+    ...WAREHOUSE_READER_TOOL_DEFINITIONS,
+    QUERY_OBJECTS_TOOL_DEFINITION,
+  ].find((candidate) => candidate.name === toolName);
+  if (tool === undefined) {
+    throw new Error(`${toolName} is not registered`);
+  }
+  return (tool.inputSchema as Record<string, unknown>)[field];
+}
+describe("advertised tool bounds", () => {
+  it.each([
+    [TOOL_NAMES.searchDocuments, "limit", MAX_CHUNK_SEARCH_LIMIT],
+    [TOOL_NAMES.getEntityProfile, "matchLimit", MAX_PROFILE_MATCH_LIMIT],
+    [TOOL_NAMES.traverseGraph, "limit", MAX_TRAVERSE_ROW_LIMIT],
+  ])("%s.%s advertises the enforced ceiling", (toolName, field, enforced) => {
+    expect(advertisedMax(toolField(toolName, field))).toBe(enforced);
+  });
+  it("documents the query_objects row budget it actually applies", () => {
+    expect(QUERY_OBJECTS_TOOL_DEFINITION.description).toContain(
+      String(maxRowLimitForProfile("mcp")),
+    );
+  });
+});
 describe("MCP tool registry", () => {
   it("registers exactly the five surface tools", () => {
     expect(MCP_TOOL_DEFINITIONS).toHaveLength(MCP_SURFACE_TOOLS.length);
     expect(MCP_TOOL_DEFINITIONS.map((tool) => tool.name)).toEqual([...MCP_SURFACE_TOOLS]);
   });
-
   it("uses stable tool name constants", () => {
     for (const name of MCP_SURFACE_TOOLS) {
       expect(Object.values(TOOL_NAMES)).toContain(name);
     }
   });
-
   it("requires string args for parameterized tools", () => {
     const getEntity = MCP_TOOL_DEFINITIONS.find((tool) => tool.name === TOOL_NAMES.getEntity);
     expect(getEntity).toBeDefined();
@@ -35,7 +76,6 @@ describe("MCP tool registry", () => {
     });
   });
 });
-
 describe("query_objects tool", () => {
   it("delegates to the query runtime and returns rows", async () => {
     const calls: unknown[] = [];
@@ -77,7 +117,6 @@ describe("query_objects tool", () => {
       provenance: [],
     });
   });
-
   it("returns a structured error when no runtime is configured", async () => {
     const result = await QUERY_OBJECTS_TOOL_DEFINITION.handler(
       { model: EMPTY_MODEL },
@@ -87,7 +126,6 @@ describe("query_objects tool", () => {
       error: { code: "unavailable", message: expect.stringContaining("unavailable") },
     });
   });
-
   it("returns a structured error for invalid input", async () => {
     const queryRuntime: OntologyQueryRuntime = {
       queryObjects: () => Promise.reject(new Error("should not run")),

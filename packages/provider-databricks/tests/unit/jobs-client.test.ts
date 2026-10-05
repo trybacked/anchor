@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDatabricksJobsClient } from "../../src/jobs-client.js";
-
 describe("createDatabricksJobsClient", () => {
   it("findJobIdByName returns matching job id", async () => {
     const fetchImpl = vi.fn(async () =>

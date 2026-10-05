@@ -9,12 +9,10 @@ import {
   TenantNotFoundError,
   type TenantRuntimeRegistry,
 } from "../../src/tenant-runtime-registry.js";
-
 const fixtureRoot = join(
   dirname(fileURLToPath(import.meta.url)),
   "../../../../fixtures/pmi-minimal",
 );
-
 function mockRegistry(overrides: Partial<TenantRuntimeRegistry> = {}): TenantRuntimeRegistry {
   const service = createAnchorService({ model: readModelYaml(fixtureRoot) });
   return {
@@ -24,7 +22,6 @@ function mockRegistry(overrides: Partial<TenantRuntimeRegistry> = {}): TenantRun
     ...overrides,
   };
 }
-
 describe("Anchor API app (platform mode)", () => {
   it("requires X-Backed-Tenant after auth", async () => {
     const app = createAnchorApiApp(
@@ -41,7 +38,6 @@ describe("Anchor API app (platform mode)", () => {
     });
     expect(response.status).toBe(400);
   });
-
   it("returns 404 for unknown tenant", async () => {
     const app = createAnchorApiApp(
       () => {
@@ -66,7 +62,6 @@ describe("Anchor API app (platform mode)", () => {
     });
     expect(response.status).toBe(404);
   });
-
   it("returns 503 when ontology not published", async () => {
     const app = createAnchorApiApp(
       () => {
@@ -91,7 +86,6 @@ describe("Anchor API app (platform mode)", () => {
     });
     expect(response.status).toBe(503);
   });
-
   it("allows protected routes with tenant header", async () => {
     const app = createAnchorApiApp(
       () => {

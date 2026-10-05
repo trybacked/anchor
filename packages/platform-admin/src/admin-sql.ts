@@ -3,11 +3,9 @@ import {
   createDatabricksSqlClient,
   type DatabricksProviderConfig,
 } from "@trybacked/provider-databricks";
-
 export type AdminSqlClient = {
   execute: (statement: string) => Promise<void>;
 };
-
 export function createAdminSqlClient(config: DatabricksProviderConfig): AdminSqlClient {
   const sql = createDatabricksSqlClient(config);
   return {
@@ -16,17 +14,14 @@ export function createAdminSqlClient(config: DatabricksProviderConfig): AdminSql
     },
   };
 }
-
 export async function ensureRegistryVolume(admin: AdminSqlClient, catalog: string): Promise<void> {
   await admin.execute(`CREATE SCHEMA IF NOT EXISTS \`${catalog}\`.\`backed\``);
   await admin.execute(`CREATE VOLUME IF NOT EXISTS \`${catalog}\`.\`backed\`.\`registry\``);
 }
-
 export async function ensureDocsRawVolume(admin: AdminSqlClient, catalog: string): Promise<void> {
   await admin.execute(`CREATE SCHEMA IF NOT EXISTS \`${catalog}\`.\`docs\``);
   await admin.execute(`CREATE VOLUME IF NOT EXISTS \`${catalog}\`.\`docs\`.\`raw\``);
 }
-
 export async function createTenantCatalog(
   admin: AdminSqlClient,
   catalog: string,
@@ -36,7 +31,6 @@ export async function createTenantCatalog(
     `CREATE CATALOG IF NOT EXISTS \`${catalog}\` COMMENT 'Backed tenant: ${tenantId}'`,
   );
 }
-
 export async function grantTenantCatalogToPrincipal(
   admin: AdminSqlClient,
   catalog: string,
@@ -44,7 +38,6 @@ export async function grantTenantCatalogToPrincipal(
 ): Promise<void> {
   await admin.execute(`GRANT ALL PRIVILEGES ON CATALOG \`${catalog}\` TO \`${applicationId}\``);
 }
-
 export async function grantSharedSpacesToPrincipal(
   admin: AdminSqlClient,
   registry: TenantsRegistry,
@@ -71,7 +64,6 @@ export async function grantSharedSpacesToPrincipal(
     );
   }
 }
-
 async function grantDocsRawVolumeAccess(
   admin: AdminSqlClient,
   catalog: string,
@@ -84,7 +76,6 @@ async function grantDocsRawVolumeAccess(
     `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
   );
 }
-
 export async function grantPlatformPrincipalOnTenant(
   admin: AdminSqlClient,
   registry: TenantsRegistry,

@@ -1,26 +1,20 @@
 import { ObjectQuerySchema, type ObjectQuery } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
-import {
-  applyQueryExecutionBudget,
-  QueryExecutionBudgetError,
-} from "@trybacked/service";
+import { applyQueryExecutionBudget, QueryExecutionBudgetError } from "@trybacked/service";
 import { normalizeSemanticQueryPlan } from "./normalize.js";
 import { applySemanticChatSelectDefault } from "./plan-defaults.js";
 import type { RoutedSemanticPlan, SemanticQueryPlan } from "./plan-types.js";
-
 export class SemanticPlanValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SemanticPlanValidationError";
   }
 }
-
 function assertObjectExists(ontology: Ontology, objectId: string): void {
   if (!ontology.objects.some((object) => object.id === objectId)) {
     throw new SemanticPlanValidationError(`Unknown object "${objectId}" in plan.`);
   }
 }
-
 function assertPropertyExists(ontology: Ontology, objectId: string, propertyId: string): void {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -34,7 +28,6 @@ function assertPropertyExists(ontology: Ontology, objectId: string, propertyId: 
     );
   }
 }
-
 export function validateObjectQueryAgainstOntology(
   ontology: Ontology,
   query: ObjectQuery,
@@ -48,18 +41,15 @@ export function validateObjectQueryAgainstOntology(
   const validated = parsed.data;
   const objectId = validated.objectId;
   assertObjectExists(ontology, objectId);
-
   if (validated.mode === "count" && validated.textSearch !== undefined) {
     throw new SemanticPlanValidationError(
       'mode "count" cannot be combined with textSearch — use a contains filter on a string property.',
     );
   }
-
-  for (const filter of validated.filters ?? []) {
+  for (const filter of validated.filters) {
     const filterObjectId = filter.objectId ?? objectId;
     assertPropertyExists(ontology, filterObjectId, filter.propertyId);
   }
-
   for (const propertyId of validated.select ?? []) {
     if (propertyId.includes(".")) {
       const [joinedObjectId, joinedPropertyId] = propertyId.split(".", 2);
@@ -70,7 +60,6 @@ export function validateObjectQueryAgainstOntology(
     }
     assertPropertyExists(ontology, objectId, propertyId);
   }
-
   const groupBy = validated.groupBy ?? [];
   const aggregations = validated.aggregations ?? [];
   if (groupBy.length > 0) {
@@ -88,7 +77,6 @@ export function validateObjectQueryAgainstOntology(
       assertPropertyExists(ontology, objectId, propertyId);
     }
   }
-
   const withSelectDefault = applySemanticChatSelectDefault(ontology, validated);
   try {
     return applyQueryExecutionBudget(withSelectDefault, "semantic_chat");
@@ -99,7 +87,6 @@ export function validateObjectQueryAgainstOntology(
     throw error;
   }
 }
-
 function routedPlanToSemanticPlan(plan: RoutedSemanticPlan): SemanticQueryPlan {
   if (plan.objectQuery === undefined) {
     throw new SemanticPlanValidationError('route "single" requires objectQuery.');
@@ -110,10 +97,14 @@ function routedPlanToSemanticPlan(plan: RoutedSemanticPlan): SemanticQueryPlan {
     ...(plan.objectSet !== undefined ? { objectSet: plan.objectSet } : {}),
   };
 }
-
-export type ValidatedRoutedPlan = { route: "single"; semanticPlan: SemanticQueryPlan };
-
-export function validateRoutedPlan(ontology: Ontology, plan: RoutedSemanticPlan): ValidatedRoutedPlan {
+export type ValidatedRoutedPlan = {
+  route: "single";
+  semanticPlan: SemanticQueryPlan;
+};
+export function validateRoutedPlan(
+  ontology: Ontology,
+  plan: RoutedSemanticPlan,
+): ValidatedRoutedPlan {
   if (plan.route !== "single") {
     throw new SemanticPlanValidationError(
       'Only route "single" is supported; use the semantic agent for multi-step questions.',

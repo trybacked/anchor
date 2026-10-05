@@ -15,26 +15,22 @@ import type {
   PlatformHandlerDeps,
   PlatformRouteHandler,
 } from "./platform-api-types.js";
-
 export type RouteFactory = {
   meta: PlatformApiRouteSpec;
   createHandler: (deps: PlatformHandlerDeps) => PlatformRouteHandler;
 };
-
 export function platformRoute(
   meta: PlatformApiRouteSpec,
   createHandler: (deps: PlatformHandlerDeps) => PlatformRouteHandler,
 ): RouteFactory {
   return { meta, createHandler };
 }
-
 type PostJsonMeta<Schema extends z.ZodTypeAny> = Omit<
   PlatformApiRouteSpec,
   "method" | "jsonBody"
 > & {
   jsonBody: JsonBodySpec<string, Schema>;
 };
-
 export function postJsonRoute<Schema extends z.ZodTypeAny>(
   meta: PostJsonMeta<Schema>,
   handle: (c: PlatformHandlerContext, body: z.output<Schema>) => Response | Promise<Response>,
@@ -45,7 +41,6 @@ export function postJsonRoute<Schema extends z.ZodTypeAny>(
     () => async (c) => handle(c, await readJsonBody(c, schema)),
   );
 }
-
 export function postServiceJsonRoute<Schema extends z.ZodTypeAny>(
   meta: PostJsonMeta<Schema>,
   invoke: (

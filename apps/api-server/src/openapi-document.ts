@@ -7,10 +7,8 @@ import {
   type PlatformApiRouteSpec,
 } from "./platform-api-route-meta.js";
 import { platformApiRouteSpecs } from "./platform-api-routes/index.js";
-
 const securedOperation = [{ [AUTH_SCHEME]: [] }];
 const publicOperation: never[] = [];
-
 function jsonRequestBodyFromSpec(
   spec: NonNullable<PlatformApiRouteSpec["jsonBody"]>,
 ): Record<string, unknown> {
@@ -24,7 +22,6 @@ function jsonRequestBodyFromSpec(
     },
   };
 }
-
 function buildComponents(
   secured: boolean,
   routes: PlatformApiRouteSpec[],
@@ -43,11 +40,9 @@ function buildComponents(
       ];
     }),
   );
-
   if (!secured) {
     return { schemas };
   }
-
   return {
     schemas,
     securitySchemes: {
@@ -61,7 +56,6 @@ function buildComponents(
     },
   };
 }
-
 function operationFromSpec(spec: PlatformApiRouteSpec, secured: boolean): Record<string, unknown> {
   const opSecurity =
     spec.public === true ? publicOperation : secured ? securedOperation : publicOperation;
@@ -96,19 +90,16 @@ function operationFromSpec(spec: PlatformApiRouteSpec, secured: boolean): Record
     responses: spec.responses,
   };
 }
-
 export function buildOpenApiDocument(secured: boolean): Record<string, unknown> {
   const routes = platformApiRouteSpecs();
   const components = buildComponents(secured, routes);
   const opSecurity = secured ? securedOperation : publicOperation;
-
   const paths: Record<string, Record<string, unknown>> = {};
   for (const spec of routes) {
     const operation = operationFromSpec(spec, secured);
     const existing = paths[spec.path] ?? {};
     paths[spec.path] = { ...existing, [spec.method]: operation };
   }
-
   return {
     openapi: "3.1.0",
     info: {

@@ -13,7 +13,6 @@ import type {
   SemanticType,
 } from "@trybacked/core";
 import { relationshipToRelation } from "./enrich-proposal.js";
-
 const ONTOLOGY_TO_SEMANTIC_TYPE: Record<OntologyPropertyType, SemanticType> = {
   string: "text",
   integer: "number",
@@ -26,17 +25,14 @@ const ONTOLOGY_TO_SEMANTIC_TYPE: Record<OntologyPropertyType, SemanticType> = {
   json: "text",
   reference: "identifier",
 };
-
 const DEFAULT_PROPERTY_CONFIDENCE = 0.75;
 const DEFAULT_OBJECT_CONFIDENCE = 0.85;
-
 function evidenceText(evidence: string | string[] | undefined): string {
   if (evidence === undefined) {
     return "schema_analysis";
   }
   return Array.isArray(evidence) ? evidence.join("; ") : evidence;
 }
-
 function propertyToModelProperty(property: OntologyProperty, table: string): Property {
   return {
     name: property.name,
@@ -52,7 +48,6 @@ function propertyToModelProperty(property: OntologyProperty, table: string): Pro
     },
   };
 }
-
 function objectToEntity(object: Ontology["objects"][number]): Entity {
   const table = object.sourceDatasetId ?? object.id;
   return {
@@ -69,7 +64,6 @@ function objectToEntity(object: Ontology["objects"][number]): Entity {
     properties: object.properties.map((property) => propertyToModelProperty(property, table)),
   };
 }
-
 function entityEvidence(entity: Entity): EvidenceTable {
   return {
     title: `Columns of ${entity.sourceTable}`,
@@ -81,7 +75,6 @@ function entityEvidence(entity: Entity): EvidenceTable {
     ]),
   };
 }
-
 function relationEvidence(relation: Relation): EvidenceTable {
   return {
     title: `Relationship ${relation.id}`,
@@ -95,7 +88,6 @@ function relationEvidence(relation: Relation): EvidenceTable {
     ],
   };
 }
-
 function entityQuestion(entity: Entity): ReviewQuestion {
   const uncertainty = 1 - entity.confidence;
   return {
@@ -109,7 +101,6 @@ function entityQuestion(entity: Entity): ReviewQuestion {
     evidence: entityEvidence(entity),
   };
 }
-
 function relationQuestion(relation: Relation): ReviewQuestion {
   const uncertainty = 1 - relation.confidence;
   return {
@@ -123,13 +114,11 @@ function relationQuestion(relation: Relation): ReviewQuestion {
     evidence: relationEvidence(relation),
   };
 }
-
 export type ProposalFromDiscoveryOptions = {
   runId: string;
   generatedAt?: string;
   reviewConfidenceThreshold?: number;
 };
-
 export function proposalFromDiscovery(
   discovery: DiscoveryReport,
   options: ProposalFromDiscoveryOptions,

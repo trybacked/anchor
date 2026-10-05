@@ -1,6 +1,5 @@
 import type { TenantApiContext } from "../scope.js";
 import type { Transport } from "../transport.js";
-
 export function createAuthoringJobsModule(transport: Transport, ctx: TenantApiContext) {
   return {
     get: (jobId: string) =>
@@ -13,13 +12,15 @@ export function createAuthoringJobsModule(transport: Transport, ctx: TenantApiCo
       }>("GET", ctx.url(`/v1/authoring/jobs/${encodeURIComponent(jobId)}`), {
         headers: ctx.headers,
       }),
-
     wait: async (
       jobId: string,
-      options: { intervalMs?: number; timeoutMs?: number } = {},
+      options: {
+        intervalMs?: number;
+        timeoutMs?: number;
+      } = {},
     ): Promise<Record<string, unknown> | null> => {
       const intervalMs = options.intervalMs ?? 1500;
-      const timeoutMs = options.timeoutMs ?? 120_000;
+      const timeoutMs = options.timeoutMs ?? 120000;
       const started = Date.now();
       for (;;) {
         const job = await createAuthoringJobsModule(transport, ctx).get(jobId);

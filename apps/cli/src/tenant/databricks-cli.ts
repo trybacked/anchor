@@ -1,14 +1,15 @@
 import { spawnSync } from "node:child_process";
-
 export type DatabricksCliResult = {
   stdout: string;
   stderr: string;
   exitCode: number;
 };
-
 export function runDatabricksCli(
   args: string[],
-  options?: { profile?: string | undefined; cwd?: string | undefined },
+  options?: {
+    profile?: string | undefined;
+    cwd?: string | undefined;
+  },
 ): DatabricksCliResult {
   const fullArgs = [...args];
   if (options?.profile !== undefined) {
@@ -25,10 +26,13 @@ export function runDatabricksCli(
     exitCode: result.status ?? 1,
   };
 }
-
 export function runDatabricksCliOrThrow(
   args: string[],
-  options?: { profile?: string | undefined; cwd?: string | undefined; label?: string },
+  options?: {
+    profile?: string | undefined;
+    cwd?: string | undefined;
+    label?: string;
+  },
 ): string {
   const result = runDatabricksCli(args, options);
   if (result.exitCode !== 0) {
@@ -39,19 +43,20 @@ export function runDatabricksCliOrThrow(
   }
   return result.stdout;
 }
-
 export function databricksAccessToken(profile: string): string {
   return runDatabricksCliOrThrow(["auth", "token"], { profile, label: "auth token" }).trim();
 }
-
 export function databricksJson(
   args: string[],
-  options?: { profile?: string | undefined; cwd?: string | undefined; label?: string },
+  options?: {
+    profile?: string | undefined;
+    cwd?: string | undefined;
+    label?: string;
+  },
 ): unknown {
   const stdout = runDatabricksCliOrThrow([...args, "--output", "json"], options);
   return JSON.parse(stdout.trim()) as unknown;
 }
-
 export function executeAdminSql(options: {
   profile: string;
   warehouseId: string;
@@ -66,7 +71,11 @@ export function executeAdminSql(options: {
     ["api", "post", "/api/2.0/sql/statements", "--json", JSON.stringify(payload)],
     { profile: options.profile, label: "SQL statement" },
   );
-  const parsed = JSON.parse(out) as { status?: { state?: string } };
+  const parsed = JSON.parse(out) as {
+    status?: {
+      state?: string;
+    };
+  };
   const state = parsed.status?.state ?? "";
   if (state !== "SUCCEEDED") {
     throw new Error(`SQL failed (${state}): ${options.statement}\n${out}`);

@@ -96,6 +96,13 @@ export type {
   VerifiedExample,
 } from "./semantics.js";
 export {
+  applySemanticCatalogs,
+  CatalogGlossaryTermSchema,
+  DatasetSemanticsSchema,
+  SemanticCatalogSchema,
+} from "./semantic-catalog.js";
+export type { CatalogGlossaryTerm, DatasetSemantics, SemanticCatalog } from "./semantic-catalog.js";
+export {
   DoubtSchema,
   EvidenceTableSchema,
   ReviewQuestionKindSchema,

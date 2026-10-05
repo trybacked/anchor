@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { Ontology, OntologyObject, OntologyProperty, OntologyRelationship } from "./spec.js";
-
 export const OntologyDiffChangeKindSchema = z.enum([
   "object_added",
   "object_removed",
@@ -12,7 +11,6 @@ export const OntologyDiffChangeKindSchema = z.enum([
   "logic_added",
   "logic_removed",
 ]);
-
 export const OntologyDiffChangeSchema = z.object({
   kind: OntologyDiffChangeKindSchema,
   subject: z.string().min(1),
@@ -21,32 +19,26 @@ export const OntologyDiffChangeSchema = z.object({
   before: z.string().optional(),
   after: z.string().optional(),
 });
-
 export const OntologyDiffSchema = z.object({
   fromVersion: z.number().int().positive(),
   toVersion: z.number().int().positive(),
   generatedAt: z.string().datetime(),
   changes: z.array(OntologyDiffChangeSchema),
 });
-
 export type OntologyDiffChangeKind = z.infer<typeof OntologyDiffChangeKindSchema>;
 export type OntologyDiffChange = z.infer<typeof OntologyDiffChangeSchema>;
 export type OntologyDiff = z.infer<typeof OntologyDiffSchema>;
-
 function indexObjects(objects: OntologyObject[]): Map<string, OntologyObject> {
   return new Map(objects.map((object) => [object.id, object]));
 }
-
 function indexRelationships(
   relationships: OntologyRelationship[],
 ): Map<string, OntologyRelationship> {
   return new Map(relationships.map((relationship) => [relationship.id, relationship]));
 }
-
 function propertyMap(object: OntologyObject): Map<string, OntologyProperty> {
   return new Map(object.properties.map((property) => [property.id, property]));
 }
-
 function diffProperties(
   objectId: string,
   previous: OntologyObject,
@@ -88,16 +80,18 @@ function diffProperties(
     }
   }
 }
-
 export function diffOntology(
   previous: Ontology,
   next: Ontology,
-  options: { fromVersion: number; toVersion: number; now?: Date },
+  options: {
+    fromVersion: number;
+    toVersion: number;
+    now?: Date;
+  },
 ): OntologyDiff {
   const changes: OntologyDiffChange[] = [];
   const prevObjects = indexObjects(previous.objects);
   const nextObjects = indexObjects(next.objects);
-
   for (const [id, object] of nextObjects) {
     if (!prevObjects.has(id)) {
       changes.push({
@@ -121,7 +115,6 @@ export function diffOntology(
     }
     diffProperties(id, object, nextObject, changes);
   }
-
   const prevRelations = indexRelationships(previous.relationships);
   const nextRelations = indexRelationships(next.relationships);
   for (const [id, relationship] of nextRelations) {
@@ -144,7 +137,6 @@ export function diffOntology(
       });
     }
   }
-
   const prevLogic = new Map(previous.logic.map((entry) => [entry.id, entry]));
   const nextLogic = new Map(next.logic.map((entry) => [entry.id, entry]));
   for (const [id, entry] of nextLogic) {
@@ -167,7 +159,6 @@ export function diffOntology(
       });
     }
   }
-
   return OntologyDiffSchema.parse({
     fromVersion: options.fromVersion,
     toVersion: options.toVersion,
@@ -175,7 +166,6 @@ export function diffOntology(
     changes,
   });
 }
-
 export function formatOntologyDiff(diff: OntologyDiff): string {
   const header = `Ontology diff v${String(diff.fromVersion)} → v${String(diff.toVersion)}`;
   if (diff.changes.length === 0) {
@@ -198,7 +188,6 @@ export function formatOntologyDiff(diff: OntologyDiff): string {
   });
   return [header, summary, ...lines].join("\n");
 }
-
 export function hasBreakingOntologyChanges(diff: OntologyDiff): boolean {
   return diff.changes.some((change) => change.breaking);
 }

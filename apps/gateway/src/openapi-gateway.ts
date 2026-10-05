@@ -5,15 +5,19 @@ import {
   type OpenApiDocument,
   type OpenApiInfo,
 } from "./openapi-types.js";
-
-export type GatewayOpenApiTarget = { kind: "platform" } | { kind: "tenant"; tenantId: string };
-
+export type GatewayOpenApiTarget =
+  | {
+      kind: "platform";
+    }
+  | {
+      kind: "tenant";
+      tenantId: string;
+    };
 function pathsWithoutHealth(paths: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(paths).filter(([path]) => !path.startsWith(PLATFORM_PUBLIC_HEALTH_PREFIX)),
   );
 }
-
 function tenantScopedPaths(
   paths: Record<string, unknown>,
   prefix: string,
@@ -25,7 +29,6 @@ function tenantScopedPaths(
     ]),
   );
 }
-
 function cookieSecuritySchemes(
   upstream: Record<string, unknown> | undefined,
 ): Record<string, unknown> {
@@ -33,7 +36,6 @@ function cookieSecuritySchemes(
     Object.keys(upstream ?? {}).map((name) => [name, SESSION_COOKIE_SCHEME]),
   );
 }
-
 function withPlatformBrowseNote(info: OpenApiInfo | undefined): OpenApiInfo {
   const note =
     "**Platform API shape (browse only).** No workspace is published yet, so paths stay " +
@@ -48,7 +50,6 @@ function withPlatformBrowseNote(info: OpenApiInfo | undefined): OpenApiInfo {
       description === undefined || description.length === 0 ? note : `${description}\n\n${note}`,
   };
 }
-
 function withTenantNote(info: OpenApiInfo | undefined, tenantId: string): OpenApiInfo {
   const note =
     `**Tenant \`${tenantId}\`.** Try it out calls \`/t/${tenantId}/v1/…\` on this gateway. ` +
@@ -62,16 +63,13 @@ function withTenantNote(info: OpenApiInfo | undefined, tenantId: string): OpenAp
       description === undefined || description.length === 0 ? note : `${description}\n\n${note}`,
   };
 }
-
 type OpenApiComponents = NonNullable<OpenApiDocument["components"]>;
-
 function adaptComponents(doc: OpenApiDocument): OpenApiComponents {
   return {
     ...doc.components,
     securitySchemes: cookieSecuritySchemes(doc.components?.securitySchemes),
   };
 }
-
 export function adaptOpenApiDocumentForGateway(
   doc: OpenApiDocument,
   target: GatewayOpenApiTarget,
@@ -86,7 +84,6 @@ export function adaptOpenApiDocumentForGateway(
       components: adaptComponents(doc),
     });
   }
-
   return mergeGatewayAuthOpenApi({
     ...doc,
     info: withTenantNote(doc.info, target.tenantId),
@@ -95,7 +92,6 @@ export function adaptOpenApiDocumentForGateway(
     components: adaptComponents(doc),
   });
 }
-
 export async function adaptOpenApiResponse(
   upstream: Response,
   target: GatewayOpenApiTarget,

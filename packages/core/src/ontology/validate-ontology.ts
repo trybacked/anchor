@@ -1,13 +1,15 @@
 import type { Ontology, OntologyObject, OntologyProperty } from "./spec.js";
 import { OntologyPropertyTypeSchema, OntologySchema } from "./spec.js";
+import { validateSemanticsReferences } from "./validate-semantics.js";
 import type { ValidationIssue } from "./validation-result.js";
 import { validationResult } from "./validation-result.js";
-import { validateSemanticsReferences } from "./validate-semantics.js";
-
-function indexById<T extends { id: string }>(items: T[]): Map<string, T> {
+function indexById<
+  T extends {
+    id: string;
+  },
+>(items: T[]): Map<string, T> {
   return new Map(items.map((item) => [item.id, item]));
 }
-
 function duplicateIdIssues(kind: string, ids: string[], pathPrefix: string): ValidationIssue[] {
   const seen = new Set<string>();
   const issues: ValidationIssue[] = [];
@@ -24,11 +26,9 @@ function duplicateIdIssues(kind: string, ids: string[], pathPrefix: string): Val
   }
   return issues;
 }
-
 function propertyMap(object: OntologyObject): Map<string, OntologyProperty> {
   return new Map(object.properties.map((property) => [property.id, property]));
 }
-
 function validatePropertyTypes(object: OntologyObject): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   for (const property of object.properties) {
@@ -57,7 +57,6 @@ function validatePropertyTypes(object: OntologyObject): ValidationIssue[] {
   }
   return issues;
 }
-
 function validateObjectIdentifiers(object: OntologyObject): ValidationIssue[] {
   const hasPrimaryKey = object.properties.some((property) => property.role === "primary_key");
   if (!hasPrimaryKey) {
@@ -72,7 +71,6 @@ function validateObjectIdentifiers(object: OntologyObject): ValidationIssue[] {
   }
   return [];
 }
-
 export function validateOntology(ontology: Ontology): ReturnType<typeof validationResult> {
   const parseResult = OntologySchema.safeParse(ontology);
   if (!parseResult.success) {
@@ -84,10 +82,8 @@ export function validateOntology(ontology: Ontology): ReturnType<typeof validati
       },
     ]);
   }
-
   const parsed = parseResult.data;
   const issues: ValidationIssue[] = [];
-
   issues.push(
     ...duplicateIdIssues(
       "object",
@@ -116,9 +112,7 @@ export function validateOntology(ontology: Ontology): ReturnType<typeof validati
       "actions",
     ),
   );
-
   const objects = indexById(parsed.objects);
-
   for (const object of parsed.objects) {
     issues.push(
       ...duplicateIdIssues(
@@ -130,7 +124,6 @@ export function validateOntology(ontology: Ontology): ReturnType<typeof validati
     issues.push(...validatePropertyTypes(object));
     issues.push(...validateObjectIdentifiers(object));
   }
-
   for (const property of parsed.objects.flatMap((object) => object.properties)) {
     if (property.referenceObjectId !== undefined && !objects.has(property.referenceObjectId)) {
       issues.push({
@@ -141,7 +134,6 @@ export function validateOntology(ontology: Ontology): ReturnType<typeof validati
       });
     }
   }
-
   for (const relationship of parsed.relationships) {
     const path = `relationships[id=${relationship.id}]`;
     if (!objects.has(relationship.fromObjectId)) {
@@ -183,7 +175,6 @@ export function validateOntology(ontology: Ontology): ReturnType<typeof validati
       }
     }
   }
-
   for (const entry of parsed.logic) {
     if (!objects.has(entry.objectId)) {
       issues.push({
@@ -194,7 +185,6 @@ export function validateOntology(ontology: Ontology): ReturnType<typeof validati
       });
     }
   }
-
   for (const action of parsed.actions) {
     const path = `actions[id=${action.id}]`;
     if (!objects.has(action.objectId)) {
@@ -218,8 +208,6 @@ export function validateOntology(ontology: Ontology): ReturnType<typeof validati
       }
     }
   }
-
   issues.push(...validateSemanticsReferences(parsed));
-
   return validationResult(issues);
 }

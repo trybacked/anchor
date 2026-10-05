@@ -1,7 +1,6 @@
 import type { Ontology } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { searchOntologySchema } from "../../src/tools/search-schema.js";
-
 const ontology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -37,7 +36,6 @@ const ontology: Ontology = {
     examples: [],
   },
 };
-
 describe("searchOntologySchema", () => {
   it("ranks partition property for ingest question", () => {
     const hits = searchOntologySchema(ontology, "contracts ingest month 2025");

@@ -25,11 +25,8 @@ export {
   SearchMatchSchema,
   DefinitionResultSchema,
 } from "./schemas.js";
-export {
-  capQueryObjectsPayload,
-  MCP_DEFAULT_OBJECT_QUERY_LIMIT,
-  MCP_TOOL_RESULT_MAX_BYTES,
-} from "./response-cap.js";
+export { capQueryObjectsPayload, MCP_TOOL_RESULT_MAX_BYTES } from "./response-cap.js";
+export { DEFAULT_SCHEMA_SEARCH_HITS, MAX_SCHEMA_SEARCH_HITS } from "./tools/limits.js";
 export type { QueryObjectsToolPayload } from "./response-cap.js";
 export {
   entityNotFoundMessage,
@@ -72,6 +69,7 @@ export {
 export {
   applyQueryExecutionBudget,
   assertAggregateRowBudget,
+  defaultRowLimitForProfile,
   maxRowLimitForProfile,
   QueryExecutionBudgetError,
   type ExecutionBudgetProfile,
@@ -121,4 +119,9 @@ export {
   type ChatAskStatusResponse,
   type ChatAskUnavailableReason,
 } from "./responses.js";
-export { getChatAskStatus } from "./chat-ask-status.js";
+export {
+  getChatAskStatus,
+  resolveChatAsk,
+  type ChatAskResolution,
+  type SemanticAskHandler,
+} from "./chat-ask-status.js";

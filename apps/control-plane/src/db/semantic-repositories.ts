@@ -1,5 +1,4 @@
 import type pg from "pg";
-
 export async function insertSemanticRun(
   pool: pg.Pool,
   input: {
@@ -31,7 +30,6 @@ export async function insertSemanticRun(
     ],
   );
 }
-
 export async function insertSemanticFeedback(
   pool: pg.Pool,
   input: {
@@ -48,7 +46,6 @@ export async function insertSemanticFeedback(
     [input.runId, input.tenantId, input.rating, input.actor, input.correction ?? null],
   );
 }
-
 export async function listSemanticRuns(
   pool: pg.Pool,
   tenantId: string,

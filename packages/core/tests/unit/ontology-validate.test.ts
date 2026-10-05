@@ -8,12 +8,10 @@ import {
   validateOntology,
   validateSemanticModel,
 } from "../../src/index.js";
-
 const geraceModelPath = path.join(
   fileURLToPath(new URL(".", import.meta.url)),
   "../golden/gerace/model.yaml",
 );
-
 describe("validateSemanticModel", () => {
   it("accepts the Gerace golden model", () => {
     const model = parseModelYaml(readFileSync(geraceModelPath, "utf8"));
@@ -21,7 +19,6 @@ describe("validateSemanticModel", () => {
     expect(result.valid).toBe(true);
     expect(result.issues.filter((issue) => issue.severity === "error")).toHaveLength(0);
   });
-
   it("reports broken relation targets", () => {
     const model = parseModelYaml(readFileSync(geraceModelPath, "utf8"));
     model.relations.push({
@@ -34,7 +31,6 @@ describe("validateSemanticModel", () => {
     expect(result.issues.some((issue) => issue.code === "broken_relationship_target")).toBe(true);
   });
 });
-
 describe("validateOntology", () => {
   it("validates ontology converted from the golden semantic model", () => {
     const model = parseModelYaml(readFileSync(geraceModelPath, "utf8"));
@@ -42,7 +38,6 @@ describe("validateOntology", () => {
     const result = validateOntology(ontology);
     expect(result.valid).toBe(true);
   });
-
   it("requires enum values when type is enum", () => {
     const result = validateOntology({
       metadata: { formatVersion: "1", id: "test", version: 1 },

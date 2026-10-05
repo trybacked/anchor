@@ -4,21 +4,17 @@ import type {
   AnchorService,
   SemanticAskResponse,
 } from "@trybacked/service";
-
 import {
   createSemanticAgentModelFromEnv,
   runSemanticAgent,
   SemanticAgentError,
 } from "./agent/run-agent.js";
 import { tenantAiAskEnabled, type TenantAiAskCapabilities } from "./tenant-ai-ask.js";
-
 export type { TenantAiAskCapabilities };
-
 export type SemanticAskHandler = (body: {
   question: string;
   evidence?: boolean | undefined;
 }) => Promise<SemanticAskResponse>;
-
 export type AttachSemanticAskOptions = {
   ontology: Ontology;
   env: NodeJS.ProcessEnv;
@@ -26,14 +22,17 @@ export type AttachSemanticAskOptions = {
   onOperation?: AnchorOperationAuditHook | undefined;
   tenant?: string | undefined;
 };
-
 export type SemanticAskAvailability =
-  | { available: true }
-  | { available: false; reason: "missing_llm_gateway" | "disabled_for_tenant" };
-
+  | {
+      available: true;
+    }
+  | {
+      available: false;
+      reason: "missing_llm_gateway" | "disabled_for_tenant";
+    };
 export function describeSemanticAskAvailability(
   env: NodeJS.ProcessEnv,
-  tenantCapabilities?: TenantAiAskCapabilities | undefined,
+  tenantCapabilities?: TenantAiAskCapabilities,
 ): SemanticAskAvailability {
   if (createSemanticAgentModelFromEnv(env) === undefined) {
     return { available: false, reason: "missing_llm_gateway" };
@@ -43,11 +42,6 @@ export function describeSemanticAskAvailability(
   }
   return { available: true };
 }
-
-/**
- * Adds `semanticAsk` and capability `aiAsk` to an AnchorService.
- * Requires `AI_GATEWAY_API_KEY` on the host process; ontology + warehouse must already be on `base`.
- */
 export function attachSemanticAsk(
   base: AnchorService,
   options: AttachSemanticAskOptions,
@@ -55,7 +49,6 @@ export function attachSemanticAsk(
   const agentModel = createSemanticAgentModelFromEnv(options.env);
   const askEnabled = tenantAiAskEnabled(options.tenantCapabilities);
   const baseCapabilities = base.capabilities.bind(base);
-
   if (agentModel === undefined) {
     return Object.assign(base, {
       capabilities: () => ({
@@ -64,7 +57,6 @@ export function attachSemanticAsk(
       }),
     });
   }
-
   const semanticAsk: SemanticAskHandler = async (body) => {
     if (!askEnabled) {
       throw new SemanticAgentError("AI ask is disabled for this tenant.");
@@ -108,7 +100,6 @@ export function attachSemanticAsk(
       ...(agent.clarification !== undefined ? { clarification: agent.clarification } : {}),
     };
   };
-
   return Object.assign(base, {
     capabilities: () => ({
       ...baseCapabilities(),

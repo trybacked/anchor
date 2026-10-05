@@ -337,6 +337,9 @@ importers:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+      '@trybacked/ontology-authoring':
+        specifier: workspace:*
+        version: link:../ontology-authoring
       '@trybacked/runtime':
         specifier: workspace:*
         version: link:../runtime

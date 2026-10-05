@@ -1,6 +1,5 @@
 import type { SqlStatementExecutor } from "../execute.js";
 import type { DocumentsDatasetResolver } from "./dataset.js";
-
 export type DocumentMetadata = {
   documentId: string;
   filename: string;
@@ -12,7 +11,6 @@ export type DocumentMetadata = {
   sourceModifiedAt?: string | undefined;
   fileSizeBytes?: number | undefined;
 };
-
 export type DocumentPreviewDescriptor = {
   kind: "volumeFile";
   documentId: string;
@@ -21,7 +19,6 @@ export type DocumentPreviewDescriptor = {
   filename: string;
   contentType: string;
 };
-
 export type VolumeFileReadResult = {
   status: 200 | 206;
   data: Uint8Array;
@@ -30,16 +27,15 @@ export type VolumeFileReadResult = {
   contentRange?: string | undefined;
   acceptRanges?: string | undefined;
 };
-
 export type VolumeFileReader = (
   path: string,
-  init?: { range?: string | undefined },
+  init?: {
+    range?: string | undefined;
+  },
 ) => Promise<VolumeFileReadResult>;
-
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
 }
-
 function contentTypeFromFilename(filename: string): string {
   const lower = filename.toLowerCase();
   if (lower.endsWith(".pdf")) {
@@ -53,12 +49,10 @@ function contentTypeFromFilename(filename: string): string {
   }
   return "application/octet-stream";
 }
-
 function stringField(row: Record<string, unknown>, key: string): string | undefined {
   const value = row[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
-
 function numberField(row: Record<string, unknown>, key: string): number | undefined {
   const value = row[key];
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -70,7 +64,6 @@ function numberField(row: Record<string, unknown>, key: string): number | undefi
   }
   return undefined;
 }
-
 export function createDocumentAccessReader(options: {
   executor: SqlStatementExecutor;
   documents: DocumentsDatasetResolver;
@@ -78,7 +71,6 @@ export function createDocumentAccessReader(options: {
 }) {
   const { executor, documents, readVolumeFile } = options;
   const table = documents.documentsTable;
-
   async function loadRow(documentId: string): Promise<Record<string, unknown> | null> {
     const sql = `SELECT ${quoteIdentifier("document_id")}, ${quoteIdentifier("filename")}, ${quoteIdentifier("path")}, ${quoteIdentifier("doc_type")}, ${quoteIdentifier("page_count")}, ${quoteIdentifier("folder")}, ${quoteIdentifier("source_modified_at")}, ${quoteIdentifier("file_size")}
 FROM ${table}
@@ -87,7 +79,6 @@ LIMIT 1`;
     const rows = await executor(sql, [{ name: "documentId", value: documentId }]);
     return rows[0] ?? null;
   }
-
   return {
     getMetadata: async (documentId: string): Promise<DocumentMetadata | null> => {
       const row = await loadRow(documentId);
@@ -115,7 +106,6 @@ LIMIT 1`;
           : {}),
       };
     },
-
     describePreview: async (
       documentId: string,
       page: number,
@@ -138,11 +128,16 @@ LIMIT 1`;
         contentType: contentTypeFromFilename(filename),
       };
     },
-
     readOriginalFile: async (
       documentId: string,
-      init?: { range?: string | undefined },
-    ): Promise<VolumeFileReadResult & { filename: string }> => {
+      init?: {
+        range?: string | undefined;
+      },
+    ): Promise<
+      VolumeFileReadResult & {
+        filename: string;
+      }
+    > => {
       if (readVolumeFile === undefined) {
         throw new Error(
           "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
@@ -162,5 +157,4 @@ LIMIT 1`;
     },
   };
 }
-
 export type DocumentAccessReader = ReturnType<typeof createDocumentAccessReader>;

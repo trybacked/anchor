@@ -9,10 +9,10 @@ import {
   type TraverseDirection,
 } from "@trybacked/core/graph-traverse";
 import type { SqlStatementExecutor } from "../execute.js";
-import { toSqlLimitLiteral } from "./sql-limit-literal.js";
+import { MAX_TRAVERSE_ROW_LIMIT } from "./constants.js";
 import type { DocumentsDatasetResolver } from "./dataset.js";
 import { resolveEntityTable } from "./dataset.js";
-
+import { toSqlLimitLiteral } from "./sql-limit-literal.js";
 export type GraphTraverseInput = {
   relationId: string;
   value: string | number;
@@ -22,15 +22,12 @@ export type GraphTraverseInput = {
   mode?: "rows" | "count" | undefined;
   filters?: ObjectQueryFilter[] | undefined;
 };
-
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
 }
-
 function aliasFor(entityId: string): string {
   return `t_${entityId.replaceAll("-", "_")}`;
 }
-
 function resolveOntologyObject(ontology: Ontology, entityId: string) {
   const object = ontology.objects.find((candidate) => candidate.id === entityId);
   if (object === undefined) {
@@ -38,14 +35,17 @@ function resolveOntologyObject(ontology: Ontology, entityId: string) {
   }
   return object;
 }
-
 function appendJoins(
   segments: RelationPathSegment[],
   model: SemanticModel,
   ontology: Ontology,
   documents: DocumentsDatasetResolver | undefined,
   joined: Set<string>,
-): { fromClause: string; joins: string[]; terminalEntityId: string } | null {
+): {
+  fromClause: string;
+  joins: string[];
+  terminalEntityId: string;
+} | null {
   const firstSegment = segments[0];
   if (firstSegment === undefined) {
     return null;
@@ -58,7 +58,6 @@ function appendJoins(
   joined.add(startEntityId);
   const joins: string[] = [];
   const fromClause = `${startTable} AS ${quoteIdentifier(aliasFor(startEntityId))}`;
-
   for (const segment of segments) {
     const { fromEntity, toEntity, fromColumn, toColumn } = segment;
     if (joined.has(fromEntity) && !joined.has(toEntity)) {
@@ -83,13 +82,10 @@ function appendJoins(
       joined.add(fromEntity);
     }
   }
-
   const lastSegment = segments[segments.length - 1];
   const terminalEntityId = lastSegment?.toEntity ?? startEntityId;
-
   return { fromClause, joins, terminalEntityId };
 }
-
 export function createGraphTraverseReader(options: {
   model: SemanticModel;
   ontology: Ontology;
@@ -97,7 +93,6 @@ export function createGraphTraverseReader(options: {
   documents: DocumentsDatasetResolver | undefined;
 }): (input: GraphTraverseInput) => Promise<Record<string, unknown>[]> {
   const { model, ontology, executor, documents } = options;
-
   return async (input) => {
     const direction: TraverseDirection = input.direction ?? "forward";
     const depth = clampTraverseDepth(input.depth);
@@ -110,7 +105,6 @@ export function createGraphTraverseReader(options: {
     if (segments === null || segments.length === 0) {
       return [];
     }
-
     const orientedSegments =
       direction === "forward"
         ? segments
@@ -121,20 +115,17 @@ export function createGraphTraverseReader(options: {
             fromColumn: segment.toColumn,
             toColumn: segment.fromColumn,
           }));
-
     const joined = new Set<string>();
     const clause = appendJoins(orientedSegments, model, ontology, documents, joined);
     if (clause === null) {
       return [];
     }
-
     const firstHop = orientedSegments[0];
     if (firstHop === undefined) {
       return [];
     }
     const startEntityId = firstHop.fromEntity;
     const startColumn = firstHop.fromColumn;
-
     const parameters: SqlParameter[] = [];
     const filterConditions: string[] = [];
     for (const filter of input.filters ?? []) {
@@ -148,7 +139,6 @@ export function createGraphTraverseReader(options: {
       );
     }
     const extraWhere = filterConditions.length > 0 ? ` AND ${filterConditions.join(" AND ")}` : "";
-
     if (mode === "count") {
       const sql = `SELECT COUNT(*) AS ${quoteIdentifier("count")}
 FROM ${clause.fromClause}
@@ -156,7 +146,6 @@ ${clause.joins.join("\n")}
 WHERE ${quoteIdentifier(aliasFor(startEntityId))}.${quoteIdentifier(startColumn)} = :startValue${extraWhere}`;
       return executor(sql, [{ name: "startValue", value: input.value }, ...parameters]);
     }
-
     const selectList = [...joined]
       .flatMap((entityId) => {
         const entity = model.entities.find((candidate) => candidate.id === entityId);
@@ -169,13 +158,11 @@ WHERE ${quoteIdentifier(aliasFor(startEntityId))}.${quoteIdentifier(startColumn)
         );
       })
       .join(", ");
-
     const sql = `SELECT ${selectList}
 FROM ${clause.fromClause}
 ${clause.joins.join("\n")}
 WHERE ${quoteIdentifier(aliasFor(startEntityId))}.${quoteIdentifier(startColumn)} = :startValue${extraWhere}
-LIMIT ${toSqlLimitLiteral(input.limit, 500)}`;
-
+LIMIT ${toSqlLimitLiteral(input.limit, MAX_TRAVERSE_ROW_LIMIT)}`;
     return executor(sql, [{ name: "startValue", value: input.value }, ...parameters]);
   };
 }

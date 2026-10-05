@@ -1,6 +1,5 @@
 import { TenantsRegistrySchema, type TenantsRegistry } from "@trybacked/core";
 import { z } from "zod";
-
 const ControlPlaneConfigSchema = z.object({
   host: z.string().min(1),
   port: z.number().int().positive(),
@@ -13,13 +12,45 @@ const ControlPlaneConfigSchema = z.object({
   enrollmentBundleTarget: z.string().min(1).optional(),
   platformPrincipal: z.string().min(1).optional(),
   sharedSpacesJson: z.string().min(2),
+  defaultSharedSpaces: z.array(z.string().min(1)).min(1),
   databricksHost: z.string().min(1),
   databricksToken: z.string().min(1),
   databricksWarehouseId: z.string().min(1),
 });
-
 export type ControlPlaneConfig = z.infer<typeof ControlPlaneConfigSchema>;
-
+const DEFAULT_SHARED_SPACES_JSON = '{"anac":{"catalog":"backed","schema":"anac"}}';
+function sharedSpaceKeys(json: string): string[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    throw new Error("CONTROL_PLANE_SHARED_SPACES_JSON is not valid JSON.");
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("CONTROL_PLANE_SHARED_SPACES_JSON must be an object keyed by shared space.");
+  }
+  const keys = Object.keys(parsed);
+  if (keys.length === 0) {
+    throw new Error("CONTROL_PLANE_SHARED_SPACES_JSON must declare at least one shared space.");
+  }
+  return keys;
+}
+function resolveDefaultSharedSpaces(env: NodeJS.ProcessEnv, configured: string[]): string[] {
+  const requested = (env["CONTROL_PLANE_DEFAULT_SHARED_SPACES"] ?? "")
+    .split(",")
+    .map((key) => key.trim())
+    .filter((key) => key.length > 0);
+  if (requested.length === 0) {
+    return configured;
+  }
+  const unknown = requested.filter((key) => !configured.includes(key));
+  if (unknown.length > 0) {
+    throw new Error(
+      `CONTROL_PLANE_DEFAULT_SHARED_SPACES references unknown shared spaces: ${unknown.join(", ")}.`,
+    );
+  }
+  return requested;
+}
 export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConfig {
   const databaseUrl = env["DATABASE_URL"]?.trim();
   const adminToken = env["CONTROL_PLANE_ADMIN_TOKEN"]?.trim();
@@ -33,7 +64,6 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
   if (internalToken === undefined || internalToken.length === 0) {
     throw new Error("CONTROL_PLANE_INTERNAL_TOKEN is required.");
   }
-
   const enrollmentHost =
     env["CONTROL_PLANE_ENROLLMENT_HOST"]?.trim() ?? env["BACKED_DATABRICKS_HOST"]?.trim();
   const databricksHost = env["BACKED_DATABRICKS_HOST"]?.trim();
@@ -51,7 +81,9 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
       "BACKED_DATABRICKS_HOST, BACKED_DATABRICKS_TOKEN, BACKED_DATABRICKS_WAREHOUSE_ID required.",
     );
   }
-
+  const sharedSpacesJson =
+    env["CONTROL_PLANE_SHARED_SPACES_JSON"]?.trim() ?? DEFAULT_SHARED_SPACES_JSON;
+  const configuredSharedSpaces = sharedSpaceKeys(sharedSpacesJson);
   return ControlPlaneConfigSchema.parse({
     host: env["CONTROL_PLANE_HOST"] ?? env["HOST"] ?? "0.0.0.0",
     port: Number(env["PORT"] ?? env["CONTROL_PLANE_PORT"] ?? 8791),
@@ -65,15 +97,13 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
     enrollmentProfile: env["CONTROL_PLANE_ENROLLMENT_PROFILE"]?.trim() ?? "DEFAULT",
     enrollmentBundleTarget: env["CONTROL_PLANE_ENROLLMENT_BUNDLE_TARGET"]?.trim(),
     platformPrincipal: env["BACKED_PLATFORM_PRINCIPAL"]?.trim(),
-    sharedSpacesJson:
-      env["CONTROL_PLANE_SHARED_SPACES_JSON"]?.trim() ??
-      '{"anac":{"catalog":"backed","schema":"anac"}}',
+    sharedSpacesJson,
+    defaultSharedSpaces: resolveDefaultSharedSpaces(env, configuredSharedSpaces),
     databricksHost,
     databricksToken,
     databricksWarehouseId,
   });
 }
-
 export function buildEnrollmentRegistry(
   config: ControlPlaneConfig,
 ): Pick<TenantsRegistry, "enrollment" | "shared_spaces"> {

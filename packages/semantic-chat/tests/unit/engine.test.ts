@@ -6,7 +6,6 @@ import {
   normalizeSemanticQueryPlan,
   buildRowProvenance,
 } from "../../src/index.js";
-
 const ontology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -27,7 +26,6 @@ const ontology: Ontology = {
   logic: [],
   actions: [],
 };
-
 describe("semantic-chat engine", () => {
   it("executes a plan deterministically with provenance", async () => {
     const runtime: OntologyQueryRuntime = {
@@ -43,7 +41,6 @@ describe("semantic-chat engine", () => {
       ontology,
       queryRuntime: runtime,
     });
-
     const answer = await engine.executePlan({
       objectQuery: {
         entityId: "contract",
@@ -51,7 +48,6 @@ describe("semantic-chat engine", () => {
         limit: 5,
       },
     });
-
     expect(answer.result.rowCount).toBe(1);
     expect(answer.route).toBe("single");
     expect(answer.ontologyVersion).toBe(1);
@@ -64,7 +60,6 @@ describe("semantic-chat engine", () => {
     });
     expect(answer.result.sql).toContain("`backed`.`anac`.`contracts`");
   });
-
   it("normalizes in and is_not_null operators", () => {
     const normalized = normalizeSemanticQueryPlan({
       objectQuery: {
@@ -82,7 +77,6 @@ describe("semantic-chat engine", () => {
       ]),
     );
   });
-
   it("normalizes legacy column and = operator", () => {
     const normalized = normalizeSemanticQueryPlan({
       objectQuery: {
@@ -96,7 +90,6 @@ describe("semantic-chat engine", () => {
       value: "X",
     });
   });
-
   it("builds row provenance without document columns", () => {
     const rows = buildRowProvenance({
       ontology,

@@ -1,7 +1,6 @@
 import { EntityProfileBodySchema, GraphTraverseBodySchema } from "@trybacked/service";
 import { postServiceJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { HTTP_OK_OR_UNAVAILABLE, jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
-
 export const platformApiProfileGraphRoutes: RouteFactory[] = [
   postServiceJsonRoute(
     {

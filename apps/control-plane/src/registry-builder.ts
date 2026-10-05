@@ -2,7 +2,6 @@ import type { TenantsRegistry } from "@trybacked/core";
 import type { ControlPlaneConfig } from "./config.js";
 import { buildEnrollmentRegistry } from "./config.js";
 import type { OrganizationRow } from "./db/repositories.js";
-
 export function buildTenantsRegistry(
   config: ControlPlaneConfig,
   organizations: OrganizationRow[],
@@ -27,7 +26,6 @@ export function buildTenantsRegistry(
     tenants,
   };
 }
-
 function parseSharedSpaces(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.filter((entry): entry is string => typeof entry === "string");

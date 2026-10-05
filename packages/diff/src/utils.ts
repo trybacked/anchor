@@ -1,9 +1,7 @@
 import type { DiffChange } from "@trybacked/core";
-
 export function indexByKey<T>(items: T[], key: (item: T) => string): Map<string, T> {
   return new Map(items.map((item) => [key(item), item]));
 }
-
 export function collectAddedRemoved<T>(
   previous: Map<string, T>,
   next: Map<string, T>,
@@ -23,7 +21,6 @@ export function collectAddedRemoved<T>(
   }
   return changes;
 }
-
 export function collectAdded<T>(
   previous: Map<string, T>,
   next: Map<string, T>,

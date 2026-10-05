@@ -30,13 +30,10 @@ export const MCP_SURFACE_TOOLS = [
   TOOL_NAMES.getPropertyValues,
   TOOL_NAMES.getDefinition,
 ] as const;
-
 export const MCP_QUERY_TOOL = TOOL_NAMES.queryObjects;
-
 export const MCP_WAREHOUSE_READER_TOOLS = [
   TOOL_NAMES.searchDocuments,
   TOOL_NAMES.getEntityProfile,
   TOOL_NAMES.traverseGraph,
 ] as const;
-
 export type McpSurfaceTool = (typeof TOOL_NAMES)[keyof typeof TOOL_NAMES];

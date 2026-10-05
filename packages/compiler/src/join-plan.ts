@@ -1,21 +1,16 @@
 import type { Ontology, OntologyObject, OntologyRelationship } from "@trybacked/core";
 import { ObjectQueryCompileError } from "./errors.js";
-
 export type JoinPlanStep = {
   relationship: OntologyRelationship;
   fromObjectId: string;
   toObjectId: string;
 };
-
 export type JoinPlan = {
   rootObjectId: string;
   steps: JoinPlanStep[];
-
   objectAliases: Map<string, string>;
 };
-
 export const MAX_OBJECT_QUERY_JOINS = 5;
-
 function resolveRelationship(ontology: Ontology, relationshipId: string): OntologyRelationship {
   const relationship = ontology.relationships.find((candidate) => candidate.id === relationshipId);
   if (relationship === undefined) {
@@ -26,8 +21,10 @@ function resolveRelationship(ontology: Ontology, relationshipId: string): Ontolo
   }
   return relationship;
 }
-
-function assertJoinKeys(relationship: OntologyRelationship): { fromKey: string; toKey: string } {
+function assertJoinKeys(relationship: OntologyRelationship): {
+  fromKey: string;
+  toKey: string;
+} {
   if (relationship.fromPropertyId === undefined || relationship.toPropertyId === undefined) {
     throw new ObjectQueryCompileError(
       "invalid_join",
@@ -36,7 +33,6 @@ function assertJoinKeys(relationship: OntologyRelationship): { fromKey: string; 
   }
   return { fromKey: relationship.fromPropertyId, toKey: relationship.toPropertyId };
 }
-
 export function planObjectQueryJoins(
   ontology: Ontology,
   rootObjectId: string,
@@ -48,13 +44,11 @@ export function planObjectQueryJoins(
       `At most ${String(MAX_OBJECT_QUERY_JOINS)} relationship joins are allowed per query.`,
     );
   }
-
   const objectAliases = new Map<string, string>();
   objectAliases.set(rootObjectId, "o0");
   let aliasCounter = 1;
   let currentObjectId = rootObjectId;
   const steps: JoinPlanStep[] = [];
-
   for (const relationshipId of relationshipIds) {
     const relationship = resolveRelationship(ontology, relationshipId);
     let nextObjectId: string;
@@ -75,10 +69,8 @@ export function planObjectQueryJoins(
     steps.push({ relationship, fromObjectId: currentObjectId, toObjectId: nextObjectId });
     currentObjectId = nextObjectId;
   }
-
   return { rootObjectId, steps, objectAliases };
 }
-
 export function compileJoinOnClause(
   step: JoinPlanStep,
   quoteColumn: (objectId: string, propertyId: string) => string,
@@ -86,7 +78,6 @@ export function compileJoinOnClause(
   const { fromKey, toKey } = assertJoinKeys(step.relationship);
   const relationship = step.relationship;
   const { fromObjectId, toObjectId } = step;
-
   if (relationship.fromObjectId === fromObjectId && relationship.toObjectId === toObjectId) {
     return `${quoteColumn(fromObjectId, fromKey)} = ${quoteColumn(toObjectId, toKey)}`;
   }
@@ -98,12 +89,14 @@ export function compileJoinOnClause(
     `Relationship "${relationship.id}" does not match join step ${fromObjectId} → ${toObjectId}.`,
   );
 }
-
 export function resolveObjectInPlan(
   ontology: Ontology,
   plan: JoinPlan,
   objectId: string,
-): { object: OntologyObject; alias: string } {
+): {
+  object: OntologyObject;
+  alias: string;
+} {
   const alias = plan.objectAliases.get(objectId);
   if (alias === undefined) {
     throw new ObjectQueryCompileError(

@@ -15,14 +15,11 @@ import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { ANSI, wrap } from "../ui/ansi.js";
 import { initUi } from "../ui/index.js";
-
 const DEPLOY_PRIVACY_NOTE =
   "Ontology data stays local — object queries run on your configured warehouse.";
-
 function writeDeployStderr(text: string, style: "dim" | "brand" = "dim"): void {
   console.error(wrap(style === "brand" ? ANSI.brand : ANSI.dim, text));
 }
-
 async function buildQueryRuntime(root: string): Promise<OntologyQueryRuntime | undefined> {
   const ontology = loadPublishedOntology(root);
   if (ontology === null || !hasDatabricksEnv(process.env)) {
@@ -41,7 +38,6 @@ async function buildQueryRuntime(root: string): Promise<OntologyQueryRuntime | u
   }
   return built.runtime;
 }
-
 export const deployCommand: CommandHandler = async () => {
   initUi();
   const root = findWorkspaceRoot(process.cwd());

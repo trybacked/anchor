@@ -1,15 +1,13 @@
 import { SemanticAgentError, SemanticPlanValidationError } from "@trybacked/semantic-chat";
-import { getChatAskStatus, SemanticAskBodySchema } from "@trybacked/service";
+import { getChatAskStatus, resolveChatAsk, SemanticAskBodySchema } from "@trybacked/service";
 import { getAnchorService } from "../platform-api-handler-utils.js";
 import { platformRoute, postJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
-
 const ASK_UNAVAILABLE_MESSAGES = {
   missing_llm_gateway:
     "AI ask is not configured on this deployment (set AI_GATEWAY_API_KEY on platform-api).",
   disabled_for_tenant: "AI ask is disabled for this tenant.",
 } as const;
-
 export const platformApiSemanticChatRoutes: RouteFactory[] = [
   platformRoute(
     {
@@ -38,7 +36,7 @@ export const platformApiSemanticChatRoutes: RouteFactory[] = [
       tags: ["semantic-chat"],
       requires: "tenant",
       jsonBody: jsonBody("SemanticAskBody", SemanticAskBodySchema, {
-        question: "Quanti contratti nel mese di ingest 2025-06?",
+        question: "How many customers were onboarded last month?",
       }),
       responses: {
         "200": {
@@ -50,13 +48,12 @@ export const platformApiSemanticChatRoutes: RouteFactory[] = [
       },
     },
     async (c, body) => {
-      const service = getAnchorService(c);
-      const status = getChatAskStatus(service);
-      if (!status.available) {
-        return c.json({ error: ASK_UNAVAILABLE_MESSAGES[status.reason] }, 503);
+      const resolution = resolveChatAsk(getAnchorService(c));
+      if (!resolution.available) {
+        return c.json({ error: ASK_UNAVAILABLE_MESSAGES[resolution.reason] }, 503);
       }
       try {
-        const answer = await service.semanticAsk!({
+        const answer = await resolution.ask({
           question: body.question,
           ...(body.evidence !== undefined ? { evidence: body.evidence } : {}),
         });

@@ -1,9 +1,7 @@
 import type { DatabricksProviderConfig } from "./config.js";
-
 function apiBaseUrl(host: string): string {
   return `https://${host}`;
 }
-
 export function normalizeDatabricksVolumePath(path: string): string {
   const trimmed = path.trim();
   if (trimmed.startsWith("dbfs:")) {
@@ -11,7 +9,6 @@ export function normalizeDatabricksVolumePath(path: string): string {
   }
   return trimmed;
 }
-
 export type DatabricksFileReadResult = {
   status: 200 | 206;
   data: Uint8Array;
@@ -20,7 +17,6 @@ export type DatabricksFileReadResult = {
   contentRange?: string | undefined;
   acceptRanges?: string | undefined;
 };
-
 export type DatabricksDirectoryEntry = {
   path: string;
   name: string;
@@ -28,47 +24,44 @@ export type DatabricksDirectoryEntry = {
   fileSize?: number | undefined;
   lastModified?: number | undefined;
 };
-
 export type DatabricksFileStat = {
   path: string;
   fileSize: number;
   lastModified?: number | undefined;
 };
-
 export class DatabricksFileExistsError extends Error {
   readonly path: string;
-
   constructor(path: string) {
     super(`File already exists: ${path}`);
     this.name = "DatabricksFileExistsError";
     this.path = path;
   }
 }
-
 export type DatabricksFilesClient = {
   readFile: (
     path: string,
-    init?: { range?: string | undefined },
+    init?: {
+      range?: string | undefined;
+    },
   ) => Promise<DatabricksFileReadResult>;
   writeFile: (
     path: string,
     data: Uint8Array,
-    options?: { overwrite?: boolean | undefined },
+    options?: {
+      overwrite?: boolean | undefined;
+    },
   ) => Promise<void>;
   statFile: (path: string) => Promise<DatabricksFileStat | null>;
   listDirectory: (path: string) => Promise<DatabricksDirectoryEntry[]>;
   deleteFile: (path: string) => Promise<void>;
 };
-
 export type DatabricksBlobStoreWriteOptions = {
   overwrite?: boolean | undefined;
 };
-
 export type DatabricksBlobStore = {
   read: (path: string) => Promise<string | null>;
   write: (path: string, text: string, options?: DatabricksBlobStoreWriteOptions) => Promise<void>;
 };
-
 function contentTypeFromFilename(filename: string): string {
   const lower = filename.toLowerCase();
   if (lower.endsWith(".pdf")) {
@@ -85,7 +78,6 @@ function contentTypeFromFilename(filename: string): string {
   }
   return "application/octet-stream";
 }
-
 export function createDatabricksFilesClient(
   config: DatabricksProviderConfig,
 ): DatabricksFilesClient {
@@ -129,7 +121,6 @@ export function createDatabricksFilesClient(
         ...(acceptRanges !== undefined ? { acceptRanges } : {}),
       };
     },
-
     statFile: async (rawPath) => {
       const path = normalizeDatabricksVolumePath(rawPath);
       const url = `${apiBaseUrl(config.host)}/api/2.0/fs/files${encodeURI(path)}`;
@@ -159,7 +150,6 @@ export function createDatabricksFilesClient(
         ...(lastModified !== undefined && !Number.isNaN(lastModified) ? { lastModified } : {}),
       };
     },
-
     listDirectory: async (rawPath) => {
       const path = normalizeDatabricksVolumePath(rawPath);
       const url = `${apiBaseUrl(config.host)}/api/2.0/fs/directories${encodeURI(path)}`;
@@ -199,7 +189,6 @@ export function createDatabricksFilesClient(
         ];
       });
     },
-
     deleteFile: async (rawPath) => {
       const path = normalizeDatabricksVolumePath(rawPath);
       const url = `${apiBaseUrl(config.host)}/api/2.0/fs/files${encodeURI(path)}`;
@@ -217,7 +206,6 @@ export function createDatabricksFilesClient(
         );
       }
     },
-
     writeFile: async (rawPath, data, options) => {
       const path = normalizeDatabricksVolumePath(rawPath);
       const overwrite = options?.overwrite === true;
@@ -247,7 +235,6 @@ export function createDatabricksFilesClient(
   };
   return client;
 }
-
 export function createDatabricksBlobStore(config: DatabricksProviderConfig): DatabricksBlobStore {
   const client = createDatabricksFilesClient(config);
   return {

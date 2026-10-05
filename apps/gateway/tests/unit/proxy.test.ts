@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { forwardToPlatform, tenantPathFromRequest } from "../../src/proxy.js";
 import type { GatewayConfig } from "../../src/config.js";
-
 const platformConfig: GatewayConfig = {
   host: "127.0.0.1",
   port: 0,
@@ -15,14 +14,12 @@ const platformConfig: GatewayConfig = {
   platformUpstream: "http://127.0.0.1:8797",
   platformToken: "upstream-token",
 };
-
 describe("proxy", () => {
   it("rewrites path for tenant prefix", () => {
     expect(tenantPathFromRequest("/t/gerace/v1/model/entities", "gerace")).toBe(
       "/v1/model/entities",
     );
   });
-
   it("forwards with bearer, user, and tenant headers", async () => {
     let seenAuth: string | null = null;
     let seenUser: string | null = null;
@@ -53,7 +50,6 @@ describe("proxy", () => {
     expect(seenUser).toBe("demo");
     expect(seenTenant).toBe("gerace");
   });
-
   it("forwards multipart POST body to platform-api", async () => {
     let seenMethod: string | undefined;
     let bodyLength = 0;
@@ -85,7 +81,6 @@ describe("proxy", () => {
     expect(seenMethod).toBe("POST");
     expect(bodyLength).toBeGreaterThan(0);
   });
-
   it("omits tenant header when tenant id is undefined", async () => {
     let seenTenant: string | null = "unset";
     const fetchImpl: typeof fetch = async (_input, init) => {

@@ -1,12 +1,10 @@
 import type { SqlStatementExecutor } from "./execute.js";
 import type { DocumentsDatasetResolver } from "./readers/dataset.js";
-
 export type WarehouseTableCapabilities = {
   documents: boolean;
   documentElements: boolean;
   entityProfiles: boolean;
 };
-
 async function tableExists(
   executor: SqlStatementExecutor,
   qualifiedTable: string,
@@ -18,7 +16,6 @@ async function tableExists(
     return false;
   }
 }
-
 export async function probeWarehouseTableCapabilities(
   executor: SqlStatementExecutor,
   documents: DocumentsDatasetResolver,
@@ -34,11 +31,9 @@ export async function probeWarehouseTableCapabilities(
     entityProfiles: profilesOk,
   };
 }
-
 export function warehouseReadersAvailable(caps: WarehouseTableCapabilities): boolean {
   return caps.documents && caps.documentElements;
 }
-
 export function missingWarehouseTablesMessage(caps: WarehouseTableCapabilities): string {
   const missing: string[] = [];
   if (!caps.documents) {

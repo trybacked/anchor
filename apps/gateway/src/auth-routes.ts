@@ -6,9 +6,10 @@ import { setSessionCookie } from "./cookies.js";
 import { createSessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";
 import { authenticateUser, type UserRecord } from "./users.js";
-
 export function registerAuthRoutes(
-  app: Hono<{ Variables: GatewayVariables }>,
+  app: Hono<{
+    Variables: GatewayVariables;
+  }>,
   config: GatewayConfig,
   getUsers: () => UserRecord[],
 ): void {

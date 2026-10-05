@@ -2,8 +2,8 @@ import { zValidator } from "@hono/zod-validator";
 import type { AuthoringCommand } from "@trybacked/core";
 import { applyCommands } from "@trybacked/ontology-authoring";
 import { Hono } from "hono";
-import { z } from "zod";
 import type pg from "pg";
+import { z } from "zod";
 import {
   getAuthoring,
   requireAuthoringAccess,
@@ -17,40 +17,30 @@ import {
   insertSemanticRun,
   listSemanticRuns,
 } from "../db/semantic-repositories.js";
-
 const FeedbackBodySchema = z.object({
   runId: z.string().uuid(),
   rating: z.enum(["up", "down"]),
   correction: z.string().optional(),
   promoteToExample: z.boolean().optional(),
 });
-
 const PromoteBodySchema = z.object({
   exampleId: z.string().min(1),
   question: z.string().min(1),
   tags: z.array(z.string()).default([]),
 });
-
 type SemanticEnv = {
   Variables: {
     authoring: AuthoringVariables;
   };
 };
-
-export function registerSemanticRoutes(
-  app: Hono,
-  config: ControlPlaneConfig,
-  pool: pg.Pool,
-): void {
+export function registerSemanticRoutes(app: Hono, config: ControlPlaneConfig, pool: pg.Pool): void {
   const semantic = new Hono<SemanticEnv>();
   semantic.use("*", requireAuthoringAccess(config, pool));
-
   semantic.get("/runs", requireAuthoringRole("viewer"), async (c) => {
     const { tenantId } = getAuthoring(c);
     const runs = await listSemanticRuns(pool, tenantId, 30);
     return c.json({ runs });
   });
-
   semantic.post(
     "/feedback",
     requireAuthoringRole("viewer"),
@@ -94,7 +84,6 @@ export function registerSemanticRoutes(
       return c.json({ ok: true });
     },
   );
-
   semantic.post(
     "/runs",
     requireAuthoringRole("editor"),
@@ -123,7 +112,6 @@ export function registerSemanticRoutes(
       return c.json({ ok: true });
     },
   );
-
   semantic.post(
     "/promote-example",
     requireAuthoringRole("editor"),
@@ -157,6 +145,5 @@ export function registerSemanticRoutes(
       return c.json({ ok: true, exampleId: body.exampleId });
     },
   );
-
   app.route("/v1/tenants/:tenantId/authoring/semantic", semantic);
 }

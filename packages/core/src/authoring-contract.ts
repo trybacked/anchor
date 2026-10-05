@@ -13,10 +13,8 @@ import {
   PropertySemanticsSchema,
   VerifiedExampleSchema,
 } from "./semantics.js";
-
 export const TenantRoleSchema = z.enum(["viewer", "editor", "publisher", "admin"]);
 export type TenantRole = z.infer<typeof TenantRoleSchema>;
-
 export const AuthoringCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("addEntity"), entity: EntitySchema }),
   z.object({
@@ -121,13 +119,10 @@ export const AuthoringCommandSchema = z.discriminatedUnion("type", [
     exampleId: z.string().min(1),
   }),
 ]);
-
 export type AuthoringCommand = z.infer<typeof AuthoringCommandSchema>;
-
 export const ApplyCommandsBodySchema = z.object({
   commands: z.array(AuthoringCommandSchema).min(1).max(100),
 });
-
 export const OntologyDraftResponseSchema = z.object({
   revision: z.number().int().nonnegative(),
   basedOnVersion: z.number().int().nonnegative().nullable(),
@@ -135,7 +130,6 @@ export const OntologyDraftResponseSchema = z.object({
   updatedBy: z.string().min(1).nullable(),
   updatedAt: z.string().datetime(),
 });
-
 export const ApplyCommandsResponseSchema = z.object({
   revision: z.number().int().nonnegative(),
   model: SemanticModelSchema,
@@ -151,53 +145,43 @@ export const ApplyCommandsResponseSchema = z.object({
     ),
   }),
 });
-
 export const PublishOntologyBodySchema = z.object({
   notes: z.string().max(2000).optional(),
 });
-
 export const PublishOntologyResponseSchema = z.object({
   jobId: z.string().uuid(),
 });
-
 export const OntologyVersionSummarySchema = z.object({
   version: z.number().int().positive(),
   publishedAt: z.string().datetime(),
   publishedBy: z.string().min(1).nullable(),
   notes: z.string().nullable(),
 });
-
 export const OntologyVersionDetailSchema = OntologyVersionSummarySchema.extend({
   model: SemanticModelSchema,
 });
-
 export const OntologyChangeRecordSchema = z.object({
   revision: z.number().int().nonnegative(),
   command: AuthoringCommandSchema,
   actor: z.string().min(1),
   createdAt: z.string().datetime(),
 });
-
 export const OntologyPackSummarySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   description: z.string(),
 });
 export type OntologyPackSummary = z.infer<typeof OntologyPackSummarySchema>;
-
 export const ImportOntologyBodySchema = z.object({
   format: z.enum(["yaml", "json"]),
   content: z.string().min(1),
 });
-
 export const TenantRoleBindingSchema = z.object({
   subjectType: z.enum(["user", "workos_role"]),
   subject: z.string().min(1),
   role: TenantRoleSchema,
 });
-
 export const PutMemberBodySchema = TenantRoleBindingSchema;
-
 export const AuthoringJobSchema = z.object({
   id: z.string().uuid(),
   kind: z.string().min(1),
@@ -205,30 +189,25 @@ export const AuthoringJobSchema = z.object({
   error: z.string().nullable(),
   result: z.record(z.unknown()).nullable(),
 });
-
 export const AuthoringDiffChangeSchema = z.object({
   kind: z.enum(["added", "changed", "removed", "breaking"]),
   subject: z.string().min(1),
   detail: z.string().min(1),
 });
-
 export const AuthoringDiffResponseSchema = z.object({
   changes: z.array(AuthoringDiffChangeSchema),
 });
-
 export const WarehouseTableSchema = z.object({
   catalog: z.string(),
   schema: z.string(),
   name: z.string(),
   fqn: z.string(),
 });
-
 export const WarehouseColumnSchema = z.object({
   name: z.string(),
   dataType: z.string(),
   nullable: z.boolean(),
 });
-
 export const DerivedDatasetSchema = z.object({
   name: z.string().min(1),
   schema: z.string().min(1),
@@ -237,8 +216,7 @@ export const DerivedDatasetSchema = z.object({
   lastError: z.string().nullable(),
   createdBy: z.string().nullable(),
 });
-
 export const CreateDerivedDatasetBodySchema = z.object({
   name: z.string().regex(/^[a-z][a-z0-9_]*$/),
-  sql: z.string().min(1).max(32_000),
+  sql: z.string().min(1).max(32000),
 });

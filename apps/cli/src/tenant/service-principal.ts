@@ -1,19 +1,24 @@
 import { databricksJson, runDatabricksCliOrThrow } from "./databricks-cli.js";
-
 type ServicePrincipalListItem = {
   id?: string;
   applicationId?: string;
   displayName?: string;
 };
-
 export function ensureServicePrincipal(
   profile: string,
   spName: string,
-): { applicationId: string; scimId: string } {
+): {
+  applicationId: string;
+  scimId: string;
+} {
   const listed = databricksJson(["service-principals", "list"], {
     profile,
     label: "service-principals list",
-  }) as ServicePrincipalListItem[] | { Resources?: ServicePrincipalListItem[] };
+  }) as
+    | ServicePrincipalListItem[]
+    | {
+        Resources?: ServicePrincipalListItem[];
+      };
   const sps = Array.isArray(listed) ? listed : (listed.Resources ?? []);
   const existing = sps.find((sp) => sp.displayName === spName);
   let applicationId = existing?.applicationId;
@@ -21,18 +26,23 @@ export function ensureServicePrincipal(
     const created = databricksJson(["service-principals", "create", "--display-name", spName], {
       profile,
       label: "service-principals create",
-    }) as { applicationId: string; id: string };
+    }) as {
+      applicationId: string;
+      id: string;
+    };
     applicationId = created.applicationId;
   }
   const refreshed = databricksJson(["service-principals", "list"], { profile }) as
-    ServicePrincipalListItem[] | { Resources?: ServicePrincipalListItem[] };
+    | ServicePrincipalListItem[]
+    | {
+        Resources?: ServicePrincipalListItem[];
+      };
   const all = Array.isArray(refreshed) ? refreshed : (refreshed.Resources ?? []);
   const match = all.find((sp) => sp.applicationId === applicationId);
   const scimId = match?.id;
   if (scimId === undefined || scimId.length === 0) {
     throw new Error(`Could not resolve SCIM id for service principal ${spName}.`);
   }
-
   runDatabricksCliOrThrow(
     [
       "api",
@@ -52,10 +62,8 @@ export function ensureServicePrincipal(
     ],
     { profile, label: "SP SQL entitlement" },
   );
-
   return { applicationId, scimId };
 }
-
 export function createOboToken(profile: string, applicationId: string, label: string): string {
   runDatabricksCliOrThrow(
     [
@@ -74,6 +82,8 @@ export function createOboToken(profile: string, applicationId: string, label: st
   const tokenResponse = databricksJson(
     ["token-management", "create-obo-token", applicationId, "--comment", `backed ${label}`],
     { profile, label: "create-obo-token" },
-  ) as { token_value: string };
+  ) as {
+    token_value: string;
+  };
   return tokenResponse.token_value;
 }

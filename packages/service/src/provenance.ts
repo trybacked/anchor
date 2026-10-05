@@ -1,7 +1,6 @@
 import { compileObjectQuery } from "@trybacked/compiler";
 import type { ObjectQuery } from "@trybacked/compiler";
 import type { Ontology, OntologyObject } from "@trybacked/core";
-
 export type DocumentProvenance = {
   documentId: string;
   page?: number | undefined;
@@ -11,26 +10,22 @@ export type DocumentProvenance = {
   sourceFile?: string | undefined;
   filename?: string | undefined;
 };
-
 export type EntityProvenance = {
   objectId: string;
   objectName: string;
   sourceDatasetId?: string | undefined;
 };
-
 export type RowProvenance = {
   rowIndex: number;
   entity: EntityProvenance;
   row: Record<string, unknown>;
   document?: DocumentProvenance | undefined;
 };
-
 const DOCUMENT_ID_KEYS = ["document_id", "documentId"] as const;
 const PAGE_START_KEYS = ["page_start", "pageStart", "page", "page_number"] as const;
 const PAGE_END_KEYS = ["page_end", "pageEnd"] as const;
 const DOCUMENT_TYPE_KEYS = ["document_type", "documentType", "doc_type", "elementType"] as const;
 const SOURCE_FILE_KEYS = ["source_file", "sourceFile", "filename"] as const;
-
 function readField(row: Record<string, unknown>, keys: readonly string[]): unknown {
   for (const key of keys) {
     if (key in row) {
@@ -39,7 +34,6 @@ function readField(row: Record<string, unknown>, keys: readonly string[]): unkno
   }
   return undefined;
 }
-
 function asString(value: unknown): string | undefined {
   if (typeof value === "string" && value.length > 0) {
     return value;
@@ -49,7 +43,6 @@ function asString(value: unknown): string | undefined {
   }
   return undefined;
 }
-
 function asNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -60,7 +53,6 @@ function asNumber(value: unknown): number | undefined {
   }
   return undefined;
 }
-
 function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -68,7 +60,6 @@ function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   }
   return object;
 }
-
 function documentProvenanceFromRow(row: Record<string, unknown>): DocumentProvenance | undefined {
   const documentId = asString(readField(row, DOCUMENT_ID_KEYS));
   if (documentId === undefined) {
@@ -86,7 +77,6 @@ function documentProvenanceFromRow(row: Record<string, unknown>): DocumentProven
     ...(sourceFile !== undefined ? { filename: sourceFile, sourceFile } : {}),
   };
 }
-
 export function buildRowProvenance(options: {
   ontology: Ontology;
   objectId: string;
@@ -98,7 +88,6 @@ export function buildRowProvenance(options: {
     objectName: object.name,
     ...(object.sourceDatasetId !== undefined ? { sourceDatasetId: object.sourceDatasetId } : {}),
   };
-
   return options.rows.map((row, rowIndex) => {
     let document = documentProvenanceFromRow(row);
     if (object.id === "document_element" || object.id === "document") {
@@ -119,7 +108,6 @@ export function buildRowProvenance(options: {
     };
   });
 }
-
 export function buildQueryExecutionProvenance(options: {
   ontology: Ontology;
   objectQuery: ObjectQuery;
@@ -140,7 +128,6 @@ export function buildQueryExecutionProvenance(options: {
     }),
   };
 }
-
 export function buildChunkSearchProvenance(rows: Record<string, unknown>[]): RowProvenance[] {
   return rows.map((row, rowIndex) => {
     const documentId = asString(row["documentId"] ?? row["document_id"]) ?? "";
@@ -165,7 +152,6 @@ export function buildChunkSearchProvenance(rows: Record<string, unknown>[]): Row
     };
   });
 }
-
 export function buildGraphTraverseProvenance(rows: Record<string, unknown>[]): RowProvenance[] {
   return rows.map((row, rowIndex) => {
     const entityKey = Object.keys(row).find((key) => key.includes("."));
@@ -181,10 +167,13 @@ export function buildGraphTraverseProvenance(rows: Record<string, unknown>[]): R
     };
   });
 }
-
 export function buildEntityProfileProvenance(
   profile: {
-    matches: { objectId: string; objectName: string; row: Record<string, unknown> }[];
+    matches: {
+      objectId: string;
+      objectName: string;
+      row: Record<string, unknown>;
+    }[];
   },
   ontology: Ontology,
 ): RowProvenance[] {

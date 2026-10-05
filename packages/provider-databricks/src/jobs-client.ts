@@ -1,9 +1,7 @@
 import type { DatabricksProviderConfig } from "./config.js";
-
 function apiBaseUrl(host: string): string {
   return `https://${host}`;
 }
-
 export type DatabricksJobRunState =
   | "PENDING"
   | "RUNNING"
@@ -14,30 +12,30 @@ export type DatabricksJobRunState =
   | "BLOCKED"
   | "WAITING_FOR_RETRY"
   | "QUEUED";
-
 export type DatabricksJobRunResult = {
   runId: number;
   state: DatabricksJobRunState;
   resultState?: "SUCCESS" | "FAILED" | "TIMEDOUT" | "CANCELED" | undefined;
   stateMessage?: string | undefined;
 };
-
 export type DatabricksJobsClient = {
   findJobIdByName: (name: string) => Promise<number | null>;
   runNow: (
     jobId: number,
-    options?: { fullRefresh?: boolean | undefined },
-  ) => Promise<{ runId: number }>;
+    options?: {
+      fullRefresh?: boolean | undefined;
+    },
+  ) => Promise<{
+    runId: number;
+  }>;
   getRun: (runId: number) => Promise<DatabricksJobRunResult>;
 };
-
 export function createDatabricksJobsClient(config: DatabricksProviderConfig): DatabricksJobsClient {
   const base = `${apiBaseUrl(config.host)}/api/2.1/jobs`;
   const headers = (): Record<string, string> => ({
     Authorization: `Bearer ${config.token}`,
     "Content-Type": "application/json",
   });
-
   return {
     findJobIdByName: async (name) => {
       const url = `${base}/list?name=${encodeURIComponent(name)}`;
@@ -47,7 +45,12 @@ export function createDatabricksJobsClient(config: DatabricksProviderConfig): Da
         throw new Error(`Databricks jobs list ${String(response.status)}: ${body.slice(0, 240)}`);
       }
       const payload = (await response.json()) as {
-        jobs?: Array<{ job_id?: number; settings?: { name?: string } }>;
+        jobs?: Array<{
+          job_id?: number;
+          settings?: {
+            name?: string;
+          };
+        }>;
       };
       const jobs = payload.jobs ?? [];
       for (const job of jobs) {
@@ -57,7 +60,6 @@ export function createDatabricksJobsClient(config: DatabricksProviderConfig): Da
       }
       return null;
     },
-
     runNow: async (jobId, options) => {
       const body: Record<string, unknown> = { job_id: jobId };
       if (options?.fullRefresh === true) {
@@ -72,13 +74,14 @@ export function createDatabricksJobsClient(config: DatabricksProviderConfig): Da
         const text = await response.text();
         throw new Error(`Databricks run-now ${String(response.status)}: ${text.slice(0, 240)}`);
       }
-      const payload = (await response.json()) as { run_id?: number };
+      const payload = (await response.json()) as {
+        run_id?: number;
+      };
       if (payload.run_id === undefined) {
         throw new Error("Databricks run-now response missing run_id");
       }
       return { runId: payload.run_id };
     },
-
     getRun: async (runId) => {
       const url = `${base}/runs/get?run_id=${String(runId)}`;
       const response = await fetch(url, { headers: headers() });

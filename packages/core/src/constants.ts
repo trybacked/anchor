@@ -1,13 +1,7 @@
 export const MODEL_FORMAT_VERSION = "1" as const;
-
 export const LOW_CONFIDENCE_THRESHOLD = 0.7;
-
 export const DEFAULT_REVIEW_CONFIDENCE_THRESHOLD = 0.95;
-
 export const DEFAULT_SEARCH_MIN_SCORE = 0.35;
-
 export const DEFAULT_WAREHOUSE_ROW_LIMIT = 15;
-
 export const MAX_WAREHOUSE_ROW_LIMIT = 1000;
-
 export const SEMANTIC_CHAT_MAX_ROW_LIMIT = 50;

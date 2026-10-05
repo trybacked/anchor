@@ -1,10 +1,8 @@
 import type { Ontology } from "./spec.js";
 import type { ValidationIssue } from "./validation-result.js";
-
 function objectIds(ontology: Ontology): Set<string> {
   return new Set(ontology.objects.map((object) => object.id));
 }
-
 function propertyIds(ontology: Ontology, objectId: string): Set<string> {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -12,11 +10,9 @@ function propertyIds(ontology: Ontology, objectId: string): Set<string> {
   }
   return new Set(object.properties.map((property) => property.id));
 }
-
 export function validateSemanticsReferences(ontology: Ontology): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const objects = objectIds(ontology);
-
   for (const object of ontology.objects) {
     const semantics = object.semantics;
     if (semantics?.defaultTimeDimension !== undefined) {
@@ -40,12 +36,10 @@ export function validateSemanticsReferences(ontology: Ontology): ValidationIssue
       }
     }
   }
-
   const block = ontology.semantics;
   if (block === undefined) {
     return issues;
   }
-
   const glossaryIds = new Set<string>();
   for (const term of block.glossary) {
     if (glossaryIds.has(term.id)) {
@@ -77,7 +71,6 @@ export function validateSemanticsReferences(ontology: Ontology): ValidationIssue
       }
     }
   }
-
   const exampleIds = new Set<string>();
   for (const example of block.examples) {
     if (exampleIds.has(example.id)) {
@@ -90,6 +83,5 @@ export function validateSemanticsReferences(ontology: Ontology): ValidationIssue
     }
     exampleIds.add(example.id);
   }
-
   return issues;
 }

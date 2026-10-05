@@ -7,7 +7,6 @@ import { createGatewayApp } from "../../src/app.js";
 import type { GatewayConfig } from "../../src/config.js";
 import { hashPassword } from "../../src/password.js";
 import { createSessionToken } from "../../src/session.js";
-
 function writeRegistry(dir: string): string {
   const path = join(dir, "tenants.yaml");
   writeFileSync(
@@ -31,7 +30,6 @@ tenants:
   );
   return path;
 }
-
 function baseConfig(dir: string, registryPath: string): GatewayConfig {
   return {
     host: "127.0.0.1",
@@ -47,7 +45,6 @@ function baseConfig(dir: string, registryPath: string): GatewayConfig {
     platformToken: "platform-token",
   };
 }
-
 describe("gateway routing", () => {
   it("returns 403 for tenant not in user list", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
@@ -71,7 +68,6 @@ describe("gateway routing", () => {
     });
     expect(response.status).toBe(403);
   });
-
   it("proxies authorized tenant", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
@@ -104,7 +100,6 @@ describe("gateway routing", () => {
     expect(proxied).toBe(true);
     expect(tenantHeader).toBe("gerace");
   });
-
   it("default tenant serves /v1 without tenant prefix", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
@@ -134,7 +129,6 @@ describe("gateway routing", () => {
     expect(response.status).toBe(200);
     expect(proxied).toBe(true);
   });
-
   it("redirects trailing slash on /docs/", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
@@ -148,7 +142,6 @@ describe("gateway routing", () => {
     expect(response.status).toBe(301);
     expect(response.headers.get("location")).toBe("/docs");
   });
-
   it("redirects /docs to platform browse when registry has no tenants", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     writeFileSync(
@@ -173,7 +166,6 @@ tenants: {}
     expect(response.status).toBe(302);
     expect(response.headers.get("location")).toBe("/docs/platform");
   });
-
   it("redirects legacy /docs/t/reference to platform browse", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     writeFileSync(
@@ -197,7 +189,6 @@ tenants: {}
     expect(response.status).toBe(302);
     expect(response.headers.get("location")).toBe("/docs/platform");
   });
-
   it("serves public docs picker without session", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
@@ -213,7 +204,6 @@ tenants: {}
     expect(html).toContain("/docs/t/gerace");
     expect(html).toContain("/docs/t/backed");
   });
-
   it("serves platform Scalar docs at /docs/platform when tenants exist", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
@@ -229,7 +219,6 @@ tenants: {}
     expect(html).toContain("Scalar");
     expect(html).toContain("/openapi.json");
   });
-
   it("serves Scalar docs without login", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
@@ -245,7 +234,6 @@ tenants: {}
     expect(html).toContain("Scalar");
     expect(html).toContain("/t/gerace/openapi.json");
   });
-
   it("serves openapi.json without session", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);
@@ -269,7 +257,6 @@ tenants: {}
       { url: "http://localhost", description: "Gateway · tenant gerace" },
     ]);
   });
-
   it("multi mode does not expose /v1 at root", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-"));
     const registryPath = writeRegistry(dir);

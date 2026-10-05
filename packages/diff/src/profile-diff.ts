@@ -1,17 +1,13 @@
 import type { DiffChange, ProfileReport, TableProfile } from "@trybacked/core";
 import { collectAddedRemoved, indexByKey } from "./utils.js";
-
 export const COLUMN_SUBJECT_SEPARATOR = ".";
-
 export function columnSubject(table: string, column: string): string {
   return `${table}${COLUMN_SUBJECT_SEPARATOR}${column}`;
 }
-
 function columnSubjectTable(subject: string): string {
   const separatorIndex = subject.indexOf(COLUMN_SUBJECT_SEPARATOR);
   return separatorIndex === -1 ? subject : subject.slice(0, separatorIndex);
 }
-
 export function tableFromProfileChange(change: DiffChange): string | undefined {
   switch (change.kind) {
     case "table_added":
@@ -38,7 +34,6 @@ export function tableFromProfileChange(change: DiffChange): string | undefined {
     }
   }
 }
-
 function diffColumns(previous: TableProfile, next: TableProfile): DiffChange[] {
   const previousColumns = indexByKey(previous.columns, (column) => column.name);
   const nextColumns = indexByKey(next.columns, (column) => column.name);
@@ -71,7 +66,6 @@ function diffColumns(previous: TableProfile, next: TableProfile): DiffChange[] {
   }
   return changes;
 }
-
 export function diffProfile(previous: ProfileReport, next: ProfileReport): DiffChange[] {
   const previousTables = indexByKey(previous, (table) => table.table);
   const nextTables = indexByKey(next, (table) => table.table);
@@ -89,7 +83,6 @@ export function diffProfile(previous: ProfileReport, next: ProfileReport): DiffC
   }
   return changes;
 }
-
 export function columnExists(
   profile: ProfileReport,
   tableName: string,

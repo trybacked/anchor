@@ -1,7 +1,5 @@
 import { z } from "zod";
-
 const GatewayAuthModeSchema = z.enum(["file", "workos"]);
-
 const GatewayConfigSchema = z.object({
   host: z.string().min(1),
   port: z.number().int().positive(),
@@ -20,13 +18,10 @@ const GatewayConfigSchema = z.object({
   platformUpstream: z.string().min(1),
   platformToken: z.string().min(1),
   defaultTenant: z.string().min(1).optional(),
-
   publicOrigin: z.string().url().optional(),
 });
-
 export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
 export type GatewayAuthMode = z.infer<typeof GatewayAuthModeSchema>;
-
 function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value.trim().length === 0) {
     return defaultValue;
@@ -40,13 +35,11 @@ function parseBoolean(value: string | undefined, defaultValue: boolean): boolean
   }
   return defaultValue;
 }
-
 export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
   const sessionSecret = env["GATEWAY_SESSION_SECRET"]?.trim();
   if (sessionSecret === undefined || sessionSecret.length === 0) {
     throw new Error("GATEWAY_SESSION_SECRET is required (min 32 characters).");
   }
-
   const platformUpstream = env["GATEWAY_PLATFORM_UPSTREAM"]?.trim().replace(/\/+$/, "");
   const platformToken = env["GATEWAY_PLATFORM_TOKEN"]?.trim();
   if (platformUpstream === undefined || platformUpstream.length === 0) {
@@ -55,7 +48,6 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
   if (platformToken === undefined || platformToken.length === 0) {
     throw new Error("GATEWAY_PLATFORM_TOKEN is required (must match ANCHOR_API_TOKEN).");
   }
-
   const defaultTenant = env["GATEWAY_DEFAULT_TENANT"]?.trim();
   const nodeEnv = env["NODE_ENV"] ?? "development";
   const cookieSecure = parseBoolean(env["GATEWAY_COOKIE_SECURE"], nodeEnv === "production");
@@ -66,7 +58,6 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
   const workosRedirectUri = env["WORKOS_REDIRECT_URI"]?.trim();
   const controlPlaneUrl = env["BACKED_CONTROL_PLANE_URL"]?.trim();
   const controlPlaneInternalToken = env["CONTROL_PLANE_INTERNAL_TOKEN"]?.trim();
-
   if (authMode === "workos") {
     if (
       workosApiKey === undefined ||
@@ -83,7 +74,6 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
       );
     }
   }
-
   const publicOriginExplicit = env["GATEWAY_PUBLIC_ORIGIN"]?.trim().replace(/\/+$/, "");
   const publicOrigin =
     publicOriginExplicit !== undefined && publicOriginExplicit.length > 0
@@ -91,13 +81,11 @@ export function readGatewayConfig(env: NodeJS.ProcessEnv): GatewayConfig {
       : workosRedirectUri !== undefined
         ? new URL(workosRedirectUri).origin
         : undefined;
-
   if (cookieSecure && publicOrigin === undefined) {
     throw new Error(
       "GATEWAY_PUBLIC_ORIGIN is required when cookies are secure (e.g. https://api.backed.app).",
     );
   }
-
   return GatewayConfigSchema.parse({
     host: env["GATEWAY_HOST"] ?? env["HOST"] ?? "127.0.0.1",
     port: Number(env["PORT"] ?? env["GATEWAY_PORT"] ?? 8790),

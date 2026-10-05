@@ -11,10 +11,8 @@ import {
   searchModel,
 } from "../../src/mapping.js";
 import { loadPmiMinimalModel, PMI_MINIMAL_FIXTURE_ROOT } from "../fixture-model.js";
-
 describe("mapping surface", () => {
   const model = loadPmiMinimalModel();
-
   it("listEntities returns id, name, description, status", () => {
     const entities = listEntities(model);
     expect(entities).toEqual(
@@ -29,7 +27,6 @@ describe("mapping surface", () => {
     );
     expect(entities[0]).not.toHaveProperty("sourceTable");
   });
-
   it("getEntity returns properties with semanticType, role, provenance", () => {
     const detail = getEntity(model, "cliente");
     expect(detail).not.toBeNull();
@@ -41,11 +38,9 @@ describe("mapping surface", () => {
       }),
     );
   });
-
   it("getEntity not-found message references list_entities tool", () => {
     expect(entityNotFoundMessage("missing")).toContain(TOOL_NAMES.listEntities);
   });
-
   it("listRelations filters by entity id", () => {
     const all = listRelations(model);
     const filtered = listRelations(model, "fattura");
@@ -56,12 +51,10 @@ describe("mapping surface", () => {
       ),
     ).toBe(true);
   });
-
   it("searchModel matches cliente", async () => {
     const matches = await searchModel(model, "cliente");
     expect(matches.some((match) => match.id === "cliente")).toBe(true);
   });
-
   it("searchModel merges semantic hits with substring fallback", async () => {
     const matches = await searchModel(model, "cliente", {
       semanticSearch: async () => [
@@ -76,7 +69,6 @@ describe("mapping surface", () => {
     expect(matches.some((match) => match.id === "cliente")).toBe(true);
     expect(matches.some((match) => match.id === "fattura")).toBe(true);
   });
-
   it("searchModel falls back to substring when semantic search fails", async () => {
     const matches = await searchModel(model, "cliente", {
       semanticSearch: async () => {
@@ -85,14 +77,12 @@ describe("mapping surface", () => {
     });
     expect(matches.some((match) => match.id === "cliente")).toBe(true);
   });
-
   it("searchModel falls back to substring when semantic search returns invalid payloads", async () => {
     const matches = await searchModel(model, "cliente", {
       semanticSearch: async () => [{ kind: "entity", id: "broken" } as never],
     });
     expect(matches.some((match) => match.id === "cliente")).toBe(true);
   });
-
   it("getDefinition returns confirmed rule for overdue invoice", () => {
     const result = getDefinition(model, "overdue invoice");
     expect(result).toEqual(
@@ -104,13 +94,11 @@ describe("mapping surface", () => {
       }),
     );
   });
-
   it("getDefinition ignores proposed rules", () => {
     const result = getDefinition(model, "draft invoice");
     expect(result.found).toBe(false);
   });
 });
-
 describe("fixture integrity", () => {
   it("loads pmi-minimal model.yaml from disk", () => {
     const raw = readFileSync(join(PMI_MINIMAL_FIXTURE_ROOT, "model.yaml"), "utf8");

@@ -1,6 +1,5 @@
 import { SEMANTIC_CHAT_MAX_ROW_LIMIT } from "@trybacked/core";
 import { z } from "zod";
-
 export const ROW_FILTER_OPS = [
   "=",
   "!=",
@@ -11,7 +10,6 @@ export const ROW_FILTER_OPS = [
   "contains",
   "not_contains",
 ] as const;
-
 export const COMPILER_FILTER_OPS = [
   "eq",
   "neq",
@@ -27,7 +25,6 @@ export const COMPILER_FILTER_OPS = [
   "is_not_null",
   "starts_with",
 ] as const;
-
 export const RowFilterSchema = z
   .object({
     entityId: z.string().min(1).optional(),
@@ -50,20 +47,17 @@ export const RowFilterSchema = z
       });
     }
   });
-
 export const AggregateOpSchema = z.object({
   op: z.enum(["sum", "count", "min", "max", "avg"]),
   column: z.string().min(1).optional(),
   propertyId: z.string().min(1).optional(),
   alias: z.string().min(1).optional(),
 });
-
 export const TimeRangeSchema = z.object({
   column: z.string().min(1),
   from: z.string().optional(),
   to: z.string().optional(),
 });
-
 export const ObjectQueryRequestSchema = z.object({
   entityId: z.string().min(1),
   joins: z.array(z.object({ relationshipId: z.string().min(1) })).optional(),
@@ -84,7 +78,6 @@ export const ObjectQueryRequestSchema = z.object({
     })
     .optional(),
 });
-
 export const ObjectSetDefinitionSchema = z.object({
   entityId: z.string().min(1),
   filters: z.array(RowFilterSchema).default([]),
@@ -92,13 +85,11 @@ export const ObjectSetDefinitionSchema = z.object({
   timeRange: TimeRangeSchema.optional(),
   limit: z.number().int().positive().optional(),
 });
-
 export const SemanticQueryPlanSchema = z.object({
   reasoning: z.string().optional(),
   objectQuery: ObjectQueryRequestSchema,
   objectSet: ObjectSetDefinitionSchema.optional(),
 });
-
 export const RoutedSemanticPlanSchema = z
   .object({
     route: z.enum(["single", "template"]),
@@ -131,7 +122,6 @@ export const RoutedSemanticPlanSchema = z
       });
     }
   });
-
 export type RowFilter = z.infer<typeof RowFilterSchema>;
 export type ObjectQueryRequest = z.infer<typeof ObjectQueryRequestSchema>;
 export type ObjectSetDefinition = z.infer<typeof ObjectSetDefinitionSchema>;

@@ -1,7 +1,5 @@
 import { sign, verify } from "hono/jwt";
-
 const AUTH_CODE_TYP = "oauth_auth_code";
-
 export type OAuthPendingContext = {
   clientId: string;
   redirectUri: string;
@@ -9,7 +7,6 @@ export type OAuthPendingContext = {
   codeChallenge?: string | undefined;
   codeChallengeMethod?: string | undefined;
 };
-
 export type AuthorizationCodePayload = {
   typ: typeof AUTH_CODE_TYP;
   sub: string;
@@ -20,7 +17,6 @@ export type AuthorizationCodePayload = {
   code_challenge_method?: string | undefined;
   exp: number;
 };
-
 export async function signOAuthPending(
   secret: string,
   pending: OAuthPendingContext,
@@ -29,7 +25,6 @@ export async function signOAuthPending(
   const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
   return sign({ ...pending, typ: "oauth_pending", exp }, secret, "HS256");
 }
-
 export async function verifyOAuthPending(
   secret: string,
   token: string,
@@ -72,7 +67,6 @@ export async function verifyOAuthPending(
     return undefined;
   }
 }
-
 export async function createAuthorizationCode(
   secret: string,
   input: {
@@ -100,7 +94,6 @@ export async function createAuthorizationCode(
   };
   return sign(payload, secret, "HS256");
 }
-
 export async function verifyAuthorizationCode(
   secret: string,
   code: string,

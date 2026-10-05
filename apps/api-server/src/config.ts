@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 const ApiConfigSchema = z.object({
   host: z.string().min(1),
   port: z.number().int().positive(),
@@ -13,9 +12,7 @@ const ApiConfigSchema = z.object({
   tenantCacheTtlSeconds: z.number().int().positive().optional(),
   maxUploadBytes: z.number().int().positive(),
 });
-
 export type ApiConfig = z.infer<typeof ApiConfigSchema>;
-
 function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value.trim().length === 0) {
     return defaultValue;
@@ -29,7 +26,6 @@ function parseBoolean(value: string | undefined, defaultValue: boolean): boolean
   }
   return defaultValue;
 }
-
 export function readApiConfig(env: NodeJS.ProcessEnv): ApiConfig {
   const token = env["ANCHOR_API_TOKEN"];
   if (token === undefined || token.trim().length === 0) {
@@ -56,7 +52,6 @@ export function readApiConfig(env: NodeJS.ProcessEnv): ApiConfig {
   const maxUploadRaw = env["ANCHOR_MAX_UPLOAD_BYTES"]?.trim();
   const maxUploadBytes =
     maxUploadRaw !== undefined && maxUploadRaw.length > 0 ? Number(maxUploadRaw) : maxUploadDefault;
-
   return ApiConfigSchema.parse({
     host,
     port,

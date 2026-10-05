@@ -8,11 +8,11 @@ import { DOCS_PLATFORM_PATH, docsPathForTenant } from "./gateway-paths.js";
 import { resolvePublicOrigin } from "./public-origin.js";
 import { scalarMiddleware } from "./scalar-middleware.js";
 import type { GatewayVariables } from "./types.js";
-
 const LEGACY_REFERENCE_DOCS_PATH = "/docs/t/reference";
-
 export function registerDocsRoutes(
-  app: Hono<{ Variables: GatewayVariables }>,
+  app: Hono<{
+    Variables: GatewayVariables;
+  }>,
   config: GatewayConfig,
   registrySource: TenantRegistrySource,
 ): void {
@@ -31,13 +31,10 @@ export function registerDocsRoutes(
       }
     }
   });
-
   app.get(LEGACY_REFERENCE_DOCS_PATH, (c) => c.redirect(DOCS_PLATFORM_PATH));
-
   app.get(DOCS_PLATFORM_PATH, (c, next) =>
     scalarMiddleware(() => scalarConfigForPlatform(resolvePublicOrigin(c, config)))(c, next),
   );
-
   app.get("/docs/t/:tenantId", async (c, next) => {
     const tenantId = c.req.param("tenantId");
     if (!(await canOpenTenantDocs(registrySource, tenantId))) {

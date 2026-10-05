@@ -15,15 +15,12 @@ import type {
   SqlParameter,
 } from "./query.js";
 import { compileExistsSemiJoin, queryUsesPhysicalJoins } from "./semi-join.js";
-
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
 }
-
 function quoteDatasetId(datasetId: string): string {
   return datasetId.split(".").map(quoteIdentifier).join(".");
 }
-
 function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -34,7 +31,6 @@ function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   }
   return object;
 }
-
 function resolveDatasetId(object: OntologyObject): string {
   if (object.sourceDatasetId === undefined) {
     throw new ObjectQueryCompileError(
@@ -44,7 +40,6 @@ function resolveDatasetId(object: OntologyObject): string {
   }
   return object.sourceDatasetId;
 }
-
 function assertKnownProperty(object: OntologyObject, propertyId: string): void {
   if (!object.properties.some((property) => property.id === propertyId)) {
     throw new ObjectQueryCompileError(
@@ -53,7 +48,6 @@ function assertKnownProperty(object: OntologyObject, propertyId: string): void {
     );
   }
 }
-
 function resolveAggregationAlias(aggregation: ObjectQueryAggregation, index: number): string {
   if (aggregation.alias !== undefined && aggregation.alias.length > 0) {
     return aggregation.alias;
@@ -63,7 +57,6 @@ function resolveAggregationAlias(aggregation: ObjectQueryAggregation, index: num
   }
   return index === 0 ? "count" : `count_${String(index)}`;
 }
-
 type FromClause = {
   fromSql: string;
   rootAlias: string;
@@ -71,7 +64,6 @@ type FromClause = {
   joinPlan: JoinPlan | null;
   usePhysicalJoins: boolean;
 };
-
 function buildFromClause(
   ontology: Ontology,
   query: ReturnType<typeof ObjectQuerySchema.parse>,
@@ -80,7 +72,6 @@ function buildFromClause(
   const rootObject = resolveObject(ontology, query.objectId);
   const rootDataset = quoteDatasetId(resolveDatasetId(rootObject));
   const relationshipIds = (query.joins ?? []).map((join) => join.relationshipId);
-
   if (relationshipIds.length === 0) {
     const rootAlias = "o0";
     return {
@@ -91,9 +82,7 @@ function buildFromClause(
       usePhysicalJoins: false,
     };
   }
-
   const plan = planObjectQueryJoins(ontology, query.objectId, relationshipIds);
-
   if (!usePhysicalJoins) {
     const rootAlias = "o0";
     return {
@@ -104,7 +93,6 @@ function buildFromClause(
       usePhysicalJoins: false,
     };
   }
-
   const quoteColumn = (objectId: string, propertyId: string): string => {
     const alias = plan.objectAliases.get(objectId);
     if (alias === undefined) {
@@ -115,7 +103,6 @@ function buildFromClause(
     }
     return `${quoteIdentifier(alias)}.${quoteIdentifier(propertyId)}`;
   };
-
   const joinClauses = plan.steps.map((step) => {
     const toObject = resolveObject(ontology, step.toObjectId);
     const toDataset = quoteDatasetId(resolveDatasetId(toObject));
@@ -126,10 +113,8 @@ function buildFromClause(
     const on = compileJoinOnClause(step, quoteColumn);
     return `INNER JOIN ${toDataset} AS ${quoteIdentifier(toAlias)} ON ${on}`;
   });
-
   const rootAlias = plan.objectAliases.get(query.objectId) ?? "o0";
   const fromSql = `${rootDataset} AS ${quoteIdentifier(rootAlias)}\n${joinClauses.join("\n")}`;
-
   return {
     fromSql,
     rootAlias,
@@ -138,13 +123,15 @@ function buildFromClause(
     usePhysicalJoins: true,
   };
 }
-
 function resolveFilterTarget(
   ontology: Ontology,
   query: ReturnType<typeof ObjectQuerySchema.parse>,
   from: FromClause,
   targetObjectId: string,
-): { object: OntologyObject; alias: string } {
+): {
+  object: OntologyObject;
+  alias: string;
+} {
   if (from.joinPlan === null) {
     if (targetObjectId !== query.objectId) {
       throw new ObjectQueryCompileError(
@@ -156,7 +143,6 @@ function resolveFilterTarget(
   }
   return resolveObjectInPlan(ontology, from.joinPlan, targetObjectId);
 }
-
 function compileWhereClause(
   ontology: Ontology,
   query: ReturnType<typeof ObjectQuerySchema.parse>,
@@ -164,7 +150,6 @@ function compileWhereClause(
   parameters: SqlParameter[],
 ): string {
   const conditions: string[] = [];
-
   for (const filter of query.filters) {
     const targetObjectId = filter.objectId ?? query.objectId;
     if (!from.usePhysicalJoins && from.joinPlan !== null && targetObjectId !== query.objectId) {
@@ -173,7 +158,6 @@ function compileWhereClause(
     const { object, alias } = resolveFilterTarget(ontology, query, from, targetObjectId);
     conditions.push(compileObjectFilter(object, alias, filter, parameters));
   }
-
   if (query.textSearch !== undefined) {
     const searchObjectId = query.textSearch.objectId ?? query.objectId;
     if (from.usePhysicalJoins || from.joinPlan === null || searchObjectId === query.objectId) {
@@ -189,26 +173,62 @@ function compileWhereClause(
       );
     }
   }
-
   if (!from.usePhysicalJoins && from.joinPlan !== null) {
     conditions.push(
       compileExistsSemiJoin(ontology, from.joinPlan, from.rootAlias, query, parameters),
     );
   }
-
   return conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
 }
-
+function compileOrderClause(
+  ontology: Ontology,
+  query: ReturnType<typeof ObjectQuerySchema.parse>,
+  from: FromClause,
+  projectedColumns?: readonly string[],
+): string {
+  const { orderBy } = query;
+  if (orderBy === undefined) {
+    return "";
+  }
+  const direction = query.orderDirection ?? "asc";
+  if (projectedColumns !== undefined) {
+    if (!projectedColumns.includes(orderBy)) {
+      throw new ObjectQueryCompileError(
+        "invalid_order_by",
+        `orderBy "${orderBy}" must be one of the projected columns ${JSON.stringify(projectedColumns)} when using groupBy/aggregations; set an aggregation alias to order by an aggregate.`,
+      );
+    }
+    return ` ORDER BY ${quoteIdentifier(orderBy)} ${direction}`;
+  }
+  const dot = orderBy.indexOf(".");
+  if (dot > 0) {
+    const objectId = orderBy.slice(0, dot);
+    const propertyId = orderBy.slice(dot + 1);
+    const { object, alias } = resolveFilterTarget(ontology, query, from, objectId);
+    assertKnownProperty(object, propertyId);
+    return ` ORDER BY ${quoteIdentifier(alias)}.${quoteIdentifier(propertyId)} ${direction}`;
+  }
+  const rootObject = resolveObject(ontology, query.objectId);
+  if (!rootObject.properties.some((property) => property.id === orderBy)) {
+    throw new ObjectQueryCompileError(
+      "invalid_order_by",
+      `orderBy "${orderBy}" is not a property of object "${query.objectId}"; use a property id of that object or "objectId.propertyId" for a joined column.`,
+    );
+  }
+  return ` ORDER BY ${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(orderBy)} ${direction}`;
+}
 function resolveSelectColumns(
   ontology: Ontology,
   query: ReturnType<typeof ObjectQuerySchema.parse>,
   from: FromClause,
-): { selectList: string; columns: string[] } {
+): {
+  selectList: string;
+  columns: string[];
+} {
   const rootObject = resolveObject(ontology, query.objectId);
   const items = query.select ?? rootObject.properties.map((property) => property.id);
   const selectParts: string[] = [];
   const columns: string[] = [];
-
   for (const item of items) {
     const dot = item.indexOf(".");
     if (dot > 0) {
@@ -227,28 +247,29 @@ function resolveSelectColumns(
     selectParts.push(`${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(item)}`);
     columns.push(item);
   }
-
   return { selectList: selectParts.join(", "), columns };
 }
-
 export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): CompiledObjectQuery {
   const query = ObjectQuerySchema.parse(input);
   const rootObject = resolveObject(ontology, query.objectId);
   const parameters: SqlParameter[] = [];
   const hasJoins = (query.joins ?? []).length > 0;
   const usePhysicalJoins = hasJoins && queryUsesPhysicalJoins(query.objectId, query.select);
-
   if (hasJoins && query.mode === "count" && usePhysicalJoins) {
     throw new ObjectQueryCompileError(
       "invalid_join",
       "mode count with joined projection (select objectId.property) is not supported — omit select or use semi-join filters only.",
     );
   }
-
   const from = buildFromClause(ontology, query, usePhysicalJoins);
   const whereClause = compileWhereClause(ontology, query, from, parameters);
-
   const aggregations = query.aggregations ?? [];
+  if (aggregations.length === 0 && (query.groupBy ?? []).length > 0) {
+    throw new ObjectQueryCompileError(
+      "invalid_aggregation",
+      `groupBy ${JSON.stringify(query.groupBy)} needs at least one aggregation (e.g. {"op":"count","alias":"count"}); without one the breakdown would silently return plain rows.`,
+    );
+  }
   if (aggregations.length > 0) {
     for (const propertyId of query.groupBy ?? []) {
       assertKnownProperty(rootObject, propertyId);
@@ -266,16 +287,13 @@ export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): Comp
     });
     const selectList = [...groupColumns, ...aggExpressions].join(", ");
     const groupClause = groupColumns.length > 0 ? ` GROUP BY ${groupColumns.join(", ")}` : "";
-    const orderClause =
-      query.orderBy !== undefined
-        ? ` ORDER BY ${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(query.orderBy)} ${query.orderDirection ?? "asc"}`
-        : "";
-    const limit = query.limit ?? DEFAULT_OBJECT_QUERY_LIMIT;
-    const sql = `SELECT ${selectList} FROM ${from.fromSql}${whereClause}${groupClause}${orderClause} LIMIT ${String(limit)}`;
     const resultColumns = [
       ...(query.groupBy ?? []),
       ...aggregations.map((aggregation, index) => resolveAggregationAlias(aggregation, index)),
     ];
+    const orderClause = compileOrderClause(ontology, query, from, resultColumns);
+    const limit = query.limit ?? DEFAULT_OBJECT_QUERY_LIMIT;
+    const sql = `SELECT ${selectList} FROM ${from.fromSql}${whereClause}${groupClause}${orderClause} LIMIT ${String(limit)}`;
     return {
       objectId: rootObject.id,
       sql,
@@ -284,7 +302,6 @@ export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): Comp
       joinedObjectIds: from.joinedObjectIds,
     };
   }
-
   if (query.mode === "count") {
     const sql = `SELECT COUNT(*) AS ${quoteIdentifier("count")} FROM ${from.fromSql}${whereClause}`;
     return {
@@ -295,15 +312,10 @@ export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): Comp
       joinedObjectIds: from.joinedObjectIds,
     };
   }
-
   const limit = query.limit ?? DEFAULT_OBJECT_QUERY_LIMIT;
   const { selectList, columns } = resolveSelectColumns(ontology, query, from);
-  const orderClause =
-    query.orderBy !== undefined
-      ? ` ORDER BY ${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(query.orderBy)} ${query.orderDirection ?? "asc"}`
-      : "";
+  const orderClause = compileOrderClause(ontology, query, from);
   const sql = `SELECT ${selectList} FROM ${from.fromSql}${whereClause}${orderClause} LIMIT ${String(limit)}`;
-
   return {
     objectId: rootObject.id,
     sql,

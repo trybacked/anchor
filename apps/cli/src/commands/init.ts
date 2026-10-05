@@ -5,7 +5,6 @@ import { COMMANDS, formatCliCommand } from "../config.js";
 import { initNextStep } from "../messages.js";
 import type { CommandHandler } from "../types.js";
 import { initUi, renderLogo } from "../ui/index.js";
-
 export const initCommand: CommandHandler = (args) => {
   const ui = initUi();
   let parsed;

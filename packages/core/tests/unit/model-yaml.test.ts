@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { parseModelYaml, serializeModelYaml } from "../../src/model-yaml.js";
-
 const MINIMAL_MODEL = `
 metadata:
   formatVersion: "1"
@@ -10,7 +9,6 @@ entities: []
 relations: []
 rules: []
 `.trim();
-
 describe("model-yaml", () => {
   it("round-trips semantic models through YAML", () => {
     const model = parseModelYaml(MINIMAL_MODEL);
@@ -19,7 +17,6 @@ describe("model-yaml", () => {
     expect(reparsed.metadata.runId).toBe("run-test");
     expect(reparsed.entities).toEqual([]);
   });
-
   it("rejects invalid model YAML", () => {
     expect(() => parseModelYaml("not: [valid")).toThrow();
   });

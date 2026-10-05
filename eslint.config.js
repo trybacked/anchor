@@ -2,10 +2,8 @@ import eslint from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
 import jsdoc from "eslint-plugin-jsdoc";
 import tseslint from "typescript-eslint";
-
 const packageSrc = (name) => [`${name}/src/**/*.ts`];
 const publicPackages = ["packages/core"];
-
 export default tseslint.config(
   {
     ignores: [

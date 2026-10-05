@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { AnchorApiError, createAnchorClient } from "../../src/client.js";
 import type { SemanticAskResponse } from "@trybacked/service";
-
 const askPayload: SemanticAskResponse = {
   text: "There are 3 contracts.",
   question: "How many contracts?",
@@ -21,7 +20,6 @@ const askPayload: SemanticAskResponse = {
   attempts: 1,
   steps: [{ id: "q1", type: "objectQuery", rowCount: 1, sql: "SELECT COUNT(*)" }],
 };
-
 describe("createAnchorClient", () => {
   it("returns typed ask response", async () => {
     const fetchImpl: typeof fetch = async () =>
@@ -35,7 +33,6 @@ describe("createAnchorClient", () => {
     expect(answer.steps).toHaveLength(1);
     expect(answer.text).toContain("3");
   });
-
   it("throws AnchorApiError with API error message", async () => {
     const fetchImpl: typeof fetch = async () =>
       new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -56,7 +53,6 @@ describe("createAnchorClient", () => {
     const error = onUnauthorized.mock.calls[0]?.[0];
     expect(error).toBeInstanceOf(AnchorApiError);
   });
-
   it("passes credentials to fetch", async () => {
     let seenCredentials: RequestInit["credentials"];
     const fetchImpl: typeof fetch = async (_input, init) => {
@@ -74,7 +70,6 @@ describe("createAnchorClient", () => {
     await client.listEntities();
     expect(seenCredentials).toBe("include");
   });
-
   it("strips trailing slash from baseUrl", async () => {
     let seenUrl = "";
     const fetchImpl: typeof fetch = async (input) => {

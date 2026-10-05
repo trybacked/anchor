@@ -7,12 +7,10 @@ import { createWarehouseReaders, type WarehouseReaders } from "./readers/create-
 import type { DocumentAccessReader, VolumeFileReader } from "./readers/document-access.js";
 import type { EntityProfileInput, EntityProfileResult } from "./readers/entity-profile.js";
 import type { GraphTraverseInput } from "./readers/graph-traverse.js";
-
 export type SqlStatementExecutor = (
   sql: string,
   parameters: SqlParameter[],
 ) => Promise<Record<string, unknown>[]>;
-
 export type ObjectQueryResult = {
   objectId: string;
   columns: string[];
@@ -20,7 +18,6 @@ export type ObjectQueryResult = {
   rowCount: number;
   sql: string;
 };
-
 export type OntologyQueryRuntimeOptions = {
   ontology: Ontology;
   executor: SqlStatementExecutor;
@@ -31,7 +28,6 @@ export type OntologyQueryRuntimeOptions = {
   tableCapabilities?: WarehouseTableCapabilities | undefined;
   readVolumeFile?: VolumeFileReader | undefined;
 };
-
 export type OntologyQueryRuntime = {
   queryObjects: (query: ObjectQuery) => Promise<ObjectQueryResult>;
   chunkSearch?: (input: ChunkSearchInput) => Promise<Record<string, unknown>[]>;
@@ -40,10 +36,8 @@ export type OntologyQueryRuntime = {
   documentAccess?: DocumentAccessReader | undefined;
   readers?: WarehouseReaders | undefined;
   warehouseCapabilities?: WarehouseTableCapabilities | undefined;
-
   volumeFileAccess?: boolean | undefined;
 };
-
 export function createOntologyQueryRuntime(
   options: OntologyQueryRuntimeOptions,
 ): OntologyQueryRuntime {
@@ -57,7 +51,6 @@ export function createOntologyQueryRuntime(
     tableCapabilities,
     readVolumeFile,
   } = options;
-
   const queryObjects = async (query: ObjectQuery): Promise<ObjectQueryResult> => {
     const compiled = compileObjectQuery(ontology, query);
     const rows = await executor(compiled.sql, compiled.parameters);
@@ -69,7 +62,6 @@ export function createOntologyQueryRuntime(
       sql: compiled.sql,
     };
   };
-
   const readers =
     model !== undefined && tableCapabilities !== undefined
       ? createWarehouseReaders({
@@ -84,7 +76,6 @@ export function createOntologyQueryRuntime(
           readVolumeFile,
         })
       : undefined;
-
   return {
     queryObjects,
     warehouseCapabilities: tableCapabilities,

@@ -22,7 +22,6 @@ import {
 import { publishOntologyRemoteForRegistry } from "./remote-ontology.js";
 import { findBackedRepoRoot } from "./repo-root.js";
 import { createOboToken, ensureServicePrincipal } from "./service-principal.js";
-
 export type TenantCreateOptions = {
   tenantId: string;
   sharedSpaceKeys: string[];
@@ -30,7 +29,6 @@ export type TenantCreateOptions = {
   skipBundle: boolean;
   repoRoot?: string | undefined;
 };
-
 export type TenantCreateResult = {
   tenantId: string;
   catalog: string;
@@ -41,16 +39,13 @@ export type TenantCreateResult = {
   registryUpdated: boolean;
   publicationVersion: number;
 };
-
 function normalizeHost(hostUrl: string): string {
   return hostUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
 }
-
 function enrollmentHostUrl(registry: TenantsRegistry): string {
   const host = registry.enrollment.host;
   return host.startsWith("http") ? host : `https://${host}`;
 }
-
 function writeTenantTargetFile(
   repoRoot: string,
   target: string,
@@ -71,7 +66,6 @@ targets:
 `;
   writeFileSync(targetPath, body, "utf8");
 }
-
 function loadBootstrapModel(tenantId: string): SemanticModel {
   const assetPath = join(dirname(fileURLToPath(import.meta.url)), "minimal-shared-anac.model.yaml");
   const text = readFileSync(assetPath, "utf8");
@@ -86,7 +80,6 @@ function loadBootstrapModel(tenantId: string): SemanticModel {
     },
   };
 }
-
 function readExistingToken(envFile: string): string | undefined {
   if (!existsSync(envFile)) {
     return undefined;
@@ -100,7 +93,6 @@ function readExistingToken(envFile: string): string | undefined {
   const token = line.slice("BACKED_DATABRICKS_TOKEN=".length).trim();
   return token.length > 0 ? token : undefined;
 }
-
 function writeTenantEnvFile(options: {
   envFile: string;
   host: string;
@@ -120,7 +112,6 @@ function writeTenantEnvFile(options: {
   writeFileSync(options.envFile, body, "utf8");
   chmodEnvFileBestEffort(options.envFile);
 }
-
 function chmodEnvFileBestEffort(path: string): void {
   try {
     chmodSync(path, 0o600);
@@ -128,7 +119,6 @@ function chmodEnvFileBestEffort(path: string): void {
     return;
   }
 }
-
 function grantSharedSpaces(
   profile: string,
   warehouseId: string,
@@ -172,7 +162,6 @@ function grantSharedSpaces(
   }
   return tasks;
 }
-
 function scaffoldOntology(
   ontologyDir: string,
   tenantId: string,
@@ -203,7 +192,6 @@ Run \`backed anchor sync\` after editing the model.
     );
   }
 }
-
 export async function provisionTenant(options: TenantCreateOptions): Promise<TenantCreateResult> {
   const repoRoot = options.repoRoot ?? findBackedRepoRoot();
   const registryPath = join(repoRoot, "tenants.yaml");
@@ -217,7 +205,6 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
   const spName = `backed-tenant-${options.tenantId}`;
   const envFile = join(process.env["HOME"] ?? "", ".config", "backed", `${options.tenantId}.env`);
   const ontologyDir = join(repoRoot, "ontology", options.tenantId);
-
   if (options.dryRun) {
     return {
       tenantId: options.tenantId,
@@ -230,19 +217,15 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
       publicationVersion: 0,
     };
   }
-
   await executeAdminSql({
     profile,
     warehouseId,
     statement: `CREATE CATALOG IF NOT EXISTS \`${catalog}\` COMMENT 'Backed tenant: ${options.tenantId}'`,
   });
-
   await ensureRegistryVolume(profile, warehouseId, catalog);
-
   if (options.tenantId !== "backed") {
     writeTenantTargetFile(repoRoot, bundleTarget, hostUrl, catalog);
   }
-
   if (!options.skipBundle) {
     runDatabricksCliOrThrow(["bundle", "deploy", "-t", bundleTarget, "--auto-approve"], {
       profile,
@@ -250,14 +233,11 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
       label: "bundle deploy",
     });
   }
-
   const { applicationId } = ensureServicePrincipal(profile, spName);
-
   let token = readExistingToken(envFile);
   if (token === undefined) {
     token = createOboToken(profile, applicationId, options.tenantId);
   }
-
   await Promise.all(
     grantSharedSpaces(
       profile,
@@ -268,7 +248,6 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
       options.sharedSpaceKeys,
     ),
   );
-
   const platformPrincipal = registry.enrollment.platform_principal;
   if (platformPrincipal !== undefined && platformPrincipal.length > 0) {
     await grantPlatformPrincipalOnTenant({
@@ -280,7 +259,6 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
       sharedKeys: options.sharedSpaceKeys,
     });
   }
-
   runDatabricksCliOrThrow(
     [
       "api",
@@ -295,21 +273,17 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
     ],
     { profile, label: "warehouse CAN_USE" },
   );
-
   writeTenantEnvFile({ envFile, host, token, warehouseId, catalog });
-
   const model = loadBootstrapModel(options.tenantId);
   scaffoldOntology(ontologyDir, options.tenantId, catalog, model);
   const record = publishSemanticModel(ontologyDir, model, { ontologyId: options.tenantId });
   const modelYaml = readFileSync(join(ontologyDir, "model.yaml"), "utf8");
   await publishOntologyRemoteForRegistry(registry, catalog, record, modelYaml);
-
   const hadTenant = registry.tenants[options.tenantId] !== undefined;
   const updated = ensureTenantInRegistry(registry, options.tenantId, options.sharedSpaceKeys);
   if (!hadTenant) {
     saveTenantsRegistry(registryPath, updated);
   }
-
   return {
     tenantId: options.tenantId,
     catalog,

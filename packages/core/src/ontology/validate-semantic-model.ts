@@ -2,11 +2,9 @@ import type { Entity, Property, SemanticModel } from "../model.js";
 import { SemanticModelSchema } from "../model.js";
 import type { ValidationIssue } from "./validation-result.js";
 import { validationResult } from "./validation-result.js";
-
 function columnNames(entity: Entity): Set<string> {
   return new Set(entity.properties.map((property) => property.columnName));
 }
-
 function duplicateIdIssues(kind: string, ids: string[]): ValidationIssue[] {
   const seen = new Set<string>();
   const issues: ValidationIssue[] = [];
@@ -23,7 +21,6 @@ function duplicateIdIssues(kind: string, ids: string[]): ValidationIssue[] {
   }
   return issues;
 }
-
 function validateEntityProperties(entity: Entity): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const columns = new Set<string>();
@@ -51,7 +48,6 @@ function validateEntityProperties(entity: Entity): ValidationIssue[] {
   }
   return issues;
 }
-
 export function validateSemanticModel(model: SemanticModel): ReturnType<typeof validationResult> {
   const parseResult = SemanticModelSchema.safeParse(model);
   if (!parseResult.success) {
@@ -63,10 +59,8 @@ export function validateSemanticModel(model: SemanticModel): ReturnType<typeof v
       },
     ]);
   }
-
   const parsed = parseResult.data;
   const issues: ValidationIssue[] = [];
-
   issues.push(
     ...duplicateIdIssues(
       "entity",
@@ -85,13 +79,10 @@ export function validateSemanticModel(model: SemanticModel): ReturnType<typeof v
       parsed.rules.map((rule) => rule.id),
     ),
   );
-
   const entities = new Map(parsed.entities.map((entity) => [entity.id, entity]));
-
   for (const entity of parsed.entities) {
     issues.push(...validateEntityProperties(entity));
   }
-
   for (const relation of parsed.relations) {
     const path = `relations[id=${relation.id}]`;
     const fromEntity = entities.get(relation.fromEntity);
@@ -129,7 +120,6 @@ export function validateSemanticModel(model: SemanticModel): ReturnType<typeof v
       });
     }
   }
-
   for (const rule of parsed.rules) {
     const entity = entities.get(rule.appliesTo);
     if (entity === undefined) {
@@ -150,6 +140,5 @@ export function validateSemanticModel(model: SemanticModel): ReturnType<typeof v
       });
     }
   }
-
   return validationResult(issues);
 }

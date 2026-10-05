@@ -16,7 +16,6 @@ import {
 } from "./cookies.js";
 import { createSessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";
-
 function safeReturnPath(value: string | undefined): string | undefined {
   if (value === undefined || value.length === 0) {
     return undefined;
@@ -26,7 +25,6 @@ function safeReturnPath(value: string | undefined): string | undefined {
   }
   return value;
 }
-
 async function fetchTenantsFromControlPlane(
   config: GatewayConfig,
   workosOrganizationIds: string[],
@@ -47,19 +45,23 @@ async function fetchTenantsFromControlPlane(
   if (!response.ok) {
     return [];
   }
-  const payload = (await response.json()) as { tenants?: string[] };
+  const payload = (await response.json()) as {
+    tenants?: string[];
+  };
   return Array.isArray(payload.tenants) ? payload.tenants : [];
 }
-
-type GatewayContext = Context<{ Variables: GatewayVariables }>;
-
+type GatewayContext = Context<{
+  Variables: GatewayVariables;
+}>;
 function beginWorkOSAuthorization(
   c: GatewayContext,
   config: GatewayConfig,
   workos: WorkOS,
   clientId: string,
   redirectUri: string,
-  options?: { screenHint?: "sign-in" | "sign-up" },
+  options?: {
+    screenHint?: "sign-in" | "sign-up";
+  },
 ): Response {
   const state = crypto.randomUUID();
   setOAuthCookie(c, config, OAUTH_STATE_COOKIE, state);
@@ -72,20 +74,22 @@ function beginWorkOSAuthorization(
   });
   return c.redirect(url);
 }
-
 export function registerWorkOSAuthRoutes(
-  app: Hono<{ Variables: GatewayVariables }>,
+  app: Hono<{
+    Variables: GatewayVariables;
+  }>,
   config: GatewayConfig,
 ): void {
   const workos = new WorkOS(config.workosApiKey ?? "");
   const clientId = config.workosClientId ?? "";
   const redirectUri = config.workosRedirectUri ?? "";
-
-  const startWorkOSLogin = (c: GatewayContext, options?: { screenHint?: "sign-in" | "sign-up" }) =>
-    beginWorkOSAuthorization(c, config, workos, clientId, redirectUri, options);
-
+  const startWorkOSLogin = (
+    c: GatewayContext,
+    options?: {
+      screenHint?: "sign-in" | "sign-up";
+    },
+  ) => beginWorkOSAuthorization(c, config, workos, clientId, redirectUri, options);
   registerOAuthAppRoutes(app, config, startWorkOSLogin);
-
   app.get("/login", (c) => {
     const returnPath = safeReturnPath(c.req.query("next"));
     if (returnPath !== undefined) {
@@ -93,7 +97,6 @@ export function registerWorkOSAuthRoutes(
     }
     return startWorkOSLogin(c);
   });
-
   app.get("/callback", async (c) => {
     const code = c.req.query("code");
     const state = c.req.query("state");
@@ -120,7 +123,6 @@ export function registerWorkOSAuthRoutes(
     const tenants = await fetchTenantsFromControlPlane(config, orgIds);
     const username = auth.user.email.length > 0 ? auth.user.email : auth.user.id;
     const user = { username, tenants };
-
     const pendingToken = readOAuthPendingCookie(c);
     if (pendingToken !== undefined) {
       const redirectTarget = await completeOAuthAppRedirect(config, pendingToken, user);
@@ -130,7 +132,6 @@ export function registerWorkOSAuthRoutes(
       }
       return c.redirect(redirectTarget);
     }
-
     const token = await createSessionToken(config.sessionSecret, user, config.sessionTtlSeconds);
     setSessionCookie(c, config, token);
     clearOAuthFlowCookies(c, config);

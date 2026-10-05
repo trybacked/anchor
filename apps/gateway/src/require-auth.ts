@@ -4,7 +4,6 @@ import type { GatewayConfig } from "./config.js";
 import { SESSION_COOKIE_NAME } from "./cookies.js";
 import { verifySessionToken } from "./session.js";
 import type { GatewayVariables } from "./types.js";
-
 function bearerToken(authorization: string | undefined): string | undefined {
   if (authorization === undefined || !authorization.startsWith("Bearer ")) {
     return undefined;
@@ -12,7 +11,6 @@ function bearerToken(authorization: string | undefined): string | undefined {
   const token = authorization.slice("Bearer ".length).trim();
   return token.length > 0 ? token : undefined;
 }
-
 export function createRequireAuthMiddleware(config: GatewayConfig): MiddlewareHandler<{
   Variables: GatewayVariables;
 }> {

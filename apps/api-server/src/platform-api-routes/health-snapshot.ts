@@ -1,9 +1,7 @@
 import type { PlatformHandlerDeps } from "../platform-api-types.js";
-
 type HealthSnapshotOptions = {
   includeCachedTenants: boolean;
 };
-
 export async function buildPlatformHealthSnapshot(
   deps: PlatformHandlerDeps,
   options: HealthSnapshotOptions,

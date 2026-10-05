@@ -1,5 +1,4 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-
 export function verifyPkceChallenge(
   codeVerifier: string,
   codeChallenge: string,
@@ -14,7 +13,6 @@ export function verifyPkceChallenge(
   }
   return timingSafeEqual(Buffer.from(digest), Buffer.from(codeChallenge));
 }
-
 export function isValidCodeVerifier(value: string): boolean {
   return /^[A-Za-z0-9._~-]{43,128}$/.test(value);
 }

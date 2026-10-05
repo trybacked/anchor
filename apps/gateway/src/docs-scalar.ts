@@ -1,5 +1,4 @@
 import { GATEWAY_AUTH_PATHS, tenantOpenApiPath } from "./gateway-paths.js";
-
 export function scalarConfigForPlatform(publicOrigin: string): Record<string, unknown> {
   return {
     pageTitle: "Backed API · Platform",
@@ -18,7 +17,6 @@ export function scalarConfigForPlatform(publicOrigin: string): Record<string, un
         `,
   };
 }
-
 export function scalarConfigForTenant(
   tenantId: string,
   publicOrigin: string,

@@ -2,7 +2,6 @@ import { BACKED_DIR_NAME, CONFIG_FILE_NAME } from "@trybacked/core";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
 function readCliVersion(): string {
   const packagePath = path.join(path.dirname(fileURLToPath(import.meta.url)), "../package.json");
   const raw = readFileSync(packagePath, "utf8");
@@ -17,7 +16,6 @@ function readCliVersion(): string {
   }
   throw new Error(`Invalid package.json at ${packagePath}`);
 }
-
 export const CLI_NAME = "backed";
 export const CLI_VERSION = readCliVersion();
 export const SERVICES = {

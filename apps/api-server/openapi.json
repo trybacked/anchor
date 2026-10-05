@@ -609,7 +609,7 @@
                 "$ref": "#/components/schemas/SearchModelBody"
               },
               "example": {
-                "query": "organization"
+                "query": "customer"
               }
             }
           }
@@ -639,7 +639,7 @@
                 "$ref": "#/components/schemas/GetDefinitionBody"
               },
               "example": {
-                "term": "contract"
+                "term": "active customer"
               }
             }
           }
@@ -669,13 +669,13 @@
                 "$ref": "#/components/schemas/ObjectQueryBody"
               },
               "example": {
-                "objectId": "contract",
+                "objectId": "customer",
                 "mode": "count",
                 "filters": [
                   {
-                    "propertyId": "source_year_month",
+                    "propertyId": "country",
                     "op": "eq",
-                    "value": "2025-06"
+                    "value": "IT"
                   }
                 ]
               }
@@ -707,7 +707,7 @@
                 "$ref": "#/components/schemas/EntitySearchBody"
               },
               "example": {
-                "query": "contract",
+                "query": "customer",
                 "kinds": ["entity"]
               }
             }
@@ -822,7 +822,7 @@
                 "$ref": "#/components/schemas/ChunkSearchBody"
               },
               "example": {
-                "query": "appalto",
+                "query": "termination clause",
                 "limit": 10
               }
             }
@@ -944,7 +944,7 @@
                 "$ref": "#/components/schemas/SemanticAskBody"
               },
               "example": {
-                "question": "Quanti contratti nel mese di ingest 2025-06?"
+                "question": "How many customers were onboarded last month?"
               }
             }
           }

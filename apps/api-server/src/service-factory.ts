@@ -11,9 +11,7 @@ import {
   type AnchorOperationAuditHook,
   type AnchorService,
 } from "@trybacked/service";
-
 export type TenantRuntimeCapabilities = TenantAiAskCapabilities;
-
 export async function createAnchorServiceForModel(options: {
   model: SemanticModel;
   ontology: Ontology;
@@ -21,7 +19,11 @@ export async function createAnchorServiceForModel(options: {
   databricksConfig: DatabricksProviderConfig;
   env: NodeJS.ProcessEnv;
   tenantCapabilities?: TenantRuntimeCapabilities | undefined;
-  audit?: { onOperation?: AnchorOperationAuditHook; auditPrincipal?: string; tenant?: string };
+  audit?: {
+    onOperation?: AnchorOperationAuditHook;
+    auditPrincipal?: string;
+    tenant?: string;
+  };
 }): Promise<AnchorService> {
   const client = createDatabricksSqlClient(options.databricksConfig);
   const filesClient = createDatabricksFilesClient(options.databricksConfig);
@@ -33,7 +35,6 @@ export async function createAnchorServiceForModel(options: {
     ...(options.catalog !== undefined ? { catalog: options.catalog } : {}),
     readVolumeFile: (path, init) => filesClient.readFile(path, init),
   });
-
   const wrapAudit = options.audit?.onOperation;
   const onOperation =
     wrapAudit !== undefined
@@ -44,7 +45,6 @@ export async function createAnchorServiceForModel(options: {
           });
         }
       : undefined;
-
   const service = createAnchorService({
     model: options.model,
     ontology: options.ontology,
@@ -55,7 +55,6 @@ export async function createAnchorServiceForModel(options: {
       ? { auditPrincipal: options.audit.auditPrincipal }
       : {}),
   });
-
   return attachSemanticAsk(service, {
     ontology: options.ontology,
     env: options.env,
@@ -64,7 +63,6 @@ export async function createAnchorServiceForModel(options: {
     ...(options.audit?.tenant !== undefined ? { tenant: options.audit.tenant } : {}),
   });
 }
-
 export function modelFromRemoteYaml(modelYaml: string): SemanticModel {
   return parseModelYaml(modelYaml);
 }

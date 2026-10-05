@@ -3,15 +3,12 @@ import { ObjectQueryCompileError } from "./errors.js";
 import { compileObjectFilter, compileTextSearch } from "./filters.js";
 import { compileJoinOnClause, resolveObjectInPlan, type JoinPlan } from "./join-plan.js";
 import type { SqlParameter } from "./query.js";
-
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
 }
-
 function quoteDatasetId(datasetId: string): string {
   return datasetId.split(".").map(quoteIdentifier).join(".");
 }
-
 function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -22,7 +19,6 @@ function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   }
   return object;
 }
-
 function resolveDatasetId(object: OntologyObject): string {
   if (object.sourceDatasetId === undefined) {
     throw new ObjectQueryCompileError(
@@ -32,7 +28,6 @@ function resolveDatasetId(object: OntologyObject): string {
   }
   return object.sourceDatasetId;
 }
-
 export function queryUsesPhysicalJoins(
   rootObjectId: string,
   select: string[] | undefined,
@@ -49,16 +44,24 @@ export function queryUsesPhysicalJoins(
     return objectId !== rootObjectId;
   });
 }
-
 export function compileExistsSemiJoin(
   ontology: Ontology,
   plan: JoinPlan,
   rootAlias: string,
   query: {
     objectId: string;
-    filters: { objectId?: string | undefined; propertyId: string; op: string; value: unknown }[];
+    filters: {
+      objectId?: string | undefined;
+      propertyId: string;
+      op: string;
+      value: unknown;
+    }[];
     textSearch?:
-      | { query: string; objectId?: string | undefined; propertyIds?: string[] | undefined }
+      | {
+          query: string;
+          objectId?: string | undefined;
+          propertyIds?: string[] | undefined;
+        }
       | undefined;
   },
   parameters: SqlParameter[],
@@ -73,7 +76,6 @@ export function compileExistsSemiJoin(
     }
     return `${quoteIdentifier(alias)}.${quoteIdentifier(propertyId)}`;
   };
-
   const firstStep = plan.steps[0];
   if (firstStep === undefined) {
     throw new ObjectQueryCompileError("invalid_join", "Join plan has no steps.");
@@ -82,7 +84,6 @@ export function compileExistsSemiJoin(
   if (firstJoinAlias === undefined) {
     throw new ObjectQueryCompileError("invalid_join", "First join alias missing.");
   }
-
   const { fromKey, toKey } = (() => {
     const relationship = firstStep.relationship;
     if (relationship.fromPropertyId === undefined || relationship.toPropertyId === undefined) {
@@ -93,9 +94,7 @@ export function compileExistsSemiJoin(
     }
     return { fromKey: relationship.toPropertyId, toKey: relationship.fromPropertyId };
   })();
-
   const linkPredicate = `${quoteIdentifier(rootAlias)}.${quoteIdentifier(fromKey)} = ${quoteIdentifier(firstJoinAlias)}.${quoteIdentifier(toKey)}`;
-
   const innerConditions: string[] = [linkPredicate];
   for (const filter of query.filters) {
     const targetObjectId = filter.objectId ?? query.objectId;
@@ -112,7 +111,6 @@ export function compileExistsSemiJoin(
       ),
     );
   }
-
   if (query.textSearch !== undefined) {
     const searchObjectId = query.textSearch.objectId ?? query.objectId;
     if (searchObjectId !== query.objectId) {
@@ -128,10 +126,8 @@ export function compileExistsSemiJoin(
       );
     }
   }
-
   const firstJoinedObject = resolveObject(ontology, firstStep.toObjectId);
   const firstJoinedDataset = quoteDatasetId(resolveDatasetId(firstJoinedObject));
-
   const remainingJoins = plan.steps.slice(1).map((step) => {
     const toObject = resolveObject(ontology, step.toObjectId);
     const toDataset = quoteDatasetId(resolveDatasetId(toObject));
@@ -142,8 +138,6 @@ export function compileExistsSemiJoin(
     const on = compileJoinOnClause(step, quoteColumn);
     return `INNER JOIN ${toDataset} AS ${quoteIdentifier(toAlias)} ON ${on}`;
   });
-
   const fromSql = `${firstJoinedDataset} AS ${quoteIdentifier(firstJoinAlias)}`;
-
   return `EXISTS (SELECT 1 FROM ${fromSql}\n${remainingJoins.join("\n")}\nWHERE ${innerConditions.join(" AND ")})`;
 }

@@ -5,7 +5,6 @@ import type {
   RowFilter,
   SemanticQueryPlan,
 } from "./plan-types.js";
-
 const LEGACY_OP_TO_COMPILER: Record<string, string> = {
   "=": "eq",
   "!=": "neq",
@@ -27,7 +26,6 @@ const LEGACY_OP_TO_COMPILER: Record<string, string> = {
   is_not_null: "is_not_null",
   starts_with: "starts_with",
 };
-
 function normalizeFilterOp(op: RowFilter["op"]): NonNullable<ObjectQuery["filters"]>[number]["op"] {
   const mapped = LEGACY_OP_TO_COMPILER[op];
   if (mapped === undefined) {
@@ -35,7 +33,6 @@ function normalizeFilterOp(op: RowFilter["op"]): NonNullable<ObjectQuery["filter
   }
   return mapped as NonNullable<ObjectQuery["filters"]>[number]["op"];
 }
-
 function normalizeRootPropertyId(propertyId: string, rootObjectId: string): string {
   const prefix = `${rootObjectId}.`;
   if (propertyId.startsWith(prefix)) {
@@ -43,7 +40,6 @@ function normalizeRootPropertyId(propertyId: string, rootObjectId: string): stri
   }
   return propertyId;
 }
-
 function normalizeFilter(
   filter: RowFilter,
   defaultEntityId: string,
@@ -61,7 +57,6 @@ function normalizeFilter(
     value: filter.value,
   };
 }
-
 function mergeObjectSet(
   query: ObjectQueryRequest,
   objectSet: ObjectSetDefinition | undefined,
@@ -81,7 +76,6 @@ function mergeObjectSet(
     limit: query.limit ?? objectSet.limit,
   };
 }
-
 function applyDocumentIdFilters(
   query: ObjectQueryRequest,
   objectId: string,
@@ -108,7 +102,6 @@ function applyDocumentIdFilters(
     },
   ];
 }
-
 function applyTimeRange(
   objectSet: ObjectSetDefinition | undefined,
   objectId: string,
@@ -127,20 +120,17 @@ function applyTimeRange(
   }
   return filters;
 }
-
 export type NormalizedSemanticQueryPlan = {
   reasoning?: string | undefined;
   objectQuery: ObjectQuery;
   attempts?: number | undefined;
 };
-
 export function normalizeSemanticQueryPlan(plan: SemanticQueryPlan): NormalizedSemanticQueryPlan {
   const merged = mergeObjectSet(plan.objectQuery, plan.objectSet);
   const objectId = merged.entityId;
   const baseFilters = merged.filters.map((filter) => normalizeFilter(filter, objectId));
   const documentFilters = applyDocumentIdFilters(merged, objectId);
   const timeFilters = applyTimeRange(plan.objectSet, plan.objectSet?.entityId ?? objectId);
-
   const objectQuery: ObjectQuery = {
     objectId,
     filters: [...baseFilters, ...documentFilters, ...timeFilters],
@@ -187,7 +177,6 @@ export function normalizeSemanticQueryPlan(plan: SemanticQueryPlan): NormalizedS
         }
       : {}),
   };
-
   return {
     ...(plan.reasoning !== undefined ? { reasoning: plan.reasoning } : {}),
     objectQuery,

@@ -1,14 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { DocumentsDatasetResolver } from "../../src/readers/dataset.js";
 import { createDocumentAccessReader } from "../../src/readers/document-access.js";
-
 const documents: DocumentsDatasetResolver = {
   qualifyTable: (name) => `\`backed\`.\`docs\`.\`${name}\``,
   documentsTable: "`backed`.`docs`.`documents`",
   documentElementsTable: "`backed`.`docs`.`document_elements`",
   entityProfilesTable: "`backed`.`docs`.`entity_profiles`",
 };
-
 describe("createDocumentAccessReader", () => {
   it("loads metadata from docs.documents", async () => {
     const executor = vi.fn(async () => [
@@ -27,7 +25,6 @@ describe("createDocumentAccessReader", () => {
     expect(metadata?.pageCount).toBe(12);
     expect(metadata?.contentType).toBe("application/pdf");
   });
-
   it("reads original file bytes via volume reader", async () => {
     const executor = vi.fn(async () => [
       {

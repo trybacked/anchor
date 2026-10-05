@@ -1,5 +1,5 @@
+import { MAX_WAREHOUSE_ROW_LIMIT } from "@trybacked/core";
 import { z } from "zod";
-
 export const OBJECT_QUERY_FILTER_OPS = [
   "eq",
   "neq",
@@ -15,18 +15,12 @@ export const OBJECT_QUERY_FILTER_OPS = [
   "is_not_null",
   "starts_with",
 ] as const;
-
 export const OBJECT_QUERY_MODES = ["rows", "count"] as const;
-
 export const OBJECT_QUERY_AGGREGATE_OPS = ["sum", "count", "min", "max", "avg"] as const;
-
 export const DEFAULT_OBJECT_QUERY_LIMIT = 100;
-export const MAX_OBJECT_QUERY_LIMIT = 1000;
-
 export const ObjectQueryJoinSchema = z.object({
   relationshipId: z.string().min(1).describe("Published ontology relationship id"),
 });
-
 export const ObjectQueryTextSearchSchema = z.object({
   query: z.string().min(1),
   objectId: z
@@ -39,13 +33,11 @@ export const ObjectQueryTextSearchSchema = z.object({
     .optional()
     .describe("String columns to search; default = all string properties on the object"),
 });
-
 export const ObjectQueryAggregationSchema = z.object({
   op: z.enum(OBJECT_QUERY_AGGREGATE_OPS),
   propertyId: z.string().min(1).optional(),
   alias: z.string().min(1).optional(),
 });
-
 export const ObjectQueryFilterSchema = z.object({
   objectId: z
     .string()
@@ -64,7 +56,6 @@ export const ObjectQueryFilterSchema = z.object({
     z.array(z.union([z.string(), z.number(), z.boolean()])),
   ]),
 });
-
 export const ObjectQuerySchema = z.object({
   objectId: z.string().min(1),
   joins: z
@@ -80,31 +71,26 @@ export const ObjectQuerySchema = z.object({
     "Case-insensitive contains across string columns (OR)",
   ),
   mode: z.enum(OBJECT_QUERY_MODES).default("rows"),
-  limit: z.number().int().positive().max(MAX_OBJECT_QUERY_LIMIT).optional(),
+  limit: z.number().int().positive().max(MAX_WAREHOUSE_ROW_LIMIT).optional(),
   groupBy: z.array(z.string().min(1)).optional(),
   aggregations: z.array(ObjectQueryAggregationSchema).optional(),
   orderBy: z.string().min(1).optional(),
   orderDirection: z.enum(["asc", "desc"]).optional(),
 });
-
 export type ObjectQueryFilterOp = (typeof OBJECT_QUERY_FILTER_OPS)[number];
 export type ObjectQueryFilter = z.infer<typeof ObjectQueryFilterSchema>;
 export type ObjectQueryJoin = z.infer<typeof ObjectQueryJoinSchema>;
 export type ObjectQueryTextSearch = z.infer<typeof ObjectQueryTextSearchSchema>;
 export type ObjectQueryAggregation = z.infer<typeof ObjectQueryAggregationSchema>;
-
 export type ObjectQuery = z.input<typeof ObjectQuerySchema>;
-
 export type SqlParameter = {
   name: string;
   value: string | number | boolean;
 };
-
 export type CompiledObjectQuery = {
   objectId: string;
   sql: string;
   parameters: SqlParameter[];
   columns: string[];
-
   joinedObjectIds?: string[];
 };

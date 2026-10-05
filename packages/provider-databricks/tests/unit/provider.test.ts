@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDatabricksDatasetProviderFromClient } from "../../src/databricks-dataset-provider.js";
 import type { DatabricksSqlClient } from "../../src/sql-client.js";
-
 describe("createDatabricksDatasetProvider", () => {
   it("lists datasets and describes columns from SQL results", async () => {
     const calls: string[] = [];
@@ -26,7 +25,6 @@ describe("createDatabricksDatasetProvider", () => {
         return [];
       },
     };
-
     const provider = createDatabricksDatasetProviderFromClient(
       {
         host: "example.cloud.databricks.com",
@@ -37,22 +35,17 @@ describe("createDatabricksDatasetProvider", () => {
       },
       client,
     );
-
     const datasets = await provider.listDatasets();
     expect(datasets.map((dataset) => dataset.id)).toEqual([
       "main.sales.orders",
       "main.sales.customers",
     ]);
-
     const schema = await provider.getSchema({ id: "main.sales.orders" });
     expect(schema.columns[0]?.name).toBe("id");
-
     const metadata = await provider.getMetadata({ id: "main.sales.orders" });
     expect(metadata.rowCount).toBe(42);
-
     const stats = await provider.getStatistics({ id: "main.sales.orders" });
     expect(stats.columns[0]?.distinctCount).toBe(42);
-
     const sample = await provider.sample?.({ id: "main.sales.orders" }, { limit: 1 });
     expect(sample?.rows).toEqual([[1]]);
     expect(calls.some((sql) => sql.includes("main"))).toBe(true);

@@ -1,11 +1,9 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-
 const SCRYPT_N = 16384;
 const SCRYPT_r = 8;
 const SCRYPT_p = 1;
 const KEY_LEN = 32;
 const SALT_LEN = 16;
-
 export function hashPassword(plain: string): string {
   const salt = randomBytes(SALT_LEN);
   const derived = scryptSync(plain, salt, KEY_LEN, { N: SCRYPT_N, r: SCRYPT_r, p: SCRYPT_p });
@@ -18,7 +16,6 @@ export function hashPassword(plain: string): string {
     derived.toString("base64url"),
   ].join("$");
 }
-
 export function verifyPassword(plain: string, encoded: string): boolean {
   const parts = encoded.split("$");
   if (parts.length !== 6 || parts[0] !== "scrypt") {
