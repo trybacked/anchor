@@ -99,6 +99,22 @@ describe("applySemanticCatalogs", () => {
     expect(examples).toHaveLength(1);
     expect(examples[0]?.id).toBe("ex-count");
   });
+  it("drops entity hints that reference properties the tenant object lacks", () => {
+    const partial: SemanticCatalog = {
+      ...catalog,
+      datasets: {
+        "shared.contracts": {
+          entity: {
+            displayProperties: ["month", "importo_lotto", "amount"],
+            defaultTimeDimension: "data_pubblicazione",
+          },
+          properties: {},
+        },
+      },
+    };
+    const contract = applySemanticCatalogs(ontology(), [partial]).objects[0]!;
+    expect(contract.semantics).toEqual({ displayProperties: ["month", "amount"] });
+  });
   it("is idempotent", () => {
     const once = applySemanticCatalogs(ontology(), [catalog]);
     expect(applySemanticCatalogs(once, [catalog])).toEqual(once);

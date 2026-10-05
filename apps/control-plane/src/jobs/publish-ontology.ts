@@ -3,7 +3,11 @@ import { validateAuthoringModel } from "@trybacked/ontology-authoring";
 import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
 import { createDatabricksBlobStore } from "@trybacked/provider-databricks";
 import { createDatabricksSqlClient } from "@trybacked/provider-databricks";
-import { buildRemotePublication, createVolumeOntologyStore } from "@trybacked/registry";
+import {
+  buildRemotePublication,
+  createVolumeOntologyStore,
+  type OntologyStore,
+} from "@trybacked/registry";
 import type pg from "pg";
 import { sqlCellStringFromKeys } from "../authoring/sql-row.js";
 import {
@@ -53,6 +57,22 @@ async function validateWarehouseMappings(
   }
   return errors;
 }
+/**
+ * The Volume is what runtimes read, Postgres mirrors it; publications written
+ * outside the control plane (CLI, provisioning) only exist in the Volume, so
+ * the next version must advance past both.
+ */
+export async function nextPublicationVersion(
+  pool: pg.Pool,
+  store: OntologyStore,
+  input: { tenantId: string; catalog: string },
+): Promise<number> {
+  const [mirrored, remote] = await Promise.all([
+    getLatestOntologyVersion(pool, input.tenantId),
+    store.loadCurrent(input.catalog),
+  ]);
+  return Math.max(mirrored, remote?.version ?? 0) + 1;
+}
 export async function runPublishOntologyJob(
   pool: pg.Pool,
   adminConfig: DatabricksProviderConfig,
@@ -82,12 +102,12 @@ export async function runPublishOntologyJob(
   if (warehouseErrors.length > 0) {
     throw new Error(warehouseErrors.join("; "));
   }
-  const nextVersion = (await getLatestOntologyVersion(pool, input.tenantId)) + 1;
+  const store = createVolumeOntologyStore(createDatabricksBlobStore(adminConfig));
+  const nextVersion = await nextPublicationVersion(pool, store, input);
   const { record, modelYaml } = buildRemotePublication(draft.model, {
     ontologyId: input.tenantId,
     version: nextVersion,
   });
-  const store = createVolumeOntologyStore(createDatabricksBlobStore(adminConfig));
   await store.publish(input.catalog, record, modelYaml);
   const artifactPath = `/Volumes/${input.catalog}/backed/registry/publications/v${String(nextVersion)}.json`;
   await insertOntologyVersion(pool, {

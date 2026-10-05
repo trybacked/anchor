@@ -98,6 +98,24 @@ describe("runPlanFirst", () => {
     if (outcome.kind === "fallback") expect(outcome.reason).toContain("ghost");
   });
 
+  it("falls back when filters are placed under an unknown key instead of dropping them", async () => {
+    const outcome = await runPlanFirst({
+      ontology: contractOntology(),
+      service: fakeService(),
+      question: "Quanti in Calabria?",
+      model: plannerModel({
+        ...COUNT_PLAN,
+        query: {
+          objectId: "contract",
+          mode: "count",
+          where: [{ propertyId: "region", op: "eq", value: "Calabria" }],
+        },
+      }),
+      semanticCatalogs: [],
+    });
+    expect(outcome.kind).toBe("fallback");
+  });
+
   it("falls back on malformed planner output instead of throwing", async () => {
     const outcome = await runPlanFirst({
       ontology: contractOntology(),

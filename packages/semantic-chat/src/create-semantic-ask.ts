@@ -138,6 +138,7 @@ export function attachSemanticAsk(
 
   async function answer(question: string): Promise<SemanticAskResponse> {
     if (strategy === "plan-first") {
+      const started = Date.now();
       const outcome = await runPlanFirst({
         ontology: options.ontology,
         service: base,
@@ -147,6 +148,13 @@ export function attachSemanticAsk(
       if (outcome.kind === "answered") {
         return planFirstResponse(question, ontologyVersion, outcome.result);
       }
+      options.onOperation?.({
+        operation: "planFallback",
+        durationMs: Date.now() - started,
+        question: questionPreview(question),
+        reason: outcome.reason,
+        ...tenantField,
+      });
     }
     return agentResponse(question, ontologyVersion, await runAgent(question));
   }

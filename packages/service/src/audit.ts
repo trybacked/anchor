@@ -1,7 +1,13 @@
 import { createHash } from "node:crypto";
 export type AnchorOperationAuditEvent = {
   operation:
-    "objectQuery" | "chunkSearch" | "entityProfile" | "graphTraverse" | "semanticAsk" | "agentRun";
+    | "objectQuery"
+    | "chunkSearch"
+    | "entityProfile"
+    | "graphTraverse"
+    | "semanticAsk"
+    | "agentRun"
+    | "planFallback";
   objectId?: string | undefined;
   mode?: string | undefined;
   rowCount?: number | undefined;
@@ -13,6 +19,7 @@ export type AnchorOperationAuditEvent = {
   question?: string | undefined;
   runId?: string | undefined;
   route?: string | undefined;
+  reason?: string | undefined;
 };
 export type AnchorOperationAuditHook = (event: AnchorOperationAuditEvent) => void;
 export function hashSql(sql: string): string {

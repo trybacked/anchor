@@ -59,6 +59,15 @@ async function provisionOrganization(
     ...(result.tenantOboToken !== undefined ? { tenantOboToken: result.tenantOboToken } : {}),
   };
 }
+/**
+ * Only provisioning failures describe the organization itself. A failed
+ * ontology publish leaves the current publication serving; marking the
+ * organization failed would drop the tenant from the registry and take every
+ * runtime offline.
+ */
+function failureMarksOrganizationFailed(kind: string): boolean {
+  return kind !== "publish_ontology";
+}
 async function processJob(): Promise<boolean> {
   const job = await claimNextJob(pool);
   if (job === undefined) {
@@ -92,7 +101,9 @@ async function processJob(): Promise<boolean> {
     const message = error instanceof Error ? error.message : String(error);
     if (job.attempts >= MAX_ATTEMPTS) {
       await failJob(pool, job.id, message);
-      await updateOrganizationStatus(pool, job.organization_id, "failed");
+      if (failureMarksOrganizationFailed(job.kind)) {
+        await updateOrganizationStatus(pool, job.organization_id, "failed");
+      }
     } else {
       await requeueJob(pool, job.id);
     }

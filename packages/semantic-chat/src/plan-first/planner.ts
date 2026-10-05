@@ -13,9 +13,11 @@ const PLANNER_POLICY = [
 
 export const PlannerOutputSchema = z.object({
   locale: z.string().min(2).max(8).describe("Language of the question, BCP-47 (e.g. it, en)"),
-  query: ObjectQuerySchema.nullable().describe(
-    "The single governed query answering the question, or null when impossible",
-  ),
+  // Strict: a filter placed under an unknown key must fail the plan, not be
+  // silently dropped into a query that returns everything.
+  query: ObjectQuerySchema.strict()
+    .nullable()
+    .describe("The single governed query answering the question, or null when impossible"),
   unanswerable: z
     .string()
     .nullable()

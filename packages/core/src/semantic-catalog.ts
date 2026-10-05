@@ -4,6 +4,7 @@ import {
   EntitySemanticsSchema,
   PropertySemanticsSchema,
   VerifiedExampleSchema,
+  type EntitySemantics,
   type GlossaryTerm,
   type VerifiedExample,
 } from "./semantics.js";
@@ -46,6 +47,25 @@ function enrichProperty(property: OntologyProperty, dataset: DatasetSemantics): 
   const semantics = withDefaults(dataset.properties[property.id], property.semantics);
   return semantics === undefined ? property : { ...property, semantics };
 }
+/**
+ * Catalogs describe a dataset family; a tenant may expose only part of it.
+ * Property references that do not exist on this object are dropped so hints
+ * never leak into prompts or query defaults.
+ */
+function pruneEntitySemantics(semantics: EntitySemantics, object: OntologyObject): EntitySemantics {
+  const known = new Set(object.properties.map((property) => property.id));
+  const { displayProperties, defaultTimeDimension, ...rest } = semantics;
+  const keptDisplay = displayProperties?.filter((id) => known.has(id));
+  const keptTime =
+    defaultTimeDimension !== undefined && known.has(defaultTimeDimension)
+      ? defaultTimeDimension
+      : undefined;
+  return {
+    ...rest,
+    ...(keptDisplay !== undefined ? { displayProperties: keptDisplay } : {}),
+    ...(keptTime !== undefined ? { defaultTimeDimension: keptTime } : {}),
+  };
+}
 function enrichObject(
   object: OntologyObject,
   catalogs: readonly SemanticCatalog[],
@@ -55,7 +75,7 @@ function enrichObject(
   const semantics = withDefaults(dataset.entity, object.semantics);
   return {
     ...object,
-    ...(semantics !== undefined ? { semantics } : {}),
+    ...(semantics !== undefined ? { semantics: pruneEntitySemantics(semantics, object) } : {}),
     properties: object.properties.map((property) => enrichProperty(property, dataset)),
   };
 }
