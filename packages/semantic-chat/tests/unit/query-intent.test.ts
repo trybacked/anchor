@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
-import { applySemanticCatalogs } from "@trybacked/core";
+import { applySemanticCatalogs, type Ontology } from "@trybacked/core";
 import {
   assertQuestionDoesNotMentionUnknownProperties,
   validateAgentObjectQuery,
@@ -10,7 +10,7 @@ const ANAC_CONTRACTS_DATASET = "backed.anac.contracts";
 const ANAC_ORGANIZATIONS_DATASET = "backed.anac.organizations";
 
 function anacJoinOntology() {
-  const base = {
+  const base: Ontology = {
     metadata: { formatVersion: "1" as const, id: "test-anac", version: 1 },
     objects: [
       {
