@@ -10,3 +10,5 @@ export const AGENT_PROMPT_MAX_GLOSSARY_TERMS = 20;
 export const AGENT_PROMPT_MAX_EXAMPLES = 2;
 export const AGENT_PROMPT_MAX_HISTORY_TURNS = 8;
 export const AGENT_PROMPT_MAX_TURN_CHARS = 600;
+/** Whole-run ceiling: a stalled gateway must fail fast instead of hanging the request. */
+export const AGENT_DEADLINE_MS = 60_000;

@@ -45,6 +45,10 @@ No per-tenant enable flag by default. To block one tenant: `capabilities.aiAsk: 
 | `SEMANTIC_AGENT_MAX_SQL_CALLS`            | Warehouse call cap (default **2**)                          |
 | `SEMANTIC_AGENT_SKIP_REPAIR_AFTER_MS`     | Skip grounding repair if main pass ≥ ms (default **35000**) |
 
+Fixed ceilings (not configurable): the planner gives up after **20 s**, the agent run after **60 s**, and both surface as a client-facing error instead of hanging the request.
+
+Answers are rendered from the semantic layer: object and property **display labels** per language (`semantics.labels`) decide how the answer names things, and `sampleValues` are shown when a filter matched nothing. Catalog glossary terms and verified examples that reference properties the tenant has not published are pruned before the prompt is built, so a partial publication never pushes the planner toward a column that does not exist.
+
 Shared **semantic catalogs** (synonyms, default time dimensions, glossary) are applied automatically from ontology-authoring packs when the ask runs; tenants do not configure this per ask.
 
 ## Ask strategy

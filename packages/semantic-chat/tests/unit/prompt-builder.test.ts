@@ -14,6 +14,38 @@ describe("system prompts", () => {
     expect(prompt).toContain("Never put in answer");
   });
 
+  it("drops verified examples the tenant ontology cannot run", () => {
+    const ontology = contractOntology();
+    const withExamples: typeof ontology = {
+      ...ontology,
+      semantics: {
+        glossary: [],
+        examples: [
+          {
+            id: "runs-here",
+            question: "Quanti contratti per mese?",
+            expectedObjectQuery: { objectId: "contract", mode: "count" },
+          },
+          {
+            id: "needs-missing-property",
+            question: "Quanti contratti in provincia di Reggio Calabria?",
+            expectedObjectQuery: {
+              objectId: "contract",
+              mode: "count",
+              filters: [{ propertyId: "provincia", op: "contains", value: "REGGIO CALABRIA" }],
+            },
+          },
+        ],
+      },
+    };
+    const prompt = buildPlannerSystemPrompt({
+      ontology: withExamples,
+      question: "quanti contratti",
+    });
+    expect(prompt).toContain("Quanti contratti per mese?");
+    expect(prompt).not.toContain("provincia");
+  });
+
   it("planner prompt ends by restating the output contract so context cannot override it", () => {
     const prompt = buildPlannerSystemPrompt({
       ontology: contractOntology(),

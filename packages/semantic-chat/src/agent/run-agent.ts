@@ -8,6 +8,7 @@ import { assertQuestionDoesNotMentionUnknownProperties } from "../query-intent.j
 import { buildAgentTools, type AgentToolEvent } from "./build-tools.js";
 import { groundAnswer, SemanticGroundingError } from "./grounding.js";
 import {
+  AGENT_DEADLINE_MS,
   AGENT_FORCE_ANSWER_AFTER_WAREHOUSE_OK,
   AGENT_GROUNDING_REPAIR_MAX_STEPS,
 } from "./limits.js";
@@ -43,6 +44,7 @@ type AgentRun = {
   service: AnchorService;
   question: string;
   prompt: AgentPromptContext;
+  deadlineAt: number;
   resolveModel: ModelResolver;
   steps: SemanticAgentStep[];
   toolResults: Map<string, unknown>;
@@ -92,12 +94,34 @@ function recordStep(run: AgentRun, event: AgentToolEvent): void {
   });
   run.toolResults.set(event.toolCallId, event.result);
 }
+const DEADLINE_MESSAGE =
+  "The assistant could not answer in time. Please try again, or ask a narrower question.";
+const TIMEOUT_ERROR_NAMES = new Set(["AbortError", "TimeoutError"]);
+/** Time left before the run must give up; zero or less means it already has. */
+function remainingMs(run: AgentRun): number {
+  return run.deadlineAt - Date.now();
+}
+/** A hit deadline is a client-facing outcome, not an internal failure to retry. */
+async function generateTextWithinDeadline(
+  options: Parameters<typeof generateText>[0],
+): ReturnType<typeof generateText> {
+  try {
+    return await generateText(options);
+  } catch (error) {
+    if (error instanceof Error && TIMEOUT_ERROR_NAMES.has(error.name)) {
+      throw new SemanticAgentError(DEADLINE_MESSAGE);
+    }
+    throw error;
+  }
+}
 async function generate(
   run: AgentRun,
   modelId: string,
   budget: AgentBudget,
   systemSuffix?: string,
 ): Promise<TokenUsage> {
+  const remaining = remainingMs(run);
+  if (remaining <= 0) throw new SemanticAgentError(DEADLINE_MESSAGE);
   const toolkit = buildAgentTools({
     ontology: run.ontology,
     service: run.service,
@@ -112,7 +136,8 @@ async function generate(
   });
   const finalStep = budget.maxSteps - 1;
   const system = buildAgentSystemPrompt(run.prompt);
-  const generation = await generateText({
+  const generation = await generateTextWithinDeadline({
+    abortSignal: AbortSignal.timeout(remaining),
     model: run.resolveModel(modelId),
     system: systemSuffix !== undefined ? `${system}\n\n${systemSuffix}` : system,
     prompt: run.question,
@@ -151,7 +176,13 @@ async function generateWithFallback(
     return await generate(run, options.modelId, budget);
   } catch (error) {
     const fallback = options.fallbackModelId;
-    if (fallback === undefined || fallback === options.modelId) throw error;
+    if (
+      error instanceof SemanticAgentError ||
+      fallback === undefined ||
+      fallback === options.modelId
+    ) {
+      throw error;
+    }
     return generate(run, fallback, budget);
   }
 }
@@ -243,6 +274,7 @@ export async function runSemanticAgent(
     ontology,
     service: options.service,
     question: options.question,
+    deadlineAt: started + AGENT_DEADLINE_MS,
     prompt: {
       ontology,
       question: options.question,

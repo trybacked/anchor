@@ -50,7 +50,8 @@ function enrichProperty(property: OntologyProperty, dataset: DatasetSemantics): 
 /**
  * Catalogs describe a dataset family; a tenant may expose only part of it.
  * Property references that do not exist on this object are dropped so hints
- * never leak into prompts or query defaults.
+ * never leak into prompts or query defaults. Glossary terms are pruned the
+ * same way in resolveGlossary.
  */
 function pruneEntitySemantics(semantics: EntitySemantics, object: OntologyObject): EntitySemantics {
   const known = new Set(object.properties.map((property) => property.id));
@@ -83,9 +84,9 @@ function resolveGlossary(
   catalogs: readonly SemanticCatalog[],
   objects: readonly OntologyObject[],
 ): GlossaryTerm[] {
-  const objectIdByDataset = new Map(
+  const objectByDataset = new Map(
     objects.flatMap((object) =>
-      object.sourceDatasetId !== undefined ? [[object.sourceDatasetId, object.id] as const] : [],
+      object.sourceDatasetId !== undefined ? [[object.sourceDatasetId, object] as const] : [],
     ),
   );
   return catalogs.flatMap((catalog) =>
@@ -93,15 +94,22 @@ function resolveGlossary(
       if (term.datasetId === undefined) {
         return [{ id: term.id, term: term.term, definition: term.definition }];
       }
-      const objectId = objectIdByDataset.get(term.datasetId);
-      if (objectId === undefined) return [];
+      const object = objectByDataset.get(term.datasetId);
+      if (object === undefined) return [];
+      const propertyId = term.propertyId;
+      if (
+        propertyId !== undefined &&
+        !object.properties.some((property) => property.id === propertyId)
+      ) {
+        return [];
+      }
       return [
         {
           id: term.id,
           term: term.term,
           definition: term.definition,
-          objectId,
-          ...(term.propertyId !== undefined ? { propertyId: term.propertyId } : {}),
+          objectId: object.id,
+          ...(propertyId !== undefined ? { propertyId } : {}),
         },
       ];
     }),

@@ -5,6 +5,10 @@ import {
   type ConversationTurn,
 } from "@trybacked/service";
 import { buildConversationSection, buildLocaleSection } from "../conversation.js";
+import {
+  SemanticPlanValidationError,
+  validateObjectQueryAgainstOntology,
+} from "../validate-plan.js";
 import { renderSemanticContext } from "./agent-ontology-view.js";
 import {
   AGENT_PROMPT_MAX_EXAMPLES,
@@ -70,6 +74,22 @@ function formatVerifiedExample(example: VerifiedExample): string {
   return `- Q: ${example.question}\n  Query: ${JSON.stringify(query)}`;
 }
 
+/**
+ * A pack ships examples for a whole dataset family, but a tenant publishes only part of it.
+ * An example that cannot run here would teach the model to use properties this ontology
+ * lacks, so the plan would be rejected and the ask would fall back to the slow path.
+ */
+function exampleFitsOntology(ontology: Ontology, example: VerifiedExample): boolean {
+  if (example.expectedObjectQuery === undefined) return true;
+  try {
+    validateObjectQueryAgainstOntology(ontology, example.expectedObjectQuery);
+    return true;
+  } catch (error) {
+    if (error instanceof SemanticPlanValidationError) return false;
+    throw error;
+  }
+}
+
 function exampleMatchScore(question: string, exampleQuestion: string): number {
   const questionTokens = new Set(tokenizeForExampleMatch(question));
   let score = 0;
@@ -89,7 +109,8 @@ export function buildSemanticContextSections(ontology: Ontology, question: strin
         term.propertyId !== undefined ? ` [${term.objectId ?? "?"}.${term.propertyId}]` : "";
       return `- ${term.term}${target}: ${term.definition}`;
     });
-  const examples = [...(ontology.semantics?.examples ?? [])]
+  const examples = (ontology.semantics?.examples ?? [])
+    .filter((example) => exampleFitsOntology(ontology, example))
     .sort(
       (left, right) =>
         exampleMatchScore(question, right.question) - exampleMatchScore(question, left.question),

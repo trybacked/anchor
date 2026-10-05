@@ -60,7 +60,7 @@ function assertProjectedPropertyExists(
 }
 export function validateObjectQueryAgainstOntology(
   ontology: Ontology,
-  query: ObjectQuery,
+  query: unknown,
 ): ObjectQuery {
   const parsed = ObjectQuerySchema.safeParse(query);
   if (!parsed.success) {
