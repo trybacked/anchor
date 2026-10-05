@@ -7,9 +7,13 @@ import { QUERY_CONSTRUCTION_RULES, buildSemanticContextSections } from "../agent
 const PLANNER_POLICY = [
   "You translate one natural-language question into exactly one governed ObjectQuery over the schema below. You do not answer the question yourself.",
   QUERY_CONSTRUCTION_RULES,
+  "Every constraint stated in the question (topic, place, organisation, period, status) must be encoded in the query itself via filters, textSearch or joins. A constraint that is only narrated in assumptions and missing from the query is an error: the query would return unrelated rows.",
   "Set query to null only when no single query over this schema can answer the question (out of domain, needs documents, or needs several independent queries); then explain briefly in unanswerable.",
   "locale: the BCP-47 language of the question (e.g. it, en). assumptions: interpretation choices written for a non-technical reader in that language, without field or object ids.",
 ].join("\n");
+
+/** A stalled gateway must surface as a fallback, not an open-ended wait. */
+const PLANNER_TIMEOUT_MS = 20_000;
 
 export const PlannerOutputSchema = z.object({
   locale: z.string().min(2).max(8).describe("Language of the question, BCP-47 (e.g. it, en)"),
@@ -65,6 +69,7 @@ export async function planSemanticQuery(options: {
     system: buildPlannerSystemPrompt(options.ontology, options.question),
     prompt: options.question,
     temperature: 0,
+    timeout: PLANNER_TIMEOUT_MS,
   });
   const usage: PlanUsage = {
     inputTokens: generation.usage.inputTokens ?? 0,

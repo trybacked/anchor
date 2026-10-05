@@ -56,38 +56,13 @@ function tokenizeForExampleMatch(text: string): string[] {
 }
 type VerifiedExample = NonNullable<NonNullable<Ontology["semantics"]>["examples"]>[number];
 
-function summarizeObjectQuery(query: Record<string, unknown>): string {
-  const parts: string[] = [];
-  const objectId = query["objectId"];
-  if (typeof objectId === "string") {
-    parts.push(`objectId=${objectId}`);
-  }
-  const mode = query["mode"];
-  if (typeof mode === "string") {
-    parts.push(`mode=${mode}`);
-  }
-  const joins = query["joins"];
-  if (Array.isArray(joins) && joins.length > 0) {
-    const ids = joins
-      .map((join) =>
-        typeof join === "object" && join !== null && "relationshipId" in join
-          ? String((join as { relationshipId: unknown }).relationshipId)
-          : "",
-      )
-      .filter((id) => id.length > 0);
-    if (ids.length > 0) {
-      parts.push(`joins=${ids.join(",")}`);
-    }
-  }
-  return parts.join(", ");
-}
-
+/** Full query, not a summary: a lossy pattern teaches the model to omit filters. */
 function formatVerifiedExample(example: VerifiedExample): string {
   const query = example.expectedObjectQuery;
   if (query === undefined) {
     return `- Q: ${example.question}`;
   }
-  return `- Q: ${example.question}\n  Pattern: ${summarizeObjectQuery(query)}`;
+  return `- Q: ${example.question}\n  Query: ${JSON.stringify(query)}`;
 }
 
 function exampleMatchScore(question: string, exampleQuestion: string): number {
