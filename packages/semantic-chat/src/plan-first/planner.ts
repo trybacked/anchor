@@ -1,8 +1,10 @@
-import { ObjectQuerySchema, type ObjectQuery } from "@trybacked/compiler";
+import type { ObjectQuery } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
-import { generateText, Output, type LanguageModel } from "ai";
-import { z } from "zod";
+import { generateText, type LanguageModel } from "ai";
 import { QUERY_CONSTRUCTION_RULES, buildSemanticContextSections } from "../agent/prompt-builder.js";
+import { PLANNER_OUTPUT_CONTRACT, parsePlannerOutput } from "./planner-output.js";
+
+export { PlannerOutputSchema, PlannerOutputError, type PlannerOutput } from "./planner-output.js";
 
 const PLANNER_POLICY = [
   "You translate one natural-language question into exactly one governed ObjectQuery over the schema below. You do not answer the question yourself.",
@@ -14,24 +16,6 @@ const PLANNER_POLICY = [
 
 /** A stalled gateway must surface as a fallback, not an open-ended wait. */
 const PLANNER_TIMEOUT_MS = 20_000;
-
-export const PlannerOutputSchema = z.object({
-  locale: z.string().min(2).max(8).describe("Language of the question, BCP-47 (e.g. it, en)"),
-  // Strict: a filter placed under an unknown key must fail the plan, not be
-  // silently dropped into a query that returns everything.
-  query: ObjectQuerySchema.strict()
-    .nullable()
-    .describe("The single governed query answering the question, or null when impossible"),
-  unanswerable: z
-    .string()
-    .nullable()
-    .describe("When query is null: one short sentence, user's language, why it cannot be answered"),
-  assumptions: z
-    .array(z.string())
-    .describe("Interpretation choices in plain language (no field ids), may be empty"),
-});
-
-export type PlannerOutput = z.infer<typeof PlannerOutputSchema>;
 
 export type PlanUsage = {
   inputTokens: number;
@@ -69,6 +53,7 @@ export function buildPlannerSystemPrompt(
 ): string {
   return [
     PLANNER_POLICY,
+    PLANNER_OUTPUT_CONTRACT,
     ...localeHint(locale),
     ...buildSemanticContextSections(ontology, question),
   ].join("\n\n");
@@ -82,7 +67,6 @@ export async function planSemanticQuery(options: {
 }): Promise<SemanticPlan> {
   const generation = await generateText({
     model: options.model,
-    output: Output.object({ schema: PlannerOutputSchema }),
     system: buildPlannerSystemPrompt(options.ontology, options.question, options.locale),
     prompt: options.question,
     temperature: 0,
@@ -93,7 +77,7 @@ export async function planSemanticQuery(options: {
     outputTokens: generation.usage.outputTokens ?? 0,
     totalTokens: generation.usage.totalTokens ?? 0,
   };
-  const output = generation.output;
+  const output = parsePlannerOutput(generation.text);
   if (output.query === null) {
     return {
       kind: "unanswerable",

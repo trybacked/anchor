@@ -10,7 +10,7 @@ import {
   SemanticPlanValidationError,
   validateObjectQueryAgainstOntology,
 } from "../validate-plan.js";
-import { planSemanticQuery, type SemanticPlan } from "./planner.js";
+import { planSemanticQuery, PlannerOutputError, type SemanticPlan } from "./planner.js";
 import { renderPlanAnswer, type RenderableResult } from "./render-answer.js";
 
 const PLAN_QUERY_TOOL_CALL_ID = "plan-query";
@@ -64,6 +64,16 @@ function fallback(
   };
 }
 
+const RAW_OUTPUT_PREVIEW_CHARS = 240;
+
+/** Keeps a slice of the raw model text in the audit trail when the contract is violated. */
+function describePlannerFailure(error: unknown): string {
+  if (error instanceof PlannerOutputError) {
+    return `planner failed: ${error.message} | raw: ${error.text.slice(0, RAW_OUTPUT_PREVIEW_CHARS)}`;
+  }
+  return `planner failed: ${error instanceof Error ? error.message : String(error)}`;
+}
+
 export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFirstOutcome> {
   const started = Date.now();
   const ontology = applySemanticCatalogs(
@@ -79,11 +89,7 @@ export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFi
       locale: options.locale,
     });
   } catch (error) {
-    return fallback(
-      `planner failed: ${error instanceof Error ? error.message : String(error)}`,
-      undefined,
-      started,
-    );
+    return fallback(describePlannerFailure(error), undefined, started);
   }
   if (plan.kind === "unanswerable") {
     return fallback(plan.reason ?? "planner declined", plan, started);
