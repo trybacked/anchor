@@ -47,17 +47,19 @@ function glossaryRelatedObjectsForProperty(
   return [...objectIds];
 }
 
-function objectMentionedInQuestion(ontology: Ontology, objectId: string, question: string): boolean {
+function objectMentionedInQuestion(
+  ontology: Ontology,
+  objectId: string,
+  question: string,
+): boolean {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
     return false;
   }
   const normalizedQuestion = question.toLowerCase();
-  const labels = [
-    object.id,
-    object.name,
-    ...(object.semantics?.synonyms ?? []),
-  ].map((label) => label.toLowerCase());
+  const labels = [object.id, object.name, ...(object.semantics?.synonyms ?? [])].map((label) =>
+    label.toLowerCase(),
+  );
   return labels.some((label) => label.length > 2 && normalizedQuestion.includes(label));
 }
 
@@ -106,8 +108,8 @@ function relatedEntityFilterRequired(
     (objectId) =>
       objectId !== rootObjectId && objectMentionedInQuestion(ontology, objectId, question),
   );
-  const targetRelated = [...new Set([...glossaryRelated, ...mentionedRelated])].filter(
-    (objectId) => related.includes(objectId),
+  const targetRelated = [...new Set([...glossaryRelated, ...mentionedRelated])].filter((objectId) =>
+    related.includes(objectId),
   );
   return targetRelated.length > 0 ? targetRelated : undefined;
 }

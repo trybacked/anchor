@@ -58,49 +58,61 @@ describe("query intent", () => {
   it("requires joins when glossary ties a shared property to a related entity", () => {
     const ontology = anacJoinOntology();
     expect(() =>
-      validateAgentObjectQuery(ontology, "How many contracts involve entities with regional section Sicilia?", {
-        objectId: "contract",
-        mode: "count",
-        filters: [
-          { propertyId: "source_year_month", op: "eq", value: "2025-06" },
-          { propertyId: "sezione_regionale", op: "eq", value: "Sicilia" },
-        ],
-      }),
+      validateAgentObjectQuery(
+        ontology,
+        "How many contracts involve entities with regional section Sicilia?",
+        {
+          objectId: "contract",
+          mode: "count",
+          filters: [
+            { propertyId: "source_year_month", op: "eq", value: "2025-06" },
+            { propertyId: "sezione_regionale", op: "eq", value: "Sicilia" },
+          ],
+        },
+      ),
     ).toThrow(/use joins and filters with objectId organization/);
   });
 
   it("rejects a join with only a root-level shared property filter", () => {
     const ontology = anacJoinOntology();
     expect(() =>
-      validateAgentObjectQuery(ontology, "How many contracts involve entities with regional section Sicilia?", {
-        objectId: "contract",
-        mode: "count",
-        joins: [{ relationshipId: "organization_has_contracts" }],
-        filters: [
-          { propertyId: "source_year_month", op: "eq", value: "2025-06" },
-          { propertyId: "sezione_regionale", op: "eq", value: "Sicilia" },
-        ],
-      }),
+      validateAgentObjectQuery(
+        ontology,
+        "How many contracts involve entities with regional section Sicilia?",
+        {
+          objectId: "contract",
+          mode: "count",
+          joins: [{ relationshipId: "organization_has_contracts" }],
+          filters: [
+            { propertyId: "source_year_month", op: "eq", value: "2025-06" },
+            { propertyId: "sezione_regionale", op: "eq", value: "Sicilia" },
+          ],
+        },
+      ),
     ).toThrow(/Missing filter on organization for sezione_regionale/);
   });
 
   it("accepts a joined filter on the related object", () => {
     const ontology = anacJoinOntology();
     expect(() =>
-      validateAgentObjectQuery(ontology, "How many contracts involve entities with regional section Sicilia?", {
-        objectId: "contract",
-        mode: "count",
-        joins: [{ relationshipId: "organization_has_contracts" }],
-        filters: [
-          { propertyId: "source_year_month", op: "eq", value: "2025-06" },
-          {
-            objectId: "organization",
-            propertyId: "sezione_regionale",
-            op: "eq",
-            value: "Sicilia",
-          },
-        ],
-      }),
+      validateAgentObjectQuery(
+        ontology,
+        "How many contracts involve entities with regional section Sicilia?",
+        {
+          objectId: "contract",
+          mode: "count",
+          joins: [{ relationshipId: "organization_has_contracts" }],
+          filters: [
+            { propertyId: "source_year_month", op: "eq", value: "2025-06" },
+            {
+              objectId: "organization",
+              propertyId: "sezione_regionale",
+              op: "eq",
+              value: "Sicilia",
+            },
+          ],
+        },
+      ),
     ).not.toThrow();
   });
 });
