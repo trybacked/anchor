@@ -70,7 +70,7 @@ describe("warehouse budget", () => {
     expect(available).not.toContain("query_objects");
     expect(available).not.toContain("get_property_values");
     expect(available).toContain("submit_answer");
-    expect(available).toContain("search_schema");
+    expect(available).not.toContain("search_schema");
   });
   it("reports the exhausted budget to the model instead of querying anyway", async () => {
     const tools = toolkit({ maxSqlCalls: 1 });

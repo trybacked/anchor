@@ -50,6 +50,42 @@ function tokenizeForExampleMatch(text: string): string[] {
     .split(/[^\p{L}\p{N}]+/u)
     .filter((token) => token.length > 2);
 }
+type VerifiedExample = NonNullable<NonNullable<Ontology["semantics"]>["examples"]>[number];
+
+function summarizeObjectQuery(query: Record<string, unknown>): string {
+  const parts: string[] = [];
+  const objectId = query["objectId"];
+  if (typeof objectId === "string") {
+    parts.push(`objectId=${objectId}`);
+  }
+  const mode = query["mode"];
+  if (typeof mode === "string") {
+    parts.push(`mode=${mode}`);
+  }
+  const joins = query["joins"];
+  if (Array.isArray(joins) && joins.length > 0) {
+    const ids = joins
+      .map((join) =>
+        typeof join === "object" && join !== null && "relationshipId" in join
+          ? String((join as { relationshipId: unknown }).relationshipId)
+          : "",
+      )
+      .filter((id) => id.length > 0);
+    if (ids.length > 0) {
+      parts.push(`joins=${ids.join(",")}`);
+    }
+  }
+  return parts.join(", ");
+}
+
+function formatVerifiedExample(example: VerifiedExample): string {
+  const query = example.expectedObjectQuery;
+  if (query === undefined) {
+    return `- Q: ${example.question}`;
+  }
+  return `- Q: ${example.question}\n  Pattern: ${summarizeObjectQuery(query as Record<string, unknown>)}`;
+}
+
 function exampleMatchScore(question: string, exampleQuestion: string): number {
   const questionTokens = new Set(tokenizeForExampleMatch(question));
   let score = 0;
@@ -74,11 +110,7 @@ export function buildAgentSystemPrompt(ontology: Ontology, question: string): st
         exampleMatchScore(question, right.question) - exampleMatchScore(question, left.question),
     )
     .slice(0, AGENT_PROMPT_MAX_EXAMPLES)
-    .map((example) =>
-      example.expectedObjectQuery !== undefined
-        ? `- Q: ${example.question}\n  query_objects: ${JSON.stringify(example.expectedObjectQuery)}`
-        : `- Q: ${example.question}`,
-    );
+    .map((example) => formatVerifiedExample(example));
   return [
     PLATFORM_POLICY,
     ANSWER_STYLE,

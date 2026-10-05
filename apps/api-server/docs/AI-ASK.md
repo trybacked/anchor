@@ -38,7 +38,7 @@ Shared **semantic catalogs** (synonyms, default time dimensions, glossary) are a
 
 - **Route:** always **`agent`** (no template/plan route on HTTP).
 - **Tools:** same governed surface as MCP — especially `query_objects` with filters, joins, `textSearch`, `groupBy` / aggregations, `orderBy`.
-- **Budget (defaults):** 8 tool steps, 4 warehouse-backed calls, 50 rows max per `query_objects`; document archive tools are omitted for contract/region questions on ANAC-only tenants (see `@trybacked/semantic-chat`).
+- **Budget (defaults):** 6 tool steps, 2 warehouse-backed calls, 50 rows max per `query_objects`; after one successful `query_objects`, only `submit_answer` is offered. Document archive tools appear only when the ontology includes a document entity (see `@trybacked/semantic-chat`).
 - **Grounding:** every number in the answer must exist in a tool result; claims are rebound to the matching `toolCallId` when unambiguous. If the same value appears in multiple successful queries, the agent must cite the correct call or grounding fails. One repair pass may run if grounding fails.
 - **Warehouse budget:** only **successful** warehouse tool calls count toward the SQL budget, so compile/SQL errors can be retried without instantly exhausting the limit.
 - **Clarification:** `ask_clarification` only when ontology semantics cannot resolve material ambiguity (policy in `clarification-policy`).

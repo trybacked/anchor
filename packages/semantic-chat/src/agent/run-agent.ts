@@ -7,7 +7,10 @@ import { randomUUID } from "node:crypto";
 import { assertQuestionDoesNotMentionUnknownProperties } from "../query-intent.js";
 import { buildAgentTools, type AgentToolEvent } from "./build-tools.js";
 import { groundAnswer, SemanticGroundingError } from "./grounding.js";
-import { AGENT_GROUNDING_REPAIR_MAX_STEPS } from "./limits.js";
+import {
+  AGENT_FORCE_ANSWER_AFTER_WAREHOUSE_OK,
+  AGENT_GROUNDING_REPAIR_MAX_STEPS,
+} from "./limits.js";
 import { buildAgentSystemPrompt } from "./prompt-builder.js";
 import {
   DEFAULT_AGENT_BUDGET,
@@ -115,6 +118,12 @@ async function generate(
     stopWhen: [stepCountIs(budget.maxSteps), () => run.terminal !== undefined],
     prepareStep: ({ stepNumber }) => {
       if (stepNumber >= finalStep) {
+        return { activeTools: ["submit_answer"] };
+      }
+      const warehouseOk = run.steps.filter(
+        (step) => step.toolName === "query_objects" && step.status === "ok",
+      ).length;
+      if (warehouseOk >= AGENT_FORCE_ANSWER_AFTER_WAREHOUSE_OK) {
         return { activeTools: ["submit_answer"] };
       }
       const available = toolkit.availableToolNames();
