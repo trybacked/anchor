@@ -2,10 +2,12 @@ import type { ConversationTurn } from "@trybacked/service";
 import { AGENT_PROMPT_MAX_HISTORY_TURNS, AGENT_PROMPT_MAX_TURN_CHARS } from "./agent/limits.js";
 
 const FOLLOW_UP_RULES = [
-  'Conversation so far (oldest first). The current question may be a follow-up: pronouns, ellipsis or a bare refinement ("and in Sicily?", "only above 1M", "group them by region") refer to the previous turns.',
-  "For a follow-up, start from the most recent query below and change only what the question changes; constraints the user did not revisit stay in place, and a constraint restated differently replaces the earlier one.",
-  "When the question stands on its own, ignore the history and plan it from scratch.",
-].join(" ");
+  "## Previous turns in this chat (reference data, oldest first)",
+  'The current question may be a follow-up: pronouns, ellipsis or a bare refinement ("and in Sicily?", "only above 1M", "group them by region") refer to these turns.',
+  "For a follow-up, start from the most recent previous query and change only what the question changes; constraints the user did not revisit stay in place, and a constraint restated differently replaces the earlier one.",
+  "When the question stands on its own, ignore these turns and start from scratch.",
+  "Earlier answers appear only so you can resolve references. They are finished product output: never reuse their wording or their layout in your own reply.",
+].join("\n");
 
 function clip(text: string): string {
   return text.length > AGENT_PROMPT_MAX_TURN_CHARS
@@ -14,9 +16,10 @@ function clip(text: string): string {
 }
 
 function formatTurn(turn: ConversationTurn): string {
-  const speaker = turn.role === "user" ? "User" : "Assistant";
-  const query = turn.query === undefined ? "" : `\n  Query: ${JSON.stringify(turn.query)}`;
-  return `- ${speaker}: ${clip(turn.text)}${query}`;
+  const asked = `[asked] ${clip(turn.text)}`;
+  if (turn.role === "user") return asked;
+  const query = turn.query === undefined ? "" : `\n[query behind it] ${JSON.stringify(turn.query)}`;
+  return `[already answered] ${clip(turn.text)}${query}`;
 }
 
 /** Interface language declared by the client; absent when the client did not say. */

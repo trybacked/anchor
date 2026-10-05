@@ -16,6 +16,10 @@ const PLANNER_POLICY = [
   "locale: the BCP-47 language of the question (e.g. it, en). assumptions: interpretation choices written for a non-technical reader in that language, without field or object ids.",
 ].join("\n");
 
+/** Last word of the system prompt: context sections must never redefine the output. */
+const PLANNER_OUTPUT_REMINDER =
+  "Your reply is the single JSON object defined by the output contract above and nothing else: no prose, no Markdown, no criteria line, no explanation.";
+
 /** A stalled gateway must surface as a fallback, not an open-ended wait. */
 const PLANNER_TIMEOUT_MS = 20_000;
 
@@ -54,6 +58,7 @@ export function buildPlannerSystemPrompt(context: PlannerContext): string {
     ...buildLocaleSection(context.locale),
     ...buildConversationSection(context.history),
     ...buildSemanticContextSections(context.ontology, context.question),
+    PLANNER_OUTPUT_REMINDER,
   ].join("\n\n");
 }
 

@@ -14,6 +14,15 @@ describe("system prompts", () => {
     expect(prompt).toContain("Never put in answer");
   });
 
+  it("planner prompt ends by restating the output contract so context cannot override it", () => {
+    const prompt = buildPlannerSystemPrompt({
+      ontology: contractOntology(),
+      question: "quanti a gerace",
+      history: [{ role: "assistant", text: "Ci sono **9** contratti." }],
+    });
+    expect(prompt.trimEnd().endsWith("no criteria line, no explanation.")).toBe(true);
+  });
+
   it("planner prompt shares query rules and schema but not the agent tool workflow", () => {
     const prompt = buildPlannerSystemPrompt({
       ontology: contractOntology(),
@@ -50,12 +59,12 @@ describe("system prompts", () => {
     ];
     const context = { ontology: contractOntology(), question: "e in Sicilia?", history };
     for (const prompt of [buildPlannerSystemPrompt(context), buildAgentSystemPrompt(context)]) {
-      expect(prompt).toContain("Conversation so far");
-      expect(prompt).toContain("- User: Quanti contratti a giugno 2025?");
+      expect(prompt).toContain("Previous turns in this chat");
+      expect(prompt).toContain("[asked] Quanti contratti a giugno 2025?");
       expect(prompt).toContain('"source_year_month","op":"eq","value":"2025-06"');
     }
     expect(buildPlannerSystemPrompt({ ...context, history: [] })).not.toContain(
-      "Conversation so far",
+      "Previous turns in this chat",
     );
   });
 });

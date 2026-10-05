@@ -30,8 +30,8 @@ describe("conversation section", () => {
       { role: "user", text: "x".repeat(AGENT_PROMPT_MAX_TURN_CHARS + 50) },
       { role: "assistant", text: "ok" },
     ]);
-    expect(section).toContain(`- User: ${"x".repeat(AGENT_PROMPT_MAX_TURN_CHARS - 1)}…`);
-    expect(section).toContain("- Assistant: ok");
-    expect(section).not.toContain("Query:");
+    expect(section).toContain(`[asked] ${"x".repeat(AGENT_PROMPT_MAX_TURN_CHARS - 1)}…`);
+    expect(section).toContain("[already answered] ok");
+    expect(section).not.toContain("[query behind it]");
   });
 });
