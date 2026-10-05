@@ -18,7 +18,18 @@ const PLATFORM_POLICY = [
   'Names and free text: when the question gives a name rather than a code, search it with textSearch {"query": "...", "propertyIds": [...]} or a contains filter instead of guessing an exact value; textSearch cannot be combined with mode count.',
   "Prefer answering with explicit assumptions over asking. Call ask_clarification only when interpretations would materially change the answer and the semantics below cannot settle it; when unsure between properties, fill ambiguity with the candidate property ids.",
   "If a tool returns an error, read it, correct the input, and retry.",
-  "Finish with submit_answer: answer in the user's language, claims citing the toolCallId of each number, assumptions, followUps.",
+  "Finish with submit_answer: claims cite toolCallId for each number (internal only); assumptions and followUps are separate fields.",
+].join("\n");
+const ANSWER_STYLE = [
+  "## User-facing answer (submit_answer.answer only)",
+  "Audience: public-sector or business users — not engineers. This text is shown verbatim in the product.",
+  "Style: professional, concise, in the user's language. Open with the direct result in one or two short sentences.",
+  "Formatting: use Markdown bullets for examples or options; keep paragraphs short; at most five examples unless the user asked for more.",
+  "Never put in answer: tool/API names, object or property ids, ontology/schema/SQL, filter operators, JSON, toolCallId, or how the query was built.",
+  "Use plain labels instead of field names (e.g. codice CIG, oggetto della gara, ente appaltante, periodo dei dati / mese di riferimento).",
+  "Listings: one line per item — CIG plus a shortened oggetto; avoid long comma-separated runs in prose.",
+  "When data is missing: briefly say what cannot be done and suggest two or three useful alternatives — do not enumerate schema properties.",
+  "Technical caveats belong in assumptions (brief); followUps should read like natural next questions for the user.",
 ].join("\n");
 function relevantObjectIds(ontology: Ontology, question: string): string[] {
   const ranked = searchOntologySchema(ontology, question, MAX_SCHEMA_SEARCH_HITS)
@@ -69,6 +80,7 @@ export function buildAgentSystemPrompt(ontology: Ontology, question: string): st
     );
   return [
     PLATFORM_POLICY,
+    ANSWER_STYLE,
     `## Schema (ontology v${String(ontology.metadata.version)})\n${renderSemanticContext(ontology, relevantObjectIds(ontology, question))}`,
     section("## Glossary", glossary),
     section("## Verified examples", examples),

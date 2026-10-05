@@ -51,7 +51,12 @@ export type BuildAgentToolsOptions = {
   onTerminal: (terminal: AgentTerminal) => void;
 };
 const SubmitAnswerSchema = z.object({
-  answer: z.string().min(1),
+  answer: z
+    .string()
+    .min(1)
+    .describe(
+      "Final text shown to the user: professional, non-technical prose in the user's language; Markdown bullets ok; no property ids or tool names.",
+    ),
   claims: z
     .array(
       z.object({
@@ -191,7 +196,7 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
     ),
     submit_answer: defineTool(
       "submit_answer",
-      "Submit the final answer. Every number must be backed by a claim citing the toolCallId that returned it.",
+      "Submit the final user-visible answer (plain language, good formatting). Every number must have a claim with the toolCallId that returned it; put technical notes in assumptions, not in answer.",
       SubmitAnswerSchema,
       (input) => {
         options.onTerminal({ kind: "answer", ...input });
