@@ -155,6 +155,43 @@
                         "evidence"
                       ],
                       "additionalProperties": false
+                    },
+                    "semantics": {
+                      "type": "object",
+                      "properties": {
+                        "description": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "synonyms": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "valueFormat": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "sampleValues": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "semanticRole": {
+                          "type": "string",
+                          "enum": [
+                            "time_dimension",
+                            "partition",
+                            "measure",
+                            "label",
+                            "identifier"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -168,6 +205,30 @@
                   ],
                   "additionalProperties": false
                 }
+              },
+              "semantics": {
+                "type": "object",
+                "properties": {
+                  "synonyms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "displayProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "defaultTimeDimension": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
               }
             },
             "required": [
@@ -342,6 +403,84 @@
             ],
             "additionalProperties": false
           }
+        },
+        "semantics": {
+          "type": "object",
+          "properties": {
+            "glossary": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "term": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "definition": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "objectId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "propertyId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "id",
+                  "term",
+                  "definition"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "examples": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "question": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "expectedObjectQuery": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "notes": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "id",
+                  "question"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [
