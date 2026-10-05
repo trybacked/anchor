@@ -2,7 +2,6 @@ import { CLI_NAME, CLI_VERSION, SERVICES } from "../config.js";
 import type { Command } from "../types.js";
 import type { Ui } from "./format.js";
 import { renderLogo } from "./logo.js";
-
 export function printRootHelp(ui: Ui): void {
   ui.log(renderLogo());
   ui.blank();
@@ -24,7 +23,6 @@ export function printRootHelp(ui: Ui): void {
     `${ui.dim("Run")} ${ui.command(`${CLI_NAME} ${SERVICES.ANCHOR}`)} ${ui.dim("for the full command list.")}`,
   );
 }
-
 export function printAnchorHelp(ui: Ui, commands: readonly Command[]): void {
   ui.log(renderLogo());
   ui.blank();
@@ -38,7 +36,6 @@ export function printAnchorHelp(ui: Ui, commands: readonly Command[]): void {
     ui.log(`  ${ui.command(cmd.name.padEnd(nameWidth))}  ${ui.dim(cmd.description)}`);
   }
 }
-
 export function printHelp(ui: Ui, commands: readonly Command[]): void {
   printAnchorHelp(ui, commands);
 }

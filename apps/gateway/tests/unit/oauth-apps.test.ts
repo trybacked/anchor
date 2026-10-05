@@ -8,7 +8,6 @@ import { createGatewayApp } from "../../src/app.js";
 import type { GatewayConfig } from "../../src/config.js";
 import { createAuthorizationCode } from "../../src/oauth-codes.js";
 import { createSessionToken } from "../../src/session.js";
-
 function writeRegistry(dir: string): string {
   const path = join(dir, "tenants.yaml");
   writeFileSync(
@@ -28,7 +27,6 @@ tenants:
   );
   return path;
 }
-
 function baseConfig(dir: string, registryPath: string): GatewayConfig {
   return {
     host: "127.0.0.1",
@@ -49,7 +47,6 @@ function baseConfig(dir: string, registryPath: string): GatewayConfig {
     controlPlaneInternalToken: "internal-token",
   };
 }
-
 const mockClient = {
   clientId: "chiedi-dev",
   name: "Chiedi Dev",
@@ -57,10 +54,8 @@ const mockClient = {
   corsOrigins: ["http://localhost:3000"],
   clientSecretHash: null,
 };
-
 describe("oauth apps", () => {
   const originalFetch = globalThis.fetch;
-
   beforeEach(() => {
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input.toString();
@@ -73,12 +68,10 @@ describe("oauth apps", () => {
       return originalFetch(input);
     }) as typeof fetch;
   });
-
   afterEach(() => {
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
   });
-
   it("rejects authorize when PKCE is missing for public client", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-oauth-"));
     const registryPath = writeRegistry(dir);
@@ -87,15 +80,15 @@ describe("oauth apps", () => {
       config,
       registrySource: createFileRegistrySource(registryPath),
     });
-
     const response = await app.request(
       "http://127.0.0.1/oauth/authorize?response_type=code&client_id=chiedi-dev&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Flogin%2Fcomplete&state=abc",
     );
     expect(response.status).toBe(400);
-    const body = (await response.json()) as { error: string };
+    const body = (await response.json()) as {
+      error: string;
+    };
     expect(body.error).toBe("pkce_required");
   });
-
   it("exchanges authorization code for bearer access token", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-oauth-"));
     const registryPath = writeRegistry(dir);
@@ -104,7 +97,6 @@ describe("oauth apps", () => {
       config,
       registrySource: createFileRegistrySource(registryPath),
     });
-
     const verifier = randomBytes(32).toString("base64url");
     const challenge = createHash("sha256").update(verifier, "utf8").digest("base64url");
     const code = await createAuthorizationCode(
@@ -119,7 +111,6 @@ describe("oauth apps", () => {
       },
       120,
     );
-
     const response = await app.request("http://127.0.0.1/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -137,16 +128,17 @@ describe("oauth apps", () => {
       token_type: string;
     };
     expect(tokenPayload.token_type).toBe("Bearer");
-
     const me = await app.request("http://127.0.0.1/me", {
       headers: { Authorization: `Bearer ${tokenPayload.access_token}` },
     });
     expect(me.status).toBe(200);
-    const session = (await me.json()) as { username: string; tenants: string[] };
+    const session = (await me.json()) as {
+      username: string;
+      tenants: string[];
+    };
     expect(session.username).toBe("user@example.com");
     expect(session.tenants).toEqual(["gerace"]);
   });
-
   it("allows CORS preflight for registered origin on /me", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-oauth-"));
     const registryPath = writeRegistry(dir);
@@ -155,7 +147,6 @@ describe("oauth apps", () => {
       config,
       registrySource: createFileRegistrySource(registryPath),
     });
-
     const response = await app.request("http://127.0.0.1/me", {
       method: "OPTIONS",
       headers: {
@@ -166,7 +157,6 @@ describe("oauth apps", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:3000");
   });
-
   it("accepts bearer token on tenant proxy route", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gw-oauth-"));
     const registryPath = writeRegistry(dir);
@@ -188,7 +178,6 @@ describe("oauth apps", () => {
       registrySource: createFileRegistrySource(registryPath),
       proxyDeps: { fetchImpl },
     });
-
     const response = await app.request("http://127.0.0.1/t/gerace/v1/model/entities", {
       headers: { Authorization: `Bearer ${token}` },
     });

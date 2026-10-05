@@ -2,7 +2,6 @@ import type { SqlParameter } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { createOntologyQueryRuntime } from "../../src/index.js";
-
 const ontology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -20,10 +19,12 @@ const ontology: Ontology = {
   logic: [],
   actions: [],
 };
-
 describe("createOntologyQueryRuntime", () => {
   it("compiles, executes, and returns object rows", async () => {
-    const executed: { sql: string; parameters: SqlParameter[] }[] = [];
+    const executed: {
+      sql: string;
+      parameters: SqlParameter[];
+    }[] = [];
     const runtime = createOntologyQueryRuntime({
       ontology,
       executor: (sql, parameters) => {
@@ -55,7 +56,6 @@ describe("createOntologyQueryRuntime", () => {
       sql: executed[0]?.sql,
     });
   });
-
   it("propagates compile errors without touching the executor", async () => {
     let called = false;
     const runtime = createOntologyQueryRuntime({

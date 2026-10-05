@@ -11,7 +11,6 @@ export {
 } from "./client.js";
 export type { AuthModule, HealthModule } from "./modules/auth.js";
 export type { TransportOptions } from "./transport.js";
-
 export type {
   GatewayAuthMode,
   GatewayHealth,
@@ -20,7 +19,6 @@ export type {
   LoginResponse,
   LogoutResponse,
 } from "@trybacked/core";
-
 export type {
   ChunkSearchBody,
   ChunkSearchResponse,

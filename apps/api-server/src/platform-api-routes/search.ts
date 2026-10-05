@@ -6,7 +6,6 @@ import {
   type RouteFactory,
 } from "../platform-api-route-factory.js";
 import { HTTP_OK_OR_UNAVAILABLE, jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
-
 export const platformApiEntitySearchRoutes: RouteFactory[] = [
   postJsonRoute(
     {
@@ -15,7 +14,7 @@ export const platformApiEntitySearchRoutes: RouteFactory[] = [
       summary: "Full-text entity search",
       tags: ["entity-search"],
       jsonBody: jsonBody("EntitySearchBody", EntitySearchBodySchema, {
-        query: "contract",
+        query: "customer",
         kinds: ["entity"],
       }),
       responses: { "200": { description: "Matches" } },
@@ -23,7 +22,6 @@ export const platformApiEntitySearchRoutes: RouteFactory[] = [
     async (c, body) => c.json(await getAnchorService(c).entitySearch(body)),
   ),
 ];
-
 export const platformApiChunkSearchRoutes: RouteFactory[] = [
   postServiceJsonRoute(
     {
@@ -31,7 +29,10 @@ export const platformApiChunkSearchRoutes: RouteFactory[] = [
       path: `${V1_PATH_PREFIX}/search/chunks`,
       summary: "Semantic chunk search",
       tags: ["chunk-search"],
-      jsonBody: jsonBody("ChunkSearchBody", ChunkSearchBodySchema, { query: "appalto", limit: 10 }),
+      jsonBody: jsonBody("ChunkSearchBody", ChunkSearchBodySchema, {
+        query: "termination clause",
+        limit: 10,
+      }),
       responses: HTTP_OK_OR_UNAVAILABLE,
     },
     (service, body) => service.chunkSearch(body),

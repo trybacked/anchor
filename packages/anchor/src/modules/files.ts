@@ -1,12 +1,14 @@
 import type { ListFilesResponse, RefreshRun, UploadedFile } from "@trybacked/service";
 import type { TenantApiContext } from "../scope.js";
 import type { Transport } from "../transport.js";
-
 export function createFilesModule(transport: Transport, ctx: TenantApiContext) {
   return {
     upload: async (
       file: Blob,
-      options: { filename: string; folder?: string | undefined },
+      options: {
+        filename: string;
+        folder?: string | undefined;
+      },
     ): Promise<UploadedFile> => {
       const form = new FormData();
       form.append("file", file, options.filename);
@@ -20,7 +22,6 @@ export function createFilesModule(transport: Transport, ctx: TenantApiContext) {
       const payload: unknown = await response.json();
       return payload as UploadedFile;
     },
-
     list: (options?: { folder?: string | undefined }) => {
       const query =
         options?.folder !== undefined && options.folder.length > 0
@@ -30,28 +31,25 @@ export function createFilesModule(transport: Transport, ctx: TenantApiContext) {
         headers: ctx.headers,
       });
     },
-
     delete: (path: string) =>
-      transport.requestJson<{ ok: true }>(
-        "DELETE",
-        ctx.url(`/v1/files?path=${encodeURIComponent(path)}`),
-        { headers: ctx.headers },
-      ),
-
+      transport.requestJson<{
+        ok: true;
+      }>("DELETE", ctx.url(`/v1/files?path=${encodeURIComponent(path)}`), { headers: ctx.headers }),
     refresh: (options?: { fullRefresh?: boolean | undefined }) =>
       transport.requestJson<RefreshRun>("POST", ctx.url("/v1/files/refresh"), {
         body: options?.fullRefresh === true ? { fullRefresh: true } : {},
         headers: ctx.headers,
       }),
-
     getRefresh: (runId: number) =>
       transport.requestJson<RefreshRun>("GET", ctx.url(`/v1/files/refresh/${String(runId)}`), {
         headers: ctx.headers,
       }),
-
     waitForRefresh: async (
       runId: number,
-      options?: { intervalMs?: number | undefined; signal?: AbortSignal | undefined },
+      options?: {
+        intervalMs?: number | undefined;
+        signal?: AbortSignal | undefined;
+      },
     ): Promise<RefreshRun> => {
       const intervalMs = options?.intervalMs ?? 3000;
       for (;;) {

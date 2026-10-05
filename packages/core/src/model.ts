@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { MODEL_FORMAT_VERSION } from "./constants.js";
+import {
+  EntitySemanticsSchema,
+  OntologySemanticsBlockSchema,
+  PropertySemanticsSchema,
+} from "./semantics.js";
 export const ConfidenceSchema = z.number().min(0).max(1);
 export const ProvenanceSchema = z.object({
   table: z.string().min(1),
@@ -28,6 +33,7 @@ export const PropertySchema = z.object({
   nullable: z.boolean(),
   confidence: ConfidenceSchema,
   provenance: ProvenanceSchema,
+  semantics: PropertySemanticsSchema.optional(),
 });
 export const EntitySchema = z.object({
   id: z.string().min(1),
@@ -38,6 +44,7 @@ export const EntitySchema = z.object({
   confidence: ConfidenceSchema,
   provenance: ProvenanceSchema,
   properties: z.array(PropertySchema),
+  semantics: EntitySemanticsSchema.optional(),
 });
 export const CardinalitySchema = z.enum(["one_to_one", "one_to_many", "many_to_many"]);
 export const RelationSchema = z.object({
@@ -73,28 +80,17 @@ export const SemanticModelSchema = z.object({
   entities: z.array(EntitySchema),
   relations: z.array(RelationSchema),
   rules: z.array(RuleSchema),
+  semantics: OntologySemanticsBlockSchema.optional(),
 });
-
 export type Confidence = z.infer<typeof ConfidenceSchema>;
-
 export type Provenance = z.infer<typeof ProvenanceSchema>;
-
 export type SemanticType = z.infer<typeof SemanticTypeSchema>;
-
 export type PropertyRole = z.infer<typeof PropertyRoleSchema>;
-
 export type ElementStatus = z.infer<typeof ElementStatusSchema>;
-
 export type Property = z.infer<typeof PropertySchema>;
-
 export type Entity = z.infer<typeof EntitySchema>;
-
 export type Cardinality = z.infer<typeof CardinalitySchema>;
-
 export type Relation = z.infer<typeof RelationSchema>;
-
 export type Rule = z.infer<typeof RuleSchema>;
-
 export type ModelMetadata = z.infer<typeof ModelMetadataSchema>;
-
 export type SemanticModel = z.infer<typeof SemanticModelSchema>;

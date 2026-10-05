@@ -15,13 +15,10 @@ import {
   type ToolContext,
   type ToolDefinition,
 } from "./tools.js";
-
 export interface ServeUsageRecorder {
   record(operation: McpSurfaceTool): Promise<void>;
 }
-
 export type McpSurfaceOperation = McpSurfaceTool;
-
 export interface ModelMcpServerOptions {
   usageRecorder?: ServeUsageRecorder;
   searchModelOptions?: SearchModelOptions;
@@ -29,7 +26,6 @@ export interface ModelMcpServerOptions {
   ontology?: Ontology | undefined;
   semanticAsk?: SemanticAskHandler | undefined;
 }
-
 function jsonContent(data: unknown): {
   content: {
     type: "text";
@@ -38,7 +34,6 @@ function jsonContent(data: unknown): {
 } {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
-
 function errorContent(text: string): {
   isError: true;
   content: {
@@ -51,7 +46,6 @@ function errorContent(text: string): {
     content: [{ type: "text", text }],
   };
 }
-
 async function withUsage<T>(
   operation: McpSurfaceTool,
   usageRecorder: ServeUsageRecorder | undefined,
@@ -62,7 +56,6 @@ async function withUsage<T>(
   }
   return handler();
 }
-
 export function createModelMcpServer(
   model: SemanticModel,
   options: ModelMcpServerOptions = {},
@@ -84,7 +77,6 @@ export function createModelMcpServer(
     ...warehouseReaderToolsForRuntime(options.queryRuntime),
     ...askSemanticToolForContext(options.semanticAsk),
   ];
-
   for (const tool of tools) {
     server.registerTool(
       tool.name,
@@ -103,10 +95,8 @@ export function createModelMcpServer(
         }),
     );
   }
-
   return server;
 }
-
 export async function startStdioMcpServer(
   model: SemanticModel,
   options: ModelMcpServerOptions = {},
@@ -115,7 +105,6 @@ export async function startStdioMcpServer(
   await server.connect(new StdioServerTransport());
   return server;
 }
-
 export async function runStdioMcpServerUntilClose(
   model: SemanticModel,
   options: ModelMcpServerOptions = {},

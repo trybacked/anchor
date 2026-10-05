@@ -16,31 +16,24 @@ export const ReviewAnswerSchema = z
 export const ReviewSchema = z.object({
   runId: z.string().min(1),
   answeredAt: z.string().datetime(),
-
   reviewer: z.string().min(1).optional(),
   answers: z.array(ReviewAnswerSchema),
 });
-
 export type ReviewDecision = z.infer<typeof ReviewDecisionSchema>;
-
 export type ReviewAnswer = z.infer<typeof ReviewAnswerSchema>;
-
 export type Review = z.infer<typeof ReviewSchema>;
 interface ElementVerdict {
   rejected: boolean;
   confirmed: boolean;
   newName?: string;
 }
-
 export interface CollectVerdictsResult {
   verdicts: Map<string, ElementVerdict>;
   staleAnswerCount: number;
 }
-
 export interface ApplyReviewOptions {
   reviewConfidenceThreshold?: number;
 }
-
 export interface ApplyReviewResult {
   model: SemanticModel;
   staleAnswerCount: number;
@@ -51,7 +44,6 @@ function verdictKey(kind: ReviewQuestionKind, targetId: string): string {
 function buildReviewedTargetKeys(questions: ReviewQuestion[]): Set<string> {
   return new Set(questions.map((question) => verdictKey(question.kind, question.targetId)));
 }
-
 export function collectVerdicts(
   questions: ReviewQuestion[],
   answers: ReviewAnswer[],
@@ -130,7 +122,6 @@ function applyVerdicts<T extends Entity | Relation | Rule>(
     )
     .filter((element): element is T => element !== null && shouldKeep(element));
 }
-
 export function applyReview(
   proposal: Proposal,
   review: Review,

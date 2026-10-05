@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { enrichProposalFromDiscovery } from "../../src/propose/enrich-proposal.js";
-
 describe("enrichProposalFromDiscovery", () => {
   it("adds schema-derived relations missing from the LLM proposal", () => {
     const proposal = {
@@ -51,7 +50,6 @@ describe("enrichProposalFromDiscovery", () => {
       doubts: [],
       questions: [],
     };
-
     const discovery = {
       inspection: { inspectedAt: new Date().toISOString(), tables: [] },
       ontology: {
@@ -73,7 +71,6 @@ describe("enrichProposalFromDiscovery", () => {
         actions: [],
       },
     };
-
     const result = enrichProposalFromDiscovery(proposal, discovery);
     expect(result.addedRelationIds).toHaveLength(1);
     expect(result.proposal.relations[0]?.fromEntity).toBe("orders");

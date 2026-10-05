@@ -1,7 +1,6 @@
 import { resolveTenantCatalog } from "@trybacked/core";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
-
 export type OrganizationRow = {
   id: string;
   tenant_id: string;
@@ -13,7 +12,6 @@ export type OrganizationRow = {
   service_principal_app_id: string | null;
   ontology_version: number;
 };
-
 export type JobRow = {
   id: string;
   organization_id: string;
@@ -24,7 +22,6 @@ export type JobRow = {
   payload: Record<string, unknown>;
   result: Record<string, unknown> | null;
 };
-
 export async function insertOrganization(
   pool: pg.Pool,
   input: {
@@ -51,14 +48,12 @@ export async function insertOrganization(
   );
   return result.rows[0] as OrganizationRow;
 }
-
 export async function listOrganizations(pool: pg.Pool): Promise<OrganizationRow[]> {
   const result = await pool.query<OrganizationRow>(
     "SELECT * FROM organizations ORDER BY created_at DESC",
   );
   return result.rows;
 }
-
 export async function getOrganizationByTenantId(
   pool: pg.Pool,
   tenantId: string,
@@ -69,14 +64,12 @@ export async function getOrganizationByTenantId(
   );
   return result.rows[0];
 }
-
 export async function listActiveOrganizations(pool: pg.Pool): Promise<OrganizationRow[]> {
   const result = await pool.query<OrganizationRow>(
     "SELECT * FROM organizations WHERE status = 'active' ORDER BY tenant_id",
   );
   return result.rows;
 }
-
 export async function updateOrganizationWorkosId(
   pool: pg.Pool,
   tenantId: string,
@@ -91,12 +84,13 @@ export async function updateOrganizationWorkosId(
   );
   return result.rows[0];
 }
-
 export async function updateOrganizationStatus(
   pool: pg.Pool,
   id: string,
   status: string,
-  fields?: { servicePrincipalAppId?: string | undefined },
+  fields?: {
+    servicePrincipalAppId?: string | undefined;
+  },
 ): Promise<void> {
   await pool.query(
     `UPDATE organizations
@@ -107,7 +101,6 @@ export async function updateOrganizationStatus(
     [id, status, fields?.servicePrincipalAppId ?? null],
   );
 }
-
 export async function enqueueJob(
   pool: pg.Pool,
   organizationId: string,
@@ -123,23 +116,19 @@ export async function enqueueJob(
   );
   return result.rows[0] as JobRow;
 }
-
 export async function getJob(pool: pg.Pool, jobId: string): Promise<JobRow | undefined> {
   const result = await pool.query<JobRow>("SELECT * FROM provisioning_jobs WHERE id = $1", [jobId]);
   return result.rows[0];
 }
-
 export async function claimNextJob(pool: pg.Pool): Promise<JobRow | undefined> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const claimed = await client.query<JobRow>(
-      `SELECT * FROM provisioning_jobs
+    const claimed = await client.query<JobRow>(`SELECT * FROM provisioning_jobs
        WHERE status = 'pending'
        ORDER BY created_at
        FOR UPDATE SKIP LOCKED
-       LIMIT 1`,
-    );
+       LIMIT 1`);
     const job = claimed.rows[0];
     if (job === undefined) {
       await client.query("COMMIT");
@@ -160,7 +149,6 @@ export async function claimNextJob(pool: pg.Pool): Promise<JobRow | undefined> {
     client.release();
   }
 }
-
 export async function completeJob(
   pool: pg.Pool,
   jobId: string,
@@ -173,7 +161,6 @@ export async function completeJob(
     [jobId, JSON.stringify(result)],
   );
 }
-
 export async function failJob(pool: pg.Pool, jobId: string, error: string): Promise<void> {
   await pool.query(
     `UPDATE provisioning_jobs
@@ -182,7 +169,6 @@ export async function failJob(pool: pg.Pool, jobId: string, error: string): Prom
     [jobId, error],
   );
 }
-
 export async function requeueJob(pool: pg.Pool, jobId: string): Promise<void> {
   await pool.query(
     `UPDATE provisioning_jobs
@@ -191,7 +177,6 @@ export async function requeueJob(pool: pg.Pool, jobId: string): Promise<void> {
     [jobId],
   );
 }
-
 export async function listTenantsForWorkosOrganizations(
   pool: pg.Pool,
   workosOrganizationIds: string[],
@@ -199,7 +184,9 @@ export async function listTenantsForWorkosOrganizations(
   if (workosOrganizationIds.length === 0) {
     return [];
   }
-  const result = await pool.query<{ tenant_id: string }>(
+  const result = await pool.query<{
+    tenant_id: string;
+  }>(
     `SELECT tenant_id FROM organizations
      WHERE status = 'active'
        AND workos_organization_id = ANY($1::text[])`,
@@ -207,7 +194,6 @@ export async function listTenantsForWorkosOrganizations(
   );
   return result.rows.map((row) => row.tenant_id);
 }
-
 export type OAuthClientRow = {
   client_id: string;
   name: string;
@@ -217,7 +203,6 @@ export type OAuthClientRow = {
   created_at: Date;
   updated_at: Date;
 };
-
 function mapOAuthClientRow(row: OAuthClientRow): OAuthClientRow {
   return {
     ...row,
@@ -225,7 +210,6 @@ function mapOAuthClientRow(row: OAuthClientRow): OAuthClientRow {
     cors_origins: Array.isArray(row.cors_origins) ? row.cors_origins : [],
   };
 }
-
 export async function insertOAuthClient(
   pool: pg.Pool,
   input: {
@@ -250,12 +234,10 @@ export async function insertOAuthClient(
   );
   return mapOAuthClientRow(result.rows[0] as OAuthClientRow);
 }
-
 export async function listOAuthClients(pool: pg.Pool): Promise<OAuthClientRow[]> {
   const result = await pool.query<OAuthClientRow>("SELECT * FROM oauth_clients ORDER BY client_id");
   return result.rows.map((row) => mapOAuthClientRow(row));
 }
-
 export async function getOAuthClientById(
   pool: pg.Pool,
   clientId: string,
@@ -267,12 +249,10 @@ export async function getOAuthClientById(
   const row = result.rows[0];
   return row === undefined ? undefined : mapOAuthClientRow(row);
 }
-
 export async function deleteOAuthClient(pool: pg.Pool, clientId: string): Promise<boolean> {
   const result = await pool.query("DELETE FROM oauth_clients WHERE client_id = $1", [clientId]);
   return (result.rowCount ?? 0) > 0;
 }
-
 export async function patchOAuthClient(
   pool: pg.Pool,
   clientId: string,

@@ -4,18 +4,15 @@ import {
   resolveTenantCatalog,
   validateTenantId,
 } from "../../src/tenant/registry.js";
-
 describe("tenant registry helpers", () => {
   it("validates tenant ids", () => {
     expect(() => validateTenantId("gerace")).not.toThrow();
     expect(() => validateTenantId("Gerace")).toThrow();
   });
-
   it("resolves catalog names", () => {
     expect(resolveTenantCatalog("backed")).toBe("backed");
     expect(resolveTenantCatalog("gerace")).toBe("backed_gerace");
   });
-
   it("adds tenant entry", () => {
     const registry = ensureTenantInRegistry(
       {

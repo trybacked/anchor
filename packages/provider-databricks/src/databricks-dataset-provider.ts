@@ -12,12 +12,14 @@ import type {
 } from "@trybacked/core";
 import type { DatabricksProviderConfig } from "./config.js";
 import type { DatabricksSqlClient, SqlRow } from "./sql-client.js";
-
 function quoteIdentifier(part: string): string {
   return `\`${part.replace(/`/g, "``")}\``;
 }
-
-function splitDatasetId(id: string): { catalog?: string; schema?: string; table: string } {
+function splitDatasetId(id: string): {
+  catalog?: string;
+  schema?: string;
+  table: string;
+} {
   const parts = id.split(".").filter((part) => part.length > 0);
   if (parts.length >= 3) {
     const catalog = parts[0];
@@ -39,7 +41,6 @@ function splitDatasetId(id: string): { catalog?: string; schema?: string; table:
   }
   return { table: id };
 }
-
 function qualifyTable(id: string, config: DatabricksProviderConfig): string {
   const parsed = splitDatasetId(id);
   const catalog = parsed.catalog ?? config.catalog;
@@ -54,7 +55,6 @@ function qualifyTable(id: string, config: DatabricksProviderConfig): string {
   }
   return segments.map(quoteIdentifier).join(".");
 }
-
 function cellText(value: unknown): string | undefined {
   if (typeof value === "string") {
     return value;
@@ -64,7 +64,6 @@ function cellText(value: unknown): string | undefined {
   }
   return undefined;
 }
-
 function toCount(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.max(0, Math.trunc(value));
@@ -75,7 +74,6 @@ function toCount(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
 }
-
 function listTablesSql(config: DatabricksProviderConfig): string {
   if (config.catalog !== undefined && config.schema !== undefined) {
     return `SHOW TABLES IN ${quoteIdentifier(config.catalog)}.${quoteIdentifier(config.schema)}`;
@@ -85,7 +83,6 @@ function listTablesSql(config: DatabricksProviderConfig): string {
   }
   return "SHOW TABLES";
 }
-
 function tableNameFromShowRow(row: SqlRow): string | null {
   const candidates = ["tableName", "table_name", "table"];
   for (const key of candidates) {
@@ -96,7 +93,6 @@ function tableNameFromShowRow(row: SqlRow): string | null {
   }
   return null;
 }
-
 function datasetIdFromTable(table: string, config: DatabricksProviderConfig): string {
   if (table.includes(".")) {
     return table;
@@ -109,25 +105,21 @@ function datasetIdFromTable(table: string, config: DatabricksProviderConfig): st
   }
   return table;
 }
-
 export type CreateDatabricksDatasetProviderOptions = {
   config: DatabricksProviderConfig;
   client?: DatabricksSqlClient;
 };
-
 export function createDatabricksDatasetProvider(
   options: CreateDatabricksDatasetProviderOptions,
 ): DatasetProvider {
   const { config } = options;
   const client = options.client;
-
   async function execute(sql: string): Promise<SqlRow[]> {
     if (client === undefined) {
       throw new Error("Databricks SQL client is not configured");
     }
     return client.execute(sql);
   }
-
   return {
     async listDatasets(): Promise<Dataset[]> {
       const rows = await execute(listTablesSql(config));
@@ -143,7 +135,6 @@ export function createDatabricksDatasetProvider(
           };
         });
     },
-
     async getSchema(dataset: DatasetIdentifier): Promise<DatasetSchema> {
       const table = qualifyTable(dataset.id, config);
       const rows = await execute(`DESCRIBE TABLE ${table}`);
@@ -163,7 +154,6 @@ export function createDatabricksDatasetProvider(
         .filter((column): column is DatasetColumn => column !== null);
       return { columns };
     },
-
     async getMetadata(dataset: DatasetIdentifier): Promise<DatasetMetadata> {
       const table = qualifyTable(dataset.id, config);
       const rows = await execute(`SELECT COUNT(*) AS row_count FROM ${table}`);
@@ -177,7 +167,6 @@ export function createDatabricksDatasetProvider(
         },
       };
     },
-
     async getStatistics(dataset: DatasetIdentifier): Promise<DatasetStatistics> {
       const schema = await this.getSchema(dataset);
       const table = qualifyTable(dataset.id, config);
@@ -208,7 +197,6 @@ export function createDatabricksDatasetProvider(
       }
       return { columns };
     },
-
     async sample(dataset: DatasetIdentifier, options?: SampleOptions): Promise<DatasetSample> {
       const limit = options?.limit ?? 20;
       const schema = await this.getSchema(dataset);
@@ -226,7 +214,6 @@ export function createDatabricksDatasetProvider(
     },
   };
 }
-
 export function createDatabricksDatasetProviderFromClient(
   config: DatabricksProviderConfig,
   client: DatabricksSqlClient,

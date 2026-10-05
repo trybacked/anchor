@@ -12,6 +12,8 @@ export const TOOL_NAMES = {
   getEntity: "get_entity",
   listRelations: "list_relations",
   searchModel: "search_model",
+  searchSchema: "search_schema",
+  getPropertyValues: "get_property_values",
   getDefinition: "get_definition",
   queryObjects: "query_objects",
   searchDocuments: "search_documents",
@@ -24,15 +26,14 @@ export const MCP_SURFACE_TOOLS = [
   TOOL_NAMES.getEntity,
   TOOL_NAMES.listRelations,
   TOOL_NAMES.searchModel,
+  TOOL_NAMES.searchSchema,
+  TOOL_NAMES.getPropertyValues,
   TOOL_NAMES.getDefinition,
 ] as const;
-
 export const MCP_QUERY_TOOL = TOOL_NAMES.queryObjects;
-
 export const MCP_WAREHOUSE_READER_TOOLS = [
   TOOL_NAMES.searchDocuments,
   TOOL_NAMES.getEntityProfile,
   TOOL_NAMES.traverseGraph,
 ] as const;
-
 export type McpSurfaceTool = (typeof TOOL_NAMES)[keyof typeof TOOL_NAMES];

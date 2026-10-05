@@ -13,7 +13,6 @@ import { createAnchorService } from "@trybacked/service";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { createAnchorServiceForModel } from "./service-factory.js";
-
 export function findWorkspaceRoot(startDir: string = process.cwd()): string {
   let directory = resolve(startDir);
   for (;;) {
@@ -27,14 +26,12 @@ export function findWorkspaceRoot(startDir: string = process.cwd()): string {
     directory = parent;
   }
 }
-
 export function loadWorkspaceEnv(root: string): void {
   const envPath = join(root, ".env");
   if (existsSync(envPath)) {
     process.loadEnvFile(envPath);
   }
 }
-
 export async function buildQueryRuntime(root: string): Promise<OntologyQueryRuntime | undefined> {
   const ontology = loadPublishedOntology(root);
   if (ontology === null || !hasDatabricksEnv(process.env)) {
@@ -53,10 +50,12 @@ export async function buildQueryRuntime(root: string): Promise<OntologyQueryRunt
   });
   return built.runtime;
 }
-
 export async function createWorkspaceService(
   root?: string,
-  audit?: { onOperation?: AnchorOperationAuditHook; auditPrincipal?: string },
+  audit?: {
+    onOperation?: AnchorOperationAuditHook;
+    auditPrincipal?: string;
+  },
 ): Promise<{
   root: string;
   service: AnchorService;
@@ -65,7 +64,6 @@ export async function createWorkspaceService(
   loadWorkspaceEnv(workspaceRoot);
   const model = readModelYaml(workspaceRoot);
   const ontology = loadPublishedOntology(workspaceRoot);
-
   if (ontology !== null && hasDatabricksEnv(process.env)) {
     const catalog = process.env["BACKED_DATABRICKS_CATALOG"]?.trim();
     const service = await createAnchorServiceForModel({
@@ -79,7 +77,6 @@ export async function createWorkspaceService(
     });
     return { root: workspaceRoot, service };
   }
-
   const service = createAnchorService({
     model,
     executionProfile: "api",
@@ -87,6 +84,5 @@ export async function createWorkspaceService(
     ...(audit?.onOperation !== undefined ? { onOperation: audit.onOperation } : {}),
     ...(audit?.auditPrincipal !== undefined ? { auditPrincipal: audit.auditPrincipal } : {}),
   });
-
   return { root: workspaceRoot, service };
 }

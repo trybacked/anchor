@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 export const DatabricksProviderConfigSchema = z.object({
   host: z.string().min(1),
   token: z.string().min(1),
@@ -7,13 +6,10 @@ export const DatabricksProviderConfigSchema = z.object({
   catalog: z.string().min(1).optional(),
   schema: z.string().min(1).optional(),
 });
-
 export type DatabricksProviderConfig = z.infer<typeof DatabricksProviderConfigSchema>;
-
 function normalizeHost(host: string): string {
   return host.replace(/^https?:\/\//, "").replace(/\/+$/, "");
 }
-
 export function databricksConfigFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): DatabricksProviderConfig {
@@ -29,7 +25,6 @@ export function databricksConfigFromEnv(
       : {}),
   });
 }
-
 export function hasDatabricksEnv(env: Record<string, string | undefined> = process.env): boolean {
   return (
     env["BACKED_DATABRICKS_HOST"] !== undefined &&
@@ -40,7 +35,6 @@ export function hasDatabricksEnv(env: Record<string, string | undefined> = proce
     env["BACKED_DATABRICKS_WAREHOUSE_ID"].length > 0
   );
 }
-
 function requiredEnv(env: Record<string, string | undefined>, key: string): string {
   const value = env[key]?.trim();
   if (value === undefined || value.length === 0) {
@@ -48,7 +42,6 @@ function requiredEnv(env: Record<string, string | undefined>, key: string): stri
   }
   return value;
 }
-
 function optionalEnv(env: Record<string, string | undefined>, key: string): string | undefined {
   const value = env[key]?.trim();
   return value !== undefined && value.length > 0 ? value : undefined;

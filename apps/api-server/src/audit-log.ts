@@ -6,23 +6,18 @@ import {
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { getRequestContext } from "./request-context.js";
-
 export type AuditLogOptions = {
   logPath?: string | undefined;
-
   mirrorStderr?: boolean | undefined;
 };
-
 function formatAuditLine(event: AnchorOperationAuditEvent): string {
   return `${JSON.stringify({ type: "anchor_audit", ts: new Date().toISOString(), ...event })}\n`;
 }
-
 export function createAuditLogHook(options: AuditLogOptions = {}): AnchorOperationAuditHook {
   const mirrorStderr = options.mirrorStderr !== false;
   if (options.logPath !== undefined) {
     mkdirSync(dirname(options.logPath), { recursive: true });
   }
-
   return (event) => {
     const requestUser = getRequestContext()?.user;
     const enriched: AnchorOperationAuditEvent =

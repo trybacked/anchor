@@ -1,6 +1,5 @@
 import type { Context, Next } from "hono";
 import type { ControlPlaneConfig } from "./config.js";
-
 function bearerToken(c: Context): string | undefined {
   const header = c.req.header("Authorization");
   if (header === undefined || !header.startsWith("Bearer ")) {
@@ -8,7 +7,6 @@ function bearerToken(c: Context): string | undefined {
   }
   return header.slice("Bearer ".length).trim();
 }
-
 export function requireAdmin(config: ControlPlaneConfig) {
   return async (c: Context, next: Next) => {
     const token = bearerToken(c);
@@ -18,7 +16,6 @@ export function requireAdmin(config: ControlPlaneConfig) {
     return next();
   };
 }
-
 export function requireInternal(config: ControlPlaneConfig) {
   return async (c: Context, next: Next) => {
     const token = bearerToken(c);

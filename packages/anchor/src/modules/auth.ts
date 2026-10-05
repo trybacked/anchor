@@ -7,7 +7,6 @@ import type {
   OAuthTokenResponse,
 } from "@trybacked/core";
 import type { Transport } from "../transport.js";
-
 export type OAuthAuthorizeParams = {
   clientId: string;
   redirectUri: string;
@@ -15,7 +14,6 @@ export type OAuthAuthorizeParams = {
   codeChallenge: string;
   codeChallengeMethod?: "S256" | undefined;
 };
-
 export type OAuthTokenExchangeParams = {
   code: string;
   clientId: string;
@@ -23,7 +21,6 @@ export type OAuthTokenExchangeParams = {
   codeVerifier: string;
   clientSecret?: string | undefined;
 };
-
 export type AuthModule = {
   loginWithPassword: (body: LoginRequest) => Promise<LoginResponse>;
   loginUrl: (options?: { next?: string | undefined }) => string;
@@ -33,12 +30,10 @@ export type AuthModule = {
   me: () => Promise<GatewaySession>;
   session: () => Promise<GatewaySession | null>;
 };
-
 export function createAuthModule(transport: Transport): AuthModule {
   return {
     loginWithPassword: (body) =>
       transport.requestJson<LoginResponse>("POST", transport.buildUrl("/login"), { body }),
-
     loginUrl: (options) => {
       const base = transport.buildUrl("/login");
       if (options?.next === undefined || options.next.length === 0) {
@@ -48,7 +43,6 @@ export function createAuthModule(transport: Transport): AuthModule {
       url.searchParams.set("next", options.next);
       return url.toString();
     },
-
     authorizeUrl: (params) => {
       const url = new URL(transport.buildUrl("/oauth/authorize"));
       url.searchParams.set("response_type", "code");
@@ -59,7 +53,6 @@ export function createAuthModule(transport: Transport): AuthModule {
       url.searchParams.set("code_challenge_method", params.codeChallengeMethod ?? "S256");
       return url.toString();
     },
-
     exchangeAuthorizationCode: (params) =>
       transport.requestJson<OAuthTokenResponse>("POST", transport.buildUrl("/oauth/token"), {
         body: {
@@ -71,11 +64,8 @@ export function createAuthModule(transport: Transport): AuthModule {
           ...(params.clientSecret !== undefined ? { client_secret: params.clientSecret } : {}),
         },
       }),
-
     logout: () => transport.requestJson<LogoutResponse>("POST", transport.buildUrl("/logout"), {}),
-
     me: () => transport.requestJson<GatewaySession>("GET", transport.buildUrl("/me")),
-
     session: async () => {
       try {
         return await transport.requestJson<GatewaySession>("GET", transport.buildUrl("/me"));
@@ -93,12 +83,12 @@ export function createAuthModule(transport: Transport): AuthModule {
     },
   };
 }
-
 export type HealthModule = {
-  live: () => Promise<{ ok: true }>;
+  live: () => Promise<{
+    ok: true;
+  }>;
   status: () => Promise<GatewayHealth>;
 };
-
 export function createHealthModule(transport: Transport): HealthModule {
   return {
     live: () => transport.requestJson("GET", transport.buildUrl("/health/live")),

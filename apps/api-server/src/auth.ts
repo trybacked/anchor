@@ -1,6 +1,5 @@
 import type { Context, Next } from "hono";
 import { timingSafeEqual } from "node:crypto";
-
 function safeEqualToken(provided: string, expected: string): boolean {
   const providedBuffer = Buffer.from(provided);
   const expectedBuffer = Buffer.from(expected);
@@ -9,7 +8,6 @@ function safeEqualToken(provided: string, expected: string): boolean {
   }
   return timingSafeEqual(providedBuffer, expectedBuffer);
 }
-
 export function createBearerAuthMiddleware(expectedToken: string) {
   return async (c: Context, next: Next) => {
     const header = c.req.header("Authorization");

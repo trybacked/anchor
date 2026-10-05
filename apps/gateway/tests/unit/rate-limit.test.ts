@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { createRateLimiter } from "../../src/rate-limit.js";
-
 describe("rate limiter", () => {
   it("blocks after capacity", () => {
     let now = 0;

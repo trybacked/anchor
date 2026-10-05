@@ -52,6 +52,7 @@
     "@trybacked/registry": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/semantic-chat": "workspace:*",
+    "@trybacked/service": "workspace:*",
     "yaml": "^2.7.0",
     "zod": "^3.24.1"
   },

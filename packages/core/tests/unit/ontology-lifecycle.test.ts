@@ -6,7 +6,6 @@ import {
   canAdvanceLifecycle,
 } from "../../src/index.js";
 import type { Proposal } from "../../src/proposal.js";
-
 const proposal: Proposal = {
   runId: "run-1",
   generatedAt: "2026-01-01T00:00:00.000Z",
@@ -66,13 +65,11 @@ const proposal: Proposal = {
   ],
   doubts: [],
 };
-
 describe("ontology lifecycle and audit", () => {
   it("advances lifecycle stages in order", () => {
     expect(canAdvanceLifecycle("discovered", "proposed")).toBe(true);
     expect(canAdvanceLifecycle("published", "confirmed")).toBe(false);
   });
-
   it("records human review and auto-confirm audit events", () => {
     const review = {
       runId: "run-1",
@@ -84,13 +81,11 @@ describe("ontology lifecycle and audit", () => {
     expect(humanEvents).toHaveLength(1);
     expect(humanEvents[0]?.action).toBe("accept");
     expect(humanEvents[0]?.actor?.id).toBe("tester");
-
     const { ontology } = applyReviewLifecycle(proposal, review, { ontologyId: "demo" });
     expect(ontology.objects.find((object) => object.id === "customers")?.lifecycle).toBe(
       "reviewed",
     );
     expect(ontology.objects.find((object) => object.id === "orders")?.lifecycle).toBe("confirmed");
-
     const autoEvents = buildAutoConfirmAuditEvents(
       proposal,
       review,

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { createBackedClient } from "../../src/client.js";
-
 describe("createBackedClient", () => {
   it("gateway tenant scopes paths under /t/{id}/v1", async () => {
     let seenUrl = "";
@@ -20,7 +19,6 @@ describe("createBackedClient", () => {
     await client.tenant("gerace").model.listEntities();
     expect(seenUrl).toBe("http://gw/t/gerace/v1/model/entities");
   });
-
   it("platform tenant sends X-Backed-Tenant header", async () => {
     let seenHeaders: HeadersInit | undefined;
     const fetchImpl: typeof fetch = async (_input, init) => {
@@ -42,7 +40,6 @@ describe("createBackedClient", () => {
       "X-Backed-Tenant": "gerace",
     });
   });
-
   it("auth login posts credentials to gateway", async () => {
     const fetchImpl = vi.fn(async () => Response.json({ username: "demo", tenants: ["gerace"] }));
     const client = createBackedClient({

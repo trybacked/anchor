@@ -8,10 +8,13 @@ import type {
   PlatformRouteHandler,
 } from "./platform-api-types.js";
 import { OntologyNotPublishedError, TenantNotFoundError } from "./tenant-runtime-registry.js";
-
 function mountRoute(
-  app: Hono<{ Variables: AnchorApiVariables }>,
-  v1: Hono<{ Variables: AnchorApiVariables }>,
+  app: Hono<{
+    Variables: AnchorApiVariables;
+  }>,
+  v1: Hono<{
+    Variables: AnchorApiVariables;
+  }>,
   route: PlatformApiRoute,
 ): void {
   const honoPath = honoPathFromCatalogPath(route.path);
@@ -32,7 +35,6 @@ function mountRoute(
     }
   }
 }
-
 function wrapRouteHandler(
   route: PlatformApiRoute,
   deps: PlatformHandlerDeps,
@@ -69,10 +71,13 @@ function wrapRouteHandler(
     return route.handle(c);
   };
 }
-
 export function registerPlatformApiRoutes(
-  app: Hono<{ Variables: AnchorApiVariables }>,
-  v1: Hono<{ Variables: AnchorApiVariables }>,
+  app: Hono<{
+    Variables: AnchorApiVariables;
+  }>,
+  v1: Hono<{
+    Variables: AnchorApiVariables;
+  }>,
   deps: PlatformHandlerDeps,
 ): void {
   for (const route of buildPlatformApiRoutes(deps)) {

@@ -16,19 +16,15 @@ import {
 } from "./db/repositories.js";
 import { runPublishOntologyJob } from "./jobs/publish-ontology.js";
 import { buildTenantsRegistry } from "./registry-builder.js";
-
 const config = readControlPlaneConfig(process.env);
 const pool = createPool(config.databaseUrl);
-
 const adminConfig: DatabricksProviderConfig = {
   host: config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, ""),
   token: config.databricksToken,
   warehouseId: config.databricksWarehouseId,
 };
-
 const MAX_ATTEMPTS = 5;
 const POLL_MS = 2000;
-
 async function provisionOrganization(
   organizationId: string,
   tenantId: string,
@@ -43,8 +39,7 @@ async function provisionOrganization(
   const registry = buildTenantsRegistry(config, orgs);
   const shared = Array.isArray(org.shared_spaces)
     ? org.shared_spaces.filter((v): v is string => typeof v === "string")
-    : ["anac"];
-
+    : config.defaultSharedSpaces;
   const result = await provisionTenantCloud({
     tenantId,
     catalog: resolveTenantCatalog(tenantId),
@@ -54,11 +49,9 @@ async function provisionOrganization(
     platformPrincipal: config.platformPrincipal,
     issueTenantOboToken: issueObo,
   });
-
   await updateOrganizationStatus(pool, organizationId, "active", {
     servicePrincipalAppId: result.servicePrincipalAppId,
   });
-
   return {
     tenantId,
     publicationVersion: result.publicationVersion,
@@ -66,7 +59,6 @@ async function provisionOrganization(
     ...(result.tenantOboToken !== undefined ? { tenantOboToken: result.tenantOboToken } : {}),
   };
 }
-
 async function processJob(): Promise<boolean> {
   const job = await claimNextJob(pool);
   if (job === undefined) {
@@ -107,7 +99,6 @@ async function processJob(): Promise<boolean> {
   }
   return true;
 }
-
 async function loop(): Promise<void> {
   for (;;) {
     const processed = await processJob();
@@ -116,13 +107,11 @@ async function loop(): Promise<void> {
     }
   }
 }
-
 async function main(): Promise<void> {
   await applyControlPlaneSchema(pool);
   console.error("Control plane worker started");
   await loop();
 }
-
 main().catch((error: unknown) => {
   console.error(error);
   process.exit(1);

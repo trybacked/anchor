@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { capQueryObjectsPayload, MCP_TOOL_RESULT_MAX_BYTES } from "../../src/response-cap.js";
-
 describe("capQueryObjectsPayload", () => {
   it("returns payload unchanged when under the byte limit", () => {
     const payload = {
@@ -12,9 +11,8 @@ describe("capQueryObjectsPayload", () => {
     };
     expect(capQueryObjectsPayload(payload)).toEqual(payload);
   });
-
   it("trims rows when the serialized payload is too large", () => {
-    const big = "x".repeat(80_000);
+    const big = "x".repeat(80000);
     const rows = Array.from({ length: 20 }, (_, index) => ({ id: index, blob: big }));
     const payload = {
       objectId: "contract",

@@ -11,42 +11,35 @@ import type {
   OntologyObject,
   OntologyRelationship,
 } from "./spec.js";
-
 export type ApplyReviewLifecycleOptions = {
   ontologyId: string;
   reviewConfidenceThreshold?: number;
   baseOntology?: Ontology;
 };
-
 export type ReviewLifecycleResult = {
   ontology: Ontology;
 };
-
 function withObjectLifecycle(
   object: OntologyObject,
   stage: OntologyLifecycleStage,
 ): OntologyObject {
   return { ...object, lifecycle: stage };
 }
-
 function withRelationshipLifecycle(
   relationship: OntologyRelationship,
   stage: OntologyLifecycleStage,
 ): OntologyRelationship {
   return { ...relationship, lifecycle: stage };
 }
-
 function withLogicLifecycle(entry: OntologyLogic, stage: OntologyLifecycleStage): OntologyLogic {
   return { ...entry, lifecycle: stage };
 }
-
 function withActionLifecycle(
   action: OntologyAction,
   stage: OntologyLifecycleStage,
 ): OntologyAction {
   return { ...action, lifecycle: stage };
 }
-
 function lifecycleAfterReview(
   targetId: string,
   kind: "entity" | "relation" | "rule",
@@ -59,7 +52,6 @@ function lifecycleAfterReview(
   }
   return modelLifecycle;
 }
-
 export function applyReviewLifecycle(
   proposal: Proposal,
   review: Review,
@@ -71,18 +63,15 @@ export function applyReviewLifecycle(
   });
   const { verdicts } = collectVerdicts(proposal.questions, review.answers);
   const verdictKeys = new Set(verdicts.keys());
-
   const governedOntology = semanticModelToOntology(model, {
     ontologyId: options.ontologyId,
     ...(options.baseOntology !== undefined
       ? { version: options.baseOntology.metadata.version }
       : {}),
   });
-
   const baseByObjectId = new Map(
     (options.baseOntology?.objects ?? []).map((object) => [object.id, object]),
   );
-
   const ontology: Ontology = {
     ...governedOntology,
     objects: governedOntology.objects.map((object) => {
@@ -114,10 +103,8 @@ export function applyReviewLifecycle(
       return withLogicLifecycle(entry, lifecycle);
     }),
   };
-
   return { ontology };
 }
-
 export function markOntologyPublished(ontology: Ontology, publishedAt: string): Ontology {
   const toPublished = (): OntologyLifecycleStage => "published";
   return {

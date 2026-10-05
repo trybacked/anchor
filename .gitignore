@@ -15,6 +15,9 @@ pnpm-debug.log*
 tmp/
 temp/
 test/
+reports/*.md
+reports/*.json
+!reports/.gitkeep
 .backed/
 **/src/generated/
 design/

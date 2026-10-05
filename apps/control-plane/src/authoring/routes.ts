@@ -39,13 +39,11 @@ import {
 } from "./context.js";
 import { ensureOntologyDraft, importModelContent, validateDraftModel } from "./draft-service.js";
 import { sqlCellString } from "./sql-row.js";
-
 type AuthoringEnv = {
   Variables: {
     authoring: AuthoringVariables;
   };
 };
-
 export function registerAuthoringRoutes(
   app: Hono,
   config: ControlPlaneConfig,
@@ -54,7 +52,6 @@ export function registerAuthoringRoutes(
   const base = "/v1/tenants/:tenantId/authoring";
   const authoring = new Hono<AuthoringEnv>();
   authoring.use("*", requireAuthoringAccess(config, pool));
-
   authoring.get("/ontology/draft", requireAuthoringRole("viewer"), async (c) => {
     const ctx = getAuthoring(c);
     const draft = await ensureOntologyDraft(pool, ctx.tenantId, ctx.username);
@@ -67,7 +64,6 @@ export function registerAuthoringRoutes(
       updatedAt: draft.updated_at.toISOString(),
     });
   });
-
   authoring.post(
     "/ontology/draft/commands",
     requireAuthoringRole("editor"),
@@ -113,14 +109,12 @@ export function registerAuthoringRoutes(
       });
     },
   );
-
   authoring.get("/ontology/draft/validate", requireAuthoringRole("viewer"), async (c) => {
     const ctx = getAuthoring(c);
     const draft = await ensureOntologyDraft(pool, ctx.tenantId, ctx.username);
     const validation = validateDraftModel(draft.model, ctx.tenantId);
     return c.json({ valid: validation.valid, issues: validation.issues });
   });
-
   authoring.get("/ontology/draft/diff", requireAuthoringRole("viewer"), async (c) => {
     const ctx = getAuthoring(c);
     const against = c.req.query("against") ?? "published";
@@ -140,7 +134,6 @@ export function registerAuthoringRoutes(
     }
     return c.json({ error: "Unsupported against parameter" }, 400);
   });
-
   authoring.post("/ontology/draft/reset", requireAuthoringRole("editor"), async (c) => {
     const ctx = getAuthoring(c);
     const version = await getLatestOntologyVersion(pool, ctx.tenantId);
@@ -164,7 +157,6 @@ export function registerAuthoringRoutes(
       model: draft.model,
     });
   });
-
   authoring.post(
     "/ontology/publish",
     requireAuthoringRole("publisher"),
@@ -186,7 +178,6 @@ export function registerAuthoringRoutes(
       return c.json({ jobId: job.id }, 202);
     },
   );
-
   authoring.get("/ontology/versions", requireAuthoringRole("viewer"), async (c) => {
     const ctx = getAuthoring(c);
     const versions = await listOntologyVersions(pool, ctx.tenantId);
@@ -199,7 +190,6 @@ export function registerAuthoringRoutes(
       })),
     });
   });
-
   authoring.get("/ontology/versions/:version", requireAuthoringRole("viewer"), async (c) => {
     const ctx = getAuthoring(c);
     const version = Number.parseInt(c.req.param("version") ?? "", 10);
@@ -218,7 +208,6 @@ export function registerAuthoringRoutes(
       model: row.model,
     });
   });
-
   authoring.post(
     "/ontology/versions/:version/rollback",
     requireAuthoringRole("publisher"),
@@ -250,7 +239,6 @@ export function registerAuthoringRoutes(
       return c.json({ jobId: job.id }, 202);
     },
   );
-
   authoring.post(
     "/ontology/import",
     requireAuthoringRole("editor"),
@@ -275,7 +263,6 @@ export function registerAuthoringRoutes(
       return c.json({ revision: updated.revision, model: updated.model });
     },
   );
-
   authoring.get("/ontology/export", requireAuthoringRole("viewer"), async (c) => {
     const ctx = getAuthoring(c);
     const format = c.req.query("format") === "yaml" ? "yaml" : "json";
@@ -287,11 +274,9 @@ export function registerAuthoringRoutes(
     }
     return c.json(draft.model);
   });
-
   authoring.get("/ontology/packs", requireAuthoringRole("viewer"), (c) => {
     return c.json({ packs: listPacks() });
   });
-
   authoring.post("/ontology/draft/packs/:packId", requireAuthoringRole("editor"), async (c) => {
     const ctx = getAuthoring(c);
     const packId = c.req.param("packId") ?? "";
@@ -325,14 +310,12 @@ export function registerAuthoringRoutes(
       validation: validateDraftModel(applied.model, ctx.tenantId),
     });
   });
-
   authoring.get("/ontology/changes", requireAuthoringRole("viewer"), async (c) => {
     const ctx = getAuthoring(c);
     const limit = Math.min(Number.parseInt(c.req.query("limit") ?? "50", 10), 200);
     const changes = await listOntologyChanges(pool, ctx.tenantId, limit);
     return c.json({ changes });
   });
-
   authoring.get("/jobs/:jobId", requireAuthoringRole("viewer"), async (c) => {
     const jobId = c.req.param("jobId") ?? "";
     const job = await getJob(pool, jobId);
@@ -347,13 +330,11 @@ export function registerAuthoringRoutes(
       result: job.result,
     });
   });
-
   authoring.get("/members", requireAuthoringRole("admin"), async (c) => {
     const ctx = getAuthoring(c);
     const bindings = await listRoleBindings(pool, ctx.tenantId);
     return c.json({ members: bindings });
   });
-
   authoring.put(
     "/members",
     requireAuthoringRole("admin"),
@@ -370,7 +351,6 @@ export function registerAuthoringRoutes(
       return c.json({ ok: true as const });
     },
   );
-
   authoring.delete("/members/:subjectType/:subject", requireAuthoringRole("admin"), async (c) => {
     const ctx = getAuthoring(c);
     const subjectType = c.req.param("subjectType") ?? "";
@@ -382,7 +362,6 @@ export function registerAuthoringRoutes(
     }
     return c.json({ ok: true as const });
   });
-
   authoring.get("/warehouse/schemas", requireAuthoringRole("editor"), async (c) => {
     const ctx = getAuthoring(c);
     const client = createDatabricksSqlClient({
@@ -399,7 +378,6 @@ export function registerAuthoringRoutes(
         .filter((name) => name.length > 0),
     });
   });
-
   authoring.get("/warehouse/tables", requireAuthoringRole("editor"), async (c) => {
     const ctx = getAuthoring(c);
     const schema = c.req.query("schema");
@@ -411,10 +389,9 @@ export function registerAuthoringRoutes(
       token: config.databricksToken,
       warehouseId: config.databricksWarehouseId,
     });
-    const rows = await client.execute(
-      `SELECT table_name FROM ${ctx.catalog}.information_schema.tables
-       WHERE table_schema = '${schema.replace(/'/g, "''")}' ORDER BY table_name`,
-    );
+    const rows =
+      await client.execute(`SELECT table_name FROM ${ctx.catalog}.information_schema.tables
+       WHERE table_schema = '${schema.replace(/'/g, "''")}' ORDER BY table_name`);
     return c.json({
       tables: rows.map((row) => {
         const name = sqlCellString(row, "table_name");
@@ -427,7 +404,6 @@ export function registerAuthoringRoutes(
       }),
     });
   });
-
   authoring.post("/warehouse/tables/:fqn/suggest-entity", requireAuthoringRole("editor"), (c) => {
     const fqn = decodeURIComponent(c.req.param("fqn") ?? "");
     const ctx = getAuthoring(c);
@@ -453,7 +429,6 @@ export function registerAuthoringRoutes(
       catalog: ctx.catalog,
     });
   });
-
   authoring.get("/warehouse/tables/:fqn/columns", requireAuthoringRole("editor"), async (c) => {
     const fqn = decodeURIComponent(c.req.param("fqn") ?? "");
     const parts = fqn.split(".");
@@ -466,12 +441,11 @@ export function registerAuthoringRoutes(
       token: config.databricksToken,
       warehouseId: config.databricksWarehouseId,
     });
-    const rows = await client.execute(
-      `SELECT column_name, data_type, is_nullable FROM ${catalog}.information_schema.columns
+    const rows =
+      await client.execute(`SELECT column_name, data_type, is_nullable FROM ${catalog}.information_schema.columns
        WHERE table_schema = '${schema.replace(/'/g, "''")}'
          AND table_name = '${table.replace(/'/g, "''")}'
-       ORDER BY ordinal_position`,
-    );
+       ORDER BY ordinal_position`);
     return c.json({
       columns: rows.map((row) => ({
         name: sqlCellString(row, "column_name"),
@@ -480,7 +454,6 @@ export function registerAuthoringRoutes(
       })),
     });
   });
-
   authoring.post(
     "/datasets",
     requireAuthoringRole("publisher"),
@@ -512,7 +485,6 @@ export function registerAuthoringRoutes(
       return c.json({ name: body.name, fqn: viewFqn, status: "active" as const }, 201);
     },
   );
-
   authoring.get("/datasets", requireAuthoringRole("editor"), async (c) => {
     const ctx = getAuthoring(c);
     const rows = await listDerivedDatasets(pool, ctx.tenantId);
@@ -527,6 +499,5 @@ export function registerAuthoringRoutes(
       })),
     });
   });
-
   app.route(base, authoring);
 }

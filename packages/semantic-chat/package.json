@@ -23,10 +23,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./adapters/vercel-ai": {
-      "types": "./dist/adapters/vercel-ai.d.ts",
-      "default": "./dist/adapters/vercel-ai.js"
     }
   },
   "scripts": {
@@ -41,6 +37,7 @@
     "@ai-sdk/gateway": "^4",
     "@trybacked/compiler": "workspace:*",
     "@trybacked/core": "workspace:*",
+    "@trybacked/ontology-authoring": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/service": "workspace:*",
     "ai": "^7",

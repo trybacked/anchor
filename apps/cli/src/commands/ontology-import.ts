@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
-
 export const ontologyImportCommand: CommandHandler = async (args) => {
   const ui = initUi();
   const tenantId = args[0];

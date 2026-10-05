@@ -1,8 +1,6 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-
 const REGISTRY_FILE = "tenants.yaml";
-
 export function findBackedRepoRoot(startDir: string = process.cwd()): string {
   const fromEnv = process.env["BACKED_REPO_ROOT"]?.trim();
   if (fromEnv !== undefined && fromEnv.length > 0) {
@@ -12,7 +10,6 @@ export function findBackedRepoRoot(startDir: string = process.cwd()): string {
     }
     throw new Error(`BACKED_REPO_ROOT=${fromEnv} does not contain ${REGISTRY_FILE}.`);
   }
-
   let directory = resolve(startDir);
   for (;;) {
     if (existsSync(join(directory, REGISTRY_FILE))) {

@@ -1,8 +1,20 @@
+import { join } from "node:path";
 import { provisionTenant } from "../tenant/provision.js";
-import { validateTenantId } from "../tenant/registry.js";
+import { loadTenantsRegistry, validateTenantId } from "../tenant/registry.js";
+import { findBackedRepoRoot } from "../tenant/repo-root.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
-
+function resolveSharedSpaceKeys(requested: string[]): string[] {
+  if (requested.length > 0) {
+    return requested;
+  }
+  const registry = loadTenantsRegistry(join(findBackedRepoRoot(), "tenants.yaml"));
+  const keys = Object.keys(registry.shared_spaces);
+  if (keys.length === 0) {
+    throw new Error("tenants.yaml declares no shared_spaces; pass --shared explicitly.");
+  }
+  return keys;
+}
 function parseTenantCreateArgs(args: string[]): {
   tenantId: string;
   dryRun: boolean;
@@ -46,7 +58,7 @@ function parseTenantCreateArgs(args: string[]): {
     if (arg === "--shared") {
       const sharedKey = args[index + 1];
       if (sharedKey === undefined || sharedKey.startsWith("--")) {
-        throw new Error("--shared requires a shared_spaces key (e.g. anac)");
+        throw new Error("--shared requires a key declared in tenants.yaml shared_spaces");
       }
       shared.push(sharedKey);
       index += 1;
@@ -61,7 +73,6 @@ function parseTenantCreateArgs(args: string[]): {
   }
   return { tenantId, dryRun, skipBundle, remote, shared, help: false };
 }
-
 export const tenantCreateCommand: CommandHandler = async (args) => {
   const ui = initUi();
   let parsed;
@@ -72,10 +83,9 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     process.exitCode = 1;
     return;
   }
-
   if (parsed.help) {
     ui.log(
-      "Usage: backed tenant create <tenant-id> [--shared anac] [--dry-run] [--skip-bundle] [--remote]",
+      "Usage: backed tenant create <tenant-id> [--shared <key>] [--dry-run] [--skip-bundle] [--remote]",
     );
     ui.log(
       "  Provisions UC catalog, bundle deploy, SP token, env file, ontology bootstrap, tenants.yaml.",
@@ -83,13 +93,11 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     ui.log("  Requires databricks CLI + admin profile from tenants.yaml enrollment.");
     return;
   }
-
   if (parsed.tenantId.length === 0) {
     ui.writeError("Missing tenant id. Example: backed tenant create gerace");
     process.exitCode = 1;
     return;
   }
-
   try {
     validateTenantId(parsed.tenantId);
   } catch (error) {
@@ -97,9 +105,6 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     process.exitCode = 1;
     return;
   }
-
-  const sharedSpaceKeys = parsed.shared.length > 0 ? parsed.shared : ["anac"];
-
   if (parsed.remote) {
     ui.heading(`Tenant ${parsed.tenantId} (remote)`);
     try {
@@ -108,7 +113,7 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
       const client = readControlPlaneClientFromEnv();
       const created = await createOrganizationRemote(client, {
         tenantId: parsed.tenantId,
-        shared: sharedSpaceKeys,
+        ...(parsed.shared.length > 0 ? { shared: parsed.shared } : {}),
       });
       ui.detail(`Job ${created.job.id} (${created.job.status})`);
       const job = await waitForJobRemote(client, created.job.id);
@@ -127,7 +132,14 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     }
     return;
   }
-
+  let sharedSpaceKeys: string[];
+  try {
+    sharedSpaceKeys = resolveSharedSpaceKeys(parsed.shared);
+  } catch (error) {
+    ui.writeError(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+    return;
+  }
   if (parsed.dryRun) {
     ui.heading("Dry run");
     ui.log(`Tenant: ${parsed.tenantId}`);
@@ -135,7 +147,6 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     ui.log("Would run catalog, bundle, SP, grants, env, ontology bootstrap, tenants.yaml.");
     return;
   }
-
   ui.heading(`Tenant ${parsed.tenantId}`);
   try {
     const result = await provisionTenant({

@@ -1,6 +1,5 @@
 import { defineConfig } from "vitest/config";
 import { appCoverage } from "../../vitest.shared.js";
-
 export default defineConfig({
   test: {
     name: "cli",

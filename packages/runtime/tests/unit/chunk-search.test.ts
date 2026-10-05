@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createChunkSearchReader } from "../../src/readers/chunk-search.js";
 import type { DocumentsDatasetResolver } from "../../src/readers/dataset.js";
-
 const documents: DocumentsDatasetResolver = {
   qualifyTable: (name) => `\`backed\`.\`docs\`.\`${name}\``,
   documentsTable: "`backed`.`docs`.`documents`",
   documentElementsTable: "`backed`.`docs`.`document_elements`",
   entityProfilesTable: "`backed`.`docs`.`entity_profiles`",
 };
-
 describe("chunk search reader", () => {
   it("runs keyword SQL against document_elements", async () => {
     const calls: string[] = [];

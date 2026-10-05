@@ -13,7 +13,6 @@ import {
   upsertOntologyDraft,
   type OntologyDraftRow,
 } from "../db/ontology-repositories.js";
-
 export async function ensureOntologyDraft(
   pool: pg.Pool,
   tenantId: string,
@@ -45,16 +44,13 @@ export async function ensureOntologyDraft(
     updatedBy: actor,
   });
 }
-
 export function importModelContent(format: "yaml" | "json", content: string): SemanticModel {
   if (format === "yaml") {
     return parseModelYaml(content);
   }
   return SemanticModelSchema.parse(JSON.parse(content) as unknown);
 }
-
 export function validateDraftModel(model: SemanticModel, tenantId: string) {
   return validateAuthoringModel(model, tenantId);
 }
-
 export { applyCommands };

@@ -3,7 +3,6 @@ import { getAnchorService, respondIfServiceError } from "../platform-api-handler
 import { platformRoute, postJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import { EntityIdParamSchema, ListRelationsQuerySchema } from "../platform-api-schemas.js";
-
 export const platformApiModelRoutes: RouteFactory[] = [
   platformRoute(
     {
@@ -57,7 +56,7 @@ export const platformApiModelRoutes: RouteFactory[] = [
       path: `${V1_PATH_PREFIX}/model/search`,
       summary: "Search model terms",
       tags: ["model"],
-      jsonBody: jsonBody("SearchModelBody", SearchModelBodySchema, { query: "organization" }),
+      jsonBody: jsonBody("SearchModelBody", SearchModelBodySchema, { query: "customer" }),
       responses: { "200": { description: "Matches" } },
     },
     async (c, { query }) => c.json(await getAnchorService(c).searchModel(query)),
@@ -68,7 +67,7 @@ export const platformApiModelRoutes: RouteFactory[] = [
       path: `${V1_PATH_PREFIX}/model/definitions`,
       summary: "Resolve a model definition",
       tags: ["model"],
-      jsonBody: jsonBody("GetDefinitionBody", GetDefinitionBodySchema, { term: "contract" }),
+      jsonBody: jsonBody("GetDefinitionBody", GetDefinitionBodySchema, { term: "active customer" }),
       responses: { "200": { description: "Definition" } },
     },
     (c, { term }) => c.json(getAnchorService(c).getDefinition(term)),

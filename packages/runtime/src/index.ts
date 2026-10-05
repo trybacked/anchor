@@ -13,6 +13,15 @@ export type {
   OntologyQueryRuntimeOptions,
   SqlStatementExecutor,
 } from "./execute.js";
+export {
+  DEFAULT_CHUNK_SEARCH_LIMIT,
+  DEFAULT_CHUNK_SEARCH_MIN_SCORE,
+  DEFAULT_PROFILE_MATCH_LIMIT,
+  MAX_CHUNK_SEARCH_LIMIT,
+  MAX_PROFILE_FACT_LIMIT,
+  MAX_PROFILE_MATCH_LIMIT,
+  MAX_TRAVERSE_ROW_LIMIT,
+} from "./readers/constants.js";
 export { createWarehouseReaders } from "./readers/create-readers.js";
 export type { WarehouseReaders, WarehouseReadersOptions } from "./readers/create-readers.js";
 export { reciprocalRankFusion } from "./readers/rrf.js";

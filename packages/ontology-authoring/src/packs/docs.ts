@@ -1,5 +1,4 @@
 import type { AuthoringCommand, Entity, Relation } from "@trybacked/core";
-
 function manualProvenance(table: string, column: string, evidence: string) {
   return {
     table,
@@ -7,7 +6,6 @@ function manualProvenance(table: string, column: string, evidence: string) {
     evidence,
   };
 }
-
 function documentEntity(catalog: string): Entity {
   const table = `${catalog}.docs.documents`;
   return {
@@ -48,7 +46,6 @@ function documentEntity(catalog: string): Entity {
     ],
   };
 }
-
 function documentElementEntity(catalog: string): Entity {
   const table = `${catalog}.docs.document_elements`;
   return {
@@ -89,7 +86,6 @@ function documentElementEntity(catalog: string): Entity {
     ],
   };
 }
-
 function personEntity(catalog: string): Entity {
   const table = `${catalog}.docs.person_profiles`;
   return {
@@ -131,7 +127,6 @@ function personEntity(catalog: string): Entity {
     ],
   };
 }
-
 const documentHasElements = (catalog: string): Relation => ({
   id: "document_has_elements",
   name: "Document has elements",
@@ -148,7 +143,6 @@ const documentHasElements = (catalog: string): Relation => ({
     evidence: "document_id join",
   },
 });
-
 export function docsPackCommands(catalog: string): AuthoringCommand[] {
   return [
     { type: "addEntity", entity: documentEntity(catalog) },

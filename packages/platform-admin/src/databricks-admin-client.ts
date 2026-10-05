@@ -1,25 +1,20 @@
 import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
-
 export type DatabricksAdminClientDeps = {
   fetchImpl?: typeof fetch;
 };
-
 type ServicePrincipalResource = {
   id?: string;
   applicationId?: string;
   displayName?: string;
 };
-
 type ScimListResponse = {
   Resources?: ServicePrincipalResource[];
   totalResults?: number;
 };
-
 function apiBase(host: string): string {
   const normalized = host.replace(/^https?:\/\//, "").replace(/\/+$/, "");
   return `https://${normalized}`;
 }
-
 async function apiRequest<T>(
   config: DatabricksProviderConfig,
   method: string,
@@ -49,7 +44,6 @@ async function apiRequest<T>(
   }
   return JSON.parse(text) as T;
 }
-
 async function listServicePrincipals(
   config: DatabricksProviderConfig,
   deps: DatabricksAdminClientDeps,
@@ -63,12 +57,14 @@ async function listServicePrincipals(
   );
   return payload.Resources ?? [];
 }
-
 export async function ensureServicePrincipal(
   config: DatabricksProviderConfig,
   spName: string,
   deps: DatabricksAdminClientDeps = {},
-): Promise<{ applicationId: string; scimId: string }> {
+): Promise<{
+  applicationId: string;
+  scimId: string;
+}> {
   const sps = await listServicePrincipals(config, deps);
   let existing = sps.find((sp) => sp.displayName === spName);
   if (existing?.applicationId === undefined || existing.applicationId.length === 0) {
@@ -93,7 +89,6 @@ export async function ensureServicePrincipal(
   if (scimId === undefined || scimId.length === 0) {
     throw new Error(`Could not resolve SCIM id for service principal ${spName}.`);
   }
-
   await apiRequest(
     config,
     "PATCH",
@@ -110,10 +105,8 @@ export async function ensureServicePrincipal(
     },
     deps,
   );
-
   return { applicationId, scimId };
 }
-
 export async function grantTokenCanUse(
   config: DatabricksProviderConfig,
   applicationId: string,
@@ -129,7 +122,6 @@ export async function grantTokenCanUse(
     deps,
   );
 }
-
 export async function createOboToken(
   config: DatabricksProviderConfig,
   applicationId: string,
@@ -137,7 +129,9 @@ export async function createOboToken(
   deps: DatabricksAdminClientDeps = {},
 ): Promise<string> {
   await grantTokenCanUse(config, applicationId, deps);
-  const response = await apiRequest<{ token_value?: string }>(
+  const response = await apiRequest<{
+    token_value?: string;
+  }>(
     config,
     "POST",
     "/api/2.0/token-management/on-behalf-of/tokens",
@@ -154,7 +148,6 @@ export async function createOboToken(
   }
   return token;
 }
-
 export async function patchWarehousePermissions(
   config: DatabricksProviderConfig,
   warehouseId: string,

@@ -1,32 +1,20 @@
 import { ObjectQuerySchema, type ObjectQuery } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
-import {
-  applyQueryExecutionBudget,
-  assertAggregateRowBudget,
-  QueryExecutionBudgetError,
-} from "@trybacked/service";
-import {
-  collectTemplateRowLimits,
-  instantiatePlanTemplate,
-  type InstantiatedPlan,
-} from "./instantiate-template.js";
+import { applyQueryExecutionBudget, QueryExecutionBudgetError } from "@trybacked/service";
 import { normalizeSemanticQueryPlan } from "./normalize.js";
+import { applySemanticChatSelectDefault } from "./plan-defaults.js";
 import type { RoutedSemanticPlan, SemanticQueryPlan } from "./plan-types.js";
-import type { PlanTemplateRegistry } from "./template-registry.js";
-
 export class SemanticPlanValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SemanticPlanValidationError";
   }
 }
-
 function assertObjectExists(ontology: Ontology, objectId: string): void {
   if (!ontology.objects.some((object) => object.id === objectId)) {
     throw new SemanticPlanValidationError(`Unknown object "${objectId}" in plan.`);
   }
 }
-
 function assertPropertyExists(ontology: Ontology, objectId: string, propertyId: string): void {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -40,7 +28,6 @@ function assertPropertyExists(ontology: Ontology, objectId: string, propertyId: 
     );
   }
 }
-
 export function validateObjectQueryAgainstOntology(
   ontology: Ontology,
   query: ObjectQuery,
@@ -48,22 +35,30 @@ export function validateObjectQueryAgainstOntology(
   const parsed = ObjectQuerySchema.safeParse(query);
   if (!parsed.success) {
     throw new SemanticPlanValidationError(
-      parsed.error.issues[0]?.message ?? "Invalid object query shape.",
+      parsed.error.issues[0]?.message ?? "Object query failed validation.",
     );
   }
   const validated = parsed.data;
-  assertObjectExists(ontology, validated.objectId);
-  for (const join of validated.joins ?? []) {
-    const relationship = ontology.relationships.find(
-      (candidate) => candidate.id === join.relationshipId,
+  const objectId = validated.objectId;
+  assertObjectExists(ontology, objectId);
+  if (validated.mode === "count" && validated.textSearch !== undefined) {
+    throw new SemanticPlanValidationError(
+      'mode "count" cannot be combined with textSearch — use a contains filter on a string property.',
     );
-    if (relationship === undefined) {
-      throw new SemanticPlanValidationError(`Unknown relationship "${join.relationshipId}".`);
-    }
   }
   for (const filter of validated.filters) {
-    const targetObject = filter.objectId ?? validated.objectId;
-    assertPropertyExists(ontology, targetObject, filter.propertyId);
+    const filterObjectId = filter.objectId ?? objectId;
+    assertPropertyExists(ontology, filterObjectId, filter.propertyId);
+  }
+  for (const propertyId of validated.select ?? []) {
+    if (propertyId.includes(".")) {
+      const [joinedObjectId, joinedPropertyId] = propertyId.split(".", 2);
+      if (joinedObjectId !== undefined && joinedPropertyId !== undefined) {
+        assertPropertyExists(ontology, joinedObjectId, joinedPropertyId);
+      }
+      continue;
+    }
+    assertPropertyExists(ontology, objectId, propertyId);
   }
   const groupBy = validated.groupBy ?? [];
   const aggregations = validated.aggregations ?? [];
@@ -78,25 +73,13 @@ export function validateObjectQueryAgainstOntology(
         'Use mode "rows" with groupBy and aggregations, not mode "count".',
       );
     }
-  }
-
-  if (validated.mode === "count" && validated.textSearch !== undefined) {
-    throw new SemanticPlanValidationError(
-      'mode "count" must not use textSearch. Use filters: [] for a whole-object total, or filters with op "contains" / "eq" / "in" on a propertyId for a scoped count.',
-    );
-  }
-
-  if (validated.textSearch !== undefined) {
-    const searchObject = validated.textSearch.objectId ?? validated.objectId;
-    assertObjectExists(ontology, searchObject);
-    if (validated.textSearch.propertyIds !== undefined) {
-      for (const propertyId of validated.textSearch.propertyIds) {
-        assertPropertyExists(ontology, searchObject, propertyId);
-      }
+    for (const propertyId of groupBy) {
+      assertPropertyExists(ontology, objectId, propertyId);
     }
   }
+  const withSelectDefault = applySemanticChatSelectDefault(ontology, validated);
   try {
-    return applyQueryExecutionBudget(validated, "semantic_chat");
+    return applyQueryExecutionBudget(withSelectDefault, "semantic_chat");
   } catch (error) {
     if (error instanceof QueryExecutionBudgetError) {
       throw new SemanticPlanValidationError(error.message);
@@ -104,7 +87,6 @@ export function validateObjectQueryAgainstOntology(
     throw error;
   }
 }
-
 function routedPlanToSemanticPlan(plan: RoutedSemanticPlan): SemanticQueryPlan {
   if (plan.objectQuery === undefined) {
     throw new SemanticPlanValidationError('route "single" requires objectQuery.');
@@ -115,62 +97,23 @@ function routedPlanToSemanticPlan(plan: RoutedSemanticPlan): SemanticQueryPlan {
     ...(plan.objectSet !== undefined ? { objectSet: plan.objectSet } : {}),
   };
 }
-
-export type ValidatedTemplateExecution = {
-  route: "template";
-  templateId: string;
-  instantiated: InstantiatedPlan;
+export type ValidatedRoutedPlan = {
+  route: "single";
+  semanticPlan: SemanticQueryPlan;
 };
-
-export type ValidatedRoutedPlan =
-  { route: "single"; semanticPlan: SemanticQueryPlan } | ValidatedTemplateExecution;
-
 export function validateRoutedPlan(
   ontology: Ontology,
-  registry: PlanTemplateRegistry,
   plan: RoutedSemanticPlan,
 ): ValidatedRoutedPlan {
-  if (plan.route === "single") {
-    const semanticPlan = routedPlanToSemanticPlan(plan);
-    return { route: "single", semanticPlan };
-  }
-
-  const templateId = plan.templateId;
-  if (templateId === undefined) {
-    throw new SemanticPlanValidationError('route "template" requires templateId.');
-  }
-  const template = registry.get(templateId);
-  if (template === undefined) {
-    throw new SemanticPlanValidationError(`Unknown plan template "${templateId}".`);
-  }
-
-  const params = plan.params ?? {};
-  let instantiated: InstantiatedPlan;
-  try {
-    instantiated = instantiatePlanTemplate(template, params);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new SemanticPlanValidationError(message);
-  }
-
-  try {
-    assertAggregateRowBudget(collectTemplateRowLimits(instantiated.steps), "semantic_chat");
-  } catch (error) {
-    if (error instanceof QueryExecutionBudgetError) {
-      throw new SemanticPlanValidationError(error.message);
-    }
-    throw error;
-  }
-
-  for (const step of instantiated.steps) {
-    if (step.type !== "objectQuery") {
-      continue;
-    }
-    validateObjectQueryAgainstOntology(
-      ontology,
-      normalizeSemanticQueryPlan({ objectQuery: step.query }).objectQuery,
+  if (plan.route !== "single") {
+    throw new SemanticPlanValidationError(
+      'Only route "single" is supported; use the semantic agent for multi-step questions.',
     );
   }
-
-  return { route: "template", templateId, instantiated };
+  const semanticPlan = routedPlanToSemanticPlan(plan);
+  validateObjectQueryAgainstOntology(
+    ontology,
+    normalizeSemanticQueryPlan(semanticPlan).objectQuery,
+  );
+  return { route: "single", semanticPlan };
 }

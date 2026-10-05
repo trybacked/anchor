@@ -9,16 +9,15 @@ import { platformApiProfileGraphRoutes } from "./profile-graph.js";
 import { platformApiQueryRoutes } from "./query.js";
 import { platformApiChunkSearchRoutes, platformApiEntitySearchRoutes } from "./search.js";
 import { platformApiSemanticChatRoutes } from "./semantic-chat.js";
-
 export type {
   AnchorApiVariables,
   PlatformHandlerContext,
   PlatformHandlerDeps,
   PlatformRouteHandler,
 } from "../platform-api-types.js";
-
-export type PlatformApiRoute = PlatformApiRouteSpec & { handle: PlatformRouteHandler };
-
+export type PlatformApiRoute = PlatformApiRouteSpec & {
+  handle: PlatformRouteHandler;
+};
 const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
   ...platformApiHealthRoutes,
   ...platformApiModelRoutes,
@@ -30,14 +29,11 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
   ...platformApiSemanticChatRoutes,
   ...platformApiFileRoutes,
 ];
-
 export function platformApiRouteSpecs(): PlatformApiRouteSpec[] {
   return PLATFORM_API_ROUTE_FACTORIES.map((factory) => factory.meta);
 }
-
 export type PlatformOperationId =
   (typeof PLATFORM_API_ROUTE_FACTORIES)[number]["meta"]["operationId"];
-
 export function buildPlatformApiRoutes(deps: PlatformHandlerDeps): PlatformApiRoute[] {
   return PLATFORM_API_ROUTE_FACTORIES.map((factory) => ({
     ...factory.meta,

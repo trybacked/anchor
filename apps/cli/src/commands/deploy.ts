@@ -1,11 +1,5 @@
 import { readModelYaml } from "@trybacked/core";
-import {
-  MCP_QUERY_TOOL,
-  MCP_SURFACE_TOOLS,
-  runStdioMcpServerUntilClose,
-  SERVER_NAME,
-  TOOL_NAMES as MCP_TOOL_NAMES,
-} from "@trybacked/mcp";
+import { runStdioMcpServerUntilClose, SERVER_NAME } from "@trybacked/mcp";
 import type { SemanticAskHandler } from "@trybacked/mcp";
 import {
   createDatabricksSqlClient,
@@ -15,20 +9,17 @@ import {
 import { loadPublishedOntology } from "@trybacked/registry";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
-import { createSemanticChatEngine, renderAnswer } from "@trybacked/semantic-chat";
-import { createVercelAiTranslatorFromEnv } from "@trybacked/semantic-chat/adapters/vercel-ai";
+import { attachSemanticAsk } from "@trybacked/semantic-chat";
+import { createAnchorService } from "@trybacked/service";
 import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { ANSI, wrap } from "../ui/ansi.js";
 import { initUi } from "../ui/index.js";
-
 const DEPLOY_PRIVACY_NOTE =
   "Ontology data stays local — object queries run on your configured warehouse.";
-
 function writeDeployStderr(text: string, style: "dim" | "brand" = "dim"): void {
   console.error(wrap(style === "brand" ? ANSI.brand : ANSI.dim, text));
 }
-
 async function buildQueryRuntime(root: string): Promise<OntologyQueryRuntime | undefined> {
   const ontology = loadPublishedOntology(root);
   if (ontology === null || !hasDatabricksEnv(process.env)) {
@@ -47,7 +38,6 @@ async function buildQueryRuntime(root: string): Promise<OntologyQueryRuntime | u
   }
   return built.runtime;
 }
-
 export const deployCommand: CommandHandler = async () => {
   initUi();
   const root = findWorkspaceRoot(process.cwd());
@@ -56,44 +46,31 @@ export const deployCommand: CommandHandler = async () => {
   const queryRuntime = await buildQueryRuntime(root);
   let semanticAsk: SemanticAskHandler | undefined;
   if (ontology !== null && queryRuntime !== undefined) {
-    const translator = createVercelAiTranslatorFromEnv(process.env);
-    if (translator !== undefined) {
-      const engine = createSemanticChatEngine({
-        ontology,
-        queryRuntime,
-        translate: translator,
-      });
-      semanticAsk = async (body) => {
-        const answer = await engine.ask(body.question, { evidence: body.evidence });
-        return { ...answer, text: renderAnswer(answer) };
-      };
+    const base = createAnchorService({
+      model,
+      ontology,
+      queryRuntime,
+      executionProfile: "mcp",
+    });
+    const withAsk = attachSemanticAsk(base, { ontology, env: process.env });
+    if (withAsk.semanticAsk !== undefined) {
+      semanticAsk = withAsk.semanticAsk;
     }
   }
-  const warehouseTools =
-    queryRuntime !== undefined
-      ? [
-          MCP_QUERY_TOOL,
-          ...(queryRuntime.chunkSearch !== undefined ? [MCP_TOOL_NAMES.searchDocuments] : []),
-          ...(queryRuntime.entityProfile !== undefined ? [MCP_TOOL_NAMES.getEntityProfile] : []),
-          ...(queryRuntime.graphTraverse !== undefined ? [MCP_TOOL_NAMES.traverseGraph] : []),
-          ...(semanticAsk !== undefined ? [MCP_TOOL_NAMES.askSemantic] : []),
-        ]
-      : [];
-  const toolNames = [...MCP_SURFACE_TOOLS, ...warehouseTools];
   writeDeployStderr(
     `MCP server "${SERVER_NAME}" on stdio — ${String(model.entities.length)} entities, ${String(model.relations.length)} relations`,
     "brand",
   );
-  writeDeployStderr(`Tools: ${toolNames.join(", ")} · Ctrl+C to exit`);
-  if (queryRuntime === undefined) {
-    writeDeployStderr(
-      "Object queries disabled — run sync and set BACKED_DATABRICKS_* to enable query_objects.",
-    );
-  }
   writeDeployStderr(DEPLOY_PRIVACY_NOTE);
-  await runStdioMcpServerUntilClose(model, {
-    ...(ontology !== null ? { ontology } : {}),
-    ...(queryRuntime !== undefined ? { queryRuntime } : {}),
-    ...(semanticAsk !== undefined ? { semanticAsk } : {}),
-  });
+  const mcpOptions: Parameters<typeof runStdioMcpServerUntilClose>[1] = {};
+  if (ontology !== null) {
+    mcpOptions.ontology = ontology;
+  }
+  if (queryRuntime !== undefined) {
+    mcpOptions.queryRuntime = queryRuntime;
+  }
+  if (semanticAsk !== undefined) {
+    mcpOptions.semanticAsk = semanticAsk;
+  }
+  await runStdioMcpServerUntilClose(model, mcpOptions);
 };

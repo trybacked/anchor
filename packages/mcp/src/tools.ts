@@ -1,15 +1,36 @@
-import type { Ontology, SemanticModel } from "@trybacked/core";
-import type { OntologyQueryRuntime } from "@trybacked/runtime";
-import { createAnchorService, serviceError } from "@trybacked/service";
+import {
+  MAX_TRAVERSE_DEPTH,
+  MIN_TRAVERSE_DEPTH,
+  SEMANTIC_CHAT_MAX_ROW_LIMIT,
+  type Ontology,
+  type SemanticModel,
+} from "@trybacked/core";
+import {
+  DEFAULT_CHUNK_SEARCH_LIMIT,
+  DEFAULT_CHUNK_SEARCH_MIN_SCORE,
+  MAX_CHUNK_SEARCH_LIMIT,
+  MAX_PROFILE_FACT_LIMIT,
+  MAX_PROFILE_MATCH_LIMIT,
+  MAX_TRAVERSE_ROW_LIMIT,
+  type OntologyQueryRuntime,
+} from "@trybacked/runtime";
+import {
+  createAnchorService,
+  DEFAULT_SCHEMA_SEARCH_HITS,
+  defaultRowLimitForProfile,
+  getPropertyValues,
+  MAX_SCHEMA_SEARCH_HITS,
+  maxRowLimitForProfile,
+  searchOntologySchema,
+  serviceError,
+} from "@trybacked/service";
 import { z } from "zod";
 import { TOOL_NAMES, type McpSurfaceTool } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";
-
 export type SemanticAskHandler = (body: {
   question: string;
   evidence?: boolean | undefined;
 }) => Promise<unknown>;
-
 export interface ToolContext {
   model: SemanticModel;
   ontology?: Ontology | undefined;
@@ -17,7 +38,6 @@ export interface ToolContext {
   queryRuntime?: OntologyQueryRuntime;
   semanticAsk?: SemanticAskHandler | undefined;
 }
-
 export type ToolResult =
   | Record<string, unknown>
   | unknown[]
@@ -26,12 +46,10 @@ export type ToolResult =
   | boolean
   | null
   | Promise<Record<string, unknown> | unknown[] | string | number | boolean | null>;
-
 function readToolString(args: Record<string, unknown>, key: string): string {
   const value = args[key];
   return typeof value === "string" ? value : "";
 }
-
 export interface ToolDefinition {
   name: McpSurfaceTool;
   title: string;
@@ -39,7 +57,6 @@ export interface ToolDefinition {
   inputSchema?: Record<string, z.ZodTypeAny>;
   handler: (context: ToolContext, args: Record<string, unknown>) => ToolResult;
 }
-
 function serviceFromContext(context: ToolContext) {
   return createAnchorService({
     model: context.model,
@@ -51,7 +68,6 @@ function serviceFromContext(context: ToolContext) {
     ...(context.queryRuntime !== undefined ? { queryRuntime: context.queryRuntime } : {}),
   });
 }
-
 export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: TOOL_NAMES.listEntities,
@@ -94,9 +110,58 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
     title: "Search model",
     description:
       "Search entities, properties, relations, and rules. Uses semantic document-chunk vectors when available, with substring fallback.",
-    inputSchema: { query: z.string().min(1).describe("Text to search, e.g. 'cliente'") },
+    inputSchema: { query: z.string().min(1).describe("Text to search, e.g. 'customer'") },
     handler: (context, args) =>
       serviceFromContext(context).searchModel(readToolString(args, "query")),
+  },
+  {
+    name: TOOL_NAMES.searchSchema,
+    title: "Search schema",
+    description:
+      "Rank ontology objects and properties by relevance (names, synonyms, descriptions, glossary).",
+    inputSchema: {
+      query: z.string().min(1).describe("Natural language hint, e.g. 'ingest month'"),
+      limit: z.number().int().positive().max(MAX_SCHEMA_SEARCH_HITS).optional(),
+    },
+    handler: (context, args) => {
+      if (context.ontology === undefined) {
+        return serviceError("unavailable", "Ontology is not loaded for schema search.");
+      }
+      const query = readToolString(args, "query");
+      const limit = typeof args["limit"] === "number" ? args["limit"] : DEFAULT_SCHEMA_SEARCH_HITS;
+      return { hits: searchOntologySchema(context.ontology, query, limit) };
+    },
+  },
+  {
+    name: TOOL_NAMES.getPropertyValues,
+    title: "Property values",
+    description: "Top distinct values with counts for an object property (optional prefix).",
+    inputSchema: {
+      objectId: z.string().min(1),
+      propertyId: z.string().min(1),
+      prefix: z.string().optional(),
+      limit: z.number().int().positive().max(SEMANTIC_CHAT_MAX_ROW_LIMIT).optional(),
+    },
+    handler: async (context, args) => {
+      if (context.ontology === undefined) {
+        return serviceError("unavailable", "Ontology is not loaded.");
+      }
+      const objectId = readToolString(args, "objectId");
+      const propertyId = readToolString(args, "propertyId");
+      try {
+        return await getPropertyValues(serviceFromContext(context), context.ontology, {
+          objectId,
+          propertyId,
+          ...(typeof args["prefix"] === "string" ? { prefix: args["prefix"] } : {}),
+          ...(typeof args["limit"] === "number" ? { limit: args["limit"] } : {}),
+        });
+      } catch (error) {
+        return serviceError(
+          "bad_request",
+          error instanceof Error ? error.message : "Property values query failed.",
+        );
+      }
+    },
   },
   {
     name: TOOL_NAMES.getDefinition,
@@ -110,14 +175,14 @@ export const MCP_TOOL_DEFINITIONS: ToolDefinition[] = [
       serviceFromContext(context).getDefinition(readToolString(args, "term")),
   },
 ];
-
 export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
   name: TOOL_NAMES.queryObjects,
   title: "Query objects",
   description:
     'Query one published ontology object with filters. mode "count" returns a single total (use for how-many questions). ' +
-    'mode "rows" returns table rows (default limit 15, max 1000). Wide objects (e.g. contract) need low limits or count mode. ' +
-    "Use joins + filters.objectId for multi-hop questions (e.g. contracts for project X). Ops contains/not_contains and textSearch for full-text lite.",
+    `mode "rows" returns table rows (default limit ${String(defaultRowLimitForProfile("mcp"))}, max ${String(maxRowLimitForProfile("mcp"))}). ` +
+    "Objects with many properties need low limits, a narrow select, or count mode. " +
+    "Use joins + filters.objectId for multi-hop questions. Ops contains/not_contains and textSearch for full-text lite.",
   inputSchema: {
     objectId: z.string().min(1).describe("Object id, e.g. 'customer'"),
     joins: z
@@ -182,7 +247,9 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
       .int()
       .positive()
       .optional()
-      .describe("Row limit for mode rows (default 15 in MCP, max 1000); ignored for count"),
+      .describe(
+        `Row limit for mode rows (default ${String(defaultRowLimitForProfile("mcp"))}, max ${String(maxRowLimitForProfile("mcp"))}); ignored for count`,
+      ),
     groupBy: z
       .array(z.string().min(1))
       .optional()
@@ -208,7 +275,6 @@ export const QUERY_OBJECTS_TOOL_DEFINITION: ToolDefinition = {
     return serviceFromContext(context).objectQuery(args);
   },
 };
-
 export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: TOOL_NAMES.searchDocuments,
@@ -218,8 +284,19 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
       "Returns text segments with document_id, page range, and relevance score.",
     inputSchema: {
       query: z.string().min(1).describe("Natural language or keyword query"),
-      limit: z.number().int().positive().max(100).optional().describe("Max chunks (default 10)"),
-      minScore: z.number().min(0).max(1).optional().describe("Minimum relevance (default 0.35)"),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .max(MAX_CHUNK_SEARCH_LIMIT)
+        .optional()
+        .describe(`Max chunks (default ${String(DEFAULT_CHUNK_SEARCH_LIMIT)})`),
+      minScore: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe(`Minimum relevance (default ${String(DEFAULT_CHUNK_SEARCH_MIN_SCORE)})`),
       documentIds: z
         .array(z.string())
         .optional()
@@ -244,9 +321,9 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
       'Answer "what does X do?" by matching ontology objects, relation counts, and document element citations (optional entity_profiles facts when present).',
     inputSchema: {
       name: z.string().min(1).describe("Party or organization name (substring match)"),
-      matchLimit: z.number().int().positive().max(10).optional(),
-      factLimit: z.number().int().positive().max(100).optional(),
-      documentLimit: z.number().int().positive().max(100).optional(),
+      matchLimit: z.number().int().positive().max(MAX_PROFILE_MATCH_LIMIT).optional(),
+      factLimit: z.number().int().positive().max(MAX_PROFILE_FACT_LIMIT).optional(),
+      documentLimit: z.number().int().positive().max(MAX_PROFILE_FACT_LIMIT).optional(),
     },
     handler: async (context, args) =>
       serviceFromContext(context).entityProfile({
@@ -263,15 +340,15 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
     title: "Traverse graph",
     description:
       "Follow one or more ontology relations from a starting key (multi-hop join on the warehouse). " +
-      "Use list_relations to pick relationId; depth 1–3.",
+      `Use list_relations to pick relationId; depth ${String(MIN_TRAVERSE_DEPTH)}–${String(MAX_TRAVERSE_DEPTH)}.`,
     inputSchema: {
       relationId: z.string().min(1).describe("Relation id from list_relations"),
       value: z
         .union([z.string(), z.number()])
         .describe("Starting key on the relation source column"),
       direction: z.enum(["forward", "reverse"]).optional(),
-      depth: z.number().int().min(1).max(3).optional(),
-      limit: z.number().int().positive().max(1000).describe("Max result rows"),
+      depth: z.number().int().min(MIN_TRAVERSE_DEPTH).max(MAX_TRAVERSE_DEPTH).optional(),
+      limit: z.number().int().positive().max(MAX_TRAVERSE_ROW_LIMIT).describe("Max result rows"),
     },
     handler: async (context, args) => {
       const relationId = readToolString(args, "relationId");
@@ -295,7 +372,6 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
 ];
-
 export const ASK_SEMANTIC_TOOL_DEFINITION: ToolDefinition = {
   name: TOOL_NAMES.askSemantic,
   title: "Ask semantic",
@@ -323,13 +399,11 @@ export const ASK_SEMANTIC_TOOL_DEFINITION: ToolDefinition = {
     return result as Record<string, unknown>;
   },
 };
-
 export function askSemanticToolForContext(
   semanticAsk: SemanticAskHandler | undefined,
 ): ToolDefinition[] {
   return semanticAsk === undefined ? [] : [ASK_SEMANTIC_TOOL_DEFINITION];
 }
-
 export function warehouseReaderToolsForRuntime(
   queryRuntime: OntologyQueryRuntime | undefined,
 ): ToolDefinition[] {

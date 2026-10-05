@@ -2,11 +2,9 @@ import { workspacePaths } from "@trybacked/core";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { WORKSPACE_ENV_FILE } from "./config.js";
-
 export function workspaceEnvPath(root: string): string {
   return join(root, WORKSPACE_ENV_FILE);
 }
-
 export function findWorkspaceRoot(startDir: string = process.cwd()): string {
   let directory = resolve(startDir);
   for (;;) {
@@ -20,7 +18,6 @@ export function findWorkspaceRoot(startDir: string = process.cwd()): string {
     directory = parent;
   }
 }
-
 export function loadWorkspaceDotEnv(startDir: string = process.cwd()): string {
   const root = findWorkspaceRoot(startDir);
   const envPath = workspaceEnvPath(root);

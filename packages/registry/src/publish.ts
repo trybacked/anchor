@@ -14,7 +14,6 @@ import {
   restorePublicationVersion,
   updateOntologyRegistry,
 } from "./registry.js";
-
 export function readPublicationRecord(root: string): PublicationRecord | null {
   const filePath = publicationPath(root);
   try {
@@ -24,10 +23,13 @@ export function readPublicationRecord(root: string): PublicationRecord | null {
     return null;
   }
 }
-
 export function buildPublicationRecord(
   model: SemanticModel,
-  options: { ontologyId: string; version: number; now?: Date },
+  options: {
+    ontologyId: string;
+    version: number;
+    now?: Date;
+  },
 ): PublicationRecord {
   const now = options.now ?? new Date();
   const ontology = markOntologyPublished(
@@ -41,11 +43,13 @@ export function buildPublicationRecord(
     ontology,
   });
 }
-
 export function publishSemanticModel(
   root: string,
   model: SemanticModel,
-  options: { ontologyId: string; now?: Date },
+  options: {
+    ontologyId: string;
+    now?: Date;
+  },
 ): PublicationRecord {
   const now = options.now ?? new Date();
   const previous = readPublicationRecord(root);
@@ -62,25 +66,28 @@ export function publishSemanticModel(
   updateOntologyRegistry(root, record, options.ontologyId);
   return record;
 }
-
 export function rollbackPublication(root: string, version: number): PublicationRecord {
   return restorePublicationVersion(root, version);
 }
-
 export function loadPublishedOntology(root: string): PublicationRecord["ontology"] | null {
   const record = readPublicationRecord(root);
   return record?.ontology ?? null;
 }
-
 export function buildRemotePublication(
   model: SemanticModel,
-  options: { ontologyId: string; version: number; now?: Date },
-): { record: PublicationRecord; modelYaml: string } {
+  options: {
+    ontologyId: string;
+    version: number;
+    now?: Date;
+  },
+): {
+  record: PublicationRecord;
+  modelYaml: string;
+} {
   const record = buildPublicationRecord(model, options);
   const modelYaml = serializeModelYaml(model);
   return { record, modelYaml };
 }
-
 export function parsePublicationModelYaml(modelYaml: string): SemanticModel {
   return parseModelYaml(modelYaml);
 }

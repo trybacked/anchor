@@ -17,7 +17,6 @@ import { canPublishRemoteOntology, publishOntologyRemote } from "../tenant/remot
 import { findBackedRepoRoot } from "../tenant/repo-root.js";
 import type { CommandHandler } from "../types.js";
 import { initUi, type Ui } from "../ui/index.js";
-
 function formatValidationErrors(ui: Ui, result: ReturnType<typeof validateOntology>): void {
   for (const issue of result.issues) {
     const prefix = issue.severity === "error" ? ui.error("error") : ui.warn("warning");
@@ -25,7 +24,6 @@ function formatValidationErrors(ui: Ui, result: ReturnType<typeof validateOntolo
     ui.log(`${prefix} [${issue.code}] ${issue.message}${location}`);
   }
 }
-
 export const syncCommand: CommandHandler = async (args) => {
   const ui = initUi();
   const root = findWorkspaceRoot(process.cwd());
@@ -49,13 +47,11 @@ export const syncCommand: CommandHandler = async (args) => {
     return;
   }
   const modelPath = path.join(root, "model.yaml");
-
   if (!existsSync(modelPath)) {
     ui.writeError(`No model.yaml at ${modelPath}. Run "${formatCliCommand(COMMANDS.PULL)}" first.`);
     process.exitCode = 1;
     return;
   }
-
   const model = readModelYaml(root);
   const ontologyId = path.basename(root);
   const preflight = validateOntology(semanticModelToOntology(model, { ontologyId }));
@@ -65,7 +61,6 @@ export const syncCommand: CommandHandler = async (args) => {
     process.exitCode = 1;
     return;
   }
-
   const localOnly = args.some((arg) => arg === "--local-only");
   const record = publishSemanticModel(root, model, { ontologyId });
   if (!localOnly && canPublishRemoteOntology()) {
@@ -86,7 +81,6 @@ export const syncCommand: CommandHandler = async (args) => {
       ...(actorId !== undefined ? { actor: { id: actorId } } : {}),
     }),
   ]);
-
   ui.heading("Sync ontology");
   ui.writeSuccess(
     `Registry v${String(record.version)} → ${ui.path(path.join(root, ".backed", "publication.json"))}`,

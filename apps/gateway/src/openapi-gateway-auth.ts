@@ -1,8 +1,6 @@
 import { SESSION_COOKIE_NAME } from "./cookies.js";
 import type { OpenApiDocument } from "./openapi-types.js";
-
 export const GATEWAY_OAUTH_TAG = "Gateway · OAuth & session";
-
 export const BEARER_SECURITY_SCHEME = {
   type: "http",
   scheme: "bearer",
@@ -11,7 +9,6 @@ export const BEARER_SECURITY_SCHEME = {
     "Access token from `POST /oauth/token` after the authorization code flow (third-party SPAs). " +
     "Send `Authorization: Bearer {access_token}`. Register apps on the control plane; see deploy/env/OAUTH_APPS.md in the anchor repo.",
 } as const;
-
 export const SESSION_COOKIE_SCHEME = {
   type: "apiKey",
   in: "cookie",
@@ -20,7 +17,6 @@ export const SESSION_COOKIE_SCHEME = {
     "First-party session on this host: sign in at `GET /login`, then the browser sends the cookie on Try it out. " +
     "Third-party apps on other origins should use OAuth + Bearer instead.",
 } as const;
-
 export function gatewayAuthOpenApiPaths(): NonNullable<OpenApiDocument["paths"]> {
   return {
     "/oauth/authorize": {
@@ -192,14 +188,12 @@ export function gatewayAuthOpenApiPaths(): NonNullable<OpenApiDocument["paths"]>
     },
   };
 }
-
 export function mergeGatewayAuthOpenApi(doc: OpenApiDocument): OpenApiDocument {
   const authPaths = gatewayAuthOpenApiPaths();
   const upstreamSchemes = doc.components?.securitySchemes ?? {};
   const tenantApiSchemes = Object.fromEntries(
     Object.keys(upstreamSchemes).map((name) => [name, SESSION_COOKIE_SCHEME]),
   );
-
   return {
     ...doc,
     paths: {

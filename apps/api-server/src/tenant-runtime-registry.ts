@@ -14,35 +14,30 @@ import {
   type DocumentFilesService,
 } from "@trybacked/service";
 import { createAnchorServiceForModel, modelFromRemoteYaml } from "./service-factory.js";
-
 export class TenantNotFoundError extends Error {
   constructor(tenantId: string) {
     super(`Tenant "${tenantId}" is not in the registry.`);
     this.name = "TenantNotFoundError";
   }
 }
-
 export class OntologyNotPublishedError extends Error {
   constructor(tenantId: string, catalog: string) {
     super(`Ontology not published for tenant "${tenantId}" (catalog ${catalog}).`);
     this.name = "OntologyNotPublishedError";
   }
 }
-
 type CacheEntry = {
   service: AnchorService;
   loadedAt: number;
   registryVersion: string;
   ontologyVersion: number;
 };
-
 export type TenantRuntimeRegistry = {
   listTenantIds: () => Promise<string[]>;
   cachedTenantIds: () => string[];
   resolve: (tenantId: string) => Promise<AnchorService>;
   resolveFiles: (tenantId: string) => Promise<DocumentFilesService>;
 };
-
 export function createTenantRuntimeRegistry(options: {
   registryPath?: string | undefined;
   registrySource?: TenantRegistrySource | undefined;
@@ -52,7 +47,10 @@ export function createTenantRuntimeRegistry(options: {
   cacheTtlSeconds?: number | undefined;
   maxUploadBytes?: number | undefined;
   docsSchema?: string | undefined;
-  audit?: { onOperation?: AnchorOperationAuditHook; auditPrincipal?: string };
+  audit?: {
+    onOperation?: AnchorOperationAuditHook;
+    auditPrincipal?: string;
+  };
 }): TenantRuntimeRegistry {
   const ttlMs = (options.cacheTtlSeconds ?? 300) * 1000;
   const source =
@@ -68,7 +66,6 @@ export function createTenantRuntimeRegistry(options: {
     registryVersion: string;
     ontologyVersion: number;
   };
-
   function tenantOntologyVersion(
     registry: Awaited<ReturnType<typeof loadRegistry>>,
     tenantId: string,
@@ -82,7 +79,6 @@ export function createTenantRuntimeRegistry(options: {
     options.docsSchema ??
     (docsSchemaFromEnv !== undefined && docsSchemaFromEnv.length > 0 ? docsSchemaFromEnv : "docs");
   let lastRegistryVersion = "";
-
   async function loadRegistry() {
     const snapshot = await source.load();
     if (snapshot.version !== lastRegistryVersion) {
@@ -92,7 +88,6 @@ export function createTenantRuntimeRegistry(options: {
     }
     return snapshot.registry;
   }
-
   async function tenantCatalog(tenantId: string): Promise<string> {
     const registry = await loadRegistry();
     const entry = registry.tenants[tenantId];
@@ -101,12 +96,10 @@ export function createTenantRuntimeRegistry(options: {
     }
     return entry.catalog;
   }
-
   async function listTenantIds(): Promise<string[]> {
     const registry = await loadRegistry();
     return Object.keys(registry.tenants);
   }
-
   async function build(tenantId: string): Promise<AnchorService> {
     const registry = await loadRegistry();
     const entry = registry.tenants[tenantId];
@@ -124,6 +117,7 @@ export function createTenantRuntimeRegistry(options: {
       catalog: entry.catalog,
       databricksConfig: options.databricksConfig,
       env: options.env,
+      tenantCapabilities: entry.capabilities,
       audit: {
         ...(options.audit?.onOperation !== undefined
           ? { onOperation: options.audit.onOperation }
@@ -135,7 +129,6 @@ export function createTenantRuntimeRegistry(options: {
       },
     });
   }
-
   return {
     listTenantIds,
     cachedTenantIds: () => [...cache.keys()],
@@ -166,7 +159,6 @@ export function createTenantRuntimeRegistry(options: {
       });
       return service;
     },
-
     resolveFiles: async (tenantId) => {
       const snapshot = await source.load();
       if (snapshot.version !== lastRegistryVersion) {

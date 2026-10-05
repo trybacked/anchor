@@ -2,7 +2,6 @@ import { z } from "zod";
 import { AuditActionSchema } from "./audit.js";
 import type { AuditAction, AuditEvent } from "./audit.js";
 import type { Ontology, OntologyObject, OntologyProperty } from "./spec.js";
-
 export const GovernanceElementKindSchema = z.enum([
   "object",
   "property",
@@ -10,29 +9,21 @@ export const GovernanceElementKindSchema = z.enum([
   "logic",
   "action",
 ]);
-
 export const OntologyGovernancePatchSchema = z.object({
   action: AuditActionSchema,
   elementKind: GovernanceElementKindSchema,
-
   targetId: z.string().min(1),
-
   propertyId: z.string().min(1).optional(),
-
   secondaryId: z.string().min(1).optional(),
-
   name: z.string().min(1).optional(),
   payload: z.record(z.string(), z.unknown()).optional(),
 });
-
 export type GovernanceElementKind = z.infer<typeof GovernanceElementKindSchema>;
 export type OntologyGovernancePatch = z.infer<typeof OntologyGovernancePatchSchema>;
-
 export type GovernancePatchAction = Extract<
   AuditAction,
   "modify" | "merge" | "split" | "add" | "remove" | "override"
 >;
-
 const GOVERNANCE_ACTIONS = new Set<GovernancePatchAction>([
   "modify",
   "merge",
@@ -41,18 +32,15 @@ const GOVERNANCE_ACTIONS = new Set<GovernancePatchAction>([
   "remove",
   "override",
 ]);
-
 export function isGovernancePatchAction(action: AuditAction): action is GovernancePatchAction {
   return GOVERNANCE_ACTIONS.has(action as GovernancePatchAction);
 }
-
 export class OntologyGovernanceError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "OntologyGovernanceError";
   }
 }
-
 function findObject(objects: OntologyObject[], id: string): OntologyObject {
   const object = objects.find((entry) => entry.id === id);
   if (object === undefined) {
@@ -60,7 +48,6 @@ function findObject(objects: OntologyObject[], id: string): OntologyObject {
   }
   return object;
 }
-
 function applyModify(ontology: Ontology, patch: OntologyGovernancePatch): Ontology {
   if (patch.elementKind === "object") {
     return {
@@ -103,7 +90,6 @@ function applyModify(ontology: Ontology, patch: OntologyGovernancePatch): Ontolo
   }
   throw new OntologyGovernanceError(`Modify not supported for kind ${patch.elementKind}`);
 }
-
 function applyRemove(ontology: Ontology, patch: OntologyGovernancePatch): Ontology {
   switch (patch.elementKind) {
     case "object":
@@ -155,7 +141,6 @@ function applyRemove(ontology: Ontology, patch: OntologyGovernancePatch): Ontolo
     }
   }
 }
-
 function applyAdd(ontology: Ontology, patch: OntologyGovernancePatch): Ontology {
   if (patch.elementKind !== "object") {
     throw new OntologyGovernanceError("Add currently supports object elements only");
@@ -176,7 +161,6 @@ function applyAdd(ontology: Ontology, patch: OntologyGovernancePatch): Ontology 
   };
   return { ...ontology, objects: [...ontology.objects, newObject] };
 }
-
 function applyMerge(ontology: Ontology, patch: OntologyGovernancePatch): Ontology {
   if (patch.elementKind !== "object" || patch.secondaryId === undefined) {
     throw new OntologyGovernanceError("Merge requires object kind and secondaryId");
@@ -204,7 +188,6 @@ function applyMerge(ontology: Ontology, patch: OntologyGovernancePatch): Ontolog
     { action: "remove", elementKind: "object", targetId: removedId },
   );
 }
-
 function applySplit(ontology: Ontology, patch: OntologyGovernancePatch): Ontology {
   if (
     patch.elementKind !== "object" ||
@@ -245,11 +228,9 @@ function applySplit(ontology: Ontology, patch: OntologyGovernancePatch): Ontolog
     ],
   };
 }
-
 function applyOverride(ontology: Ontology, patch: OntologyGovernancePatch): Ontology {
   return applyModify(ontology, { ...patch, action: "modify" });
 }
-
 export function applyOntologyGovernancePatch(
   ontology: Ontology,
   patch: OntologyGovernancePatch,
@@ -259,7 +240,6 @@ export function applyOntologyGovernancePatch(
   if (!isGovernancePatchAction(action)) {
     throw new OntologyGovernanceError(`Not a governance action: ${action}`);
   }
-
   switch (action) {
     case "modify":
       return applyModify(ontology, validated);
@@ -279,7 +259,6 @@ export function applyOntologyGovernancePatch(
     }
   }
 }
-
 export function buildGovernanceAuditEvent(input: {
   runId: string;
   recordedAt: string;

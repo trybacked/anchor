@@ -12,12 +12,10 @@ import type {
 import { ONTOLOGY_FORMAT_VERSION, PIPELINE_INFRA_DATASET_TABLE_NAMES } from "@trybacked/core";
 import { inspectProfileReport } from "../inspect/inspect-profile.js";
 import { inferPropertyType } from "../inspect/sql-type.js";
-
 const INFRA_TABLES = new Set<string>(PIPELINE_INFRA_DATASET_TABLE_NAMES);
 const PROPOSED = "proposed" as const;
 const INFERRED = "inferred" as const;
 const DISCOVERY_TYPE = "schema_analysis" as const;
-
 function humanizeIdentifier(value: string): string {
   return value
     .split("_")
@@ -25,18 +23,15 @@ function humanizeIdentifier(value: string): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(" ");
 }
-
 function isPrimaryKeyCandidate(column: ColumnProfile, rowCount: number): boolean {
   return rowCount > 0 && column.nullCount === 0 && column.distinctCount === rowCount;
 }
-
 function columnEvidence(table: TableProfile, column: ColumnProfile): string[] {
   return [
     `${table.table}.${column.name}`,
     `${column.sqlType} null_ratio=${column.nullRatio.toFixed(2)}`,
   ];
 }
-
 function discoverProperty(table: TableProfile, column: ColumnProfile): OntologyProperty {
   const role = isPrimaryKeyCandidate(column, table.rowCount)
     ? ("primary_key" as const)
@@ -63,7 +58,6 @@ function discoverProperty(table: TableProfile, column: ColumnProfile): OntologyP
     ...(bestFk !== undefined ? { referenceObjectId: bestFk.targetTable } : {}),
   };
 }
-
 function discoverObject(table: TableProfile): OntologyObject {
   return {
     id: table.table,
@@ -84,11 +78,9 @@ function discoverObject(table: TableProfile): OntologyObject {
     source: INFERRED,
   };
 }
-
 function relationshipId(fromTable: string, fromColumn: string, toTable: string): string {
   return `${fromTable}__${fromColumn}__${toTable}`;
 }
-
 function discoverRelationship(
   fromTable: TableProfile,
   fromColumn: ColumnProfile,
@@ -118,12 +110,10 @@ function discoverRelationship(
     source: INFERRED,
   };
 }
-
 export type DiscoverFromProfileOptions = {
   ontologyId: string;
   version?: number;
 };
-
 export function discoverFromProfile(
   profile: ProfileReport,
   options: DiscoverFromProfileOptions,
@@ -140,7 +130,6 @@ export function discoverFromProfile(
       relationships.push(discoverRelationship(table, column, candidate));
     }
   }
-
   const ontology: Ontology = {
     metadata: {
       formatVersion: ONTOLOGY_FORMAT_VERSION,
@@ -153,7 +142,6 @@ export function discoverFromProfile(
     logic: [],
     actions: [],
   };
-
   return {
     inspection: inspectProfileReport(profile),
     ontology,

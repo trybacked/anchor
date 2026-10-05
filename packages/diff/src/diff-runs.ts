@@ -2,21 +2,17 @@ import { ModelDiffSchema } from "@trybacked/core";
 import type { DiffChange, Entity, ModelDiff, ProfileReport, Relation, Rule } from "@trybacked/core";
 import { columnExists, diffProfile } from "./profile-diff.js";
 import { collectAdded, collectAddedRemoved, indexByKey } from "./utils.js";
-
 export interface ModelElements {
   entities: Entity[];
   relations: Relation[];
   rules: Rule[];
 }
-
 export interface RunSnapshot {
   runId: string;
   profile: ProfileReport;
   model?: ModelElements;
 }
-
 const EMPTY_MODEL_ELEMENTS: ModelElements = { entities: [], relations: [], rules: [] };
-
 function isRelationBroken(
   relation: Relation,
   entities: Map<string, Entity>,
@@ -32,7 +28,6 @@ function isRelationBroken(
     !columnExists(nextProfile, toTable, relation.toColumn)
   );
 }
-
 function diffModelElements(
   previous: ModelElements,
   next: ModelElements | undefined,
@@ -44,7 +39,6 @@ function diffModelElements(
   const nextRelations = indexByKey(next?.relations ?? [], (relation) => relation.id);
   const previousRules = indexByKey(previous.rules, (rule) => rule.id);
   const nextRules = indexByKey(next?.rules ?? [], (rule) => rule.id);
-
   const changes = [
     ...collectAddedRemoved(
       previousEntities,
@@ -72,7 +66,6 @@ function diffModelElements(
       (id, rule) => ({ kind: "rule_removed", subject: id, detail: `Rule "${rule.name}" removed` }),
     ),
   ];
-
   for (const [id, relation] of previousRelations) {
     if (nextRelations.has(id)) {
       continue;
@@ -91,10 +84,8 @@ function diffModelElements(
       });
     }
   }
-
   return changes;
 }
-
 export function diffRuns(
   previous: RunSnapshot,
   next: RunSnapshot,

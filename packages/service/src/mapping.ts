@@ -79,7 +79,6 @@ function matches(query: string, ...fields: (string | undefined)[]): boolean {
 }
 export interface SearchModelOptions {
   semanticSearch?: (query: string) => Promise<SearchMatch[]>;
-
   dispose?: () => void;
 }
 function mergeSearchMatches(

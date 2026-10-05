@@ -1,17 +1,15 @@
 import { spawn } from "node:child_process";
 import { CLI_PATH, NODE_EXECUTABLE } from "./paths.js";
-
 export interface CliRunResult {
   exitCode: number | null;
   stdout: string;
   stderr: string;
 }
-
 export function runCli(
   args: string[],
   cwd: string,
   env: NodeJS.ProcessEnv = process.env,
-  timeoutMs = 15_000,
+  timeoutMs = 15000,
 ): Promise<CliRunResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(NODE_EXECUTABLE, [CLI_PATH, ...args], {

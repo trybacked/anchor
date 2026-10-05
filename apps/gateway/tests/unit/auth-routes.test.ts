@@ -3,7 +3,6 @@ import { createGatewayApp } from "../../src/app.js";
 import type { GatewayConfig } from "../../src/config.js";
 import { hashPassword } from "../../src/password.js";
 import { mockRegistrySource } from "../helpers/registry-source.js";
-
 const config: GatewayConfig = {
   host: "127.0.0.1",
   port: 8790,
@@ -17,7 +16,6 @@ const config: GatewayConfig = {
   platformUpstream: "http://127.0.0.1:1",
   platformToken: "t",
 };
-
 const registrySource = mockRegistrySource({
   enrollment: {
     host: "https://example.databricks.com",
@@ -27,10 +25,8 @@ const registrySource = mockRegistrySource({
   shared_spaces: {},
   tenants: {},
 });
-
 describe("auth routes", () => {
   const users = [{ username: "demo", passwordHash: hashPassword("pass"), tenants: ["gerace"] }];
-
   it("login sets session cookie", async () => {
     const app = createGatewayApp({
       config,
@@ -47,7 +43,6 @@ describe("auth routes", () => {
     const setCookie = response.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain("backed_session=");
   });
-
   it("GET /logout clears session and redirects to login", async () => {
     const app = createGatewayApp({
       config,
@@ -67,14 +62,12 @@ describe("auth routes", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("location")).toBe("/login");
   });
-
   it("POST /logout returns ok", async () => {
     const app = createGatewayApp({ config, registrySource, users });
     const response = await app.request("/logout", { method: "POST" });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
   });
-
   it("rejects bad password", async () => {
     const app = createGatewayApp({ config, registrySource, users });
     const response = await app.request("/login", {

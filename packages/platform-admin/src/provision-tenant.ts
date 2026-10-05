@@ -25,7 +25,6 @@ import {
   patchWarehousePermissions,
   type DatabricksAdminClientDeps,
 } from "./databricks-admin-client.js";
-
 export type CloudProvisionTenantOptions = {
   tenantId: string;
   catalog: string;
@@ -37,7 +36,6 @@ export type CloudProvisionTenantOptions = {
   ontologyStore?: OntologyStore | undefined;
   deps?: DatabricksAdminClientDeps | undefined;
 };
-
 export type CloudProvisionTenantResult = {
   tenantId: string;
   catalog: string;
@@ -45,7 +43,6 @@ export type CloudProvisionTenantResult = {
   tenantOboToken?: string | undefined;
   publicationVersion: number;
 };
-
 export async function provisionTenantCloud(
   options: CloudProvisionTenantOptions,
 ): Promise<CloudProvisionTenantResult> {
@@ -55,17 +52,13 @@ export async function provisionTenantCloud(
   const admin = createAdminSqlClient(adminConfig);
   const ontologyStore =
     options.ontologyStore ?? createVolumeOntologyStore(createDatabricksBlobStore(adminConfig));
-
   await createTenantCatalog(admin, catalog, tenantId);
   await ensureRegistryVolume(admin, catalog);
   await ensureDocsRawVolume(admin, catalog);
-
   const spName = `backed-tenant-${tenantId}`;
   const { applicationId } = await ensureServicePrincipal(adminConfig, spName, deps);
-
   await grantTenantCatalogToPrincipal(admin, catalog, applicationId);
   await grantSharedSpacesToPrincipal(admin, registry, catalog, applicationId, sharedSpaceKeys);
-
   const platformPrincipal = options.platformPrincipal ?? registry.enrollment.platform_principal;
   if (platformPrincipal !== undefined && platformPrincipal.length > 0) {
     await grantPlatformPrincipalOnTenant(
@@ -77,21 +70,17 @@ export async function provisionTenantCloud(
     );
     await grantDocsRefreshJobRunIfPresent(adminConfig, catalog, platformPrincipal);
   }
-
   await patchWarehousePermissions(adminConfig, warehouseId, applicationId, "CAN_USE", deps);
-
   const remote = await ontologyStore.loadCurrent(catalog);
   const nextVersion = (remote?.version ?? 0) + 1;
   const model = loadBootstrapModel(tenantId);
   const record = buildPublicationRecord(model, { ontologyId: tenantId, version: nextVersion });
   const modelYaml = bootstrapModelYaml(tenantId);
   await ontologyStore.publish(catalog, record, modelYaml);
-
   let tenantOboToken: string | undefined;
   if (options.issueTenantOboToken === true) {
     tenantOboToken = await createOboToken(adminConfig, applicationId, `backed ${tenantId}`, deps);
   }
-
   return {
     tenantId,
     catalog,

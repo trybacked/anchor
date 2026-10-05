@@ -9,7 +9,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createGatewayApp } from "../../src/app.js";
 import type { GatewayConfig } from "../../src/config.js";
 import { hashPassword } from "../../src/password.js";
-
 type MockUpstream = {
   baseUrl: string;
   close: () => Promise<void>;
@@ -17,12 +16,10 @@ type MockUpstream = {
   lastBackedUser: () => string | undefined;
   lastBackedTenant: () => string | undefined;
 };
-
 function startMockUpstream(expectedToken: string): Promise<MockUpstream> {
   let authorization: string | undefined;
   let backedUser: string | undefined;
   let backedTenant: string | undefined;
-
   const server = createServer((req, res) => {
     authorization = req.headers.authorization;
     backedUser = req.headers["x-backed-user"];
@@ -40,7 +37,6 @@ function startMockUpstream(expectedToken: string): Promise<MockUpstream> {
     res.writeHead(404, { "content-type": "application/json" });
     res.end(JSON.stringify({ error: "Not found" }));
   });
-
   return new Promise((resolve, reject) => {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
@@ -67,12 +63,10 @@ function startMockUpstream(expectedToken: string): Promise<MockUpstream> {
     });
   });
 }
-
 type RunningGateway = {
   baseUrl: string;
   close: () => Promise<void>;
 };
-
 function startGateway(app: ReturnType<typeof createGatewayApp>): Promise<RunningGateway> {
   return new Promise((resolve, reject) => {
     let httpServer: Server | undefined;
@@ -101,7 +95,6 @@ function startGateway(app: ReturnType<typeof createGatewayApp>): Promise<Running
     }
   });
 }
-
 function writeRegistry(dir: string): string {
   const path = join(dir, "tenants.yaml");
   writeFileSync(
@@ -125,7 +118,6 @@ tenants:
   );
   return path;
 }
-
 function sessionCookieFromResponse(response: Response): string {
   const header = response.headers.get("set-cookie") ?? "";
   const match = header.match(/backed_session=([^;]+)/);
@@ -134,10 +126,8 @@ function sessionCookieFromResponse(response: Response): string {
   }
   return `backed_session=${match[1]}`;
 }
-
 describe("gateway e2e routing", () => {
   const cleanups: Array<() => Promise<void>> = [];
-
   afterEach(async () => {
     while (cleanups.length > 0) {
       const cleanup = cleanups.pop();
@@ -146,11 +136,9 @@ describe("gateway e2e routing", () => {
       }
     }
   });
-
   it("login → tenant A OK → tenant B 403 with platform upstream", async () => {
     const platform = await startMockUpstream("platform-token");
     cleanups.push(platform.close);
-
     const dir = mkdtempSync(join(tmpdir(), "gw-e2e-"));
     const registryPath = writeRegistry(dir);
     const password = "e2e-pass";
@@ -172,7 +160,6 @@ describe("gateway e2e routing", () => {
       createGatewayApp({ config, registrySource: createFileRegistrySource(registryPath), users }),
     );
     cleanups.push(gateway.close);
-
     const loginResponse = await fetch(`${gateway.baseUrl}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -180,7 +167,6 @@ describe("gateway e2e routing", () => {
     });
     expect(loginResponse.status).toBe(200);
     const cookie = sessionCookieFromResponse(loginResponse);
-
     const allowed = await fetch(`${gateway.baseUrl}/t/gerace/v1/model/entities`, {
       headers: { Cookie: cookie },
     });
@@ -188,17 +174,14 @@ describe("gateway e2e routing", () => {
     expect(platform.lastAuthorization()).toBe("Bearer platform-token");
     expect(platform.lastBackedUser()).toBe("demo");
     expect(platform.lastBackedTenant()).toBe("gerace");
-
     const forbidden = await fetch(`${gateway.baseUrl}/t/backed/v1/model/entities`, {
       headers: { Cookie: cookie },
     });
     expect(forbidden.status).toBe(403);
   });
-
   it("default tenant proxies /v1 without prefix", async () => {
     const upstream = await startMockUpstream("platform-token");
     cleanups.push(upstream.close);
-
     const dir = mkdtempSync(join(tmpdir(), "gw-e2e-single-"));
     const registryPath = writeRegistry(dir);
     const password = "single-pass";
@@ -221,14 +204,12 @@ describe("gateway e2e routing", () => {
       createGatewayApp({ config, registrySource: createFileRegistrySource(registryPath), users }),
     );
     cleanups.push(gateway.close);
-
     const loginResponse = await fetch(`${gateway.baseUrl}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "solo", password }),
     });
     const cookie = sessionCookieFromResponse(loginResponse);
-
     const response = await fetch(`${gateway.baseUrl}/v1/model/entities`, {
       headers: { Cookie: cookie },
     });

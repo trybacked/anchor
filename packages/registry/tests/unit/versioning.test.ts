@@ -10,7 +10,6 @@ import {
   readPublicationRecord,
   rollbackPublication,
 } from "../../src/index.js";
-
 const baseModel = {
   metadata: {
     formatVersion: "1" as const,
@@ -41,7 +40,6 @@ const baseModel = {
   relations: [],
   rules: [],
 };
-
 describe("ontology versioning essentials", () => {
   it("archives publications and supports rollback", () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "anchor-versioning-"));
@@ -77,11 +75,9 @@ describe("ontology versioning essentials", () => {
         },
         { ontologyId: "demo" },
       );
-
       expect(listPublicationVersions(root)).toHaveLength(2);
       expect(readPublicationRecord(root)?.version).toBe(2);
       expect(readPublicationByVersion(root, 1)?.ontology.objects).toHaveLength(1);
-
       const rolled = rollbackPublication(root, 1);
       expect(rolled.version).toBe(1);
       expect(rolled.ontology.objects).toHaveLength(1);
@@ -94,7 +90,6 @@ describe("ontology versioning essentials", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-
   it("flags breaking ontology diffs", () => {
     const left = publishSemanticModel(
       mkdtempSync(path.join(os.tmpdir(), "anchor-diff-a-")),

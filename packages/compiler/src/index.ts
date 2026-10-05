@@ -4,7 +4,6 @@ export { ObjectQueryCompileError } from "./errors.js";
 export type { ObjectQueryCompileErrorCode } from "./errors.js";
 export {
   DEFAULT_OBJECT_QUERY_LIMIT,
-  MAX_OBJECT_QUERY_LIMIT,
   OBJECT_QUERY_FILTER_OPS,
   ObjectQueryFilterSchema,
   ObjectQueryJoinSchema,

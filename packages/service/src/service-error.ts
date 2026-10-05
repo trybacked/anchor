@@ -1,22 +1,18 @@
 export const SERVICE_ERROR_CODES = ["not_found", "unavailable", "bad_request", "conflict"] as const;
-
 export type ServiceErrorCode = (typeof SERVICE_ERROR_CODES)[number];
-
 export type ServiceError = {
   code: ServiceErrorCode;
   message: string;
 };
-
-export type ServiceErrorResult = { error: ServiceError };
-
+export type ServiceErrorResult = {
+  error: ServiceError;
+};
 export function serviceError(code: ServiceErrorCode, message: string): ServiceErrorResult {
   return { error: { code, message } };
 }
-
 function isServiceErrorCode(value: unknown): value is ServiceErrorCode {
   return typeof value === "string" && SERVICE_ERROR_CODES.some((code) => code === value);
 }
-
 export function isServiceErrorResult(value: unknown): value is ServiceErrorResult {
   if (typeof value !== "object" || value === null || !("error" in value)) {
     return false;
@@ -30,7 +26,6 @@ export function isServiceErrorResult(value: unknown): value is ServiceErrorResul
   }
   return isServiceErrorCode(candidate.code) && typeof candidate.message === "string";
 }
-
 export function serviceErrorHttpStatus(code: ServiceErrorCode): 400 | 404 | 409 | 503 {
   switch (code) {
     case "not_found":

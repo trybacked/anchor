@@ -49,7 +49,7 @@
           {
             "objectId": "organization",
             "propertyId": "sezione_regionale",
-            "op": "eq",
+            "op": "contains",
             "value": "Sicilia"
           }
         ],
@@ -132,17 +132,6 @@
         ],
         "countMin": 0,
         "minProvenanceRows": 1
-      }
-    },
-    {
-      "id": "template-document-search",
-      "optional": true,
-      "question": "What do documents say about elevator maintenance? Show contracts linked for June 2025 ingest month.",
-      "expect": {
-        "route": "template",
-        "templateId": "search-then-filter",
-        "maxAttempts": 2,
-        "minProvenanceRows": 0
       }
     },
     {

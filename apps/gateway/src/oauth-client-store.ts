@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import type { GatewayConfig } from "./config.js";
-
 export type RegisteredOAuthClient = {
   clientId: string;
   name: string;
@@ -8,7 +7,6 @@ export type RegisteredOAuthClient = {
   corsOrigins: string[];
   clientSecretHash: string | null;
 };
-
 type InternalClientPayload = {
   clientId: string;
   name: string;
@@ -16,17 +14,13 @@ type InternalClientPayload = {
   corsOrigins: string[];
   clientSecretHash: string | null;
 };
-
 type CacheEntry = {
   expiresAt: number;
   clients: RegisteredOAuthClient[];
   etag: string | undefined;
 };
-
-const CACHE_TTL_MS = 30_000;
-
+const CACHE_TTL_MS = 30000;
 let cache: CacheEntry | undefined;
-
 function mapClient(raw: InternalClientPayload): RegisteredOAuthClient {
   return {
     clientId: raw.clientId,
@@ -36,10 +30,10 @@ function mapClient(raw: InternalClientPayload): RegisteredOAuthClient {
     clientSecretHash: raw.clientSecretHash,
   };
 }
-
-async function fetchClientsFromControlPlane(
-  config: GatewayConfig,
-): Promise<{ clients: RegisteredOAuthClient[]; etag: string | undefined }> {
+async function fetchClientsFromControlPlane(config: GatewayConfig): Promise<{
+  clients: RegisteredOAuthClient[];
+  etag: string | undefined;
+}> {
   const baseUrl = config.controlPlaneUrl?.replace(/\/+$/, "");
   const token = config.controlPlaneInternalToken;
   if (baseUrl === undefined || token === undefined) {
@@ -62,12 +56,13 @@ async function fetchClientsFromControlPlane(
       ? { clients: cache.clients, etag: cache.etag }
       : { clients: [], etag: undefined };
   }
-  const payload = (await response.json()) as { clients?: InternalClientPayload[] };
+  const payload = (await response.json()) as {
+    clients?: InternalClientPayload[];
+  };
   const clients = Array.isArray(payload.clients) ? payload.clients.map(mapClient) : [];
   const etag = response.headers.get("ETag") ?? undefined;
   return { clients, etag };
 }
-
 export async function listRegisteredOAuthClients(
   config: GatewayConfig,
 ): Promise<RegisteredOAuthClient[]> {
@@ -83,7 +78,6 @@ export async function listRegisteredOAuthClients(
   };
   return loaded.clients;
 }
-
 export async function getRegisteredOAuthClient(
   config: GatewayConfig,
   clientId: string,
@@ -91,7 +85,6 @@ export async function getRegisteredOAuthClient(
   const clients = await listRegisteredOAuthClients(config);
   return clients.find((entry) => entry.clientId === clientId);
 }
-
 export function verifyRegisteredClientSecret(
   client: RegisteredOAuthClient,
   secret: string,
@@ -103,11 +96,9 @@ export function verifyRegisteredClientSecret(
   const hash = createHash("sha256").update(`${pepper}:${secret}`, "utf8").digest("hex");
   return hash === client.clientSecretHash;
 }
-
 export function invalidateOAuthClientCache(): void {
   cache = undefined;
 }
-
 export function collectCorsOrigins(clients: RegisteredOAuthClient[]): Set<string> {
   const origins = new Set<string>();
   for (const client of clients) {

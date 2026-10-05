@@ -10,6 +10,7 @@ import { createAuthoringDatasetsModule } from "./modules/authoring-datasets.js";
 import { createAuthoringJobsModule } from "./modules/authoring-jobs.js";
 import { createAuthoringMembersModule } from "./modules/authoring-members.js";
 import { createAuthoringOntologyModule } from "./modules/authoring-ontology.js";
+import { createAuthoringSemanticModule } from "./modules/authoring-semantic.js";
 import { createAuthoringWarehouseModule } from "./modules/authoring-warehouse.js";
 import { createDocumentsModule } from "./modules/documents.js";
 import { createFilesModule } from "./modules/files.js";
@@ -19,7 +20,6 @@ import { createQueryModule } from "./modules/query.js";
 import { createSearchModule } from "./modules/search.js";
 import { gatewayTenantContext, platformTenantContext } from "./scope.js";
 import { createTransport, type TransportOptions } from "./transport.js";
-
 export type TenantClient = {
   tenantId: string;
   model: ReturnType<typeof createModelModule>;
@@ -31,40 +31,34 @@ export type TenantClient = {
   files: ReturnType<typeof createFilesModule>;
   authoring: {
     ontology: ReturnType<typeof createAuthoringOntologyModule>;
+    semantic: ReturnType<typeof createAuthoringSemanticModule>;
     warehouse: ReturnType<typeof createAuthoringWarehouseModule>;
     datasets: ReturnType<typeof createAuthoringDatasetsModule>;
     members: ReturnType<typeof createAuthoringMembersModule>;
     jobs: ReturnType<typeof createAuthoringJobsModule>;
   };
 };
-
 export type GatewayBackedClientOptions = TransportOptions & {
   mode: "gateway";
   baseUrl: string;
 };
-
 export type PlatformBackedClientOptions = TransportOptions & {
   mode: "platform";
   baseUrl: string;
   token: string;
 };
-
 export type BackedClientOptions = GatewayBackedClientOptions | PlatformBackedClientOptions;
-
 export type GatewayBackedClient = {
   mode: "gateway";
   auth: AuthModule;
   health: HealthModule;
   tenant: (tenantId: string) => TenantClient;
 };
-
 export type PlatformBackedClient = {
   mode: "platform";
   tenant: (tenantId: string) => TenantClient;
 };
-
 export type BackedClient = GatewayBackedClient | PlatformBackedClient;
-
 function createTenantClient(
   transport: ReturnType<typeof createTransport>,
   ctx: ReturnType<typeof gatewayTenantContext>,
@@ -80,6 +74,7 @@ function createTenantClient(
     files: createFilesModule(transport, ctx),
     authoring: {
       ontology: createAuthoringOntologyModule(transport, ctx),
+      semantic: createAuthoringSemanticModule(transport, ctx),
       warehouse: createAuthoringWarehouseModule(transport, ctx),
       datasets: createAuthoringDatasetsModule(transport, ctx),
       members: createAuthoringMembersModule(transport, ctx),
@@ -87,12 +82,10 @@ function createTenantClient(
     },
   };
 }
-
 export function createBackedClient(options: GatewayBackedClientOptions): GatewayBackedClient;
 export function createBackedClient(options: PlatformBackedClientOptions): PlatformBackedClient;
 export function createBackedClient(options: BackedClientOptions): BackedClient {
   const transport = createTransport(options.baseUrl, options);
-
   switch (options.mode) {
     case "gateway": {
       return {
@@ -119,8 +112,6 @@ export function createBackedClient(options: BackedClientOptions): BackedClient {
     }
   }
 }
-
-/** Legacy flat client; prefer `createBackedClient`. */
 export function createAnchorClient(options: {
   baseUrl: string;
   headers?: Record<string, string>;
@@ -161,7 +152,5 @@ export function createAnchorClient(options: {
     ask: (body: Parameters<typeof tenant.ai.ask>[0]) => tenant.ai.ask(body),
   };
 }
-
 export type AnchorClient = ReturnType<typeof createAnchorClient>;
-
 export { AnchorApiError } from "@trybacked/service";

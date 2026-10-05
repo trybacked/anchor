@@ -80,6 +80,29 @@ export type {
   SemanticModel,
 } from "./model.js";
 export {
+  EntitySemanticsSchema,
+  GlossaryTermSchema,
+  OntologySemanticsBlockSchema,
+  PropertySemanticsSchema,
+  SemanticPropertyRoleSchema,
+  VerifiedExampleSchema,
+} from "./semantics.js";
+export type {
+  EntitySemantics,
+  GlossaryTerm,
+  OntologySemanticsBlock,
+  PropertySemantics,
+  SemanticPropertyRole,
+  VerifiedExample,
+} from "./semantics.js";
+export {
+  applySemanticCatalogs,
+  CatalogGlossaryTermSchema,
+  DatasetSemanticsSchema,
+  SemanticCatalogSchema,
+} from "./semantic-catalog.js";
+export type { CatalogGlossaryTerm, DatasetSemantics, SemanticCatalog } from "./semantic-catalog.js";
+export {
   DoubtSchema,
   EvidenceTableSchema,
   ReviewQuestionKindSchema,

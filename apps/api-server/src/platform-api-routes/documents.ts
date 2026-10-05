@@ -7,7 +7,6 @@ import {
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import { DocumentIdParamSchema, DocumentPreviewQuerySchema } from "../platform-api-schemas.js";
-
 export const platformApiDocumentRoutes: RouteFactory[] = [
   platformRoute(
     {

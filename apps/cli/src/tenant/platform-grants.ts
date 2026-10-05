@@ -1,6 +1,5 @@
 import { executeAdminSql } from "./databricks-cli.js";
 import type { TenantsRegistry } from "./registry.js";
-
 export async function ensureRegistryVolume(
   profile: string,
   warehouseId: string,
@@ -17,7 +16,6 @@ export async function ensureRegistryVolume(
     statement: `CREATE VOLUME IF NOT EXISTS \`${catalog}\`.\`backed\`.\`registry\``,
   });
 }
-
 export async function grantPlatformPrincipalOnTenant(options: {
   profile: string;
   warehouseId: string;
@@ -56,7 +54,6 @@ export async function grantPlatformPrincipalOnTenant(options: {
       statement: `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`${catalog}\`.\`docs\`.\`raw\` TO \`${platformPrincipal}\``,
     }),
   );
-
   for (const key of sharedKeys) {
     const space = registry.shared_spaces[key];
     if (space === undefined) {
@@ -83,6 +80,5 @@ export async function grantPlatformPrincipalOnTenant(options: {
       }),
     );
   }
-
   await Promise.all(tasks);
 }

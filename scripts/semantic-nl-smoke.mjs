@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,18 +11,17 @@ import {
 import { loadPublishedOntology } from "../packages/registry/dist/index.js";
 import { buildQueryRuntimeFromEnv } from "../packages/runtime/dist/index.js";
 import {
-  createSemanticChatEngine,
-  SemanticChatTranslationError,
+  createSemanticAgentModelFromEnv,
+  runSemanticAgent,
+  SemanticAgentError,
   SemanticPlanValidationError,
 } from "../packages/semantic-chat/dist/index.js";
-import { createVercelAiTranslatorFromEnv } from "../packages/semantic-chat/dist/adapters/vercel-ai.js";
-import { assertCase } from "./semantic-nl-assertions.mjs";
-
+import { createAnchorService } from "../packages/service/dist/index.js";
+import { agentAnswerShape, assertAgentCase } from "./semantic-agent-eval-shape.mjs";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(scriptDir, "..");
 const defaultWorkspace = join(repoRoot, "..", "ontology", "gerace");
 const casesPath = join(scriptDir, "semantic-nl-smoke.cases.json");
-
 function loadEnvFile(path) {
   if (!existsSync(path)) {
     return;
@@ -41,7 +39,6 @@ function loadEnvFile(path) {
     }
   }
 }
-
 function parseArgs(argv) {
   let workspace = process.env["ANCHOR_WORKSPACE_ROOT"];
   for (let index = 0; index < argv.length; index += 1) {
@@ -52,34 +49,29 @@ function parseArgs(argv) {
   }
   return resolve(workspace ?? defaultWorkspace);
 }
-
 async function main() {
   const workspaceRoot = parseArgs(process.argv.slice(2));
   loadEnvFile(join(repoRoot, ".env"));
   loadEnvFile(join(workspaceRoot, ".env"));
   const tenant = workspaceRoot.split("/").pop() ?? "gerace";
   loadEnvFile(join(process.env["HOME"] ?? "", ".config", "backed", `${tenant}.env`));
-
-  const translate = createVercelAiTranslatorFromEnv(process.env);
-  if (translate === undefined) {
+  const agentModel = createSemanticAgentModelFromEnv(process.env);
+  if (agentModel === undefined) {
     console.error("Missing AI_GATEWAY_API_KEY. Set it in anchor/.env or the environment.");
     process.exitCode = 1;
     return;
   }
-
   if (!hasDatabricksEnv(process.env)) {
     console.error("Missing BACKED_DATABRICKS_* env for warehouse execution.");
     process.exitCode = 1;
     return;
   }
-
   const ontology = loadPublishedOntology(workspaceRoot);
   if (ontology === null) {
     console.error(`No published ontology in ${workspaceRoot}`);
     process.exitCode = 1;
     return;
   }
-
   const model = readModelYaml(workspaceRoot);
   const client = createDatabricksSqlClient(databricksConfigFromEnv(process.env));
   const { runtime } = await buildQueryRuntimeFromEnv({
@@ -88,54 +80,58 @@ async function main() {
     executor: (sql, parameters) => client.execute(sql, parameters),
     env: process.env,
   });
-
-  const engine = createSemanticChatEngine({ ontology, queryRuntime: runtime, translate });
+  const service = createAnchorService({
+    model,
+    ontology,
+    queryRuntime: runtime,
+    executionProfile: "api",
+  });
   const suite = JSON.parse(readFileSync(casesPath, "utf8"));
-  const modelId =
-    process.env["SEMANTIC_CHAT_MODEL"] ?? process.env["SEMANTIC_MODEL"] ?? "openai/gpt-4o-mini";
-
+  const modelId = agentModel.modelId;
   console.error(`Workspace: ${workspaceRoot}`);
   console.error(`Model: ${modelId}`);
   console.error(`Cases: ${String(suite.cases.length)}\n`);
-
   let passed = 0;
   let failed = 0;
   let advisory = 0;
-
   for (const testCase of suite.cases) {
     const started = Date.now();
+    let agent;
     let answer;
     let error;
     try {
-      answer = await engine.ask(testCase.question);
+      agent = await runSemanticAgent({
+        ontology,
+        service,
+        question: testCase.question,
+        modelId: agentModel.modelId,
+        apiKey: agentModel.apiKey,
+        ...(agentModel.fallbackModelId !== undefined
+          ? { fallbackModelId: agentModel.fallbackModelId }
+          : {}),
+      });
+      answer = agentAnswerShape(agent, testCase.question);
     } catch (caught) {
-      if (
-        caught instanceof SemanticPlanValidationError ||
-        caught instanceof SemanticChatTranslationError
-      ) {
+      if (caught instanceof SemanticAgentError || caught instanceof SemanticPlanValidationError) {
         error = caught;
       } else {
         error = caught instanceof Error ? caught : new Error(String(caught));
       }
     }
-
-    const failures = assertCase(testCase.expect ?? {}, answer, error);
+    const failures = assertAgentCase(testCase.expect ?? {}, agent, error, testCase.question);
     const ms = Date.now() - started;
     if (failures.length === 0) {
       passed += 1;
       const summary =
-        answer !== undefined
-          ? `route=${answer.route} ${answer.result.mode} ${answer.result.objectId} rows=${String(answer.result.rowCount)} attempts=${String(answer.attempts)}`
+        answer?.result !== undefined
+          ? `route=agent ${answer.result.mode} ${answer.result.objectId} rows=${String(answer.result.rowCount)}`
           : `failed as expected (${error?.name ?? "error"})`;
       console.log(`PASS  ${testCase.id}  ${ms}ms  ${summary}`);
     } else if (testCase.optional === true) {
       advisory += 1;
-      console.log(`WARN  ${testCase.id}  ${ms}ms  (optional / LLM may hallucinate a valid plan)`);
+      console.log(`WARN  ${testCase.id}  ${ms}ms  (optional)`);
       for (const message of failures) {
         console.log(`      - ${message}`);
-      }
-      if (answer !== undefined) {
-        console.log(`      plan: ${JSON.stringify(answer.plan.objectQuery)}`);
       }
     } else {
       failed += 1;
@@ -143,12 +139,8 @@ async function main() {
       for (const message of failures) {
         console.log(`      - ${message}`);
       }
-      if (answer !== undefined) {
-        console.log(`      plan: ${JSON.stringify(answer.plan.objectQuery)}`);
-      }
     }
   }
-
   console.error(
     `\n${String(passed)} passed, ${String(failed)} failed` +
       (advisory > 0 ? `, ${String(advisory)} advisory` : ""),
@@ -157,5 +149,4 @@ async function main() {
     process.exitCode = 1;
   }
 }
-
 await main();

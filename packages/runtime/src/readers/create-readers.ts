@@ -7,7 +7,6 @@ import { createDocumentsDatasetResolver } from "./dataset.js";
 import { createDocumentAccessReader, type VolumeFileReader } from "./document-access.js";
 import { createEntityProfileReader } from "./entity-profile.js";
 import { createGraphTraverseReader } from "./graph-traverse.js";
-
 export type WarehouseReadersOptions = {
   model: SemanticModel;
   ontology: Ontology;
@@ -19,14 +18,12 @@ export type WarehouseReadersOptions = {
   queryObjects: (query: ObjectQuery) => Promise<ObjectQueryResult>;
   readVolumeFile?: VolumeFileReader | undefined;
 };
-
 export type WarehouseReaders = {
   chunkSearch: ReturnType<typeof createChunkSearchReader>;
   entityProfile: ReturnType<typeof createEntityProfileReader>;
   graphTraverse: ReturnType<typeof createGraphTraverseReader>;
   documentAccess?: ReturnType<typeof createDocumentAccessReader> | undefined;
 };
-
 export function createWarehouseReaders(
   options: WarehouseReadersOptions,
 ): WarehouseReaders | undefined {
@@ -41,20 +38,17 @@ export function createWarehouseReaders(
   if (!options.tableCapabilities.documents || !options.tableCapabilities.documentElements) {
     return undefined;
   }
-
   const graphTraverse = createGraphTraverseReader({
     model: options.model,
     ontology: options.ontology,
     executor: options.executor,
     documents,
   });
-
   const chunkSearch = createChunkSearchReader({
     executor: options.executor,
     documents,
     vectorSearchIndex: options.vectorSearchIndex,
   });
-
   const entityProfile = createEntityProfileReader({
     ontology: options.ontology,
     model: options.model,
@@ -65,13 +59,11 @@ export function createWarehouseReaders(
     graphTraverse,
     chunkSearch,
   });
-
   const documentAccess = createDocumentAccessReader({
     executor: options.executor,
     documents,
     readVolumeFile: options.readVolumeFile,
   });
-
   return {
     chunkSearch,
     entityProfile,

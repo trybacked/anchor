@@ -12,30 +12,25 @@ import {
 } from "./execute.js";
 import { createDocumentsDatasetResolver } from "./readers/dataset.js";
 import type { VolumeFileReader } from "./readers/document-access.js";
-
 export type BuildQueryRuntimeFromEnvOptions = {
   ontology: Ontology;
   model: SemanticModel;
   executor: SqlStatementExecutor;
   env: NodeJS.ProcessEnv;
-
   catalog?: string | undefined;
   readVolumeFile?: VolumeFileReader | undefined;
 };
-
 export type BuiltQueryRuntime = {
   runtime: OntologyQueryRuntime;
   warehouseCapabilities: WarehouseTableCapabilities | undefined;
   warehouseUnavailableReason?: string | undefined;
 };
-
 export async function buildQueryRuntimeFromEnv(
   options: BuildQueryRuntimeFromEnvOptions,
 ): Promise<BuiltQueryRuntime> {
   const catalog = options.catalog ?? options.env["BACKED_DATABRICKS_CATALOG"];
   const documentsSchema = options.env["BACKED_DOCUMENTS_SCHEMA"] ?? "docs";
   const vectorSearchIndex = options.env["BACKED_VECTOR_SEARCH_INDEX"];
-
   const documents =
     catalog !== undefined
       ? createDocumentsDatasetResolver({
@@ -44,12 +39,10 @@ export async function buildQueryRuntimeFromEnv(
           documentsSchema,
         })
       : undefined;
-
   let tableCapabilities: WarehouseTableCapabilities | undefined;
   if (documents !== undefined) {
     tableCapabilities = await probeWarehouseTableCapabilities(options.executor, documents);
   }
-
   const runtime = createOntologyQueryRuntime({
     ontology: options.ontology,
     model: options.model,
@@ -60,12 +53,10 @@ export async function buildQueryRuntimeFromEnv(
     tableCapabilities,
     readVolumeFile: options.readVolumeFile,
   });
-
   const unavailableReason =
     tableCapabilities !== undefined && !warehouseReadersAvailable(tableCapabilities)
       ? missingWarehouseTablesMessage(tableCapabilities)
       : undefined;
-
   return {
     runtime,
     warehouseCapabilities: tableCapabilities,

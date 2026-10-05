@@ -6,7 +6,6 @@ import {
   normalizeSemanticQueryPlan,
   buildRowProvenance,
 } from "../../src/index.js";
-
 const ontology: Ontology = {
   metadata: { formatVersion: "1", id: "demo", version: 1 },
   objects: [
@@ -27,7 +26,6 @@ const ontology: Ontology = {
   logic: [],
   actions: [],
 };
-
 describe("semantic-chat engine", () => {
   it("executes a plan deterministically with provenance", async () => {
     const runtime: OntologyQueryRuntime = {
@@ -42,11 +40,7 @@ describe("semantic-chat engine", () => {
     const engine = createSemanticChatEngine({
       ontology,
       queryRuntime: runtime,
-      translate: async () => {
-        throw new Error("should not run");
-      },
     });
-
     const answer = await engine.executePlan({
       objectQuery: {
         entityId: "contract",
@@ -54,7 +48,6 @@ describe("semantic-chat engine", () => {
         limit: 5,
       },
     });
-
     expect(answer.result.rowCount).toBe(1);
     expect(answer.route).toBe("single");
     expect(answer.ontologyVersion).toBe(1);
@@ -67,7 +60,6 @@ describe("semantic-chat engine", () => {
     });
     expect(answer.result.sql).toContain("`backed`.`anac`.`contracts`");
   });
-
   it("normalizes in and is_not_null operators", () => {
     const normalized = normalizeSemanticQueryPlan({
       objectQuery: {
@@ -85,7 +77,6 @@ describe("semantic-chat engine", () => {
       ]),
     );
   });
-
   it("normalizes legacy column and = operator", () => {
     const normalized = normalizeSemanticQueryPlan({
       objectQuery: {
@@ -99,43 +90,6 @@ describe("semantic-chat engine", () => {
       value: "X",
     });
   });
-
-  it("executes search-then-filter template with chunk search and object query", async () => {
-    const runtime: OntologyQueryRuntime = {
-      chunkSearch: async () => [
-        { documentId: "doc-1", text: "manutenzione ascensore" },
-        { documentId: "doc-2", text: "ascensore" },
-      ],
-      queryObjects: async () => ({
-        objectId: "contract",
-        columns: ["cig"],
-        rows: [{ cig: "C1" }],
-        rowCount: 1,
-        sql: "SELECT cig FROM contracts WHERE document_id IN (:doc0, :doc1)",
-      }),
-    };
-    const engine = createSemanticChatEngine({
-      ontology,
-      queryRuntime: runtime,
-      translate: async () => {
-        throw new Error("should not run");
-      },
-    });
-
-    const answer = await engine.executePlan({
-      kind: "template",
-      templateId: "search-then-filter",
-      params: { query: "ascensore", month: "2025-06" },
-    });
-
-    expect(answer.route).toBe("template");
-    expect(answer.templateId).toBe("search-then-filter");
-    expect(answer.steps).toHaveLength(2);
-    expect(answer.steps[0]?.type).toBe("chunkSearch");
-    expect(answer.steps[1]?.documentIds).toEqual(["doc-1", "doc-2"]);
-    expect(answer.result.rowCount).toBe(1);
-  });
-
   it("builds row provenance without document columns", () => {
     const rows = buildRowProvenance({
       ontology,

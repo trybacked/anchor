@@ -2,7 +2,6 @@ import {
   createDatabricksJobsClient,
   type DatabricksProviderConfig,
 } from "@trybacked/provider-databricks";
-
 export async function grantDocsRefreshJobRunIfPresent(
   config: DatabricksProviderConfig,
   catalog: string,

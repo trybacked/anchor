@@ -4,7 +4,6 @@ import {
   validateSemanticModel,
   type SemanticModel,
 } from "@trybacked/core";
-
 export function validateAuthoringModel(
   model: SemanticModel,
   ontologyId: string,

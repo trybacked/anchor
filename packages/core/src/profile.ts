@@ -1,7 +1,5 @@
 import { z } from "zod";
-
 export const NATIVE_FRACTIONAL_TYPE_PATTERN = /^(DOUBLE|FLOAT|DECIMAL)/;
-
 export const PROFILE_TOP_VALUES_LIMIT = 10;
 export const PROFILE_SAMPLE_SIZE = 200;
 export const PROFILE_PATTERN_SAMPLE_SIZE = PROFILE_SAMPLE_SIZE;
@@ -30,7 +28,6 @@ export const TopValueSchema = z.object({
   value: z.string(),
   count: z.number().int().nonnegative(),
 });
-
 export type ForeignKeyCandidate = z.infer<typeof ForeignKeyCandidateSchema>;
 export const EMPTY_FOREIGN_KEY_CANDIDATES: ForeignKeyCandidate[] = [];
 export const ColumnProfileSchema = z
@@ -57,15 +54,9 @@ export const TableProfileSchema = z.object({
   columns: z.array(ColumnProfileSchema),
 });
 export const ProfileReportSchema = z.array(TableProfileSchema);
-
 export type DetectedPatternKind = z.infer<typeof DetectedPatternKindSchema>;
-
 export type DetectedPattern = z.infer<typeof DetectedPatternSchema>;
-
 export type TopValue = z.infer<typeof TopValueSchema>;
-
 export type ColumnProfile = z.infer<typeof ColumnProfileSchema>;
-
 export type TableProfile = z.infer<typeof TableProfileSchema>;
-
 export type ProfileReport = z.infer<typeof ProfileReportSchema>;

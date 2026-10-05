@@ -1,5 +1,4 @@
 import type { DetectedPattern, OntologyPropertyType } from "@trybacked/core";
-
 export function inferPropertyType(
   sqlType: string,
   patterns: DetectedPattern[],
@@ -26,7 +25,6 @@ export function inferPropertyType(
   if (upper.startsWith("JSON") || upper.startsWith("STRUCT")) {
     return "json";
   }
-
   const dominantPattern = patterns.find((pattern) => pattern.matchRatio >= 0.8);
   if (dominantPattern?.kind === "date") {
     return "date";
@@ -34,6 +32,5 @@ export function inferPropertyType(
   if (dominantPattern?.kind === "amount") {
     return "decimal";
   }
-
   return "string";
 }

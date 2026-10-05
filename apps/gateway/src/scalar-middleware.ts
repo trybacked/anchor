@@ -1,9 +1,9 @@
 import { Scalar } from "@scalar/hono-api-reference";
 import type { Context, Next } from "hono";
 import type { GatewayVariables } from "./types.js";
-
-type GatewayContext = Context<{ Variables: GatewayVariables }>;
-
+type GatewayContext = Context<{
+  Variables: GatewayVariables;
+}>;
 export function scalarMiddleware(
   config: () => Record<string, unknown>,
 ): (c: GatewayContext, next: Next) => ReturnType<ReturnType<typeof Scalar>> {

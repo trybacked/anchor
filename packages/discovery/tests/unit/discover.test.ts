@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { discoverFromProfile, inspectProfileReport } from "../../src/index.js";
-
 describe("discoverFromProfile", () => {
   it("proposes objects, properties, and relationships from profile statistics", () => {
     const profile = [
@@ -62,11 +61,9 @@ describe("discoverFromProfile", () => {
         ],
       },
     ];
-
     const inspection = inspectProfileReport(profile);
     expect(inspection.tables).toHaveLength(2);
     expect(inspection.tables[0]?.primaryKeyCandidates).toEqual(["id"]);
-
     const report = discoverFromProfile(profile, { ontologyId: "demo" });
     expect(report.ontology.objects).toHaveLength(2);
     expect(report.ontology.relationships).toHaveLength(1);
@@ -74,7 +71,6 @@ describe("discoverFromProfile", () => {
     expect(report.ontology.relationships[0]?.cardinality).toBe("many_to_one");
     expect(report.ontology.objects[0]?.properties[0]?.role).toBe("primary_key");
   });
-
   it("skips pipeline infrastructure tables", () => {
     const profile = [
       {

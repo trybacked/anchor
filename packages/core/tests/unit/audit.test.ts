@@ -12,7 +12,6 @@ import {
   lifecycleFromModelStatus,
   lifecycleStageIndex,
 } from "../../src/ontology/lifecycle.js";
-
 const proposal: Proposal = {
   runId: "run-1",
   generatedAt: "2026-01-01T00:00:00.000Z",
@@ -33,7 +32,6 @@ const proposal: Proposal = {
     },
   ],
 };
-
 describe("audit event builders", () => {
   it("maps review decisions to audit actions with reviewer and rename detail", () => {
     const events = buildReviewAuditEvents(proposal, {
@@ -51,7 +49,6 @@ describe("audit event builders", () => {
       source: "human",
     });
   });
-
   it("skips answers for unknown questions", () => {
     const events = buildReviewAuditEvents(proposal, {
       runId: "run-1",
@@ -60,7 +57,6 @@ describe("audit event builders", () => {
     });
     expect(events).toEqual([]);
   });
-
   it("builds publish and rollback events with actor", () => {
     const publish = buildPublishAuditEvent({
       runId: "run-1",
@@ -73,7 +69,6 @@ describe("audit event builders", () => {
       detail: { publicationVersion: 3 },
       actor: { id: "steward" },
     });
-
     const rollback = buildRollbackAuditEvent({
       runId: "run-1",
       recordedAt: "2026-01-02T00:00:00.000Z",
@@ -86,7 +81,6 @@ describe("audit event builders", () => {
     });
     expect(rollback.actor).toBeUndefined();
   });
-
   it("merges audit logs sorted by recording time", () => {
     const early = buildPublishAuditEvent({
       runId: "run-1",
@@ -106,14 +100,12 @@ describe("audit event builders", () => {
     expect(merged.events.map((event) => event.action)).toEqual(["publish", "rollback"]);
   });
 });
-
 describe("lifecycle helpers", () => {
   it("maps model statuses to lifecycle stages", () => {
     expect(lifecycleFromModelStatus("proposed")).toBe("proposed");
     expect(lifecycleFromModelStatus("confirmed")).toBe("confirmed");
     expect(lifecycleFromModelStatus("renamed")).toBe("confirmed");
   });
-
   it("orders stages and flags governed ones", () => {
     expect(lifecycleStageIndex("discovered")).toBeLessThan(lifecycleStageIndex("published"));
     expect(isGovernedLifecycleStage("confirmed")).toBe(true);

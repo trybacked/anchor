@@ -2,20 +2,16 @@ import { readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import { verifyPassword } from "./password.js";
-
 const UserRecordSchema = z.object({
   username: z.string().min(1),
   passwordHash: z.string().min(1),
   tenants: z.array(z.string().min(1)).default([]),
   roles: z.record(z.enum(["viewer", "editor", "publisher", "admin"])).optional(),
 });
-
 const UsersFileSchema = z.object({
   users: z.array(UserRecordSchema).min(1),
 });
-
 export type UserRecord = z.infer<typeof UserRecordSchema>;
-
 export function loadUsersFile(path: string): UserRecord[] {
   const raw = readFileSync(path, "utf8");
   const parsed = UsersFileSchema.parse(parseYaml(raw));
@@ -28,7 +24,6 @@ export function loadUsersFile(path: string): UserRecord[] {
   }
   return parsed.users;
 }
-
 export function authenticateUser(
   users: UserRecord[],
   username: string,

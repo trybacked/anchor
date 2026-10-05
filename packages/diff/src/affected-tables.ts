@@ -1,11 +1,9 @@
 import { isPipelineInfraDatasetTable } from "@trybacked/core";
 import type { ProfileReport } from "@trybacked/core";
 import { diffProfile, tableFromProfileChange } from "./profile-diff.js";
-
 function isPipelineInfraTable(tableName: string): boolean {
   return isPipelineInfraDatasetTable(tableName);
 }
-
 export function affectedTablesFromProfileDiff(
   previous: ProfileReport,
   next: ProfileReport,
@@ -40,7 +38,6 @@ export function affectedTablesFromProfileDiff(
   }
   return affected;
 }
-
 export function filterProfileToTables(
   profile: ProfileReport,
   tableNames: Set<string>,

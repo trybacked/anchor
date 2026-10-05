@@ -108,6 +108,9 @@ importers:
       '@trybacked/semantic-chat':
         specifier: workspace:*
         version: link:../../packages/semantic-chat
+      '@trybacked/service':
+        specifier: workspace:*
+        version: link:../../packages/service
       yaml:
         specifier: ^2.7.0
         version: 2.9.0
@@ -334,6 +337,9 @@ importers:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+      '@trybacked/ontology-authoring':
+        specifier: workspace:*
+        version: link:../ontology-authoring
       '@trybacked/runtime':
         specifier: workspace:*
         version: link:../runtime

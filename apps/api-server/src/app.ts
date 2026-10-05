@@ -6,28 +6,33 @@ import { registerPlatformApiRoutes } from "./platform-api-register.js";
 import type { AnchorApiVariables } from "./platform-api-types.js";
 import { withRequestContext } from "./request-context.js";
 import type { TenantRuntimeRegistry } from "./tenant-runtime-registry.js";
-
 export type CreateAnchorApiAppOptions = {
   apiToken?: string | undefined;
-  platform?: { registry: TenantRuntimeRegistry } | undefined;
+  platform?:
+    | {
+        registry: TenantRuntimeRegistry;
+      }
+    | undefined;
 };
-
 export function createAnchorApiApp(
   getService: () => AnchorService,
   options: CreateAnchorApiAppOptions = {},
-): Hono<{ Variables: AnchorApiVariables }> {
-  const app = new Hono<{ Variables: AnchorApiVariables }>();
+): Hono<{
+  Variables: AnchorApiVariables;
+}> {
+  const app = new Hono<{
+    Variables: AnchorApiVariables;
+  }>();
   const auth =
     options.apiToken !== undefined ? createBearerAuthMiddleware(options.apiToken) : undefined;
   const openApiSecured = Boolean(options.apiToken);
   const platformRegistry = options.platform?.registry;
-
-  const v1 = new Hono<{ Variables: AnchorApiVariables }>();
-
+  const v1 = new Hono<{
+    Variables: AnchorApiVariables;
+  }>();
   if (auth !== undefined) {
     v1.use("*", auth);
   }
-
   if (platformRegistry !== undefined) {
     v1.use("*", async (c, next) => {
       const headerUser = c.req.header("X-Backed-User")?.trim();
@@ -50,7 +55,6 @@ export function createAnchorApiApp(
       return;
     });
   }
-
   registerPlatformApiRoutes(app, v1, {
     getService,
     platformRegistry,
@@ -68,8 +72,6 @@ export function createAnchorApiApp(
       return await platformRegistry.resolveFiles(tenantId);
     },
   });
-
   app.route("/v1", v1);
-
   return app;
 }

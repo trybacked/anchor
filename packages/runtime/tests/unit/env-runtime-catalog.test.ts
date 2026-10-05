@@ -1,7 +1,6 @@
 import { semanticModelToOntology, type SemanticModel } from "@trybacked/core";
 import { describe, expect, it } from "vitest";
 import { buildQueryRuntimeFromEnv } from "../../src/env-runtime.js";
-
 const minimalModel: SemanticModel = {
   metadata: {
     formatVersion: "1",
@@ -12,7 +11,6 @@ const minimalModel: SemanticModel = {
   relations: [],
   rules: [],
 };
-
 describe("buildQueryRuntimeFromEnv catalog override", () => {
   it("prefers options.catalog over BACKED_DATABRICKS_CATALOG", async () => {
     const ontology = semanticModelToOntology(minimalModel, { ontologyId: "demo" });

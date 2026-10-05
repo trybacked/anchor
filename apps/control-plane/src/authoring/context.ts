@@ -4,7 +4,6 @@ import type pg from "pg";
 import type { ControlPlaneConfig } from "../config.js";
 import { resolveTenantRole } from "../db/ontology-repositories.js";
 import { getOrganizationByTenantId } from "../db/repositories.js";
-
 export type AuthoringVariables = {
   tenantId: string;
   username: string;
@@ -12,7 +11,6 @@ export type AuthoringVariables = {
   role: TenantRole;
   catalog: string;
 };
-
 function bearerToken(c: Context): string | undefined {
   const header = c.req.header("Authorization");
   if (header === undefined || !header.startsWith("Bearer ")) {
@@ -20,7 +18,6 @@ function bearerToken(c: Context): string | undefined {
   }
   return header.slice("Bearer ".length).trim();
 }
-
 export function requireAuthoringAccess(config: ControlPlaneConfig, pool: pg.Pool) {
   return async (c: Context, next: Next) => {
     const token = bearerToken(c);
@@ -48,7 +45,13 @@ export function requireAuthoringAccess(config: ControlPlaneConfig, pool: pg.Pool
             .filter((role) => role.length > 0)
         : [];
     const role = await resolveTenantRole(pool, tenantId, username, workosRoles);
-    (c as Context<{ Variables: { authoring: AuthoringVariables } }>).set("authoring", {
+    (
+      c as Context<{
+        Variables: {
+          authoring: AuthoringVariables;
+        };
+      }>
+    ).set("authoring", {
       tenantId,
       username,
       workosRoles,
@@ -58,7 +61,6 @@ export function requireAuthoringAccess(config: ControlPlaneConfig, pool: pg.Pool
     return next();
   };
 }
-
 export function requireAuthoringRole(minimum: TenantRole) {
   const rank: Record<TenantRole, number> = {
     viewer: 0,
@@ -74,7 +76,12 @@ export function requireAuthoringRole(minimum: TenantRole) {
     return next();
   };
 }
-
 export function getAuthoring(c: Context): AuthoringVariables {
-  return (c as Context<{ Variables: { authoring: AuthoringVariables } }>).get("authoring");
+  return (
+    c as Context<{
+      Variables: {
+        authoring: AuthoringVariables;
+      };
+    }>
+  ).get("authoring");
 }

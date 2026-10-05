@@ -5,22 +5,25 @@ import {
   type DatabricksProviderConfig,
 } from "@trybacked/provider-databricks";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
-import { createSemanticChatEngine, renderAnswer } from "@trybacked/semantic-chat";
-import { createVercelAiTranslatorFromEnv } from "@trybacked/semantic-chat/adapters/vercel-ai";
+import { attachSemanticAsk, type TenantAiAskCapabilities } from "@trybacked/semantic-chat";
 import {
   createAnchorService,
   type AnchorOperationAuditHook,
   type AnchorService,
-  type SemanticAskResponse,
 } from "@trybacked/service";
-
+export type TenantRuntimeCapabilities = TenantAiAskCapabilities;
 export async function createAnchorServiceForModel(options: {
   model: SemanticModel;
   ontology: Ontology;
   catalog?: string | undefined;
   databricksConfig: DatabricksProviderConfig;
   env: NodeJS.ProcessEnv;
-  audit?: { onOperation?: AnchorOperationAuditHook; auditPrincipal?: string; tenant?: string };
+  tenantCapabilities?: TenantRuntimeCapabilities | undefined;
+  audit?: {
+    onOperation?: AnchorOperationAuditHook;
+    auditPrincipal?: string;
+    tenant?: string;
+  };
 }): Promise<AnchorService> {
   const client = createDatabricksSqlClient(options.databricksConfig);
   const filesClient = createDatabricksFilesClient(options.databricksConfig);
@@ -32,7 +35,6 @@ export async function createAnchorServiceForModel(options: {
     ...(options.catalog !== undefined ? { catalog: options.catalog } : {}),
     readVolumeFile: (path, init) => filesClient.readFile(path, init),
   });
-
   const wrapAudit = options.audit?.onOperation;
   const onOperation =
     wrapAudit !== undefined
@@ -43,7 +45,6 @@ export async function createAnchorServiceForModel(options: {
           });
         }
       : undefined;
-
   const service = createAnchorService({
     model: options.model,
     ontology: options.ontology,
@@ -54,34 +55,14 @@ export async function createAnchorServiceForModel(options: {
       ? { auditPrincipal: options.audit.auditPrincipal }
       : {}),
   });
-
-  const translator = createVercelAiTranslatorFromEnv(options.env);
-  if (translator === undefined) {
-    return service;
-  }
-
-  const engine = createSemanticChatEngine({
+  return attachSemanticAsk(service, {
     ontology: options.ontology,
-    queryRuntime: built.runtime,
-    translate: translator,
-  });
-
-  const baseCapabilities = service.capabilities.bind(service);
-
-  return Object.assign(service, {
-    capabilities: () => ({ ...baseCapabilities(), semanticChat: true }),
-    semanticAsk: async (body: { question: string; evidence?: boolean | undefined }) => {
-      const answer = await engine.ask(body.question, { evidence: body.evidence });
-      const response: SemanticAskResponse = {
-        ...answer,
-        plan: answer.plan,
-        text: renderAnswer(answer),
-      };
-      return response;
-    },
+    env: options.env,
+    tenantCapabilities: options.tenantCapabilities,
+    ...(onOperation !== undefined ? { onOperation } : {}),
+    ...(options.audit?.tenant !== undefined ? { tenant: options.audit.tenant } : {}),
   });
 }
-
 export function modelFromRemoteYaml(modelYaml: string): SemanticModel {
   return parseModelYaml(modelYaml);
 }

@@ -11,11 +11,9 @@ import {
 } from "@trybacked/registry";
 import { databricksAccessToken } from "./databricks-cli.js";
 import type { TenantsRegistry } from "./registry.js";
-
 function normalizeHost(hostUrl: string): string {
   return hostUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
 }
-
 export function databricksConfigFromEnrollment(
   registry: TenantsRegistry,
 ): DatabricksProviderConfig {
@@ -27,17 +25,14 @@ export function databricksConfigFromEnrollment(
     warehouseId: registry.enrollment.warehouse_id,
   };
 }
-
 export function canPublishRemoteOntology(env: NodeJS.ProcessEnv = process.env): boolean {
   return hasDatabricksEnv(env);
 }
-
 export async function loadRemoteCurrent(catalog: string): Promise<RemotePublication | null> {
   const config = databricksConfigFromEnv(process.env);
   const store = createVolumeOntologyStore(createDatabricksBlobStore(config));
   return store.loadCurrent(catalog);
 }
-
 export async function publishOntologyRemote(
   catalog: string,
   record: PublicationRecord,
@@ -48,7 +43,6 @@ export async function publishOntologyRemote(
   const store = createVolumeOntologyStore(createDatabricksBlobStore(resolved));
   await store.publish(catalog, record, modelYaml);
 }
-
 export async function publishOntologyRemoteForRegistry(
   registry: TenantsRegistry,
   catalog: string,

@@ -8,7 +8,6 @@ export function sqlCellString(row: Record<string, unknown>, key: string, fallbac
   }
   return fallback;
 }
-
 export function sqlCellStringFromKeys(
   row: Record<string, unknown>,
   keys: string[],

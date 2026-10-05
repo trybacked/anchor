@@ -1,17 +1,22 @@
 import type { TenantRegistrySource } from "@trybacked/core";
 import type { GatewayConfig } from "./config.js";
 import { assertTenantInRegistry } from "./upstreams.js";
-
 export async function listRegisteredTenantIds(source: TenantRegistrySource): Promise<string[]> {
   const snapshot = await source.load();
   return Object.keys(snapshot.registry.tenants).sort((a, b) => a.localeCompare(b));
 }
-
 export type DocsLanding =
-  | { kind: "tenant"; tenantId: string }
-  | { kind: "platform" }
-  | { kind: "picker"; tenants: string[] };
-
+  | {
+      kind: "tenant";
+      tenantId: string;
+    }
+  | {
+      kind: "platform";
+    }
+  | {
+      kind: "picker";
+      tenants: string[];
+    };
 export async function resolveDocsLanding(
   registrySource: TenantRegistrySource,
   config: GatewayConfig,
@@ -27,7 +32,6 @@ export async function resolveDocsLanding(
   }
   return tenants.length === 0 ? { kind: "platform" } : { kind: "picker", tenants };
 }
-
 export async function canOpenTenantDocs(
   registrySource: TenantRegistrySource,
   tenantId: string,

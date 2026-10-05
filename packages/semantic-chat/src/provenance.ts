@@ -1,8 +1,6 @@
 import type { RowProvenance } from "@trybacked/service";
-
 export type { DocumentProvenance, EntityProvenance, RowProvenance } from "@trybacked/service";
 export { buildQueryExecutionProvenance, buildRowProvenance } from "@trybacked/service";
-
 export async function attachEvidenceToProvenance(options: {
   provenance: RowProvenance[];
   rows: Record<string, unknown>[];
@@ -11,7 +9,10 @@ export async function attachEvidenceToProvenance(options: {
   const enriched: RowProvenance[] = [];
   for (const row of options.provenance) {
     const textValues = Object.values(row.row)
-      .filter((value): value is string => typeof value === "string" && value.length >= 4)
+      .filter(
+        (value): value is string =>
+          typeof value === "string" && value.length >= 4 && !/^\d+$/.test(value.trim()),
+      )
       .slice(0, 2);
     if (textValues.length === 0) {
       enriched.push(row);

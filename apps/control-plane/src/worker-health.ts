@@ -1,6 +1,5 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-
 export function startWorkerHealthServer(): void {
   const port = Number(process.env.PORT ?? process.env.CONTROL_PLANE_PORT ?? 8791);
   const host = process.env.HOST ?? "0.0.0.0";
@@ -11,5 +10,4 @@ export function startWorkerHealthServer(): void {
     console.error(`Provisioner health http://${bindHost}:${String(info.port)}/health/live`);
   });
 }
-
 startWorkerHealthServer();

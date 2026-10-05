@@ -3,23 +3,25 @@ export type ControlPlaneClientOptions = {
   adminToken: string;
   fetchImpl?: typeof fetch | undefined;
 };
-
 export type CreateOrganizationResponse = {
-  organization: { tenant_id: string; status: string };
-  job: { id: string; status: string };
+  organization: {
+    tenant_id: string;
+    status: string;
+  };
+  job: {
+    id: string;
+    status: string;
+  };
 };
-
 export type JobResponse = {
   id: string;
   status: string;
   error: string | null;
   result: Record<string, unknown> | null;
 };
-
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/+$/, "");
 }
-
 export function readControlPlaneClientFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): ControlPlaneClientOptions {
@@ -33,7 +35,6 @@ export function readControlPlaneClientFromEnv(
   }
   return { baseUrl, adminToken };
 }
-
 export async function createOrganizationRemote(
   client: ControlPlaneClientOptions,
   input: {
@@ -63,7 +64,6 @@ export async function createOrganizationRemote(
   }
   return (await response.json()) as CreateOrganizationResponse;
 }
-
 export async function getJobRemote(
   client: ControlPlaneClientOptions,
   jobId: string,
@@ -78,13 +78,15 @@ export async function getJobRemote(
   }
   return (await response.json()) as JobResponse;
 }
-
 export async function waitForJobRemote(
   client: ControlPlaneClientOptions,
   jobId: string,
-  options?: { timeoutMs?: number | undefined; pollMs?: number | undefined },
+  options?: {
+    timeoutMs?: number | undefined;
+    pollMs?: number | undefined;
+  },
 ): Promise<JobResponse> {
-  const timeoutMs = options?.timeoutMs ?? 600_000;
+  const timeoutMs = options?.timeoutMs ?? 600000;
   const pollMs = options?.pollMs ?? 3000;
   const started = Date.now();
   for (;;) {
@@ -98,10 +100,13 @@ export async function waitForJobRemote(
     await new Promise((resolve) => setTimeout(resolve, pollMs));
   }
 }
-
-export async function listOrganizationsRemote(
-  client: ControlPlaneClientOptions,
-): Promise<Array<{ tenant_id: string; status: string; catalog: string }>> {
+export async function listOrganizationsRemote(client: ControlPlaneClientOptions): Promise<
+  Array<{
+    tenant_id: string;
+    status: string;
+    catalog: string;
+  }>
+> {
   const fetchFn = client.fetchImpl ?? fetch;
   const response = await fetchFn(`${normalizeBaseUrl(client.baseUrl)}/v1/organizations`, {
     headers: { Authorization: `Bearer ${client.adminToken}` },
@@ -111,7 +116,11 @@ export async function listOrganizationsRemote(
     throw new Error(`list organizations failed (${String(response.status)}): ${body}`);
   }
   const payload = (await response.json()) as {
-    organizations: Array<{ tenant_id: string; status: string; catalog: string }>;
+    organizations: Array<{
+      tenant_id: string;
+      status: string;
+      catalog: string;
+    }>;
   };
   return payload.organizations;
 }

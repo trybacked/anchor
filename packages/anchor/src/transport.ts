@@ -1,5 +1,4 @@
 import { AnchorApiError } from "@trybacked/service";
-
 export type TransportOptions = {
   fetch?: typeof fetch | undefined;
   headers?: Record<string, string> | undefined;
@@ -7,24 +6,20 @@ export type TransportOptions = {
   accessToken?: (() => string | undefined | Promise<string | undefined>) | undefined;
   onUnauthorized?: ((error: AnchorApiError) => void) | undefined;
 };
-
 export type RequestOptions = {
   body?: unknown;
   headers?: Record<string, string> | undefined;
   formData?: FormData;
 };
-
 export type Transport = {
   requestJson: <T>(method: string, url: string, options?: RequestOptions) => Promise<T>;
   requestText: (method: string, url: string, options?: RequestOptions) => Promise<string>;
   requestRaw: (method: string, url: string, options?: RequestOptions) => Promise<Response>;
   buildUrl: (path: string) => string;
 };
-
 export function createTransport(baseUrl: string, options: TransportOptions): Transport {
   const fetchFn = options.fetch ?? fetch;
   const root = baseUrl.replace(/\/$/, "");
-
   async function authHeaders(): Promise<Record<string, string>> {
     if (options.accessToken === undefined) {
       return {};
@@ -35,7 +30,6 @@ export function createTransport(baseUrl: string, options: TransportOptions): Tra
     }
     return { Authorization: `Bearer ${token}` };
   }
-
   async function handleResponse(response: Response): Promise<Response> {
     if (response.ok) {
       return response;
@@ -52,7 +46,7 @@ export function createTransport(baseUrl: string, options: TransportOptions): Tra
         message = payload.error;
       }
     } catch {
-      // non-JSON error body
+      void 0;
     }
     const error = new AnchorApiError(response.status, message);
     if (
@@ -63,10 +57,8 @@ export function createTransport(baseUrl: string, options: TransportOptions): Tra
     }
     throw error;
   }
-
   return {
     buildUrl: (path) => `${root}${path.startsWith("/") ? path : `/${path}`}`,
-
     requestJson: async <T>(method: string, url: string, req: RequestOptions = {}): Promise<T> => {
       const headers: Record<string, string> = {
         Accept: "application/json",
@@ -92,7 +84,6 @@ export function createTransport(baseUrl: string, options: TransportOptions): Tra
       const payload: unknown = await ok.json();
       return payload as T;
     },
-
     requestRaw: async (method: string, url: string, req: RequestOptions = {}) => {
       const headers: Record<string, string> = {
         ...options.headers,
@@ -114,7 +105,6 @@ export function createTransport(baseUrl: string, options: TransportOptions): Tra
       });
       return handleResponse(response);
     },
-
     requestText: async (method: string, url: string, req: RequestOptions = {}): Promise<string> => {
       const headers: Record<string, string> = {
         Accept: "text/plain",

@@ -1,20 +1,15 @@
 import type { DatabricksProviderConfig } from "./config.js";
-
 export type SqlRow = Record<string, unknown>;
-
 export type SqlParameterValue = string | number | boolean;
-
 export type SqlParameter = {
   name: string;
   value: SqlParameterValue;
 };
-
 type StatementParameter = {
   name: string;
   value: string;
   type: string;
 };
-
 function toStatementParameter(parameter: SqlParameter): StatementParameter {
   const { name, value } = parameter;
   if (typeof value === "boolean") {
@@ -25,35 +20,52 @@ function toStatementParameter(parameter: SqlParameter): StatementParameter {
   }
   return { name, value, type: "STRING" };
 }
-
-type StatementColumn = { name?: string };
-type StatementManifest = { schema?: { columns?: StatementColumn[] } };
-type StatementStatus = { state?: string };
+type StatementColumn = {
+  name?: string;
+};
+type StatementManifest = {
+  schema?: {
+    columns?: StatementColumn[];
+  };
+};
+type StatementError = {
+  error_code?: string;
+  message?: string;
+};
+type StatementStatus = {
+  state?: string;
+  error?: StatementError;
+};
 type StatementResult = {
   status?: StatementStatus;
   manifest?: StatementManifest;
-  result?: { data_array?: unknown[][] };
+  result?: {
+    data_array?: unknown[][];
+  };
 };
-
 type StatementResponse = {
   statement_id?: string;
   status?: StatementStatus;
   manifest?: StatementManifest;
-  result?: { data_array?: unknown[][] };
+  result?: {
+    data_array?: unknown[][];
+  };
 };
-
 export type DatabricksSqlClient = {
   execute: (sql: string, parameters?: SqlParameter[]) => Promise<SqlRow[]>;
 };
-
 const TERMINAL_STATES = new Set(["SUCCEEDED", "FAILED", "CANCELED", "CLOSED"]);
 const POLL_INTERVAL_MS = 500;
 const MAX_POLL_ATTEMPTS = 120;
-
 function apiBaseUrl(host: string): string {
   return `https://${host}`;
 }
-
+function describeFailure(state: string, status: StatementStatus | undefined): string {
+  const detail = [status?.error?.error_code, status?.error?.message]
+    .filter((part): part is string => part !== undefined && part.length > 0)
+    .join(": ");
+  return detail.length > 0 ? `${state}: ${detail}` : state;
+}
 function rowsFromStatement(payload: StatementResponse | StatementResult): SqlRow[] {
   const columns = payload.manifest?.schema?.columns ?? [];
   const names = columns.map((column, index) => column.name ?? `col_${String(index)}`);
@@ -66,7 +78,6 @@ function rowsFromStatement(payload: StatementResponse | StatementResult): SqlRow
     return row;
   });
 }
-
 async function fetchStatement(
   config: DatabricksProviderConfig,
   statementId: string,
@@ -82,7 +93,6 @@ async function fetchStatement(
   }
   return (await response.json()) as StatementResponse;
 }
-
 async function waitForStatement(
   config: DatabricksProviderConfig,
   statementId: string,
@@ -92,7 +102,9 @@ async function waitForStatement(
     const state = payload.status?.state ?? "UNKNOWN";
     if (TERMINAL_STATES.has(state)) {
       if (state !== "SUCCEEDED") {
-        throw new Error(`Databricks statement ${statementId} ended with state ${state}`);
+        throw new Error(
+          `Databricks statement ${statementId} ended with state ${describeFailure(state, payload.status)}`,
+        );
       }
       return payload;
     }
@@ -100,7 +112,6 @@ async function waitForStatement(
   }
   throw new Error(`Databricks statement ${statementId} timed out while polling`);
 }
-
 export function createDatabricksSqlClient(config: DatabricksProviderConfig): DatabricksSqlClient {
   return {
     async execute(sql: string, parameters?: SqlParameter[]): Promise<SqlRow[]> {
@@ -132,7 +143,9 @@ export function createDatabricksSqlClient(config: DatabricksProviderConfig): Dat
         }
         payload = await waitForStatement(config, payload.statement_id);
       } else if (state !== "SUCCEEDED") {
-        throw new Error(`Databricks SQL ended with state ${state}`);
+        throw new Error(
+          `Databricks SQL ended with state ${describeFailure(state, payload.status)}`,
+        );
       }
       return rowsFromStatement(payload);
     },

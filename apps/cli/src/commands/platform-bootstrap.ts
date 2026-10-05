@@ -4,11 +4,9 @@ import { loadTenantsRegistry, saveTenantsRegistry } from "../tenant/registry.js"
 import { findBackedRepoRoot } from "../tenant/repo-root.js";
 import { ensureServicePrincipal, createOboToken } from "../tenant/service-principal.js";
 import { initUi } from "../ui/index.js";
-
 function normalizeHost(hostUrl: string): string {
   return hostUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
 }
-
 export function platformBootstrapCommand(args: string[]): void {
   const ui = initUi();
   if (args.some((arg) => arg === "--help" || arg === "-h")) {
@@ -16,7 +14,6 @@ export function platformBootstrapCommand(args: string[]): void {
     ui.log("  Create or reuse the backed-platform service principal and print deploy env.");
     return;
   }
-
   const repoRoot = findBackedRepoRoot();
   const registryPath = join(repoRoot, "tenants.yaml");
   const registry = loadTenantsRegistry(registryPath);
@@ -27,9 +24,7 @@ export function platformBootstrapCommand(args: string[]): void {
     : `https://${registry.enrollment.host}`;
   const host = normalizeHost(hostUrl);
   const spName = "backed-platform";
-
   const { applicationId } = ensureServicePrincipal(profile, spName);
-
   runDatabricksCliOrThrow(
     [
       "api",
@@ -44,9 +39,7 @@ export function platformBootstrapCommand(args: string[]): void {
     ],
     { profile, label: "warehouse CAN_USE (platform)" },
   );
-
   const token = createOboToken(profile, applicationId, "platform");
-
   const updated = {
     ...registry,
     enrollment: {
@@ -55,7 +48,6 @@ export function platformBootstrapCommand(args: string[]): void {
     },
   };
   saveTenantsRegistry(registryPath, updated);
-
   ui.heading("Platform bootstrap");
   ui.writeSuccess(`Service principal ${spName} → ${applicationId}`);
   ui.blank();
@@ -67,7 +59,6 @@ export function platformBootstrapCommand(args: string[]): void {
   ui.log("GATEWAY_PLATFORM_TOKEN=<same as ANCHOR_API_TOKEN>");
   ui.detail("platform_principal saved in tenants.yaml enrollment");
 }
-
 export async function platformStatusCommand(args: string[]): Promise<void> {
   const ui = initUi();
   if (args.some((arg) => arg === "--help" || arg === "-h")) {
@@ -75,7 +66,6 @@ export async function platformStatusCommand(args: string[]): Promise<void> {
     ui.log("  Remote ontology publication version per tenant catalog.");
     return;
   }
-
   if (args.includes("--remote")) {
     const { listOrganizationsRemote, readControlPlaneClientFromEnv } =
       await import("../tenant/control-plane-client.js");
@@ -92,12 +82,10 @@ export async function platformStatusCommand(args: string[]): Promise<void> {
     }
     return;
   }
-
   const repoRoot = findBackedRepoRoot();
   const registry = loadTenantsRegistry(join(repoRoot, "tenants.yaml"));
   const { canPublishRemoteOntology, loadRemoteCurrent } =
     await import("../tenant/remote-ontology.js");
-
   if (!canPublishRemoteOntology()) {
     ui.writeError(
       "Set BACKED_DATABRICKS_HOST, BACKED_DATABRICKS_TOKEN, BACKED_DATABRICKS_WAREHOUSE_ID.",
@@ -105,7 +93,6 @@ export async function platformStatusCommand(args: string[]): Promise<void> {
     process.exitCode = 1;
     return;
   }
-
   ui.heading("Platform status");
   for (const [tenantId, entry] of Object.entries(registry.tenants)) {
     const remote = await loadRemoteCurrent(entry.catalog);

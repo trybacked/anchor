@@ -1,5 +1,4 @@
 import { docsPathForTenant, GATEWAY_AUTH_PATHS } from "./gateway-paths.js";
-
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -7,7 +6,6 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
-
 export function renderDocsTenantPickerPage(tenantIds: string[]): string {
   const cards = tenantIds
     .map(
@@ -18,7 +16,6 @@ export function renderDocsTenantPickerPage(tenantIds: string[]): string {
         </a>`,
     )
     .join("\n");
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

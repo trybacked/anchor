@@ -1,7 +1,6 @@
 import { databricksConfigFromEnv } from "./config.js";
 import { createDatabricksDatasetProvider } from "./databricks-dataset-provider.js";
 import { createDatabricksSqlClient } from "./sql-client.js";
-
 export {
   DatabricksProviderConfigSchema,
   databricksConfigFromEnv,
@@ -34,7 +33,6 @@ export type {
   DatabricksJobRunState,
   DatabricksJobsClient,
 } from "./jobs-client.js";
-
 export function createDatabricksProviderFromEnv(
   env: Record<string, string | undefined> = process.env,
 ) {

@@ -3,7 +3,6 @@ export type TenantApiContext = {
   url: (v1Suffix: string) => string;
   headers: Record<string, string>;
 };
-
 export function gatewayTenantContext(gatewayOrigin: string, tenantId: string): TenantApiContext {
   const root = gatewayOrigin.replace(/\/$/, "");
   return {
@@ -13,7 +12,6 @@ export function gatewayTenantContext(gatewayOrigin: string, tenantId: string): T
     headers: {},
   };
 }
-
 export function platformTenantContext(
   platformOrigin: string,
   token: string,
