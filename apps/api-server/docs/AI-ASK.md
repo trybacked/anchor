@@ -28,15 +28,22 @@ No per-tenant enable flag by default. To block one tenant: `capabilities.aiAsk: 
 | `AI_GATEWAY_API_KEY`                      | Required for ask                                |
 | `SEMANTIC_CHAT_MODEL` or `SEMANTIC_MODEL` | Gateway model id (default `openai/gpt-4o-mini`) |
 | `SEMANTIC_CHAT_FALLBACK_MODEL`            | Optional second model if the primary call fails |
-| `SEMANTIC_AGENT_MAX_STEPS`                | Tool-step cap (default **8**)                   |
-| `SEMANTIC_AGENT_MAX_SQL_CALLS`            | Warehouse call cap (default **4**)              |
+| `SEMANTIC_ASK_STRATEGY`                   | `plan-first` (default) or `agent`               |
+| `SEMANTIC_AGENT_MAX_STEPS`                | Tool-step cap (default **6**)                   |
+| `SEMANTIC_AGENT_MAX_SQL_CALLS`            | Warehouse call cap (default **2**)              |
 | `SEMANTIC_AGENT_SKIP_REPAIR_AFTER_MS`     | Skip grounding repair if main pass ≥ ms (default **35000**) |
 
-Shared **semantic catalogs** (synonyms, default time dimensions, glossary) are applied automatically from ontology-authoring packs when the agent runs; tenants do not configure this per ask.
+Shared **semantic catalogs** (synonyms, default time dimensions, glossary) are applied automatically from ontology-authoring packs when the ask runs; tenants do not configure this per ask.
+
+## Ask strategy
+
+- **`plan-first`** (default): one structured LLM call produces a governed `ObjectQuery` (or declines). The query is validated against the ontology, executed once, and the answer is **rendered deterministically** from the result (localized labels/numbers, no LLM text generation). Response `route` is **`single`**; `claims` reference the single `query_objects` step (`toolCallId: "plan-query"`).
+- **Fallback to agent**: when the planner declines, produces an invalid plan, or the warehouse rejects the query, the request transparently continues on the agent loop below (`route: "agent"`). Unexpected errors are not swallowed.
+- **`agent`**: skip planning and always run the tool loop.
 
 ## Agent behavior (summary)
 
-- **Route:** always **`agent`** (no template/plan route on HTTP).
+- **Route:** **`agent`** (fallback or forced via `SEMANTIC_ASK_STRATEGY=agent`).
 - **Tools:** same governed surface as MCP — especially `query_objects` with filters, joins, `textSearch`, `groupBy` / aggregations, `orderBy`.
 - **Budget (defaults):** 6 tool steps, 2 warehouse-backed calls, 50 rows max per `query_objects`; after one successful `query_objects`, only `submit_answer` is offered. Document archive tools appear only when the ontology includes a document entity (see `@trybacked/semantic-chat`).
 - **Grounding:** every number in the answer must exist in a tool result; claims are rebound to the matching `toolCallId` when unambiguous. If the same value appears in multiple successful queries, the agent must cite the correct call or grounding fails. One repair pass may run if grounding fails.

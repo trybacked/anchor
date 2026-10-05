@@ -12,6 +12,7 @@ export type AnchorOperationAuditEvent = {
   tenant?: string | undefined;
   question?: string | undefined;
   runId?: string | undefined;
+  route?: string | undefined;
 };
 export type AnchorOperationAuditHook = (event: AnchorOperationAuditEvent) => void;
 export function hashSql(sql: string): string {

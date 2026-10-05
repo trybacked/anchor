@@ -194,11 +194,7 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
     ObjectQueryInputSchema,
     async (input) => {
       const validated = validateObjectQueryAgainstOntology(options.ontology, input);
-      const intentChecked = validateAgentObjectQuery(
-        options.ontology,
-        options.question,
-        validated,
-      );
+      const intentChecked = validateAgentObjectQuery(options.ontology, options.question, validated);
       return unwrapServiceResult(await options.service.objectQuery(intentChecked));
     },
   );

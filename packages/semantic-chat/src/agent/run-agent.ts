@@ -45,7 +45,7 @@ type AgentRun = {
   toolResults: Map<string, unknown>;
   terminal: AgentTerminal | undefined;
 };
-function gatewayModelResolver(apiKey: string): ModelResolver {
+export function createGatewayModelResolver(apiKey: string): ModelResolver {
   const gateway = createGatewayProvider({ apiKey });
   return (modelId) => gateway(modelId);
 }
@@ -240,7 +240,7 @@ export async function runSemanticAgent(
     ontology,
     service: options.service,
     question: options.question,
-    resolveModel: options.resolveModel ?? gatewayModelResolver(options.apiKey),
+    resolveModel: options.resolveModel ?? createGatewayModelResolver(options.apiKey),
     steps: [],
     toolResults: new Map(),
     terminal: undefined,
