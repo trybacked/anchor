@@ -7,6 +7,9 @@ import {
   RuleSchema,
   SemanticModelSchema,
 } from "./model.js";
+import { DiscoveryReportSchema } from "./ontology/discovery-report.js";
+import { ProposalSchema } from "./proposal.js";
+import { ReviewSchema } from "./review.js";
 import {
   EntitySemanticsSchema,
   GlossaryTermSchema,
@@ -219,4 +222,56 @@ export const DerivedDatasetSchema = z.object({
 export const CreateDerivedDatasetBodySchema = z.object({
   name: z.string().regex(/^[a-z][a-z0-9_]*$/),
   sql: z.string().min(1).max(32000),
+});
+
+export const DiscoverDocsProposalBodySchema = z
+  .object({
+    reviewConfidenceThreshold: z.number().min(0).max(1).optional(),
+    tables: z.array(z.string().min(1)).max(20).optional(),
+    /** When true (default), reject propose if tables exist but all have zero rows. */
+    requireNonEmptyTables: z.boolean().optional(),
+    /** BCP-47 hint for LLM labels (e.g. `it`). Used by propose-ai only. */
+    locale: z.string().min(2).max(8).optional(),
+  })
+  .default({});
+export const DiscoveryRunKindSchema = z.enum(["docs_warehouse", "docs_warehouse_ai"]);
+export const DiscoveryRunSummarySchema = z.object({
+  runId: z.string().min(1),
+  kind: DiscoveryRunKindSchema,
+  catalog: z.string().min(1),
+  schema: z.string().min(1),
+  missingTables: z.array(z.string()),
+  emptyTables: z.array(z.string()),
+  entityCount: z.number().int().nonnegative(),
+  relationCount: z.number().int().nonnegative(),
+  questionCount: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  createdBy: z.string().min(1),
+  appliedAt: z.string().datetime().nullable(),
+  appliedRevision: z.number().int().nonnegative().nullable(),
+});
+export const DiscoverDocsProposalResponseSchema = DiscoveryRunSummarySchema.extend({
+  profileTableCount: z.number().int().nonnegative(),
+  discovery: DiscoveryReportSchema,
+  proposal: ProposalSchema,
+});
+export const DiscoveryRunDetailSchema = DiscoverDocsProposalResponseSchema;
+export const ApplyDiscoveryReviewBodySchema = ReviewSchema.extend({
+  apply: z.boolean().optional(),
+  reviewConfidenceThreshold: z.number().min(0).max(1).optional(),
+  includeRelations: z.boolean().optional(),
+  /** When true with apply, every proposal question must have an answer. Default: true when apply is true. */
+  requireCompleteReview: z.boolean().optional(),
+  /** Allow merging into draft again after a prior apply. */
+  allowReapply: z.boolean().optional(),
+});
+export const ApplyDiscoveryReviewResponseSchema = z.object({
+  runId: z.string().min(1),
+  staleAnswerCount: z.number().int().nonnegative(),
+  unansweredQuestionIds: z.array(z.string()).optional(),
+  commands: z.array(AuthoringCommandSchema),
+  applied: z.boolean(),
+  reason: z.string().optional(),
+  revision: z.number().int().nonnegative().optional(),
+  validation: ApplyCommandsResponseSchema.shape.validation.optional(),
 });

@@ -120,3 +120,25 @@ CREATE TABLE IF NOT EXISTS derived_datasets (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (tenant_id, name)
 );
+
+CREATE TABLE IF NOT EXISTS ontology_discovery_runs (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  catalog TEXT NOT NULL,
+  schema_name TEXT NOT NULL,
+  discovery JSONB NOT NULL,
+  proposal JSONB NOT NULL,
+  missing_tables JSONB NOT NULL DEFAULT '[]'::jsonb,
+  empty_tables JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_by TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  applied_at TIMESTAMPTZ,
+  applied_revision INT
+);
+
+CREATE INDEX IF NOT EXISTS ontology_discovery_runs_tenant_idx
+  ON ontology_discovery_runs (tenant_id, created_at DESC);
+
+ALTER TABLE ontology_discovery_runs
+  ADD COLUMN IF NOT EXISTS empty_tables JSONB NOT NULL DEFAULT '[]'::jsonb;

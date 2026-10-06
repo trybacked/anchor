@@ -36,4 +36,10 @@ export {
   WAREHOUSE_READER_TOOL_DEFINITIONS,
 } from "./tools.js";
 export type { SemanticAskHandler, ToolContext, ToolDefinition } from "./tools.js";
+export {
+  CONTROL_PLANE_DISCOVERY_TOOL_DEFINITIONS,
+  CONTROL_PLANE_DISCOVERY_TOOL_NAMES,
+  type ControlPlaneDiscoveryClient,
+  type ControlPlaneDiscoveryToolContext,
+} from "./control-plane-discovery-tools.js";
 export { entityNotFoundMessage } from "./errors.js";

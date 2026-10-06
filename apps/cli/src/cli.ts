@@ -5,6 +5,9 @@ import {
   dispatchAnchorCommand,
   UnknownAnchorCommandError,
 } from "./anchor-commands.js";
+import { ontologyDiscoverDocsAiCommand } from "./commands/ontology-discover-docs-ai.js";
+import { ontologyDiscoverDocsCommand } from "./commands/ontology-discover-docs.js";
+import { ontologyDiscoveryReviewCommand } from "./commands/ontology-discovery-review.js";
 import { ontologyImportCommand } from "./commands/ontology-import.js";
 import { platformBootstrapCommand, platformStatusCommand } from "./commands/platform-bootstrap.js";
 import { tenantCreateCommand } from "./commands/tenant-create.js";
@@ -74,7 +77,21 @@ async function main(): Promise<void> {
       await ontologyImportCommand(rest);
       return;
     }
-    getUi().writeError("Usage: backed ontology import <tenantId> <model.yaml>");
+    if (second === "discover-docs") {
+      await ontologyDiscoverDocsCommand(rest);
+      return;
+    }
+    if (second === "discover-docs-ai") {
+      await ontologyDiscoverDocsAiCommand(rest);
+      return;
+    }
+    if (second === "discovery-review") {
+      await ontologyDiscoveryReviewCommand(rest);
+      return;
+    }
+    getUi().writeError(
+      "Usage: backed ontology import | discover-docs | discover-docs-ai | discovery-review … (see backed ontology --help)",
+    );
     process.exitCode = 1;
     return;
   }

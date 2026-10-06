@@ -266,7 +266,7 @@ export function renderPlanAnswer(options: {
     }
     claims.push({ text: formattedCount, toolCallId });
   }
-  if (criteria !== undefined) lines.push("", `_${criteria}_`);
+  if (criteria !== undefined) lines.push("", criteria);
   if (empty)
     lines.push(...valueHints(ontology, query, locale, messages).map((hint) => `\n${hint}`));
   return { text: lines.join("\n"), claims };

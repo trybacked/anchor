@@ -136,9 +136,15 @@ importers:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@trybacked/discovery':
+        specifier: workspace:*
+        version: link:../../packages/discovery
       '@trybacked/ontology-authoring':
         specifier: workspace:*
         version: link:../../packages/ontology-authoring
+      '@trybacked/ontology-extract':
+        specifier: workspace:*
+        version: link:../../packages/ontology-extract
       '@trybacked/platform-admin':
         specifier: workspace:*
         version: link:../../packages/platform-admin
@@ -271,6 +277,31 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
+
+  packages/ontology-extract:
+    dependencies:
+      '@ai-sdk/gateway':
+        specifier: ^4
+        version: 4.0.100(zod@3.25.76)
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+      '@trybacked/discovery':
+        specifier: workspace:*
+        version: link:../discovery
+      ai:
+        specifier: ^7
+        version: 7.0.122(zod@3.25.76)
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@trybacked/provider-databricks':
+        specifier: workspace:*
+        version: link:../provider-databricks
       vitest:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { forwardToPlatform, tenantPathFromRequest } from "../../src/proxy.js";
+import { forwardToControlPlane, forwardToPlatform, tenantPathFromRequest } from "../../src/proxy.js";
 import type { GatewayConfig } from "../../src/config.js";
 const platformConfig: GatewayConfig = {
   host: "127.0.0.1",
@@ -18,6 +18,37 @@ describe("proxy", () => {
   it("rewrites path for tenant prefix", () => {
     expect(tenantPathFromRequest("/t/gerace/v1/model/entities", "gerace")).toBe(
       "/v1/model/entities",
+    );
+  });
+  it("forwards authoring discovery propose-ai to control-plane tenant path", async () => {
+    let seenUrl: string | null = null;
+    const fetchImpl: typeof fetch = async (input) => {
+      seenUrl = String(input);
+      return new Response("{}", { status: 401, headers: { "content-type": "application/json" } });
+    };
+    const cpConfig: GatewayConfig = {
+      ...platformConfig,
+      controlPlaneUrl: "http://127.0.0.1:8791",
+      controlPlaneInternalToken: "cp-internal",
+    };
+    const request = new Request(
+      "http://gateway/t/gerace/v1/authoring/discovery/docs/propose-ai",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale: "it" }),
+      },
+    );
+    await forwardToControlPlane(
+      cpConfig,
+      "gerace",
+      { username: "demo" },
+      request,
+      "/v1/tenants/gerace/authoring/discovery/docs/propose-ai",
+      { fetchImpl },
+    );
+    expect(seenUrl).toBe(
+      "http://127.0.0.1:8791/v1/tenants/gerace/authoring/discovery/docs/propose-ai",
     );
   });
   it("forwards with bearer, user, and tenant headers", async () => {

@@ -38,6 +38,7 @@ import {
   type AuthoringVariables,
 } from "./context.js";
 import { ensureOntologyDraft, importModelContent, validateDraftModel } from "./draft-service.js";
+import { registerDiscoveryRoutes } from "./discovery-routes.js";
 import { sqlCellString } from "./sql-row.js";
 type AuthoringEnv = {
   Variables: {
@@ -500,4 +501,5 @@ export function registerAuthoringRoutes(
     });
   });
   app.route(base, authoring);
+  registerDiscoveryRoutes(app, config, pool);
 }

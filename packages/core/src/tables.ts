@@ -6,6 +6,16 @@ export const DOCUMENT_MENTIONS_TABLE = "document_mentions" as const;
 export const DOCUMENT_ENTITIES_TABLE = "document_entities" as const;
 export const DOCUMENT_FACTS_TABLE = "document_facts" as const;
 export const ENTITY_PROFILES_TABLE = "entity_profiles" as const;
+/** Curated docs tables proposed for ontology discovery after PDF ingest (docs_refresh). */
+export const DOCS_ONTOLOGY_DISCOVERY_TABLE_NAMES = [
+  DOCUMENTS_TABLE,
+  "document_pages",
+  DOCUMENT_ELEMENTS_TABLE,
+  DOCUMENT_ENTITIES_TABLE,
+  ENTITY_PROFILES_TABLE,
+] as const;
+export type DocsOntologyDiscoveryTableName =
+  (typeof DOCS_ONTOLOGY_DISCOVERY_TABLE_NAMES)[number];
 export const DOC_TYPE_TABLE_PREFIX = "doc_" as const;
 export const DOC_TYPE_UNKNOWN_SLUG = "unknown" as const;
 export const PIPELINE_INFRA_DATASET_TABLE_NAMES = [

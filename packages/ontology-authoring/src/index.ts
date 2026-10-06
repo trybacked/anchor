@@ -13,3 +13,13 @@ export {
   ONTOLOGY_PACKS,
   SHARED_SEMANTIC_CATALOGS,
 } from "./packs/index.js";
+export {
+  commandsFromReviewedDiscovery,
+  type CommandsFromReviewedDiscoveryOptions,
+} from "./proposal-to-commands.js";
+export {
+  validateDiscoveryReview,
+  chunkAuthoringCommands,
+  AUTHORING_COMMAND_BATCH_SIZE,
+  type DiscoveryReviewValidation,
+} from "./discovery-review.js";

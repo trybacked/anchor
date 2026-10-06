@@ -21,10 +21,12 @@ export {
   DOC_TYPE_UNKNOWN_SLUG,
   PIPELINE_INFRA_DATASET_TABLE_NAMES,
   PIPELINE_MATERIALIZED_DATASET_TABLE_NAMES,
+  DOCS_ONTOLOGY_DISCOVERY_TABLE_NAMES,
   isDocumentTypeMaterializedTable,
   isPipelineInfraDatasetTable,
   createPipelineMaterializedDatasetTableSet,
 } from "./tables.js";
+export type { DocsOntologyDiscoveryTableName } from "./tables.js";
 export {
   NATIVE_FRACTIONAL_TYPE_PATTERN,
   PROFILE_TOP_VALUES_LIMIT,
@@ -325,6 +327,12 @@ export {
   WarehouseColumnSchema,
   DerivedDatasetSchema,
   CreateDerivedDatasetBodySchema,
+  DiscoverDocsProposalBodySchema,
+  DiscoverDocsProposalResponseSchema,
+  DiscoveryRunSummarySchema,
+  DiscoveryRunDetailSchema,
+  ApplyDiscoveryReviewBodySchema,
+  ApplyDiscoveryReviewResponseSchema,
   type TenantRole,
   type AuthoringCommand,
   type OntologyPackSummary,

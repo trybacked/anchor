@@ -58,11 +58,18 @@ function discoverProperty(table: TableProfile, column: ColumnProfile): OntologyP
     ...(bestFk !== undefined ? { referenceObjectId: bestFk.targetTable } : {}),
   };
 }
+function sourceDatasetId(table: TableProfile): string {
+  if (table.sourceFile.includes(".") && table.sourceFile !== table.table) {
+    return table.sourceFile;
+  }
+  return table.table;
+}
 function discoverObject(table: TableProfile): OntologyObject {
+  const datasetId = sourceDatasetId(table);
   return {
     id: table.table,
     name: humanizeIdentifier(table.table),
-    sourceDatasetId: table.table,
+    sourceDatasetId: datasetId,
     properties: table.columns.map((column) => discoverProperty(table, column)),
     confidence: 0.85,
     provenance: {
@@ -113,12 +120,17 @@ function discoverRelationship(
 export type DiscoverFromProfileOptions = {
   ontologyId: string;
   version?: number;
+  /** Pipeline infra tables (e.g. document_entities) to include when explicitly discovered. */
+  includeInfraTables?: ReadonlySet<string>;
 };
 export function discoverFromProfile(
   profile: ProfileReport,
   options: DiscoverFromProfileOptions,
 ): DiscoveryReport {
-  const eligible = profile.filter((table) => !INFRA_TABLES.has(table.table));
+  const forceInclude = options.includeInfraTables ?? new Set<string>();
+  const eligible = profile.filter(
+    (table) => forceInclude.has(table.table) || !INFRA_TABLES.has(table.table),
+  );
   const objects = eligible.map(discoverObject);
   const relationships: OntologyRelationship[] = [];
   for (const table of eligible) {
