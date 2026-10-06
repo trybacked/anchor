@@ -1,7 +1,7 @@
 import { isServiceErrorResult, type AnchorService } from "@trybacked/service";
 import { generateText } from "ai";
 import { randomUUID } from "node:crypto";
-import type { SemanticAskResponse } from "@trybacked/service";
+import type { SemanticAskResponse, SemanticAskSource } from "@trybacked/service";
 import {
   normalizeChunkText,
   primaryDocumentSearchPhrase,
@@ -16,11 +16,22 @@ const MAX_EXCERPT_PER_BLOCK = 2_400;
 const CHUNK_SEARCH_LIMIT = 18;
 
 type EvidenceBlock = {
+  documentId?: string | undefined;
   filename: string;
   folder: string | null;
   page: number | null;
   text: string;
 };
+
+type DocumentEvidenceGroup = {
+  documentId?: string | undefined;
+  filename: string;
+  folder: string | null;
+  page: number | null;
+  excerpt: string;
+};
+
+const SOURCE_SNIPPET_MAX_CHARS = 180;
 
 function readString(row: Record<string, unknown>, key: string): string | undefined {
   const value = row[key];
@@ -32,12 +43,71 @@ function rowToEvidenceBlock(record: Record<string, unknown>): EvidenceBlock | un
   if (text.length < 24) {
     return undefined;
   }
+  const documentId = readString(record, "documentId") ?? readString(record, "document_id");
   return {
+    ...(documentId !== undefined ? { documentId } : {}),
     filename: readString(record, "filename") ?? "documento",
     folder: readString(record, "folder") ?? null,
     page: typeof record.page === "number" ? record.page : null,
     text,
   };
+}
+
+function excerptForSource(text: string): string {
+  const plain = text.replace(/\s+/g, " ").trim();
+  if (plain.length <= SOURCE_SNIPPET_MAX_CHARS) {
+    return plain;
+  }
+  return `${plain.slice(0, SOURCE_SNIPPET_MAX_CHARS - 1)}…`;
+}
+
+export function groupEvidenceByDocument(blocks: readonly EvidenceBlock[]): DocumentEvidenceGroup[] {
+  const order: string[] = [];
+  const map = new Map<string, DocumentEvidenceGroup>();
+  for (const block of blocks) {
+    const key = block.documentId ?? `${block.folder ?? ""}:${block.filename}`;
+    const existing = map.get(key);
+    if (existing === undefined) {
+      map.set(key, {
+        ...(block.documentId !== undefined ? { documentId: block.documentId } : {}),
+        filename: block.filename,
+        folder: block.folder,
+        page: block.page,
+        excerpt: block.text,
+      });
+      order.push(key);
+      continue;
+    }
+    if (block.text.length > existing.excerpt.length) {
+      existing.excerpt = block.text;
+      if (block.page !== null) {
+        existing.page = block.page;
+      }
+    }
+  }
+  return order.flatMap((key) => {
+    const group = map.get(key);
+    return group !== undefined ? [group] : [];
+  });
+}
+
+export function formatDocumentSourceTitle(group: DocumentEvidenceGroup): string {
+  if (group.folder !== null && group.folder.length > 0) {
+    return `${group.filename} · ${group.folder}`;
+  }
+  return group.filename;
+}
+
+export function buildDocumentSourcesFromGroups(
+  groups: readonly DocumentEvidenceGroup[],
+): SemanticAskSource[] {
+  return groups.map((group) => ({
+    title: formatDocumentSourceTitle(group),
+    ...(group.documentId !== undefined ? { documentId: group.documentId } : {}),
+    ...(group.folder !== null ? { folder: group.folder } : {}),
+    ...(group.page !== null ? { page: group.page } : { page: 1 }),
+    snippet: excerptForSource(group.excerpt),
+  }));
 }
 
 export async function collectDocumentEvidence(
@@ -104,18 +174,18 @@ export function totalEvidenceChars(blocks: readonly EvidenceBlock[]): number {
   return blocks.reduce((sum, block) => sum + block.text.length, 0);
 }
 
-function buildEvidenceContext(blocks: readonly EvidenceBlock[]): string {
+function buildEvidenceContext(groups: readonly DocumentEvidenceGroup[]): string {
   const lines: string[] = [];
   let used = 0;
-  for (const [index, block] of blocks.entries()) {
-    const headerParts = [`[${String(index + 1)}] ${block.filename}`];
-    if (block.folder !== null) {
-      headerParts.push(`cartella ${block.folder}`);
+  for (const [index, group] of groups.entries()) {
+    const headerParts = [`[${String(index + 1)}] ${group.filename}`];
+    if (group.folder !== null) {
+      headerParts.push(`cartella ${group.folder}`);
     }
-    if (block.page !== null) {
-      headerParts.push(`pag. ${String(block.page)}`);
+    if (group.page !== null) {
+      headerParts.push(`pag. ${String(group.page)}`);
     }
-    const excerpt = block.text.slice(0, MAX_EXCERPT_PER_BLOCK);
+    const excerpt = group.excerpt.slice(0, MAX_EXCERPT_PER_BLOCK);
     const chunk = `${headerParts.join(" · ")}\n${excerpt}`;
     if (used + chunk.length > MAX_CONTEXT_CHARS) {
       break;
@@ -131,28 +201,30 @@ function synthesisSystemPrompt(locale: string | undefined): string {
   if (italian) {
     return [
       "Sei un assistente che risponde solo usando gli estratti documentali forniti.",
-      "Scrivi in italiano, tono professionale e conciso (2–6 frasi o brevi elenchi).",
-      "Estrai fatti concreti (titoli, ruoli, esperienze, date) quando compaiono nel testo.",
-      "Cita i file sorgente tra parentesi con il nome file.",
+      "Scrivi in italiano, tono professionale e conciso (2–6 frasi o brevi elenchi puntati se utile).",
+      "Estrai fatti concreti (titoli, ruoli, esperienze, date, contatti) quando compaiono nel testo.",
+      "Per ogni fatto supportato da un estratto usa un riferimento numerico [1], [2], … come nell’intestazione degli estratti (un numero = un documento).",
+      "Non scrivere nomi file, estensioni .pdf o elenchi di documenti nel corpo della risposta.",
       "Non dire che i dettagli mancano se gli estratti li contengono. Non inventare oltre il testo.",
     ].join(" ");
   }
   return [
     "You answer only from the supplied document excerpts.",
     "Be concise and professional; extract concrete facts when present.",
-    "Cite source filenames in parentheses. Do not invent beyond the excerpts.",
+    "Cite facts with numeric references [1], [2], … matching excerpt headers. Do not list filenames in the answer body.",
+    "Do not invent beyond the excerpts.",
   ].join(" ");
 }
 
 export async function synthesizeAnswerFromDocumentEvidence(options: {
   question: string;
   locale?: string | undefined;
-  blocks: readonly EvidenceBlock[];
+  groups: readonly DocumentEvidenceGroup[];
   profileSection?: string | undefined;
   resolveModel: ModelResolver;
   modelId: string;
 }): Promise<string> {
-  const context = buildEvidenceContext(options.blocks);
+  const context = buildEvidenceContext(options.groups);
   const generation = await generateText({
     model: options.resolveModel(options.modelId),
     system: synthesisSystemPrompt(options.locale),
@@ -189,10 +261,12 @@ export async function tryDocumentSynthesisAnswer(options: {
   if (totalEvidenceChars(blocks) < MIN_EVIDENCE_CHARS && profileSection === undefined) {
     return { kind: "skip", reason: "insufficient_evidence" };
   }
+  const groups = groupEvidenceByDocument(blocks);
+  const sources = buildDocumentSourcesFromGroups(groups);
   const answer = await synthesizeAnswerFromDocumentEvidence({
     question: options.question,
     locale: options.locale,
-    blocks,
+    groups,
     profileSection,
     resolveModel: options.resolveModel,
     modelId: options.modelId,
@@ -212,6 +286,7 @@ export async function tryDocumentSynthesisAnswer(options: {
       ontologyVersion: options.ontologyVersion,
       attempts: 1,
       claims: [],
+      sources: sources.length > 0 ? sources : undefined,
       assumptions: [],
       followUps: [],
       agentSteps: [

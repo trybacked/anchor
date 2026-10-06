@@ -80,6 +80,15 @@ export type SemanticAskResult = {
   mode: "rows" | "count";
   sql: string;
 };
+/** Document or web source surfaced to clients (Chiedi renders citations and a source list). */
+export type SemanticAskSource = {
+  title: string;
+  url?: string | undefined;
+  snippet?: string | undefined;
+  documentId?: string | undefined;
+  page?: number | undefined;
+  folder?: string | undefined;
+};
 export type SemanticAskResponse = {
   text: string;
   answer?: string | undefined;
@@ -100,6 +109,7 @@ export type SemanticAskResponse = {
   agentSteps?: SemanticAgentStepRecord[] | undefined;
   usage?: SemanticAgentUsage | undefined;
   clarification?: SemanticClarificationResponse | undefined;
+  sources?: SemanticAskSource[] | undefined;
 };
 export type GetDefinitionResponse = DefinitionResult;
 export type GetDocumentResponse = {

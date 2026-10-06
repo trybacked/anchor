@@ -118,6 +118,7 @@ export {
   type ListRelationsResponse,
   type ObjectQueryResponse,
   type SemanticAskResponse,
+  type SemanticAskSource,
   type SemanticAskResult,
   type SemanticAskStep,
   type SemanticAnswerClaim,
