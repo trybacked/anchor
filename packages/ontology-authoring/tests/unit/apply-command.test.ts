@@ -31,29 +31,33 @@ describe("applyCommand", () => {
     const removed = applyCommand(withEntity, { type: "removeEntity", entityId: "item" });
     expect(removed.entities).toHaveLength(0);
   });
-  it("applies applyPack for docs", () => {
+  it("applies applyPack for cov", () => {
     const result = applyCommands(emptySemanticModel("pack-test"), [
-      { type: "applyPack", packId: "docs", catalog: "backed_demo" },
+      { type: "applyPack", packId: "cov", catalog: "backed_demo" },
     ]);
     expect(result.entities.map((entity) => entity.id).sort()).toEqual([
-      "document",
-      "document_element",
+      "organization",
       "person",
+      "person_organization_affiliation",
+      "private_organization",
+      "public_organization",
+      "support_unit",
     ]);
-    expect(result.relations).toHaveLength(1);
+    expect(result.relations).toHaveLength(2);
+    expect(result.semantics?.glossary?.some((term) => term.id === "cov-ap-it")).toBe(true);
   });
   it("sets property semantics", () => {
     const withPack = applyCommands(emptySemanticModel("sem-test"), [
-      { type: "applyPack", packId: "docs", catalog: "backed_demo" },
+      { type: "applyPack", packId: "cov", catalog: "backed_demo" },
     ]);
     const updated = applyCommand(withPack, {
       type: "setPropertySemantics",
-      entityId: "document",
-      columnName: "filename",
-      semantics: { description: "Original file name" },
+      entityId: "person",
+      columnName: "name",
+      semantics: { description: "Nome visualizzato" },
     });
-    const document = updated.entities.find((entity) => entity.id === "document");
-    const property = document?.properties.find((entry) => entry.columnName === "filename");
-    expect(property?.semantics?.description).toBe("Original file name");
+    const person = updated.entities.find((entity) => entity.id === "person");
+    const property = person?.properties.find((entry) => entry.columnName === "name");
+    expect(property?.semantics?.description).toBe("Nome visualizzato");
   });
 });

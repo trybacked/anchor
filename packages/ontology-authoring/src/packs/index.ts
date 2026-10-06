@@ -1,22 +1,22 @@
 import type { AuthoringCommand, OntologyPackSummary, SemanticCatalog } from "@trybacked/core";
 import { AuthoringCommandError } from "../apply-command.js";
-import { docsPackCommands } from "./docs.js";
+import { covPackCommands } from "./cov.js";
 
 export const SHARED_SEMANTIC_CATALOGS: readonly SemanticCatalog[] = [];
 
 export const ONTOLOGY_PACKS: OntologyPackSummary[] = [
   {
-    id: "docs",
-    name: "Document archive",
+    id: "cov",
+    name: "COV-AP_IT + Person",
     description:
-      "document, document_element, person, and document_has_elements on tenant docs schema",
+      "Organizzazione, PublicOrganization, PrivateOrganization, SupportUnit (schema.gov.it COV) e Person",
   },
 ];
 
 export function commandsForPack(packId: string, catalog: string): AuthoringCommand[] {
   switch (packId) {
-    case "docs":
-      return docsPackCommands(catalog);
+    case "cov":
+      return covPackCommands(catalog);
     default:
       throw new AuthoringCommandError(`Unknown pack "${packId}"`);
   }
