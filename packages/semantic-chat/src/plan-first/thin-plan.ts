@@ -16,6 +16,15 @@ function stringCellChars(rows: Record<string, unknown>[]): number {
   return total;
 }
 
+/** Rendered plan-first listing with no substantive body (e.g. a single name). */
+export function isSparseListingProse(prose: string): boolean {
+  const trimmed = prose.trim();
+  if (!/^(Ecco|Here are|Ci sono|There are) \*\*\d+\*\*/i.test(trimmed)) {
+    return false;
+  }
+  return trimmed.length < 480;
+}
+
 /** Warehouse listing with almost no field detail — document excerpts may answer better. */
 export function isThinWarehouseListing(result: PlanFirstResult): boolean {
   if (result.result.mode === "count") {

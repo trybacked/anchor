@@ -27,7 +27,7 @@ import {
 } from "./document-intent.js";
 import { tryDocumentSynthesisAnswer } from "./document-synthesis.js";
 import { renderDocumentSearchAnswer } from "./document-search-answer.js";
-import { isThinWarehouseListing } from "./plan-first/thin-plan.js";
+import { isSparseListingProse, isThinWarehouseListing } from "./plan-first/thin-plan.js";
 import { isServiceErrorResult } from "@trybacked/service";
 import { randomUUID } from "node:crypto";
 import { tenantAiAskEnabled, type TenantAiAskCapabilities } from "./tenant-ai-ask.js";
@@ -280,7 +280,10 @@ export function attachSemanticAsk(
         model: resolveModel(modelId),
       });
       if (outcome.kind === "answered") {
-        if (!isThinWarehouseListing(outcome.result)) {
+        const sparseListing =
+          isThinWarehouseListing(outcome.result) ||
+          isSparseListingProse(outcome.result.answer);
+        if (!sparseListing) {
           return planFirstResponse(context.question, ontologyVersion, outcome.result);
         }
         const synthesized = await tryDocumentSynthesis(context);

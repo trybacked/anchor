@@ -66,13 +66,17 @@ const MIN_SINGLE_TOKEN_QUERY_LENGTH = 5;
 
 function addNameQueryVariants(queries: Set<string>, tokens: string[]): void {
   if (tokens.length === 2) {
-    queries.add(`${tokens[0]} ${tokens[1]}`);
-    queries.add(`${tokens[1]} ${tokens[0]}`);
-    if (tokens[1].length >= MIN_SINGLE_TOKEN_QUERY_LENGTH) {
-      queries.add(tokens[1]);
+    const [first, second] = tokens;
+    if (first === undefined || second === undefined) {
+      return;
     }
-    if (tokens[0].length >= MIN_SINGLE_TOKEN_QUERY_LENGTH) {
-      queries.add(tokens[0]);
+    queries.add(`${first} ${second}`);
+    queries.add(`${second} ${first}`);
+    if (second.length >= MIN_SINGLE_TOKEN_QUERY_LENGTH) {
+      queries.add(second);
+    }
+    if (first.length >= MIN_SINGLE_TOKEN_QUERY_LENGTH) {
+      queries.add(first);
     }
     return;
   }
