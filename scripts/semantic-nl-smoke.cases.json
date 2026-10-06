@@ -1,143 +1,33 @@
 {
   "tenant": "gerace",
-  "baselineNotes": "Counts use ingest month source_year_month=2025-06 on contract (≈121416 on shared ANAC).",
+  "baselineNotes": "Document archive on backed_gerace.docs.* (≈10 indexed PDFs in contratti/ when last loaded).",
   "cases": [
     {
-      "id": "count-contracts-ingest-2025-06",
-      "question": "How many contracts are in the June 2025 ingest month?",
+      "id": "count-documents",
+      "question": "How many documents are in the tenant archive?",
       "expect": {
-        "objectId": "contract",
+        "objectId": "document",
         "mode": "count",
         "maxAttempts": 2,
-        "filtersInclude": [{ "propertyId": "source_year_month", "op": "eq", "value": "2025-06" }],
-        "countEquals": 121416,
+        "countMin": 1,
         "minProvenanceRows": 1
       }
     },
     {
-      "id": "count-organizations",
-      "question": "How many contracting authorities (organizations) are there?",
+      "id": "rows-documents-sample",
+      "question": "Show at most 5 documents with filename.",
       "expect": {
-        "objectId": "organization",
-        "mode": "count",
-        "maxAttempts": 2,
-        "countMin": 1000,
-        "minProvenanceRows": 1
-      }
-    },
-    {
-      "id": "rows-contracts-sample",
-      "question": "Show at most 5 contracts published in the June 2025 ingest month.",
-      "expect": {
-        "objectId": "contract",
+        "objectId": "document",
         "mode": "rows",
         "maxAttempts": 2,
         "maxRowCount": 5,
-        "filtersInclude": [{ "propertyId": "source_year_month", "op": "eq", "value": "2025-06" }],
-        "minProvenanceRows": 1
-      }
-    },
-    {
-      "id": "multi-hop-sicilia",
-      "question": "How many contracts in month 2025-06 involve entities with regional section Sicilia?",
-      "expect": {
-        "objectId": "contract",
-        "mode": "count",
-        "maxAttempts": 2,
-        "joinsInclude": [{ "relationshipId": "organization_has_contracts" }],
-        "filtersInclude": [
-          {
-            "objectId": "organization",
-            "propertyId": "sezione_regionale",
-            "op": "contains",
-            "value": "Sicilia"
-          }
-        ],
-        "countMin": 0,
-        "minProvenanceRows": 1
-      }
-    },
-    {
-      "id": "in-multiple-ingest-months",
-      "question": "How many contracts are in the May and June 2025 ingest months?",
-      "expect": {
-        "objectId": "contract",
-        "mode": "count",
-        "maxAttempts": 2,
-        "filtersInclude": [
-          {
-            "propertyId": "source_year_month",
-            "op": "in",
-            "value": ["2025-05", "2025-06"]
-          }
-        ],
-        "countMin": 121416,
-        "minProvenanceRows": 1
-      }
-    },
-    {
-      "id": "groupby-region-2025-06",
-      "question": "For ingest month 2025-06, list up to 10 rows with regional section and contract count per section.",
-      "expect": {
-        "objectId": "contract",
-        "mode": "rows",
-        "maxAttempts": 2,
-        "filtersIncludeMonths": ["2025-06"],
-        "groupByIncludes": ["sezione_regionale"],
-        "aggregationsMin": 1,
-        "maxRowCount": 10,
-        "minResultRows": 1,
-        "sqlIncludes": ["GROUP BY"],
-        "minProvenanceRows": 1
-      }
-    },
-    {
-      "id": "join-select-organization-name",
-      "question": "Show 3 contracts (CIG) for ingest month 2025-06 with contracting authority name via organization join.",
-      "expect": {
-        "objectId": "contract",
-        "mode": "rows",
-        "maxAttempts": 2,
-        "joinsInclude": [{ "relationshipId": "organization_has_contracts" }],
-        "filtersIncludeMonths": ["2025-06"],
-        "selectIncludesAny": ["denominazione_amministrazione_appaltante", "organization."],
-        "maxRowCount": 3,
-        "minResultRows": 1,
-        "minProvenanceRows": 1
-      }
-    },
-    {
-      "id": "complex-multi-constraint",
-      "question": "In the June 2025 ingest month, how many contracts have tender subject containing servizi and a populated regional section?",
-      "expect": {
-        "objectId": "contract",
-        "mode": "count",
-        "maxAttempts": 2,
-        "filtersIncludeMonths": ["2025-06"],
-        "filtersInclude": [{ "propertyId": "oggetto_gara", "op": "contains", "value": "servizi" }],
-        "countMin": 0,
-        "minProvenanceRows": 1
-      }
-    },
-    {
-      "id": "contains-subject",
-      "question": "How many contracts in 2025-06 have tender subject containing the word servizi?",
-      "expect": {
-        "objectId": "contract",
-        "mode": "count",
-        "maxAttempts": 2,
-        "filtersInclude": [
-          { "propertyId": "source_year_month", "op": "eq", "value": "2025-06" },
-          { "propertyId": "oggetto_gara", "op": "contains", "value": "servizi" }
-        ],
-        "countMin": 0,
         "minProvenanceRows": 1
       }
     },
     {
       "id": "reject-unknown-property",
       "optional": true,
-      "question": "How many contracts have crm_customer_id populated?",
+      "question": "How many documents have crm_customer_id populated?",
       "expect": {
         "shouldFail": true,
         "failType": "SemanticPlanValidationError"

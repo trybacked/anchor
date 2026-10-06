@@ -5,6 +5,7 @@ export type DocumentMetadata = {
   filename: string;
   docType: string;
   pageCount: number;
+  entityCount: number;
   folder?: string | undefined;
   status: "ready";
   contentType: string;
@@ -71,10 +72,25 @@ export function createDocumentAccessReader(options: {
 }) {
   const { executor, documents, readVolumeFile } = options;
   const table = documents.documentsTable;
+  const entitiesTable = documents.documentEntitiesTable;
   async function loadRow(documentId: string): Promise<Record<string, unknown> | null> {
-    const sql = `SELECT ${quoteIdentifier("document_id")}, ${quoteIdentifier("filename")}, ${quoteIdentifier("path")}, ${quoteIdentifier("doc_type")}, ${quoteIdentifier("page_count")}, ${quoteIdentifier("folder")}, ${quoteIdentifier("source_modified_at")}, ${quoteIdentifier("file_size")}
-FROM ${table}
-WHERE ${quoteIdentifier("document_id")} = :documentId
+    const sql = `SELECT
+  d.${quoteIdentifier("document_id")},
+  d.${quoteIdentifier("filename")},
+  d.${quoteIdentifier("path")},
+  d.${quoteIdentifier("doc_type")},
+  d.${quoteIdentifier("page_count")},
+  d.${quoteIdentifier("folder")},
+  d.${quoteIdentifier("source_modified_at")},
+  d.${quoteIdentifier("file_size")},
+  COALESCE(e.entity_count, 0) AS entity_count
+FROM ${table} d
+LEFT JOIN (
+  SELECT ${quoteIdentifier("document_id")}, COUNT(*) AS entity_count
+  FROM ${entitiesTable}
+  GROUP BY ${quoteIdentifier("document_id")}
+) e ON d.${quoteIdentifier("document_id")} = e.${quoteIdentifier("document_id")}
+WHERE d.${quoteIdentifier("document_id")} = :documentId
 LIMIT 1`;
     const rows = await executor(sql, [{ name: "documentId", value: documentId }]);
     return rows[0] ?? null;
@@ -97,6 +113,7 @@ LIMIT 1`;
         filename,
         docType,
         pageCount,
+        entityCount: numberField(row, "entity_count") ?? 0,
         status: "ready",
         contentType: contentTypeFromFilename(filename),
         ...(stringField(row, "folder") !== undefined ? { folder: stringField(row, "folder") } : {}),

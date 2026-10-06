@@ -9,11 +9,7 @@ function resolveSharedSpaceKeys(requested: string[]): string[] {
     return requested;
   }
   const registry = loadTenantsRegistry(join(findBackedRepoRoot(), "tenants.yaml"));
-  const keys = Object.keys(registry.shared_spaces);
-  if (keys.length === 0) {
-    throw new Error("tenants.yaml declares no shared_spaces; pass --shared explicitly.");
-  }
-  return keys;
+  return Object.keys(registry.shared_spaces);
 }
 function parseTenantCreateArgs(args: string[]): {
   tenantId: string;

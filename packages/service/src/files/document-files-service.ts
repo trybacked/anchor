@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { documentIdFromVolumePath } from "../document-id.js";
 import { serviceError, type ServiceErrorResult } from "../service-error.js";
 const FOLDER_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const FILENAME_PATTERN = /^[a-z0-9][a-z0-9_.-]*$/;
@@ -94,7 +94,7 @@ export type CreateDocumentFilesServiceOptions = {
   isFileExistsError?: (error: unknown) => boolean;
 };
 function documentIdFromPath(path: string): string {
-  return createHash("sha256").update(path, "utf8").digest("hex");
+  return documentIdFromVolumePath(path);
 }
 function volumeRoot(catalog: string, docsSchema: string): string {
   return `/Volumes/${catalog}/${docsSchema}/raw`;

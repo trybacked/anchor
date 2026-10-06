@@ -5,6 +5,7 @@ const documents: DocumentsDatasetResolver = {
   qualifyTable: (name) => `\`backed\`.\`docs\`.\`${name}\``,
   documentsTable: "`backed`.`docs`.`documents`",
   documentElementsTable: "`backed`.`docs`.`document_elements`",
+  documentEntitiesTable: "`backed`.`docs`.`document_entities`",
   entityProfilesTable: "`backed`.`docs`.`entity_profiles`",
 };
 describe("chunk search reader", () => {
@@ -31,6 +32,8 @@ describe("chunk search reader", () => {
     const rows = await reader({ query: "pagamenti", limit: 5 });
     expect(calls[0]).toContain("document_elements");
     expect(calls[0]).toContain("content");
+    expect(calls[0]).toContain("LENGTH");
+    expect(calls[0]).toMatch(/LENGTH[\s\S]*DESC/i);
     expect(rows[0]?.["elementId"]).toBe("e1");
   });
 });

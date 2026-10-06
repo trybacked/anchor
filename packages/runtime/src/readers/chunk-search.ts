@@ -161,7 +161,7 @@ export function createChunkSearchReader(options: {
     const keywordSql = `SELECT ${selectColumns}
 FROM ${table}
 WHERE LOWER(${quoteIdentifier("content")}) LIKE LOWER(:pattern)${docFilter}${typeFilter}
-ORDER BY LENGTH(${quoteIdentifier("content")}) ASC
+ORDER BY LENGTH(${quoteIdentifier("content")}) DESC
 LIMIT ${kwLimitLiteral}`;
     const keywordRows = await executor(keywordSql, [
       { name: "pattern", value: pattern },

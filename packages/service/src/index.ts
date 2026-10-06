@@ -1,3 +1,7 @@
+export {
+  canonicalVolumePathForDocumentId,
+  documentIdFromVolumePath,
+} from "./document-id.js";
 export { hashSql, writeAuditJsonLine } from "./audit.js";
 export type { AnchorOperationAuditEvent, AnchorOperationAuditHook } from "./audit.js";
 export { createAnchorService } from "./anchor-service.js";

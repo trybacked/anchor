@@ -66,9 +66,9 @@ targets:
 `;
   writeFileSync(targetPath, body, "utf8");
 }
-function loadBootstrapModel(tenantId: string): SemanticModel {
-  const assetPath = join(dirname(fileURLToPath(import.meta.url)), "minimal-shared-anac.model.yaml");
-  const text = readFileSync(assetPath, "utf8");
+function loadBootstrapModel(tenantId: string, catalog: string): SemanticModel {
+  const assetPath = join(dirname(fileURLToPath(import.meta.url)), "minimal-tenant-docs.model.yaml");
+  const text = readFileSync(assetPath, "utf8").replaceAll("__TENANT_CATALOG__", catalog);
   const model = parseModelYaml(text);
   const runId = `tenant-${tenantId}-${Date.now().toString(36)}`;
   return {
@@ -106,7 +106,7 @@ function writeTenantEnvFile(options: {
     `BACKED_DATABRICKS_TOKEN=${options.token}`,
     `BACKED_DATABRICKS_WAREHOUSE_ID=${options.warehouseId}`,
     `BACKED_DATABRICKS_CATALOG=${options.catalog}`,
-    "BACKED_DATABRICKS_SCHEMA=anac",
+    "BACKED_DATABRICKS_SCHEMA=docs",
     "",
   ].join("\n");
   writeFileSync(options.envFile, body, "utf8");
@@ -185,7 +185,7 @@ cd ontology/${tenantId}
 backed anchor deploy
 \`\`\`
 
-Shared curated tables are mapped in \`model.yaml\` (see tenants.yaml shared_spaces).
+Document tables live in \`{catalog}.docs.*\`; map them in \`model.yaml\`.
 Run \`backed anchor sync\` after editing the model.
 `,
       "utf8",
@@ -274,7 +274,7 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
     { profile, label: "warehouse CAN_USE" },
   );
   writeTenantEnvFile({ envFile, host, token, warehouseId, catalog });
-  const model = loadBootstrapModel(options.tenantId);
+  const model = loadBootstrapModel(options.tenantId, catalog);
   scaffoldOntology(ontologyDir, options.tenantId, catalog, model);
   const record = publishSemanticModel(ontologyDir, model, { ontologyId: options.tenantId });
   const modelYaml = readFileSync(join(ontologyDir, "model.yaml"), "utf8");

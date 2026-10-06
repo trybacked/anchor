@@ -11,7 +11,7 @@ const ontology: Ontology = {
     {
       id: "contract",
       name: "Contract",
-      sourceDatasetId: "backed.anac.contracts",
+      sourceDatasetId: "demo.procurement.contracts",
       properties: [{ id: "oggetto_gara", name: "Subject", type: "string", role: "attribute" }],
     },
   ],

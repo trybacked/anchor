@@ -12,7 +12,7 @@ const ontology: Ontology = {
     {
       id: "contract",
       name: "Contract",
-      sourceDatasetId: "backed.anac.contracts",
+      sourceDatasetId: "demo.procurement.contracts",
       properties: [
         { id: "cig", name: "CIG", type: "string", role: "primary_key" },
         { id: "oggetto_gara", name: "Subject", type: "string", role: "attribute" },
@@ -58,7 +58,7 @@ describe("semantic-chat engine", () => {
       pageStart: 3,
       page: 3,
     });
-    expect(answer.result.sql).toContain("`backed`.`anac`.`contracts`");
+    expect(answer.result.sql).toContain("`demo`.`procurement`.`contracts`");
   });
   it("normalizes in and is_not_null operators", () => {
     const normalized = normalizeSemanticQueryPlan({

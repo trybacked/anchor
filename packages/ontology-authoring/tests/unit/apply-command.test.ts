@@ -31,26 +31,29 @@ describe("applyCommand", () => {
     const removed = applyCommand(withEntity, { type: "removeEntity", entityId: "item" });
     expect(removed.entities).toHaveLength(0);
   });
-  it("applies applyPack for anac", () => {
+  it("applies applyPack for docs", () => {
     const result = applyCommands(emptySemanticModel("pack-test"), [
-      { type: "applyPack", packId: "anac" },
+      { type: "applyPack", packId: "docs", catalog: "backed_demo" },
     ]);
-    expect(result.entities.map((entity) => entity.id).sort()).toEqual(["contract", "organization"]);
+    expect(result.entities.map((entity) => entity.id).sort()).toEqual([
+      "document",
+      "document_element",
+      "person",
+    ]);
     expect(result.relations).toHaveLength(1);
-    expect(result.semantics?.glossary.length).toBeGreaterThan(0);
   });
   it("sets property semantics", () => {
     const withPack = applyCommands(emptySemanticModel("sem-test"), [
-      { type: "applyPack", packId: "anac" },
+      { type: "applyPack", packId: "docs", catalog: "backed_demo" },
     ]);
     const updated = applyCommand(withPack, {
       type: "setPropertySemantics",
-      entityId: "contract",
-      columnName: "source_year_month",
-      semantics: { description: "Batch ingest month (YYYY-MM)" },
+      entityId: "document",
+      columnName: "filename",
+      semantics: { description: "Original file name" },
     });
-    const contract = updated.entities.find((entity) => entity.id === "contract");
-    const property = contract?.properties.find((entry) => entry.columnName === "source_year_month");
-    expect(property?.semantics?.description).toBe("Batch ingest month (YYYY-MM)");
+    const document = updated.entities.find((entity) => entity.id === "document");
+    const property = document?.properties.find((entry) => entry.columnName === "filename");
+    expect(property?.semantics?.description).toBe("Original file name");
   });
 });

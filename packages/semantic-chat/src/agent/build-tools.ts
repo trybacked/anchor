@@ -21,7 +21,6 @@ import {
 } from "../validate-plan.js";
 import { toAgentObjectView } from "./agent-ontology-view.js";
 import { evaluateClarification } from "./clarification-policy.js";
-import { ontologyHasDocumentArchiveEntity } from "./ontology-capabilities.js";
 import { SemanticAgentError, type AgentBudget, type AgentTerminal } from "./types.js";
 export type AgentToolEvent = {
   toolCallId: string;
@@ -224,9 +223,7 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
       return { ok: true };
     },
   );
-  const exposeDocumentArchive =
-    caps.chunkSearch && ontologyHasDocumentArchiveEntity(options.ontology);
-  if (exposeDocumentArchive) {
+  if (caps.chunkSearch) {
     tools.search_documents = defineSqlTool(
       "search_documents",
       "Search document archive chunks by natural language query.",
@@ -237,7 +234,7 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
       async (input) => unwrapServiceResult(await options.service.chunkSearch(input)),
     );
   }
-  if (caps.entityProfile && exposeDocumentArchive) {
+  if (caps.entityProfile && caps.chunkSearch) {
     tools.get_entity_profile = defineSqlTool(
       "get_entity_profile",
       "Load a structured profile for a party or organization name in the docs graph.",
@@ -248,7 +245,7 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
       async (input) => unwrapServiceResult(await options.service.entityProfile(input)),
     );
   }
-  if (caps.graphTraverse && exposeDocumentArchive) {
+  if (caps.graphTraverse && caps.chunkSearch) {
     tools.traverse_graph = defineSqlTool(
       "traverse_graph",
       "Traverse the knowledge graph along a relation from a seed value.",

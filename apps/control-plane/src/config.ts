@@ -12,13 +12,13 @@ const ControlPlaneConfigSchema = z.object({
   enrollmentBundleTarget: z.string().min(1).optional(),
   platformPrincipal: z.string().min(1).optional(),
   sharedSpacesJson: z.string().min(2),
-  defaultSharedSpaces: z.array(z.string().min(1)).min(1),
+  defaultSharedSpaces: z.array(z.string().min(1)),
   databricksHost: z.string().min(1),
   databricksToken: z.string().min(1),
   databricksWarehouseId: z.string().min(1),
 });
 export type ControlPlaneConfig = z.infer<typeof ControlPlaneConfigSchema>;
-const DEFAULT_SHARED_SPACES_JSON = '{"anac":{"catalog":"backed","schema":"anac"}}';
+const DEFAULT_SHARED_SPACES_JSON = "{}";
 function sharedSpaceKeys(json: string): string[] {
   let parsed: unknown;
   try {
@@ -30,9 +30,6 @@ function sharedSpaceKeys(json: string): string[] {
     throw new Error("CONTROL_PLANE_SHARED_SPACES_JSON must be an object keyed by shared space.");
   }
   const keys = Object.keys(parsed);
-  if (keys.length === 0) {
-    throw new Error("CONTROL_PLANE_SHARED_SPACES_JSON must declare at least one shared space.");
-  }
   return keys;
 }
 function resolveDefaultSharedSpaces(env: NodeJS.ProcessEnv, configured: string[]): string[] {

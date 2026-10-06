@@ -85,7 +85,7 @@ export type SemanticAskResponse = {
   answer?: string | undefined;
   question: string;
   runId?: string | undefined;
-  route: "single" | "template" | "agent";
+  route: "single" | "template" | "agent" | "document-synthesis";
   templateId?: string | undefined;
   plan?: Record<string, unknown> | undefined;
   result?: SemanticAskResult | undefined;
@@ -107,6 +107,7 @@ export type GetDocumentResponse = {
   filename: string;
   docType: string;
   pageCount: number;
+  entityCount: number;
   folder?: string | undefined;
   status: "ready";
   contentType: string;

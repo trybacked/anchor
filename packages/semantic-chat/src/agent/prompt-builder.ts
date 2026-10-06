@@ -31,7 +31,8 @@ const PLATFORM_POLICY = [
   QUERY_CONSTRUCTION_RULES,
   "Prefer answering with explicit assumptions over asking. Call ask_clarification only when interpretations would materially change the answer and the semantics below cannot settle it; when unsure between properties, fill ambiguity with the candidate property ids.",
   "If a tool returns an error, read it, correct the input, and retry once — then answer with what you have.",
-  "Efficiency: answer warehouse questions (counts, filters, listings, breakdowns) with query_objects in as few calls as possible. Use document archive tools only when the question is about document contents, files, or named people — not as a fallback for warehouse questions.",
+  "Efficiency: structured warehouse counts use query_objects when the ontology exposes matching entities. Questions about CVs, file contents, named people, or the tenant document archive must use search_documents first.",
+  "When search_documents returns hits, cite filenames and short excerpts in submit_answer; when it returns no rows, say so and only then mention warehouse limits.",
   "Finish with submit_answer: claims cite toolCallId for each number (internal only); assumptions and followUps are separate fields.",
 ].join("\n");
 const ANSWER_STYLE = [

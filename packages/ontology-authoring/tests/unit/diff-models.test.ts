@@ -4,7 +4,7 @@ import { diffSemanticModels } from "../../src/diff-models.js";
 describe("diffSemanticModels semantics", () => {
   it("classifies glossary changes as non-breaking", () => {
     const before = applyCommands(emptySemanticModel("diff"), [
-      { type: "applyPack", packId: "anac" },
+      { type: "applyPack", packId: "docs", catalog: "backed_demo" },
     ]);
     const after = applyCommand(before, {
       type: "upsertGlossaryTerm",
@@ -12,7 +12,7 @@ describe("diffSemanticModels semantics", () => {
         id: "test-term",
         term: "test",
         definition: "A test glossary entry",
-        objectId: "contract",
+        objectId: "document",
       },
     });
     const changes = diffSemanticModels(before, after);

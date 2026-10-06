@@ -23,6 +23,7 @@ import {
   proposeDocsAiWarehouseDiscovery,
   proposeDocsWarehouseDiscovery,
 } from "./discovery-service.js";
+import { listWarehouseDocumentExtractionStatus } from "./docs-document-status.js";
 import {
   getAuthoring,
   requireAuthoringAccess,
@@ -92,6 +93,41 @@ export function registerDiscoveryRoutes(
   const base = "/v1/tenants/:tenantId/authoring/discovery";
   const discovery = new Hono<AuthoringEnv>();
   discovery.use("*", requireAuthoringAccess(config, pool));
+
+  discovery.get("/docs/status", requireAuthoringRole("viewer"), async (c) => {
+    const ctx = getAuthoring(c);
+    let provider;
+    let client;
+    try {
+      provider = databricksProvider(config, ctx.catalog);
+      const host = config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+      client = createDatabricksSqlClient({
+        host,
+        token: config.databricksToken,
+        warehouseId: config.databricksWarehouseId,
+        catalog: ctx.catalog,
+        schema: DOCS_SCHEMA,
+      });
+    } catch (error) {
+      const err = warehouseErrorResponse(error);
+      return c.json(err.body, err.status);
+    }
+    try {
+      const outcome = await listWarehouseDocumentExtractionStatus(
+        provider,
+        client,
+        ctx.catalog,
+        DOCS_SCHEMA,
+      );
+      if (!outcome.ok) {
+        return c.json({ code: outcome.code, missingTables: outcome.missingTables }, 200);
+      }
+      return c.json({ documents: outcome.documents });
+    } catch (error) {
+      const err = warehouseErrorResponse(error);
+      return c.json(err.body, err.status);
+    }
+  });
 
   discovery.post("/docs/propose", requireAuthoringRole("editor"), async (c) => {
       const ctx = getAuthoring(c);

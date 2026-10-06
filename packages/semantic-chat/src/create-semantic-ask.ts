@@ -19,6 +19,17 @@ import {
   askStrategyFromEnv,
 } from "./ask-config.js";
 import { runPlanFirst, type PlanFirstResult } from "./plan-first/run-plan-first.js";
+import { searchTermsForQuestion } from "./document-evidence.js";
+import {
+  documentSearchQueries,
+  PROCUREMENT_KEYWORDS,
+  questionPrefersDocumentArchive,
+} from "./document-intent.js";
+import { tryDocumentSynthesisAnswer } from "./document-synthesis.js";
+import { renderDocumentSearchAnswer } from "./document-search-answer.js";
+import { isThinWarehouseListing } from "./plan-first/thin-plan.js";
+import { isServiceErrorResult } from "@trybacked/service";
+import { randomUUID } from "node:crypto";
 import { tenantAiAskEnabled, type TenantAiAskCapabilities } from "./tenant-ai-ask.js";
 export type { TenantAiAskCapabilities };
 export type SemanticAskHandler = NonNullable<AnchorService["semanticAsk"]>;
@@ -136,7 +147,130 @@ export function attachSemanticAsk(
       ...(fallbackModelId !== undefined ? { fallbackModelId } : {}),
     });
 
+  async function tryDocumentArchiveAnswer(context: AskContext): Promise<SemanticAskResponse | undefined> {
+    if (!questionPrefersDocumentArchive(context.question)) {
+      return undefined;
+    }
+    const started = Date.now();
+    if (!base.capabilities().chunkSearch) {
+      const italian = (context.locale ?? "it").toLowerCase().startsWith("it");
+      const answer = italian
+        ? "L’archivio documenti non è ancora disponibile per questo tenant (mancano tabelle docs indicizzate). Carica i PDF in una cartella ammessa (es. contratti) e lancia l’indicizzazione."
+        : "The document archive is not available for this tenant yet. Upload PDFs to an allowed folder and run indexing.";
+      return {
+        text: answer,
+        answer,
+        question: context.question,
+        runId: randomUUID(),
+        route: "single",
+        ontologyVersion,
+        attempts: 1,
+        claims: [],
+        assumptions: [],
+        followUps: [],
+        agentSteps: [],
+        usage: {
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          latencyMs: Date.now() - started,
+        },
+      };
+    }
+    const mergedRows: Record<string, unknown>[] = [];
+    const seen = new Set<string>();
+    for (const query of documentSearchQueries(context.question)) {
+      const search = await base.chunkSearch({ query, limit: 12 });
+      if (isServiceErrorResult(search)) {
+        continue;
+      }
+      for (const row of search.rows) {
+        const key =
+          typeof row.elementId === "string"
+            ? row.elementId
+            : typeof row.element_id === "string"
+              ? row.element_id
+              : JSON.stringify(row);
+        if (!seen.has(key)) {
+          seen.add(key);
+          mergedRows.push(row as Record<string, unknown>);
+        }
+      }
+      if (mergedRows.length >= 12) {
+        break;
+      }
+    }
+    if (mergedRows.length === 0) {
+      return undefined;
+    }
+    const rendered = renderDocumentSearchAnswer({
+      rows: mergedRows.slice(0, 12),
+      locale: context.locale,
+    });
+    const runId = randomUUID();
+    return {
+      text: rendered.answer,
+      answer: rendered.answer,
+      question: context.question,
+      runId,
+      route: "single",
+      ontologyVersion,
+      attempts: 1,
+      claims: rendered.claims,
+      assumptions: [],
+      followUps: [],
+      agentSteps: [
+        {
+          toolCallId: "document-search",
+          toolName: "search_documents",
+          input: { query: context.question, limit: 12 },
+          status: "ok",
+          rowCount: mergedRows.length,
+          durationMs: Date.now() - started,
+        },
+      ],
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        latencyMs: Date.now() - started,
+      },
+    };
+  }
+
+  async function tryDocumentSynthesis(context: AskContext): Promise<SemanticAskResponse | undefined> {
+    const outcome = await tryDocumentSynthesisAnswer({
+      service: base,
+      question: context.question,
+      locale: context.locale,
+      ontologyVersion,
+      resolveModel,
+      modelId,
+    });
+    if (outcome.kind === "answered") {
+      return outcome.response;
+    }
+    return undefined;
+  }
+
+  function prefersDocumentEvidenceFirst(question: string): boolean {
+    if (PROCUREMENT_KEYWORDS.test(question)) {
+      return false;
+    }
+    return searchTermsForQuestion(question).length >= 2;
+  }
+
   async function answer(context: AskContext): Promise<SemanticAskResponse> {
+    const documentAnswer = await tryDocumentArchiveAnswer(context);
+    if (documentAnswer !== undefined) {
+      return documentAnswer;
+    }
+    if (prefersDocumentEvidenceFirst(context.question)) {
+      const synthesized = await tryDocumentSynthesis(context);
+      if (synthesized !== undefined) {
+        return synthesized;
+      }
+    }
     if (strategy === "plan-first") {
       const started = Date.now();
       const outcome = await runPlanFirst({
@@ -146,15 +280,28 @@ export function attachSemanticAsk(
         model: resolveModel(modelId),
       });
       if (outcome.kind === "answered") {
-        return planFirstResponse(context.question, ontologyVersion, outcome.result);
+        if (!isThinWarehouseListing(outcome.result)) {
+          return planFirstResponse(context.question, ontologyVersion, outcome.result);
+        }
+        const synthesized = await tryDocumentSynthesis(context);
+        if (synthesized !== undefined) {
+          return synthesized;
+        }
+      } else {
+        options.onOperation?.({
+          operation: "planFallback",
+          durationMs: Date.now() - started,
+          question: questionPreview(context.question),
+          reason: outcome.reason,
+          ...tenantField,
+        });
       }
-      options.onOperation?.({
-        operation: "planFallback",
-        durationMs: Date.now() - started,
-        question: questionPreview(context.question),
-        reason: outcome.reason,
-        ...tenantField,
-      });
+    }
+    if (!prefersDocumentEvidenceFirst(context.question)) {
+      const synthesized = await tryDocumentSynthesis(context);
+      if (synthesized !== undefined) {
+        return synthesized;
+      }
     }
     return agentResponse(context.question, ontologyVersion, await runAgent(context));
   }

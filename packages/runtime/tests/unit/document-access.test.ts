@@ -5,6 +5,7 @@ const documents: DocumentsDatasetResolver = {
   qualifyTable: (name) => `\`backed\`.\`docs\`.\`${name}\``,
   documentsTable: "`backed`.`docs`.`documents`",
   documentElementsTable: "`backed`.`docs`.`document_elements`",
+  documentEntitiesTable: "`backed`.`docs`.`document_entities`",
   entityProfilesTable: "`backed`.`docs`.`entity_profiles`",
 };
 describe("createDocumentAccessReader", () => {
@@ -17,12 +18,14 @@ describe("createDocumentAccessReader", () => {
         doc_type: "contract",
         page_count: 12,
         folder: "contratti",
+        entity_count: 7,
       },
     ]);
     const reader = createDocumentAccessReader({ executor, documents });
     const metadata = await reader.getMetadata("abc");
     expect(metadata?.filename).toBe("contratto.pdf");
     expect(metadata?.pageCount).toBe(12);
+    expect(metadata?.entityCount).toBe(7);
     expect(metadata?.contentType).toBe("application/pdf");
   });
   it("reads original file bytes via volume reader", async () => {

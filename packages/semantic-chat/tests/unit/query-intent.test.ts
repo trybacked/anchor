@@ -1,22 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
-import { applySemanticCatalogs, type Ontology } from "@trybacked/core";
+import type { Ontology } from "@trybacked/core";
 import {
   assertQuestionDoesNotMentionUnknownProperties,
   validateAgentObjectQuery,
 } from "../../src/query-intent.js";
 import { contractOntology } from "./agent-fixtures.js";
-const ANAC_CONTRACTS_DATASET = "backed.anac.contracts";
-const ANAC_ORGANIZATIONS_DATASET = "backed.anac.organizations";
+const CONTRACTS_DATASET = "demo.procurement.contracts";
+const ORGANIZATIONS_DATASET = "demo.procurement.organizations";
 
-function anacJoinOntology() {
-  const base: Ontology = {
-    metadata: { formatVersion: "1" as const, id: "test-anac", version: 1 },
+function procurementJoinOntology(): Ontology {
+  return {
+    metadata: { formatVersion: "1" as const, id: "test-procurement", version: 1 },
     objects: [
       {
         id: "contract",
         name: "Contract",
-        sourceDatasetId: ANAC_CONTRACTS_DATASET,
+        sourceDatasetId: CONTRACTS_DATASET,
         properties: [
           { id: "source_year_month", name: "Ingest month", type: "string" },
           { id: "sezione_regionale", name: "Regional section", type: "string" },
@@ -25,7 +24,7 @@ function anacJoinOntology() {
       {
         id: "organization",
         name: "Organization",
-        sourceDatasetId: ANAC_ORGANIZATIONS_DATASET,
+        sourceDatasetId: ORGANIZATIONS_DATASET,
         properties: [{ id: "sezione_regionale", name: "Regional section", type: "string" }],
       },
     ],
@@ -41,7 +40,6 @@ function anacJoinOntology() {
     logic: [],
     actions: [],
   };
-  return applySemanticCatalogs(base, SHARED_SEMANTIC_CATALOGS);
 }
 
 describe("query intent", () => {
@@ -56,7 +54,7 @@ describe("query intent", () => {
   });
 
   it("requires joins when glossary ties a shared property to a related entity", () => {
-    const ontology = anacJoinOntology();
+    const ontology = procurementJoinOntology();
     expect(() =>
       validateAgentObjectQuery(
         ontology,
@@ -74,7 +72,7 @@ describe("query intent", () => {
   });
 
   it("rejects a join with only a root-level shared property filter", () => {
-    const ontology = anacJoinOntology();
+    const ontology = procurementJoinOntology();
     expect(() =>
       validateAgentObjectQuery(
         ontology,
@@ -93,7 +91,7 @@ describe("query intent", () => {
   });
 
   it("accepts a joined filter on the related object", () => {
-    const ontology = anacJoinOntology();
+    const ontology = procurementJoinOntology();
     expect(() =>
       validateAgentObjectQuery(
         ontology,

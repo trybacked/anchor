@@ -15,6 +15,16 @@ const config: ControlPlaneConfig = {
 };
 
 describe("discovery routes", () => {
+  it("registers GET /docs/status (401 without internal token, not 404)", async () => {
+    const app = createControlPlaneApp(config, {} as never);
+    const response = await app.request(
+      "http://localhost/v1/tenants/gerace/authoring/discovery/docs/status",
+      { method: "GET" },
+    );
+    expect(response.status).not.toBe(404);
+    expect(response.status).toBe(401);
+  });
+
   it("registers POST /docs/propose-ai (401 without internal token, not 404)", async () => {
     const app = createControlPlaneApp(config, {} as never);
     const response = await app.request(

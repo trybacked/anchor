@@ -53,7 +53,7 @@ Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control p
 | `BACKED_DATABRICKS_HOST`                        | R         | ✓     | ✓       | Platform SP (bootstrap)                             |
 | `BACKED_DATABRICKS_TOKEN`                       | R         | ✓     | ✓       |
 | `BACKED_DATABRICKS_WAREHOUSE_ID`                | R         | ✓     | ✓       |
-| `AI_GATEWAY_API_KEY`                            | O         | ✓     | ✓       | `/v1/chat/ask` only                                 |
+| `AI_GATEWAY_API_KEY`                            | O         | ✓     | ✓       | `/v1/chat/ask` (semantic agent)                    |
 | `ANCHOR_MAX_UPLOAD_BYTES`                       | O         | ✓     | ✓       | Max multipart upload (default 50MB) on platform-api |
 | `ANCHOR_TENANTS_REGISTRY`                       | R if file | ✓     | —       |
 | `DATABASE_URL`                                  | —         | —     | —       | Not used (token auth)                               |
@@ -69,7 +69,9 @@ Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control p
 | `BACKED_DATABRICKS_TOKEN`          | R   | ✓     | ✓       |
 | `BACKED_DATABRICKS_WAREHOUSE_ID`   | R   | ✓     | ✓       |
 | `BACKED_PLATFORM_PRINCIPAL`        | O   | ✓     | ✓       |
-| `CONTROL_PLANE_SHARED_SPACES_JSON` | O   | ✓     | ✓       | Default shared ANAC                              |
+| `CONTROL_PLANE_SHARED_SPACES_JSON` | O   | ✓     | ✓       | JSON map of shared UC spaces (default `{}`)      |
+| `AI_GATEWAY_API_KEY`               | O   | ✓     | ✓       | Vercel AI Gateway — required for `POST …/discovery/docs/propose-ai` (ontology extract). Same key as platform-api `/v1/chat/ask` if you use one gateway. |
+| `ONTOLOGY_EXTRACT_MODEL`           | O   | ✓     | ✓       | Optional model id for ontology extract (defaults in `@trybacked/ontology-extract`). |
 
 Provisioner = same image as control-plane, command `node dist/worker.js` (no HTTP port). Handles `create_tenant` and **`publish_ontology`** (writes UC registry, bumps `organizations.ontology_version`).
 

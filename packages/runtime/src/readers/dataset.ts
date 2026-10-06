@@ -1,6 +1,7 @@
 import type { Entity, Ontology, SemanticModel } from "@trybacked/core";
 import {
   DOCUMENT_ELEMENTS_TABLE,
+  DOCUMENT_ENTITIES_TABLE,
   DOCUMENTS_TABLE,
   ENTITY_PROFILES_TABLE,
 } from "@trybacked/core/tables";
@@ -8,6 +9,7 @@ export type DocumentsDatasetResolver = {
   qualifyTable: (tableName: string) => string;
   documentsTable: string;
   documentElementsTable: string;
+  documentEntitiesTable: string;
   entityProfilesTable: string;
 };
 function inferCatalogFromOntology(ontology: Ontology): string | undefined {
@@ -39,6 +41,7 @@ export function createDocumentsDatasetResolver(options: {
     qualifyTable,
     documentsTable: qualifyTable(DOCUMENTS_TABLE),
     documentElementsTable: qualifyTable(DOCUMENT_ELEMENTS_TABLE),
+    documentEntitiesTable: qualifyTable(DOCUMENT_ENTITIES_TABLE),
     entityProfilesTable: qualifyTable(ENTITY_PROFILES_TABLE),
   };
 }

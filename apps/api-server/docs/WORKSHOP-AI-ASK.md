@@ -1,6 +1,6 @@
 # Workshop — Domande in linguaggio naturale sui dati (AI ask)
 
-Guida per **facilitatori e partecipanti**. Il backend espone un unico flusso: fai una domanda in italiano (o inglese) e ottieni una risposta **basata su query governate** sull’ontologia e sul warehouse (contratti ANAC, enti, date, filtri, totali, elenchi).
+Guida per **facilitatori e partecipanti**. Il backend espone un unico flusso: fai una domanda in italiano (o inglese) e ottieni una risposta **basata su query governate** sull’ontologia e sul warehouse (documenti dell’ente, persone citate, totali, elenchi, ricerca testuale sull’archivio).
 
 Non serve un prodotto “Chiedi” dedicato: basta **login sul gateway** e le API sotto `/t/{tenant}/v1/chat/ask`.
 
@@ -12,9 +12,9 @@ Riferimento tecnico breve: [AI-ASK.md](./AI-ASK.md).
 
 Esplorare cosa si può chiedere all’AI quando i dati sono **modellati** (entità, proprietà, glossario) e **interrogati con gli stessi tool** usati da MCP/API:
 
-- quanti contratti in un periodo;
-- quali organizzazioni / enti;
-- filtri per CIG, importo, procedura;
+- quanti documenti sono indicizzati;
+- elenchi per nome file o tipo;
+- ricerca nel testo dei PDF (archivio);
 - chiarimenti quando la domanda è ambigua.
 
 ---
@@ -58,7 +58,7 @@ Se `available: false`:
 
 ```json
 {
-  "question": "Quanti contratti con mese di ingest 2025-06?"
+  "question": "Quanti documenti sono nell'archivio del tenant?"
 }
 ```
 
@@ -71,7 +71,7 @@ curl -sS 'https://api.backed.app/t/{tenant}/v1/chat/ask/status'
 
 curl -sS 'https://api.backed.app/t/{tenant}/v1/chat/ask' \
   -H 'Content-Type: application/json' \
-  -d '{"question":"Elenca 5 contratti con source_year_month 2025-06"}'
+  -d '{"question":"Elenca 5 documenti con il nome del file"}'
 ```
 
 ### Opzione C — SDK (chi scrive script)
@@ -80,7 +80,7 @@ curl -sS 'https://api.backed.app/t/{tenant}/v1/chat/ask' \
 const ok = await tenant.ai.status();
 if (ok.available) {
   const r = await tenant.ai.ask({
-    question: "Quanti contratti con source_year_month 2025-06?",
+    question: "Quanti documenti indicizzati ci sono?",
   });
   console.log(r.answer, r.agentSteps);
 }
@@ -88,28 +88,23 @@ if (ok.available) {
 
 ---
 
-## Esempi di domande (ANAC / appalti)
+## Esempi di domande (documenti dell’ente)
 
-Usa formulazioni **chiare su date e filtri**. Nel dominio curato, per “dati caricati a giugno 2025” è preferibile il **mese di ingest** (`source_year_month` = `2025-06`), non confonderlo con “pubblicati a giugno” salvo che la domanda lo dica esplicitamente.
+Usa formulazioni **chiare su file, persone e contenuto**.
 
-**Conteggi**
+**Conteggi e elenchi**
 
-- Quanti contratti con `source_year_month` 2025-06?
-- Quanti contratti sopra 1 milione di euro nel mese di ingest 2025-06?
+- Quanti documenti sono indicizzati?
+- Mostrami 5 documenti con filename e cartella.
 
-**Organizzazioni / enti**
+**Contenuto (archivio)**
 
-- Quali sono le organizzazioni con più contratti nel mese 2025-06? (top 10)
-- Contratti dell’ente il cui nome contiene “Gerace” a giugno 2025 (ingest).
-
-**Dettaglio e campi**
-
-- Mostrami fino a 10 contratti del 2025-06 con CIG, importo e denominazione ente.
-- Quanti contratti per tipo di procedura nel 2025-06?
+- Cosa dice il CV di … sui progetti?
+- Nel documento sul consumo zero, quali obiettivi sono citati?
 
 **Ambiguità (comportamento atteso)**
 
-- “Contratti a giugno 2025” → l’agente può chiedere chiarimento (ingest vs pubblicazione) via campo **`clarification`**.
+- Domande su “contratti” o “gare” senza riferimento a un file → l’agente può chiedere chiarimento o usare `search_documents` sull’archivio.
 
 ---
 
@@ -142,9 +137,9 @@ Il campo **`route`** è sempre **`agent`** (niente vecchio flusso “piano/templ
 
 ## Idee per esercizi (45–90 min)
 
-1. **Status + prima domanda** — conteggio su un mese ingest noto.
-2. **Confronto date** — stessa richiesta con “ingest” vs “pubblicati in”; osservare chiarimenti.
-3. **Top-N enti** — verificare numeri con una query manuale su Scalar (`query_objects`) se serve.
+1. **Status + prima domanda** — conteggio documenti indicizzati.
+2. **Elenchi** — top-N file per cartella o tipo.
+3. **Ricerca testo** — domanda su contenuto PDF; verificare citazioni in `agentSteps`.
 4. **Trasparenza** — aprire `agentSteps` e discutere SQL/filtri.
 5. **Stretch** — domanda vaga e gestione `clarification`.
 

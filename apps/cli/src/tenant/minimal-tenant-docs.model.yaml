@@ -1,0 +1,97 @@
+metadata:
+  formatVersion: "1"
+  runId: tenant-bootstrap
+  generatedAt: "1970-01-01T00:00:00.000Z"
+entities:
+  - id: document
+    name: Document
+    sourceTable: __TENANT_CATALOG__.docs.documents
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.documents
+      evidence: Tenant document archive (bootstrap)
+    properties:
+      - name: Document id
+        columnName: document_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: __TENANT_CATALOG__.docs.documents
+          column: document_id
+          evidence: Primary key
+      - name: Filename
+        columnName: filename
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.documents
+          column: filename
+          evidence: Filename
+  - id: document_element
+    name: Document element
+    sourceTable: __TENANT_CATALOG__.docs.document_elements
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.document_elements
+      evidence: Parsed document elements
+    properties:
+      - name: Element id
+        columnName: element_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: __TENANT_CATALOG__.docs.document_elements
+          column: element_id
+          evidence: Primary key
+      - name: Document id
+        columnName: document_id
+        semanticType: identifier
+        role: foreign_key
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.document_elements
+          column: document_id
+          evidence: FK to document
+  - id: person
+    name: Person
+    sourceTable: __TENANT_CATALOG__.docs.entity_profiles
+    status: confirmed
+    confidence: 0.85
+    provenance:
+      table: __TENANT_CATALOG__.docs.entity_profiles
+      evidence: Entities extracted from documents
+    properties:
+      - name: Normalized name
+        columnName: normalized_name
+        semanticType: text
+        role: primary_key
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.entity_profiles
+          column: normalized_name
+          evidence: Dedup key
+relations:
+  - id: document_has_elements
+    name: Document has elements
+    fromEntity: document
+    toEntity: document_element
+    fromColumn: document_id
+    toColumn: document_id
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.95
+    provenance:
+      table: __TENANT_CATALOG__.docs.document_elements
+      column: document_id
+      evidence: document_id join
+rules: []
