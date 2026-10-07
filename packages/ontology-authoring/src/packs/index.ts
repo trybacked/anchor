@@ -1,32 +1,20 @@
-import type { AuthoringCommand, OntologyPackSummary, SemanticCatalog } from "@trybacked/core";
-import { AuthoringCommandError } from "../apply-command.js";
-import { ANAC_SEMANTIC_CATALOG } from "./anac-semantics.js";
-import { anacPackCommands } from "./anac.js";
-import { docsPackCommands } from "./docs.js";
-export const SHARED_SEMANTIC_CATALOGS: readonly SemanticCatalog[] = [ANAC_SEMANTIC_CATALOG];
-export const ONTOLOGY_PACKS: OntologyPackSummary[] = [
-  {
-    id: "anac",
-    name: "ANAC enrollment",
-    description: "contract, organization, and organization_has_contracts on backed.anac.*",
-  },
-  {
-    id: "docs",
-    name: "Document archive",
-    description:
-      "document, document_element, person, and document_has_elements on tenant docs schema",
-  },
-];
-export function commandsForPack(packId: string, catalog: string): AuthoringCommand[] {
-  switch (packId) {
-    case "anac":
-      return anacPackCommands();
-    case "docs":
-      return docsPackCommands(catalog);
-    default:
-      throw new AuthoringCommandError(`Unknown pack "${packId}"`);
-  }
-}
+import type { SemanticCatalog } from "@trybacked/core";
+
+export type OntologyPackSummary = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+/**
+ * Packs are data, not code (Plan Fase 7): templates are JSON lists of
+ * AuthoringCommands stored in the control plane. No domain packs ship here.
+ */
+export const ONTOLOGY_PACKS: OntologyPackSummary[] = [];
+
+/** Shared semantic catalogs are data supplied by deployment config, not code. */
+export const SHARED_SEMANTIC_CATALOGS: readonly SemanticCatalog[] = [];
+
 export function listPacks(): OntologyPackSummary[] {
   return ONTOLOGY_PACKS;
 }

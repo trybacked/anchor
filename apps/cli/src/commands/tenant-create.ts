@@ -9,11 +9,7 @@ function resolveSharedSpaceKeys(requested: string[]): string[] {
     return requested;
   }
   const registry = loadTenantsRegistry(join(findBackedRepoRoot(), "tenants.yaml"));
-  const keys = Object.keys(registry.shared_spaces);
-  if (keys.length === 0) {
-    throw new Error("tenants.yaml declares no shared_spaces; pass --shared explicitly.");
-  }
-  return keys;
+  return Object.keys(registry.shared_spaces);
 }
 function parseTenantCreateArgs(args: string[]): {
   tenantId: string;
@@ -87,10 +83,7 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     ui.log(
       "Usage: backed tenant create <tenant-id> [--shared <key>] [--dry-run] [--skip-bundle] [--remote]",
     );
-    ui.log(
-      "  Provisions UC catalog, bundle deploy, SP token, env file, ontology bootstrap, tenants.yaml.",
-    );
-    ui.log("  Requires databricks CLI + admin profile from tenants.yaml enrollment.");
+    ui.log("  Provisions tenant file layout, env file (BACKED_FILES_*), and tenants.yaml entry.");
     return;
   }
   if (parsed.tenantId.length === 0) {
@@ -158,7 +151,7 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     ui.writeSuccess(`Catalog ${result.catalog} · SP ${result.servicePrincipalAppId}`);
     ui.detail(`Env: ${ui.path(result.envFile)}`);
     ui.detail(
-      `Ontology: ${ui.path(result.ontologyDir)} (publication v${String(result.publicationVersion)})`,
+      `Ontology: UC registry in catalog ${result.catalog} (publication v${String(result.publicationVersion)})`,
     );
     if (result.registryUpdated) {
       ui.detail("Updated tenants.yaml");

@@ -3,11 +3,11 @@ import { readFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readModelYaml } from "../packages/core/dist/index.js";
+import { legacyDocumentTables } from "../packages/capability-documents/dist/index.js";
 import {
-  createDatabricksSqlClient,
-  databricksConfigFromEnv,
-  hasDatabricksEnv,
-} from "../packages/provider-databricks/dist/index.js";
+  createLocalDocumentFileReader,
+  tenantFilesRoot,
+} from "../packages/infrastructure/dist/index.js";
 import { loadPublishedOntology } from "../packages/registry/dist/index.js";
 import { buildQueryRuntimeFromEnv } from "../packages/runtime/dist/index.js";
 import {
@@ -61,8 +61,10 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  if (!hasDatabricksEnv(process.env)) {
-    console.error("Missing BACKED_DATABRICKS_* env for warehouse execution.");
+  const tenantId = tenant;
+  const filesRoot = tenantFilesRoot(process.env, tenantId);
+  if (filesRoot.length === 0) {
+    console.error("Missing BACKED_FILES_ROOT for file-backed execution.");
     process.exitCode = 1;
     return;
   }
@@ -73,12 +75,15 @@ async function main() {
     return;
   }
   const model = readModelYaml(workspaceRoot);
-  const client = createDatabricksSqlClient(databricksConfigFromEnv(process.env));
   const { runtime } = await buildQueryRuntimeFromEnv({
     ontology,
     model,
-    executor: (sql, parameters) => client.execute(sql, parameters),
+    executor: () => {
+      throw new Error("Object SQL is not available on the files engine.");
+    },
+    documentTables: legacyDocumentTables(),
     env: process.env,
+    readVolumeFile: createLocalDocumentFileReader(filesRoot),
   });
   const service = createAnchorService({
     model,
@@ -96,29 +101,43 @@ async function main() {
   let advisory = 0;
   for (const testCase of suite.cases) {
     const started = Date.now();
+    // LLM behaviour is nondeterministic: each case may be retried before it
+    // is reported as failed (default 2 tries, 1 for deterministic negatives).
+    const tries = testCase.retries === undefined ? 2 : testCase.retries + 1;
+    let attempt = 0;
     let agent;
     let answer;
     let error;
-    try {
-      agent = await runSemanticAgent({
-        ontology,
-        service,
-        question: testCase.question,
-        modelId: agentModel.modelId,
-        apiKey: agentModel.apiKey,
-        ...(agentModel.fallbackModelId !== undefined
-          ? { fallbackModelId: agentModel.fallbackModelId }
-          : {}),
-      });
-      answer = agentAnswerShape(agent, testCase.question);
-    } catch (caught) {
-      if (caught instanceof SemanticAgentError || caught instanceof SemanticPlanValidationError) {
-        error = caught;
-      } else {
-        error = caught instanceof Error ? caught : new Error(String(caught));
+    let failures;
+    while (attempt < tries) {
+      attempt += 1;
+      agent = undefined;
+      answer = undefined;
+      error = undefined;
+      try {
+        agent = await runSemanticAgent({
+          ontology,
+          service,
+          question: testCase.question,
+          modelId: agentModel.modelId,
+          apiKey: agentModel.apiKey,
+          ...(agentModel.fallbackModelId !== undefined
+            ? { fallbackModelId: agentModel.fallbackModelId }
+            : {}),
+        });
+        answer = agentAnswerShape(agent, testCase.question);
+      } catch (caught) {
+        if (caught instanceof SemanticAgentError || caught instanceof SemanticPlanValidationError) {
+          error = caught;
+        } else {
+          error = caught instanceof Error ? caught : new Error(String(caught));
+        }
+      }
+      failures = assertAgentCase(testCase.expect ?? {}, agent, error, testCase.question);
+      if (failures.length === 0) {
+        break;
       }
     }
-    const failures = assertAgentCase(testCase.expect ?? {}, agent, error, testCase.question);
     const ms = Date.now() - started;
     if (failures.length === 0) {
       passed += 1;
@@ -126,7 +145,8 @@ async function main() {
         answer?.result !== undefined
           ? `route=agent ${answer.result.mode} ${answer.result.objectId} rows=${String(answer.result.rowCount)}`
           : `failed as expected (${error?.name ?? "error"})`;
-      console.log(`PASS  ${testCase.id}  ${ms}ms  ${summary}`);
+      const retryNote = attempt > 1 ? `  (attempt ${String(attempt)})` : "";
+      console.log(`PASS  ${testCase.id}  ${ms}ms${retryNote}  ${summary}`);
     } else if (testCase.optional === true) {
       advisory += 1;
       console.log(`WARN  ${testCase.id}  ${ms}ms  (optional)`);

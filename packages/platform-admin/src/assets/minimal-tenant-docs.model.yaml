@@ -1,0 +1,560 @@
+metadata:
+  formatVersion: "1"
+  runId: cov-__TENANT_CATALOG__
+  generatedAt: 2026-10-06T23:36:42.704Z
+entities:
+  - id: organization
+    name: Organization
+    description: "Organizzazione pubblica o privata registrata o citata nei
+      documenti. Classe COV: https://w3id.org/italia/onto/COV/Organization."
+    sourceTable: __TENANT_CATALOG__.docs.organization_profiles
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.organization_profiles
+      evidence: Vista materializzata allineata a
+        https://w3id.org/italia/onto/COV/Organization
+    properties:
+      - name: Identificativo normalizzato
+        columnName: normalized_name
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: __TENANT_CATALOG__.docs.organization_profiles
+          column: normalized_name
+          evidence: Chiave di deduplicazione
+        semantics:
+          description: Identificativo normalizzato (allineato a
+            cov:hasAlternativeIdentifier via profilo documentale).
+          labels:
+            it: identificativo normalizzato
+      - name: Denominazione
+        columnName: name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.organization_profiles
+          column: name
+          evidence: Denominazione estratta
+        semantics:
+          description: Denominazione o nome legale (cov:legalName / rdfs:label).
+          labels:
+            it: denominazione
+      - name: Tipo entità estratta
+        columnName: entity_type
+        semanticType: category
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.organization_profiles
+          column: entity_type
+          evidence: Tipo assegnato in estrazione NER
+      - name: Menioni
+        columnName: mention_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.organization_profiles
+          column: mention_count
+          evidence: Conteggio menzioni nel corpus
+      - name: Primo documento
+        columnName: first_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.organization_profiles
+          column: first_seen_document_id
+          evidence: Provenienza documentale
+      - name: Ultimo documento
+        columnName: last_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.organization_profiles
+          column: last_seen_document_id
+          evidence: Provenienza documentale
+    semantics:
+      synonyms:
+        - Organization
+      displayProperties:
+        - name
+        - mention_count
+      labels:
+        it:
+          singular: organizzazione
+          plural: organizzazioni
+  - id: public_organization
+    name: Public organization
+    description: "Organizzazione pubblica (PA, enti, amministrazioni). Classe COV:
+      https://w3id.org/italia/onto/COV/PublicOrganization."
+    sourceTable: __TENANT_CATALOG__.docs.public_organization_profiles
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.public_organization_profiles
+      evidence: Vista materializzata allineata a
+        https://w3id.org/italia/onto/COV/PublicOrganization
+    properties:
+      - name: Identificativo normalizzato
+        columnName: normalized_name
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: __TENANT_CATALOG__.docs.public_organization_profiles
+          column: normalized_name
+          evidence: Chiave di deduplicazione
+        semantics:
+          description: Identificativo normalizzato (allineato a
+            cov:hasAlternativeIdentifier via profilo documentale).
+          labels:
+            it: identificativo normalizzato
+      - name: Denominazione
+        columnName: name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.public_organization_profiles
+          column: name
+          evidence: Denominazione estratta
+        semantics:
+          description: Denominazione o nome legale (cov:legalName / rdfs:label).
+          labels:
+            it: denominazione
+      - name: Tipo entità estratta
+        columnName: entity_type
+        semanticType: category
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.public_organization_profiles
+          column: entity_type
+          evidence: Tipo assegnato in estrazione NER
+      - name: Menioni
+        columnName: mention_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.public_organization_profiles
+          column: mention_count
+          evidence: Conteggio menzioni nel corpus
+      - name: Primo documento
+        columnName: first_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.public_organization_profiles
+          column: first_seen_document_id
+          evidence: Provenienza documentale
+      - name: Ultimo documento
+        columnName: last_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.public_organization_profiles
+          column: last_seen_document_id
+          evidence: Provenienza documentale
+    semantics:
+      synonyms:
+        - PublicOrganization
+      displayProperties:
+        - name
+        - mention_count
+      labels:
+        it:
+          singular: amministrazione pubblica
+          plural: amministrazioni pubbliche
+  - id: private_organization
+    name: Private organization
+    description: "Organizzazione privata o impresa. Classe COV:
+      https://w3id.org/italia/onto/COV/PrivateOrganization."
+    sourceTable: __TENANT_CATALOG__.docs.private_organization_profiles
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.private_organization_profiles
+      evidence: Vista materializzata allineata a
+        https://w3id.org/italia/onto/COV/PrivateOrganization
+    properties:
+      - name: Identificativo normalizzato
+        columnName: normalized_name
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: __TENANT_CATALOG__.docs.private_organization_profiles
+          column: normalized_name
+          evidence: Chiave di deduplicazione
+        semantics:
+          description: Identificativo normalizzato (allineato a
+            cov:hasAlternativeIdentifier via profilo documentale).
+          labels:
+            it: identificativo normalizzato
+      - name: Denominazione
+        columnName: name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.private_organization_profiles
+          column: name
+          evidence: Denominazione estratta
+        semantics:
+          description: Denominazione o nome legale (cov:legalName / rdfs:label).
+          labels:
+            it: denominazione
+      - name: Tipo entità estratta
+        columnName: entity_type
+        semanticType: category
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.private_organization_profiles
+          column: entity_type
+          evidence: Tipo assegnato in estrazione NER
+      - name: Menioni
+        columnName: mention_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.private_organization_profiles
+          column: mention_count
+          evidence: Conteggio menzioni nel corpus
+      - name: Primo documento
+        columnName: first_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.private_organization_profiles
+          column: first_seen_document_id
+          evidence: Provenienza documentale
+      - name: Ultimo documento
+        columnName: last_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.private_organization_profiles
+          column: last_seen_document_id
+          evidence: Provenienza documentale
+    semantics:
+      synonyms:
+        - PrivateOrganization
+      displayProperties:
+        - name
+        - mention_count
+      labels:
+        it:
+          singular: organizzazione privata
+          plural: organizzazioni private
+  - id: support_unit
+    name: Support unit
+    description: "Unità organizzativa di supporto (ufficio, servizio, settore).
+      Classe COV: https://w3id.org/italia/onto/COV/SupportUnit."
+    sourceTable: __TENANT_CATALOG__.docs.support_unit_profiles
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.support_unit_profiles
+      evidence: Vista materializzata allineata a
+        https://w3id.org/italia/onto/COV/SupportUnit
+    properties:
+      - name: Identificativo normalizzato
+        columnName: normalized_name
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: __TENANT_CATALOG__.docs.support_unit_profiles
+          column: normalized_name
+          evidence: Chiave di deduplicazione
+        semantics:
+          description: Identificativo normalizzato (allineato a
+            cov:hasAlternativeIdentifier via profilo documentale).
+          labels:
+            it: identificativo normalizzato
+      - name: Denominazione
+        columnName: name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.support_unit_profiles
+          column: name
+          evidence: Denominazione estratta
+        semantics:
+          description: Denominazione o nome legale (cov:legalName / rdfs:label).
+          labels:
+            it: denominazione
+      - name: Tipo entità estratta
+        columnName: entity_type
+        semanticType: category
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.support_unit_profiles
+          column: entity_type
+          evidence: Tipo assegnato in estrazione NER
+      - name: Menioni
+        columnName: mention_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.support_unit_profiles
+          column: mention_count
+          evidence: Conteggio menzioni nel corpus
+      - name: Primo documento
+        columnName: first_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.support_unit_profiles
+          column: first_seen_document_id
+          evidence: Provenienza documentale
+      - name: Ultimo documento
+        columnName: last_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.support_unit_profiles
+          column: last_seen_document_id
+          evidence: Provenienza documentale
+    semantics:
+      synonyms:
+        - SupportUnit
+      displayProperties:
+        - name
+        - mention_count
+      labels:
+        it:
+          singular: unità di supporto
+          plural: unità di supporto
+  - id: person
+    name: Person
+    description: "Persona fisica citata nei documenti (estensione operativa accanto
+      a COV-AP_IT). Classe di riferimento:
+      https://w3id.org/italia/onto/CPV/Person."
+    sourceTable: __TENANT_CATALOG__.docs.person_profiles
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.person_profiles
+      evidence: Profili persona materializzati da entity_profiles
+    properties:
+      - name: Identificativo normalizzato
+        columnName: normalized_name
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_profiles
+          column: normalized_name
+          evidence: Chiave di deduplicazione
+        semantics:
+          description: Identificativo normalizzato (allineato a
+            cov:hasAlternativeIdentifier via profilo documentale).
+          labels:
+            it: identificativo normalizzato
+      - name: Denominazione
+        columnName: name
+        semanticType: text
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_profiles
+          column: name
+          evidence: Denominazione estratta
+        semantics:
+          description: Denominazione o nome legale (cov:legalName / rdfs:label).
+          labels:
+            it: denominazione
+      - name: Tipo entità estratta
+        columnName: entity_type
+        semanticType: category
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_profiles
+          column: entity_type
+          evidence: Tipo assegnato in estrazione NER
+      - name: Menioni
+        columnName: mention_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_profiles
+          column: mention_count
+          evidence: Conteggio menzioni nel corpus
+      - name: Primo documento
+        columnName: first_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_profiles
+          column: first_seen_document_id
+          evidence: Provenienza documentale
+      - name: Ultimo documento
+        columnName: last_seen_document_id
+        semanticType: identifier
+        role: attribute
+        nullable: true
+        confidence: 0.85
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_profiles
+          column: last_seen_document_id
+          evidence: Provenienza documentale
+    semantics:
+      synonyms:
+        - persone
+        - persona fisica
+      displayProperties:
+        - name
+        - mention_count
+      labels:
+        it:
+          singular: persona
+          plural: persone
+  - id: person_organization_affiliation
+    name: Person organization affiliation
+    description: Associazione persona–organizzazione dedotta da co-occorrenza negli
+      stessi documenti (ruolo/affiliazione COV).
+    sourceTable: __TENANT_CATALOG__.docs.person_organization_affiliations
+    status: confirmed
+    confidence: 0.85
+    provenance:
+      table: __TENANT_CATALOG__.docs.person_organization_affiliations
+      evidence: Vista person_organization_affiliations
+    properties:
+      - name: Affiliation id
+        columnName: affiliation_id
+        semanticType: identifier
+        role: primary_key
+        nullable: false
+        confidence: 0.95
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_organization_affiliations
+          column: affiliation_id
+          evidence: Surrogate key
+      - name: Person normalized name
+        columnName: person_normalized_name
+        semanticType: identifier
+        role: foreign_key
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_organization_affiliations
+          column: person_normalized_name
+          evidence: FK verso person
+      - name: Organization normalized name
+        columnName: organization_normalized_name
+        semanticType: identifier
+        role: foreign_key
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_organization_affiliations
+          column: organization_normalized_name
+          evidence: FK verso organization
+      - name: Co-document count
+        columnName: co_document_count
+        semanticType: number
+        role: attribute
+        nullable: false
+        confidence: 0.9
+        provenance:
+          table: __TENANT_CATALOG__.docs.person_organization_affiliations
+          column: co_document_count
+          evidence: Documenti condivisi
+    semantics:
+      labels:
+        it:
+          singular: affiliazione persona-organizzazione
+          plural: affiliazioni persona-organizzazione
+relations:
+  - id: affiliation_has_person
+    name: Affiliation has person
+    fromEntity: person_organization_affiliation
+    toEntity: person
+    fromColumn: person_normalized_name
+    toColumn: normalized_name
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.person_organization_affiliations
+      column: person_normalized_name
+      evidence: Join su normalized_name
+  - id: affiliation_has_organization
+    name: Affiliation has organization
+    fromEntity: person_organization_affiliation
+    toEntity: organization
+    fromColumn: organization_normalized_name
+    toColumn: normalized_name
+    cardinality: one_to_many
+    status: confirmed
+    confidence: 0.9
+    provenance:
+      table: __TENANT_CATALOG__.docs.person_organization_affiliations
+      column: organization_normalized_name
+      evidence: Join su normalized_name
+rules: []
+semantics:
+  glossary:
+    - id: cov-ap-it
+      term: COV-AP_IT
+      definition: Ontologia delle Organizzazioni (pubbliche e private) — profilo
+        applicativo italiano AgID, v0.12. https://w3id.org/italia/onto/COV
+    - id: cov-organization
+      term: Organizzazione
+      definition: Classe radice COV per organizzazioni pubbliche e private.
+      objectId: organization
+    - id: cov-person
+      term: Persona
+      definition: Persone fisiche citate nel corpus documentale del tenant.
+      objectId: person
+  examples: []

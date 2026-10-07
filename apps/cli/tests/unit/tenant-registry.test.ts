@@ -21,18 +21,17 @@ describe("tenant registry helpers", () => {
           profile: "DEFAULT",
           warehouse_id: "wh",
         },
-        shared_spaces: {
-          anac: { catalog: "backed", schema: "anac" },
-        },
+        shared_spaces: {},
         tenants: {},
       },
       "comune_x",
-      ["anac"],
+      [],
+      resolveTenantCatalog("comune_x"),
     );
     expect(registry.tenants["comune_x"]).toEqual({
       catalog: "backed_comune_x",
       mcp: "backed-comune_x",
-      shared: ["anac"],
+      shared: [],
     });
   });
 });

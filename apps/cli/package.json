@@ -37,7 +37,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp src/tenant/*.yaml dist/tenant/",
+    "build": "tsc -p tsconfig.json && node scripts/copy-tenant-yaml.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
@@ -45,10 +45,12 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@trybacked/capability-documents": "workspace:^",
     "@trybacked/core": "workspace:*",
     "@trybacked/discovery": "workspace:*",
+    "@trybacked/infrastructure": "workspace:^",
     "@trybacked/mcp": "workspace:*",
-    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/platform-admin": "workspace:*",
     "@trybacked/registry": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/semantic-chat": "workspace:*",

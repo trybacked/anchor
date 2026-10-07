@@ -318,7 +318,7 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
     name: TOOL_NAMES.getEntityProfile,
     title: "Entity profile",
     description:
-      'Answer "what does X do?" by matching ontology objects, relation counts, and document element citations (optional entity_profiles facts when present).',
+      'Answer "what does X do?" by matching ontology objects, relation counts, and document element citations (optional entity profile facts when present).',
     inputSchema: {
       name: z.string().min(1).describe("Party or organization name (substring match)"),
       matchLimit: z.number().int().positive().max(MAX_PROFILE_MATCH_LIMIT).optional(),

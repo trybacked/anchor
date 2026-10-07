@@ -63,7 +63,10 @@ function describeProperty(property: OntologyProperty): string {
     (trait): trait is string => trait !== undefined,
   );
   const synonyms = semantics.synonyms?.length ? ` Synonyms: ${semantics.synonyms.join(", ")}.` : "";
-  return `- ${property.id} (${traits.join(", ")})${semantics.description ? `: ${semantics.description}` : ""}${synonyms}`;
+  const samples = semantics.sampleValues?.length
+    ? ` Values look like: ${semantics.sampleValues.map((value) => `"${value}"`).join(", ")}.`
+    : "";
+  return `- ${property.id} (${traits.join(", ")})${semantics.description ? `: ${semantics.description}` : ""}${synonyms}${samples}`;
 }
 function describeObject(ontology: Ontology, object: OntologyObject): string {
   const annotated = object.properties.filter((property) => property.semantics !== undefined);

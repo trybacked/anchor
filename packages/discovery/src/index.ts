@@ -6,7 +6,26 @@ export {
   discoverFromDatasetProvider,
   profileFromDatasetProvider,
 } from "./propose/discover-from-provider.js";
+export {
+  warehouseTableFqn,
+  warehouseTableShortName,
+  warehouseTableIdsMatch,
+} from "./profile/warehouse-table-id.js";
+export {
+  profileWarehouseTables,
+  normalizeProfileTableShortNames,
+  type ProfileWarehouseTablesOptions,
+  type ProfileWarehouseTablesResult,
+} from "./profile/profile-warehouse-tables.js";
+export {
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- kept for tests and legacy callers
+  discoverDocsFromProfile,
+  filterProfileForDocsDiscovery,
+  runDocsWarehouseDiscovery,
+  type RunDocsWarehouseDiscoveryOptions,
+  type DocsWarehouseDiscoveryResult,
+} from "./propose/docs-warehouse-discovery.js";
 export { enrichProposalFromDiscovery } from "./propose/enrich-proposal.js";
 export type { EnrichProposalFromDiscoveryResult } from "./propose/enrich-proposal.js";
-export { proposalFromDiscovery } from "./propose/proposal-from-discovery.js";
+export { buildReviewQuestions, proposalFromDiscovery } from "./propose/proposal-from-discovery.js";
 export type { ProposalFromDiscoveryOptions } from "./propose/proposal-from-discovery.js";

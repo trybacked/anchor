@@ -120,3 +120,57 @@ CREATE TABLE IF NOT EXISTS derived_datasets (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (tenant_id, name)
 );
+
+CREATE TABLE IF NOT EXISTS ontology_discovery_runs (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  catalog TEXT NOT NULL,
+  schema_name TEXT NOT NULL,
+  discovery JSONB NOT NULL,
+  proposal JSONB NOT NULL,
+  missing_tables JSONB NOT NULL DEFAULT '[]'::jsonb,
+  empty_tables JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_by TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  applied_at TIMESTAMPTZ,
+  applied_revision INT
+);
+
+CREATE INDEX IF NOT EXISTS ontology_discovery_runs_tenant_idx
+  ON ontology_discovery_runs (tenant_id, created_at DESC);
+
+ALTER TABLE ontology_discovery_runs
+  ADD COLUMN IF NOT EXISTS empty_tables JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+-- Tenant profile (Plan Phase 2): configuration as data — locale, AI policy,
+-- engine connections, and ingested sources with capabilities/bindings.
+CREATE TABLE IF NOT EXISTS tenant_settings (
+  tenant_id TEXT PRIMARY KEY REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  locale TEXT NOT NULL DEFAULT 'en',
+  ai_policy JSONB NOT NULL DEFAULT '{"mode":"propose_review"}'::jsonb,
+  ai_model TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS tenant_connections (
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  connection_id TEXT NOT NULL,
+  engine TEXT NOT NULL,
+  config JSONB NOT NULL DEFAULT '{}'::jsonb,
+  secret_ref TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (tenant_id, connection_id)
+);
+
+CREATE TABLE IF NOT EXISTS tenant_sources (
+  tenant_id TEXT NOT NULL REFERENCES organizations (tenant_id) ON DELETE CASCADE,
+  source_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  connection_id TEXT NOT NULL,
+  namespace TEXT NOT NULL,
+  capabilities JSONB NOT NULL DEFAULT '[]'::jsonb,
+  binding JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (tenant_id, source_id)
+);

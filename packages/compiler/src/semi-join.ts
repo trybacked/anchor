@@ -1,14 +1,10 @@
 import type { Ontology, OntologyObject } from "@trybacked/core";
+import type { SqlDialect } from "@trybacked/ports";
+import { sparkDialect } from "./dialects.js";
 import { ObjectQueryCompileError } from "./errors.js";
 import { compileObjectFilter, compileTextSearch } from "./filters.js";
 import { compileJoinOnClause, resolveObjectInPlan, type JoinPlan } from "./join-plan.js";
 import type { SqlParameter } from "./query.js";
-function quoteIdentifier(identifier: string): string {
-  return `\`${identifier.replaceAll("`", "``")}\``;
-}
-function quoteDatasetId(datasetId: string): string {
-  return datasetId.split(".").map(quoteIdentifier).join(".");
-}
 function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -28,14 +24,12 @@ function resolveDatasetId(object: OntologyObject): string {
   }
   return object.sourceDatasetId;
 }
+/** True when any projected column (select or groupBy) belongs to a joined object. */
 export function queryUsesPhysicalJoins(
   rootObjectId: string,
-  select: string[] | undefined,
+  projected: readonly string[],
 ): boolean {
-  if (select === undefined || select.length === 0) {
-    return false;
-  }
-  return select.some((item) => {
+  return projected.some((item) => {
     const dot = item.indexOf(".");
     if (dot <= 0) {
       return false;
@@ -65,7 +59,10 @@ export function compileExistsSemiJoin(
       | undefined;
   },
   parameters: SqlParameter[],
+  dialect: SqlDialect = sparkDialect,
 ): string {
+  const quoteIdentifier = (identifier: string): string => dialect.quoteIdent(identifier);
+  const quoteDatasetId = (datasetId: string): string => dialect.qualify(datasetId);
   const quoteColumn = (objectId: string, propertyId: string): string => {
     const alias = plan.objectAliases.get(objectId);
     if (alias === undefined) {
@@ -108,6 +105,7 @@ export function compileExistsSemiJoin(
         alias,
         filter as Parameters<typeof compileObjectFilter>[2],
         parameters,
+        dialect,
       ),
     );
   }
@@ -122,6 +120,7 @@ export function compileExistsSemiJoin(
           query.textSearch.query,
           query.textSearch.propertyIds,
           parameters,
+          dialect,
         ),
       );
     }

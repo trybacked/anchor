@@ -3,19 +3,31 @@ import { applyCommand, applyCommands, emptySemanticModel } from "../../src/apply
 import { diffSemanticModels } from "../../src/diff-models.js";
 describe("diffSemanticModels semantics", () => {
   it("classifies glossary changes as non-breaking", () => {
-    const before = applyCommands(emptySemanticModel("diff"), [
-      { type: "applyPack", packId: "anac" },
+    // Packs are data now (Plan Fase 7): build the base model from commands.
+    const base = applyCommands(emptySemanticModel("diff"), [
+      {
+        type: "addEntity",
+        entity: {
+          id: "organization",
+          name: "Organization",
+          sourceTable: "cat.schema.orgs",
+          status: "confirmed",
+          confidence: 1,
+          provenance: { table: "cat.schema.orgs", evidence: "test" },
+          properties: [],
+        },
+      },
     ]);
-    const after = applyCommand(before, {
+    const after = applyCommand(base, {
       type: "upsertGlossaryTerm",
       term: {
         id: "test-term",
         term: "test",
         definition: "A test glossary entry",
-        objectId: "contract",
+        objectId: "organization",
       },
     });
-    const changes = diffSemanticModels(before, after);
+    const changes = diffSemanticModels(base, after);
     expect(
       changes.some(
         (change) => change.subject === "semantics.glossary" && change.kind === "changed",

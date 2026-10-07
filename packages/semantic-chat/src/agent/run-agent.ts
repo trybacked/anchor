@@ -1,14 +1,18 @@
 import { createGatewayProvider } from "@ai-sdk/gateway";
 import { applySemanticCatalogs, type Ontology, type SemanticCatalog } from "@trybacked/core";
 import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
-import type { AnchorService } from "@trybacked/service";
+import type { AnchorService, ConversationTurn } from "@trybacked/service";
 import { generateText, stepCountIs, type LanguageModel } from "ai";
 import { randomUUID } from "node:crypto";
 import { assertQuestionDoesNotMentionUnknownProperties } from "../query-intent.js";
 import { buildAgentTools, type AgentToolEvent } from "./build-tools.js";
 import { groundAnswer, SemanticGroundingError } from "./grounding.js";
-import { AGENT_GROUNDING_REPAIR_MAX_STEPS } from "./limits.js";
-import { buildAgentSystemPrompt } from "./prompt-builder.js";
+import {
+  AGENT_DEADLINE_MS,
+  AGENT_FORCE_ANSWER_AFTER_WAREHOUSE_OK,
+  AGENT_GROUNDING_REPAIR_MAX_STEPS,
+} from "./limits.js";
+import { buildAgentSystemPrompt, type AgentPromptContext } from "./prompt-builder.js";
 import {
   DEFAULT_AGENT_BUDGET,
   SemanticAgentError,
@@ -24,10 +28,13 @@ export type RunSemanticAgentOptions = {
   ontology: Ontology;
   service: AnchorService;
   question: string;
+  locale?: string | undefined;
+  history?: readonly ConversationTurn[] | undefined;
   apiKey: string;
   modelId: string;
   fallbackModelId?: string | undefined;
   budget?: AgentBudget | undefined;
+  skipRepairAfterMs?: number | undefined;
   semanticCatalogs?: readonly SemanticCatalog[] | undefined;
   resolveModel?: ModelResolver | undefined;
 };
@@ -36,12 +43,14 @@ type AgentRun = {
   ontology: Ontology;
   service: AnchorService;
   question: string;
+  prompt: AgentPromptContext;
+  deadlineAt: number;
   resolveModel: ModelResolver;
   steps: SemanticAgentStep[];
   toolResults: Map<string, unknown>;
   terminal: AgentTerminal | undefined;
 };
-function gatewayModelResolver(apiKey: string): ModelResolver {
+export function createGatewayModelResolver(apiKey: string): ModelResolver {
   const gateway = createGatewayProvider({ apiKey });
   return (modelId) => gateway(modelId);
 }
@@ -85,12 +94,34 @@ function recordStep(run: AgentRun, event: AgentToolEvent): void {
   });
   run.toolResults.set(event.toolCallId, event.result);
 }
+const DEADLINE_MESSAGE =
+  "The assistant could not answer in time. Please try again, or ask a narrower question.";
+const TIMEOUT_ERROR_NAMES = new Set(["AbortError", "TimeoutError"]);
+/** Time left before the run must give up; zero or less means it already has. */
+function remainingMs(run: AgentRun): number {
+  return run.deadlineAt - Date.now();
+}
+/** A hit deadline is a client-facing outcome, not an internal failure to retry. */
+async function generateTextWithinDeadline(
+  options: Parameters<typeof generateText>[0],
+): ReturnType<typeof generateText> {
+  try {
+    return await generateText(options);
+  } catch (error) {
+    if (error instanceof Error && TIMEOUT_ERROR_NAMES.has(error.name)) {
+      throw new SemanticAgentError(DEADLINE_MESSAGE);
+    }
+    throw error;
+  }
+}
 async function generate(
   run: AgentRun,
   modelId: string,
   budget: AgentBudget,
   systemSuffix?: string,
 ): Promise<TokenUsage> {
+  const remaining = remainingMs(run);
+  if (remaining <= 0) throw new SemanticAgentError(DEADLINE_MESSAGE);
   const toolkit = buildAgentTools({
     ontology: run.ontology,
     service: run.service,
@@ -104,8 +135,9 @@ async function generate(
     },
   });
   const finalStep = budget.maxSteps - 1;
-  const system = buildAgentSystemPrompt(run.ontology, run.question);
-  const generation = await generateText({
+  const system = buildAgentSystemPrompt(run.prompt);
+  const generation = await generateTextWithinDeadline({
+    abortSignal: AbortSignal.timeout(remaining),
     model: run.resolveModel(modelId),
     system: systemSuffix !== undefined ? `${system}\n\n${systemSuffix}` : system,
     prompt: run.question,
@@ -114,6 +146,12 @@ async function generate(
     stopWhen: [stepCountIs(budget.maxSteps), () => run.terminal !== undefined],
     prepareStep: ({ stepNumber }) => {
       if (stepNumber >= finalStep) {
+        return { activeTools: ["submit_answer"] };
+      }
+      const warehouseOk = run.steps.filter(
+        (step) => step.toolName === "query_objects" && step.status === "ok",
+      ).length;
+      if (warehouseOk >= AGENT_FORCE_ANSWER_AFTER_WAREHOUSE_OK) {
         return { activeTools: ["submit_answer"] };
       }
       const available = toolkit.availableToolNames();
@@ -138,7 +176,13 @@ async function generateWithFallback(
     return await generate(run, options.modelId, budget);
   } catch (error) {
     const fallback = options.fallbackModelId;
-    if (fallback === undefined || fallback === options.modelId) throw error;
+    if (
+      error instanceof SemanticAgentError ||
+      fallback === undefined ||
+      fallback === options.modelId
+    ) {
+      throw error;
+    }
     return generate(run, fallback, budget);
   }
 }
@@ -163,7 +207,16 @@ async function repairGrounding(
   run: AgentRun,
   options: RunSemanticAgentOptions,
   budget: AgentBudget,
+  mainPassStartedMs: number,
 ): Promise<TokenUsage> {
+  const skipAfter = options.skipRepairAfterMs;
+  if (skipAfter !== undefined && Date.now() - mainPassStartedMs >= skipAfter) {
+    const failure = groundingFailure(run);
+    if (failure !== undefined) {
+      throw new SemanticAgentError(failure.message);
+    }
+    return NO_USAGE;
+  }
   const failure = groundingFailure(run);
   if (failure === undefined) return NO_USAGE;
   run.terminal = undefined;
@@ -221,13 +274,21 @@ export async function runSemanticAgent(
     ontology,
     service: options.service,
     question: options.question,
-    resolveModel: options.resolveModel ?? gatewayModelResolver(options.apiKey),
+    deadlineAt: started + AGENT_DEADLINE_MS,
+    prompt: {
+      ontology,
+      question: options.question,
+      locale: options.locale,
+      history: options.history,
+    },
+    resolveModel: options.resolveModel ?? createGatewayModelResolver(options.apiKey),
     steps: [],
     toolResults: new Map(),
     terminal: undefined,
   };
+  const mainStarted = Date.now();
   const mainUsage = await generateWithFallback(run, options, budget);
-  const repairUsage = await repairGrounding(run, options, budget);
+  const repairUsage = await repairGrounding(run, options, budget, mainStarted);
   const tokens = addUsage(mainUsage, repairUsage);
   return toResult(randomUUID(), run, { ...tokens, latencyMs: Date.now() - started });
 }

@@ -27,17 +27,26 @@ export const TenantsRegistrySchema = z.object({
   shared_spaces: z.record(SharedSpaceSchema),
   tenants: z.record(TenantEntrySchema),
 });
+/**
+ *
+ */
 export type TenantsRegistry = z.infer<typeof TenantsRegistrySchema>;
+/**
+ *
+ */
 export function loadTenantsRegistry(registryPath: string): TenantsRegistry {
   const raw = readFileSync(registryPath, "utf8");
   return TenantsRegistrySchema.parse(parseYaml(raw));
 }
+/**
+ *
+ */
 export function saveTenantsRegistry(registryPath: string, registry: TenantsRegistry): void {
   writeFileSync(registryPath, stringifyYaml(registry), "utf8");
 }
-export function resolveTenantCatalog(tenantId: string): string {
-  return tenantId === "backed" ? "backed" : `backed_${tenantId}`;
-}
+/**
+ *
+ */
 export function resolveBundleTarget(
   tenantId: string,
   enrollmentTarget: string | undefined,
@@ -47,15 +56,18 @@ export function resolveBundleTarget(
   }
   return `tenant_${tenantId}`;
 }
+/**
+ *
+ */
 export function ensureTenantInRegistry(
   registry: TenantsRegistry,
   tenantId: string,
   sharedKeys: string[],
+  catalog: string,
 ): TenantsRegistry {
   if (registry.tenants[tenantId] !== undefined) {
     return registry;
   }
-  const catalog = resolveTenantCatalog(tenantId);
   return {
     ...registry,
     tenants: {
@@ -68,6 +80,9 @@ export function ensureTenantInRegistry(
     },
   };
 }
+/**
+ *
+ */
 export function validateTenantId(tenantId: string): void {
   if (!/^[a-z][a-z0-9_]*$/.test(tenantId)) {
     throw new Error(

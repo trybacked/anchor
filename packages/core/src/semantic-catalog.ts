@@ -4,6 +4,7 @@ import {
   EntitySemanticsSchema,
   PropertySemanticsSchema,
   VerifiedExampleSchema,
+  type EntitySemantics,
   type GlossaryTerm,
   type VerifiedExample,
 } from "./semantics.js";
@@ -24,8 +25,17 @@ export const SemanticCatalogSchema = z.object({
   glossary: z.array(CatalogGlossaryTermSchema).default([]),
   examples: z.array(VerifiedExampleSchema).default([]),
 });
+/**
+ *
+ */
 export type DatasetSemantics = z.infer<typeof DatasetSemanticsSchema>;
+/**
+ *
+ */
 export type CatalogGlossaryTerm = z.infer<typeof CatalogGlossaryTermSchema>;
+/**
+ *
+ */
 export type SemanticCatalog = z.infer<typeof SemanticCatalogSchema>;
 function withDefaults<T extends object>(
   defaults: T | undefined,
@@ -46,6 +56,26 @@ function enrichProperty(property: OntologyProperty, dataset: DatasetSemantics): 
   const semantics = withDefaults(dataset.properties[property.id], property.semantics);
   return semantics === undefined ? property : { ...property, semantics };
 }
+/**
+ * Catalogs describe a dataset family; a tenant may expose only part of it.
+ * Property references that do not exist on this object are dropped so hints
+ * never leak into prompts or query defaults. Glossary terms are pruned the
+ * same way in resolveGlossary.
+ */
+function pruneEntitySemantics(semantics: EntitySemantics, object: OntologyObject): EntitySemantics {
+  const known = new Set(object.properties.map((property) => property.id));
+  const { displayProperties, defaultTimeDimension, ...rest } = semantics;
+  const keptDisplay = displayProperties?.filter((id) => known.has(id));
+  const keptTime =
+    defaultTimeDimension !== undefined && known.has(defaultTimeDimension)
+      ? defaultTimeDimension
+      : undefined;
+  return {
+    ...rest,
+    ...(keptDisplay !== undefined ? { displayProperties: keptDisplay } : {}),
+    ...(keptTime !== undefined ? { defaultTimeDimension: keptTime } : {}),
+  };
+}
 function enrichObject(
   object: OntologyObject,
   catalogs: readonly SemanticCatalog[],
@@ -55,7 +85,7 @@ function enrichObject(
   const semantics = withDefaults(dataset.entity, object.semantics);
   return {
     ...object,
-    ...(semantics !== undefined ? { semantics } : {}),
+    ...(semantics !== undefined ? { semantics: pruneEntitySemantics(semantics, object) } : {}),
     properties: object.properties.map((property) => enrichProperty(property, dataset)),
   };
 }
@@ -63,9 +93,9 @@ function resolveGlossary(
   catalogs: readonly SemanticCatalog[],
   objects: readonly OntologyObject[],
 ): GlossaryTerm[] {
-  const objectIdByDataset = new Map(
+  const objectByDataset = new Map(
     objects.flatMap((object) =>
-      object.sourceDatasetId !== undefined ? [[object.sourceDatasetId, object.id] as const] : [],
+      object.sourceDatasetId !== undefined ? [[object.sourceDatasetId, object] as const] : [],
     ),
   );
   return catalogs.flatMap((catalog) =>
@@ -73,20 +103,30 @@ function resolveGlossary(
       if (term.datasetId === undefined) {
         return [{ id: term.id, term: term.term, definition: term.definition }];
       }
-      const objectId = objectIdByDataset.get(term.datasetId);
-      if (objectId === undefined) return [];
+      const object = objectByDataset.get(term.datasetId);
+      if (object === undefined) return [];
+      const propertyId = term.propertyId;
+      if (
+        propertyId !== undefined &&
+        !object.properties.some((property) => property.id === propertyId)
+      ) {
+        return [];
+      }
       return [
         {
           id: term.id,
           term: term.term,
           definition: term.definition,
-          objectId,
-          ...(term.propertyId !== undefined ? { propertyId: term.propertyId } : {}),
+          objectId: object.id,
+          ...(propertyId !== undefined ? { propertyId } : {}),
         },
       ];
     }),
   );
 }
+/**
+ *
+ */
 export function applySemanticCatalogs(
   ontology: Ontology,
   catalogs: readonly SemanticCatalog[],

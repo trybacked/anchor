@@ -30,8 +30,10 @@ export const syncCommand: CommandHandler = async (args) => {
   if (args.some((arg) => arg === "--help" || arg === "-h")) {
     ui.log(`Usage: ${formatCliCommand(COMMANDS.SYNC)} [--status] [--local-only]`);
     ui.log("  Snapshot model.yaml into the local registry (.backed/, versioned).");
-    ui.log("  When BACKED_DATABRICKS_* is set, also publishes to the tenant UC registry volume.");
-    ui.log("  Required before deploy can run query_objects on warehouse mappings.");
+    ui.log(
+      "  When BACKED_FILES_REGISTRY_ROOT is set, also publishes to the remote filesystem registry.",
+    );
+    ui.log("  Required before deploy exposes MCP tools against the synced ontology.");
     return;
   }
   if (args.some((arg) => arg === "--status" || arg === "-s")) {

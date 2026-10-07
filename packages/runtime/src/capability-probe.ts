@@ -34,16 +34,19 @@ export async function probeWarehouseTableCapabilities(
 export function warehouseReadersAvailable(caps: WarehouseTableCapabilities): boolean {
   return caps.documents && caps.documentElements;
 }
-export function missingWarehouseTablesMessage(caps: WarehouseTableCapabilities): string {
+export function missingWarehouseTablesMessage(
+  caps: WarehouseTableCapabilities,
+  tables?: { documents: string; documentElements: string },
+): string {
   const missing: string[] = [];
   if (!caps.documents) {
-    missing.push("documents");
+    missing.push(tables?.documents ?? "documents dataset");
   }
   if (!caps.documentElements) {
-    missing.push("document_elements");
+    missing.push(tables?.documentElements ?? "document elements dataset");
   }
   if (missing.length === 0) {
     return "";
   }
-  return `Missing docs tables: ${missing.join(", ")}. Run the docs pipeline refresh (docs_refresh job) for this catalog.`;
+  return `Missing document archive tables: ${missing.join(", ")}. Provision them via your data platform for this catalog.`;
 }

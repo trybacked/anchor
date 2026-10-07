@@ -1,4 +1,4 @@
-import type { AnchorService, DocumentFilesService } from "@trybacked/service";
+import type { AnchorService } from "@trybacked/service";
 import type { Hono } from "hono";
 import { honoPathFromCatalogPath, isV1CatalogPath } from "./platform-api-route-meta.js";
 import { buildPlatformApiRoutes, type PlatformApiRoute } from "./platform-api-routes/index.js";
@@ -39,34 +39,18 @@ function wrapRouteHandler(
   route: PlatformApiRoute,
   deps: PlatformHandlerDeps,
 ): PlatformRouteHandler {
-  const requires = route.requires ?? "ontology";
   return async (c) => {
-    if (requires === "tenant") {
-      if (deps.platformRegistry === undefined) {
-        return c.json({ error: "File operations require platform multi-tenant mode" }, 503);
+    try {
+      const service: AnchorService = await deps.resolveOntologyService(c.get("tenantId"));
+      c.set("anchorService", service);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        return c.json({ error: error.message }, 404);
       }
-      try {
-        const files: DocumentFilesService = await deps.resolveFilesService(c.get("tenantId"));
-        c.set("documentFilesService", files);
-      } catch (error) {
-        if (error instanceof TenantNotFoundError) {
-          return c.json({ error: error.message }, 404);
-        }
-        throw error;
+      if (error instanceof OntologyNotPublishedError) {
+        return c.json({ error: error.message }, 503);
       }
-    } else {
-      try {
-        const service: AnchorService = await deps.resolveOntologyService(c.get("tenantId"));
-        c.set("anchorService", service);
-      } catch (error) {
-        if (error instanceof TenantNotFoundError) {
-          return c.json({ error: error.message }, 404);
-        }
-        if (error instanceof OntologyNotPublishedError) {
-          return c.json({ error: error.message }, 503);
-        }
-        throw error;
-      }
+      throw error;
     }
     return route.handle(c);
   };

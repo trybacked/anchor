@@ -27,8 +27,7 @@ const session = await backed.auth.session();
 
 const gerace = backed.tenant("gerace");
 const { entities } = await gerace.model.listEntities();
-await gerace.files.upload(file, { filename: "report.pdf", folder: "contratti" });
-const run = await gerace.files.refresh();
+await gerace.query.objects({ objectId: "contract", mode: "count" });
 await gerace.ai.ask({ question: "How many contracts?", evidence: true });
 ```
 
@@ -59,7 +58,6 @@ await tenant.query.objects({ objectId: "contract", mode: "count" });
 | `tenant(id).documents`           | `get`, `preview`, `previewUrl`                                                                                                  |
 | `tenant(id).graph`               | `profile`, `traverse`                                                                                                           |
 | `tenant(id).ai`                  | `ask`                                                                                                                           |
-| `tenant(id).files`               | `upload`, `list`, `delete`, `refresh`, `getRefresh`, `waitForRefresh`                                                           |
 | `tenant(id).authoring.ontology`  | `getDraft`, `apply`, `applyPack`, `validate`, `diff`, `publish`, `versions`, `rollback`, `import`, `export`, `packs`, `changes` |
 | `tenant(id).authoring.warehouse` | `schemas`, `tables`, `columns`                                                                                                  |
 | `tenant(id).authoring.datasets`  | `list`, `create`                                                                                                                |

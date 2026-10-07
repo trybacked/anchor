@@ -10,7 +10,12 @@ import {
   proposalFromDiscovery,
   profileFromDatasetProvider,
 } from "@trybacked/discovery";
-import { createDatabricksProviderFromEnv } from "@trybacked/provider-databricks";
+import {
+  createDatasetProviderFromEnv,
+  filesRootFromEnv,
+  resolveEngineFromEnv,
+} from "@trybacked/infrastructure";
+import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { commandErrorMessage, parseHelpOnlyArgs } from "../args.js";
 import { COMMANDS, formatCliCommand } from "../config.js";
@@ -39,21 +44,36 @@ export const pullCommand: CommandHandler = async (args) => {
   }
   if (parsed.help) {
     ui.log(`Usage: ${formatCliCommand(COMMANDS.PULL)}`);
-    ui.log("  Pull schema from Databricks and write model.yaml (deterministic, no LLM).");
-    ui.log("  Requires BACKED_DATABRICKS_HOST, _TOKEN, _WAREHOUSE_ID.");
+    ui.log(
+      "  Pull from the configured source engine and write model.yaml (deterministic, no LLM).",
+    );
+    ui.log(
+      "  Default: BACKED_ENGINE=files and documents under BACKED_FILES_ROOT (or workspace/sources).",
+    );
+    ui.log(
+      "  Default engine is files — documents live under BACKED_FILES_ROOT (see .env.example).",
+    );
     return;
   }
   const root = findWorkspaceRoot(process.cwd());
   const runId = createRunId();
   try {
-    ui.heading("Pull (Databricks)");
-    ui.step(`${runId} · reading tables from Databricks SQL warehouse`);
-    const { provider } = createDatabricksProviderFromEnv(process.env);
+    resolveEngineFromEnv(process.env);
+    ui.heading("Pull (files)");
+    const filesRoot = filesRootFromEnv(process.env, root);
+    if (!existsSync(filesRoot)) {
+      mkdirSync(filesRoot, { recursive: true });
+      ui.detail(`Created file source folder → ${ui.path(filesRoot)}`);
+    }
+    ui.step(`${runId} · indexing files under ${filesRoot}`);
+    const provider = createDatasetProviderFromEnv(process.env, { workspaceRoot: root });
     const profileStarted = Date.now();
     const profile = await profileFromDatasetProvider(provider);
     const profileMs = Date.now() - profileStarted;
     if (profile.length === 0) {
-      throw new Error("No datasets returned from Databricks. Check catalog/schema env vars.");
+      throw new Error(
+        "No file collections found. Add subfolders with documents under your file source root.",
+      );
     }
     const profilePath = writeRunArtifact(root, runId, "profile", profile);
     ui.writeSuccess(`Profile → ${ui.path(profilePath)}`);

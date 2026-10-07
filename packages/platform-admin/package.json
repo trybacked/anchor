@@ -14,14 +14,15 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp -r src/assets dist/assets",
+    "build": "tsc -p tsconfig.json && node scripts/copy-build-assets.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@trybacked/core": "workspace:*",
-    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/ontology-authoring": "workspace:*",
+    "@trybacked/infrastructure": "workspace:*",
     "@trybacked/registry": "workspace:*"
   },
   "devDependencies": {

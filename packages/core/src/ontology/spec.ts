@@ -123,14 +123,47 @@ export const OntologySchema = z.object({
   actions: z.array(OntologyActionSchema).default([]),
   semantics: OntologySemanticsBlockSchema.optional(),
 });
+/**
+ *
+ */
 export type OntologyPropertyType = z.infer<typeof OntologyPropertyTypeSchema>;
+/**
+ *
+ */
 export type OntologyPropertyRole = z.infer<typeof OntologyPropertyRoleSchema>;
+/**
+ *
+ */
 export type OntologyProvenance = z.infer<typeof OntologyProvenanceSchema>;
+/**
+ *
+ */
 export type OntologyProperty = z.infer<typeof OntologyPropertySchema>;
+/**
+ *
+ */
 export type OntologyObject = z.infer<typeof OntologyObjectSchema>;
+/**
+ *
+ */
 export type OntologyRelationshipCardinality = z.infer<typeof OntologyRelationshipCardinalitySchema>;
+/**
+ *
+ */
 export type OntologyRelationship = z.infer<typeof OntologyRelationshipSchema>;
+/**
+ *
+ */
 export type OntologyLogic = z.infer<typeof OntologyLogicSchema>;
+/**
+ *
+ */
 export type OntologyAction = z.infer<typeof OntologyActionSchema>;
+/**
+ *
+ */
 export type OntologyMetadata = z.infer<typeof OntologyMetadataSchema>;
+/**
+ *
+ */
 export type Ontology = z.infer<typeof OntologySchema>;

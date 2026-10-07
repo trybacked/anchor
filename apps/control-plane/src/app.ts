@@ -5,7 +5,9 @@ import { createHash } from "node:crypto";
 import type pg from "pg";
 import { z } from "zod";
 import { requireAdmin, requireInternal } from "./auth.js";
+import { registerAiProposalRoutes } from "./authoring/ai-proposal-routes.js";
 import { registerAuthoringRoutes } from "./authoring/routes.js";
+import { registerTenantProfileRoutes } from "./authoring/tenant-profile-routes.js";
 import type { ControlPlaneConfig } from "./config.js";
 import {
   deleteOAuthClient,
@@ -27,6 +29,7 @@ import { buildTenantsRegistry } from "./registry-builder.js";
 import { registerSemanticRoutes } from "./semantic/routes.js";
 const CreateOrganizationSchema = z.object({
   tenantId: z.string().min(1),
+  catalog: z.string().min(1),
   shared: z.array(z.string().min(1)).optional(),
   workosOrganizationId: z.string().min(1).optional(),
 });
@@ -142,6 +145,7 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
       const shared = body.shared ?? config.defaultSharedSpaces;
       const org = await insertOrganization(pool, {
         tenantId: body.tenantId,
+        catalog: body.catalog,
         sharedSpaces: shared,
         workosOrganizationId: body.workosOrganizationId,
       });
@@ -182,6 +186,8 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     return c.json({ job }, 202);
   });
   registerAuthoringRoutes(app, config, pool);
+  registerTenantProfileRoutes(app, config, pool);
+  registerAiProposalRoutes(app, config, pool);
   registerSemanticRoutes(app, config, pool);
   app.get("/v1/jobs/:jobId", requireAdmin(config), async (c) => {
     const jobId = c.req.param("jobId");

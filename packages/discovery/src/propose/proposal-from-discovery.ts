@@ -119,6 +119,21 @@ export type ProposalFromDiscoveryOptions = {
   generatedAt?: string;
   reviewConfidenceThreshold?: number;
 };
+export function buildReviewQuestions(
+  entities: Entity[],
+  relations: Relation[],
+  reviewConfidenceThreshold: number = DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
+): ReviewQuestion[] {
+  return [
+    ...entities
+      .filter((entity) => entity.confidence < reviewConfidenceThreshold)
+      .map(entityQuestion),
+    ...relations
+      .filter((relation) => relation.confidence < reviewConfidenceThreshold)
+      .map(relationQuestion),
+  ].sort((a, b) => b.risk - a.risk);
+}
+
 export function proposalFromDiscovery(
   discovery: DiscoveryReport,
   options: ProposalFromDiscoveryOptions,
@@ -128,10 +143,7 @@ export function proposalFromDiscovery(
   const relations = discovery.ontology.relationships
     .map((relationship) => relationshipToRelation(relationship, entities))
     .filter((relation): relation is Relation => relation !== null);
-  const questions: ReviewQuestion[] = [
-    ...entities.filter((entity) => entity.confidence < threshold).map(entityQuestion),
-    ...relations.filter((relation) => relation.confidence < threshold).map(relationQuestion),
-  ].sort((a, b) => b.risk - a.risk);
+  const questions = buildReviewQuestions(entities, relations, threshold);
   return {
     runId: options.runId,
     generatedAt: options.generatedAt ?? new Date().toISOString(),

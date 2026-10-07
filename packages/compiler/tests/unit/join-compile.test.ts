@@ -7,7 +7,7 @@ const procurementOntology: Ontology = {
     {
       id: "organization",
       name: "Organization",
-      sourceDatasetId: "backed.anac.organizations",
+      sourceDatasetId: "demo.procurement.organizations",
       properties: [
         { id: "cf_amministrazione_appaltante", name: "CF", type: "string", role: "primary_key" },
         {
@@ -21,7 +21,7 @@ const procurementOntology: Ontology = {
     {
       id: "contract",
       name: "Contract",
-      sourceDatasetId: "backed.anac.contracts",
+      sourceDatasetId: "demo.procurement.contracts",
       properties: [
         { id: "cig", name: "CIG", type: "string", role: "primary_key" },
         { id: "oggetto_gara", name: "Subject", type: "string", role: "attribute" },
@@ -73,7 +73,7 @@ describe("compileObjectQuery joins", () => {
       limit: 20,
     });
     expect(compiled.joinedObjectIds).toEqual(["contract", "project"]);
-    expect(compiled.sql).toContain("FROM `backed`.`anac`.`contracts` AS `o0`");
+    expect(compiled.sql).toContain("FROM `demo`.`procurement`.`contracts` AS `o0`");
     expect(compiled.sql).toContain("EXISTS (SELECT 1 FROM `backed`.`docs`.`projects` AS `o1`");
     expect(compiled.sql).toContain("`o0`.`project_id` = `o1`.`project_id`");
     expect(compiled.sql).toContain("`o1`.`name` = :p1");
@@ -99,7 +99,7 @@ describe("compileObjectQuery joins", () => {
       mode: "count",
     });
     expect(compiled.sql).toBe(
-      "SELECT COUNT(*) AS `count` FROM `backed`.`anac`.`contracts` AS `o0` WHERE EXISTS (SELECT 1 FROM `backed`.`anac`.`organizations` AS `o1`\n\nWHERE `o0`.`cf_amministrazione_appaltante` = `o1`.`cf_amministrazione_appaltante` AND LOWER(`o1`.`denominazione_amministrazione_appaltante`) LIKE LOWER(:p0))",
+      "SELECT COUNT(*) AS `count` FROM `demo`.`procurement`.`contracts` AS `o0` WHERE EXISTS (SELECT 1 FROM `demo`.`procurement`.`organizations` AS `o1`\n\nWHERE `o0`.`cf_amministrazione_appaltante` = `o1`.`cf_amministrazione_appaltante` AND LOWER(`o1`.`denominazione_amministrazione_appaltante`) LIKE LOWER(:p0))",
     );
   });
   it("uses INNER JOIN when select includes joined object properties", () => {
@@ -118,9 +118,27 @@ describe("compileObjectQuery joins", () => {
       limit: 5,
     });
     expect(compiled.sql).toContain(
-      "INNER JOIN `backed`.`anac`.`organizations` AS `o1` ON `o0`.`cf_amministrazione_appaltante` = `o1`.`cf_amministrazione_appaltante`",
+      "INNER JOIN `demo`.`procurement`.`organizations` AS `o1` ON `o0`.`cf_amministrazione_appaltante` = `o1`.`cf_amministrazione_appaltante`",
     );
     expect(compiled.columns).toContain("organization.denominazione_amministrazione_appaltante");
+  });
+  it("groups by a joined object property through an INNER JOIN", () => {
+    const compiled = compileObjectQuery(procurementOntology, {
+      objectId: "contract",
+      joins: [{ relationshipId: "organization_has_contracts" }],
+      groupBy: ["organization.denominazione_amministrazione_appaltante"],
+      aggregations: [{ op: "count", alias: "count" }],
+      orderBy: "count",
+      orderDirection: "desc",
+      limit: 30,
+    });
+    expect(compiled.sql).toBe(
+      "SELECT `o1`.`denominazione_amministrazione_appaltante` AS `organization.denominazione_amministrazione_appaltante`, COUNT(*) AS `count` FROM `demo`.`procurement`.`contracts` AS `o0`\nINNER JOIN `demo`.`procurement`.`organizations` AS `o1` ON `o0`.`cf_amministrazione_appaltante` = `o1`.`cf_amministrazione_appaltante` GROUP BY `o1`.`denominazione_amministrazione_appaltante` ORDER BY `count` desc LIMIT 30",
+    );
+    expect(compiled.columns).toEqual([
+      "organization.denominazione_amministrazione_appaltante",
+      "count",
+    ]);
   });
   it("compiles textSearch as OR across string columns", () => {
     const compiled = compileObjectQuery(procurementOntology, {

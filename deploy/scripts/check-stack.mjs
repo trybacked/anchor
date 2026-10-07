@@ -92,9 +92,8 @@ function main() {
   ok("gateway session secret length OK");
 
   for (const key of [
-    "BACKED_DATABRICKS_HOST",
-    "BACKED_DATABRICKS_TOKEN",
-    "BACKED_DATABRICKS_WAREHOUSE_ID",
+    "BACKED_FILES_ROOT",
+    "BACKED_FILES_REGISTRY_ROOT",
     "ANCHOR_API_TOKEN",
     "GATEWAY_PLATFORM_TOKEN",
   ]) {

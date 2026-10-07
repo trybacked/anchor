@@ -8,7 +8,6 @@ import type {
   SemanticModel,
 } from "@trybacked/core";
 import { MODEL_FORMAT_VERSION } from "@trybacked/core";
-import { commandsForPack } from "./packs/index.js";
 export class AuthoringCommandError extends Error {
   constructor(message: string) {
     super(message);
@@ -224,11 +223,6 @@ export function applyCommand(model: SemanticModel, command: AuthoringCommand): S
         ...model,
         rules: model.rules.filter((rule) => rule.id !== command.ruleId),
       };
-    }
-    case "applyPack": {
-      const catalog = command.catalog ?? "backed";
-      const packCommands = commandsForPack(command.packId, catalog);
-      return applyCommands(model, packCommands);
     }
     case "setPropertySemantics": {
       const entity = findEntity(model, command.entityId);

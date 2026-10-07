@@ -31,26 +31,39 @@ describe("applyCommand", () => {
     const removed = applyCommand(withEntity, { type: "removeEntity", entityId: "item" });
     expect(removed.entities).toHaveLength(0);
   });
-  it("applies applyPack for anac", () => {
-    const result = applyCommands(emptySemanticModel("pack-test"), [
-      { type: "applyPack", packId: "anac" },
-    ]);
-    expect(result.entities.map((entity) => entity.id).sort()).toEqual(["contract", "organization"]);
-    expect(result.relations).toHaveLength(1);
-    expect(result.semantics?.glossary.length).toBeGreaterThan(0);
-  });
   it("sets property semantics", () => {
-    const withPack = applyCommands(emptySemanticModel("sem-test"), [
-      { type: "applyPack", packId: "anac" },
+    const withEntity = applyCommands(emptySemanticModel("sem-test"), [
+      {
+        type: "addEntity",
+        entity: {
+          id: "person",
+          name: "Person",
+          sourceTable: "cat.schema.people",
+          status: "confirmed",
+          confidence: 1,
+          provenance: { table: "cat.schema.people", evidence: "test" },
+          properties: [
+            {
+              name: "Name",
+              columnName: "name",
+              semanticType: "text",
+              role: "attribute",
+              nullable: true,
+              confidence: 1,
+              provenance: { table: "cat.schema.people", column: "name", evidence: "test" },
+            },
+          ],
+        },
+      },
     ]);
-    const updated = applyCommand(withPack, {
+    const updated = applyCommand(withEntity, {
       type: "setPropertySemantics",
-      entityId: "contract",
-      columnName: "source_year_month",
-      semantics: { description: "Batch ingest month (YYYY-MM)" },
+      entityId: "person",
+      columnName: "name",
+      semantics: { description: "Nome visualizzato" },
     });
-    const contract = updated.entities.find((entity) => entity.id === "contract");
-    const property = contract?.properties.find((entry) => entry.columnName === "source_year_month");
-    expect(property?.semantics?.description).toBe("Batch ingest month (YYYY-MM)");
+    const person = updated.entities.find((entity) => entity.id === "person");
+    const property = person?.properties.find((entry) => entry.columnName === "name");
+    expect(property?.semantics?.description).toBe("Nome visualizzato");
   });
 });

@@ -1,3 +1,4 @@
+import { LEGACY_PIPELINE_INFRA_DATASET_TABLES } from "@trybacked/capability-documents";
 import type {
   ColumnProfile,
   DiscoveryReport,
@@ -9,10 +10,10 @@ import type {
   ProfileReport,
   TableProfile,
 } from "@trybacked/core";
-import { ONTOLOGY_FORMAT_VERSION, PIPELINE_INFRA_DATASET_TABLE_NAMES } from "@trybacked/core";
+import { ONTOLOGY_FORMAT_VERSION } from "@trybacked/core";
 import { inspectProfileReport } from "../inspect/inspect-profile.js";
 import { inferPropertyType } from "../inspect/sql-type.js";
-const INFRA_TABLES = new Set<string>(PIPELINE_INFRA_DATASET_TABLE_NAMES);
+const INFRA_TABLES = new Set<string>(LEGACY_PIPELINE_INFRA_DATASET_TABLES);
 const PROPOSED = "proposed" as const;
 const INFERRED = "inferred" as const;
 const DISCOVERY_TYPE = "schema_analysis" as const;
@@ -58,11 +59,18 @@ function discoverProperty(table: TableProfile, column: ColumnProfile): OntologyP
     ...(bestFk !== undefined ? { referenceObjectId: bestFk.targetTable } : {}),
   };
 }
+function sourceDatasetId(table: TableProfile): string {
+  if (table.sourceFile.includes(".") && table.sourceFile !== table.table) {
+    return table.sourceFile;
+  }
+  return table.table;
+}
 function discoverObject(table: TableProfile): OntologyObject {
+  const datasetId = sourceDatasetId(table);
   return {
     id: table.table,
     name: humanizeIdentifier(table.table),
-    sourceDatasetId: table.table,
+    sourceDatasetId: datasetId,
     properties: table.columns.map((column) => discoverProperty(table, column)),
     confidence: 0.85,
     provenance: {
@@ -113,12 +121,17 @@ function discoverRelationship(
 export type DiscoverFromProfileOptions = {
   ontologyId: string;
   version?: number;
+  /** Pipeline infrastructure datasets to include when explicitly discovered. */
+  includeInfraTables?: ReadonlySet<string>;
 };
 export function discoverFromProfile(
   profile: ProfileReport,
   options: DiscoverFromProfileOptions,
 ): DiscoveryReport {
-  const eligible = profile.filter((table) => !INFRA_TABLES.has(table.table));
+  const forceInclude = options.includeInfraTables ?? new Set<string>();
+  const eligible = profile.filter(
+    (table) => forceInclude.has(table.table) || !INFRA_TABLES.has(table.table),
+  );
   const objects = eligible.map(discoverObject);
   const relationships: OntologyRelationship[] = [];
   for (const table of eligible) {

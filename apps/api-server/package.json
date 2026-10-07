@@ -20,8 +20,9 @@
   "dependencies": {
     "@hono/node-server": "^1.14.4",
     "@hono/zod-validator": "^0.5.0",
+    "@trybacked/capability-documents": "workspace:^",
     "@trybacked/core": "workspace:*",
-    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/infrastructure": "workspace:^",
     "@trybacked/registry": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/semantic-chat": "workspace:*",

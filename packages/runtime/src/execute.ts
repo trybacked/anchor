@@ -1,6 +1,6 @@
 import { compileObjectQuery } from "@trybacked/compiler";
 import type { ObjectQuery, SqlParameter } from "@trybacked/compiler";
-import type { Ontology, SemanticModel } from "@trybacked/core";
+import type { DocumentTablesSpec, Ontology, SemanticModel } from "@trybacked/core";
 import type { WarehouseTableCapabilities } from "./capability-probe.js";
 import type { ChunkSearchInput } from "./readers/chunk-search.js";
 import { createWarehouseReaders, type WarehouseReaders } from "./readers/create-readers.js";
@@ -24,6 +24,7 @@ export type OntologyQueryRuntimeOptions = {
   model?: SemanticModel | undefined;
   catalog?: string | undefined;
   documentsSchema?: string | undefined;
+  documentTables?: DocumentTablesSpec | undefined;
   vectorSearchIndex?: string | undefined;
   tableCapabilities?: WarehouseTableCapabilities | undefined;
   readVolumeFile?: VolumeFileReader | undefined;
@@ -47,6 +48,7 @@ export function createOntologyQueryRuntime(
     model,
     catalog,
     documentsSchema,
+    documentTables,
     vectorSearchIndex,
     tableCapabilities,
     readVolumeFile,
@@ -63,13 +65,14 @@ export function createOntologyQueryRuntime(
     };
   };
   const readers =
-    model !== undefined && tableCapabilities !== undefined
+    model !== undefined && tableCapabilities !== undefined && documentTables !== undefined
       ? createWarehouseReaders({
           model,
           ontology,
           executor,
           catalog,
           documentsSchema,
+          documentTables,
           vectorSearchIndex,
           tableCapabilities,
           queryObjects,

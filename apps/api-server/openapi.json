@@ -23,10 +23,6 @@
       "description": "Entity text search across the model"
     },
     {
-      "name": "files",
-      "description": "Upload and manage raw document files before pipeline refresh"
-    },
-    {
       "name": "graph-traverse",
       "description": "Multi-hop graph traversal"
     },
@@ -440,18 +436,218 @@
           },
           "evidence": {
             "type": "boolean"
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 8
+          },
+          "conversationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["user", "assistant"]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "query": {
+                  "type": "object",
+                  "properties": {
+                    "objectId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "joins": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "relationshipId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Published ontology relationship id"
+                          }
+                        },
+                        "required": ["relationshipId"],
+                        "additionalProperties": false
+                      },
+                      "description": "Relationship chain from the root object"
+                    },
+                    "select": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": "Property ids or \"objectId.propertyId\" for joined projection (uses INNER JOIN)"
+                    },
+                    "filters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "objectId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Ontology object id (default: query root). Use after joins to filter related objects."
+                          },
+                          "propertyId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "op": {
+                            "type": "string",
+                            "enum": [
+                              "eq",
+                              "neq",
+                              "gt",
+                              "gte",
+                              "lt",
+                              "lte",
+                              "contains",
+                              "not_contains",
+                              "in",
+                              "not_in",
+                              "is_null",
+                              "is_not_null",
+                              "starts_with"
+                            ]
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "enum": ["null"],
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "boolean"
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["propertyId", "op", "value"],
+                        "additionalProperties": false
+                      },
+                      "default": []
+                    },
+                    "textSearch": {
+                      "type": "object",
+                      "properties": {
+                        "query": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "objectId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Defaults to the query root objectId; must be on the join graph"
+                        },
+                        "propertyIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "description": "String columns to search; default = all string properties on the object"
+                        }
+                      },
+                      "required": ["query"],
+                      "additionalProperties": false,
+                      "description": "Case-insensitive contains across string columns (OR)"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": ["rows", "count"],
+                      "default": "rows"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "groupBy": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "aggregations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "op": {
+                            "type": "string",
+                            "enum": ["sum", "count", "min", "max", "avg"]
+                          },
+                          "propertyId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "alias": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": ["op"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "orderBy": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "orderDirection": {
+                      "type": "string",
+                      "enum": ["asc", "desc"]
+                    }
+                  },
+                  "required": ["objectId"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["role", "text"],
+              "additionalProperties": false
+            },
+            "maxItems": 12
           }
         },
         "required": ["question"],
-        "additionalProperties": false
-      },
-      "FileRefreshBody": {
-        "type": "object",
-        "properties": {
-          "fullRefresh": {
-            "type": "boolean"
-          }
-        },
         "additionalProperties": false
       }
     },
@@ -958,177 +1154,6 @@
           },
           "503": {
             "description": "Ask not available (see GET /v1/chat/ask/status)"
-          }
-        }
-      }
-    },
-    "/v1/files": {
-      "post": {
-        "operationId": "uploadFile",
-        "summary": "Upload a document to the tenant raw volume",
-        "tags": ["files"],
-        "security": [
-          {
-            "backedAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "required": ["file"],
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  },
-                  "folder": {
-                    "type": "string"
-                  }
-                }
-              },
-              "description": "Multipart form with required field `file` (binary) and optional `folder` (slug)."
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Uploaded"
-          },
-          "400": {
-            "description": "Invalid request"
-          },
-          "409": {
-            "description": "File already exists at path"
-          },
-          "413": {
-            "description": "Payload too large"
-          },
-          "503": {
-            "description": "Unavailable"
-          }
-        }
-      },
-      "get": {
-        "operationId": "listFiles",
-        "summary": "List files under the tenant docs raw volume",
-        "tags": ["files"],
-        "security": [
-          {
-            "backedAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "folder",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Directory listing"
-          },
-          "400": {
-            "description": "Invalid folder"
-          }
-        }
-      },
-      "delete": {
-        "operationId": "deleteFile",
-        "summary": "Delete a file from the tenant docs raw volume",
-        "tags": ["files"],
-        "security": [
-          {
-            "backedAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "path",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          },
-          "400": {
-            "description": "Invalid path"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      }
-    },
-    "/v1/files/refresh": {
-      "post": {
-        "operationId": "refreshFiles",
-        "summary": "Run the docs refresh pipeline job",
-        "tags": ["files"],
-        "security": [
-          {
-            "backedAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FileRefreshBody"
-              },
-              "example": {
-                "fullRefresh": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "202": {
-            "description": "Job started"
-          },
-          "503": {
-            "description": "Job not configured"
-          }
-        }
-      }
-    },
-    "/v1/files/refresh/{runId}": {
-      "get": {
-        "operationId": "getFileRefresh",
-        "summary": "Poll docs refresh job run status",
-        "tags": ["files"],
-        "security": [
-          {
-            "backedAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "runId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Run status"
-          },
-          "404": {
-            "description": "Run not found"
           }
         }
       }

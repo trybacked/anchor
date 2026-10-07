@@ -13,7 +13,6 @@ import { createAuthoringOntologyModule } from "./modules/authoring-ontology.js";
 import { createAuthoringSemanticModule } from "./modules/authoring-semantic.js";
 import { createAuthoringWarehouseModule } from "./modules/authoring-warehouse.js";
 import { createDocumentsModule } from "./modules/documents.js";
-import { createFilesModule } from "./modules/files.js";
 import { createGraphModule } from "./modules/graph.js";
 import { createModelModule } from "./modules/model.js";
 import { createQueryModule } from "./modules/query.js";
@@ -28,7 +27,6 @@ export type TenantClient = {
   documents: ReturnType<typeof createDocumentsModule>;
   graph: ReturnType<typeof createGraphModule>;
   ai: ReturnType<typeof createAiModule>;
-  files: ReturnType<typeof createFilesModule>;
   authoring: {
     ontology: ReturnType<typeof createAuthoringOntologyModule>;
     semantic: ReturnType<typeof createAuthoringSemanticModule>;
@@ -71,7 +69,6 @@ function createTenantClient(
     documents: createDocumentsModule(transport, ctx),
     graph: createGraphModule(transport, ctx),
     ai: createAiModule(transport, ctx),
-    files: createFilesModule(transport, ctx),
     authoring: {
       ontology: createAuthoringOntologyModule(transport, ctx),
       semantic: createAuthoringSemanticModule(transport, ctx),

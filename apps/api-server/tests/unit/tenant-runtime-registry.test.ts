@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readModelYaml } from "@trybacked/core";
-import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
 import {
   createVolumeOntologyStore,
   publishSemanticModel,
@@ -42,11 +41,6 @@ const fixtureRoot = join(
   dirname(fileURLToPath(import.meta.url)),
   "../../../../fixtures/pmi-minimal",
 );
-const databricksStub: DatabricksProviderConfig = {
-  host: "example.cloud.databricks.com",
-  token: "token",
-  warehouseId: "wh",
-};
 function writeRegistry(
   dir: string,
   tenants: Record<
@@ -59,9 +53,9 @@ function writeRegistry(
   const path = join(dir, "tenants.yaml");
   const lines = [
     "enrollment:",
-    "  host: https://example.cloud.databricks.com",
-    "  profile: DEFAULT",
-    "  warehouse_id: wh",
+    "  host: files://anchor",
+    "  profile: local",
+    "  warehouse_id: files",
     "shared_spaces: {}",
     "tenants:",
   ];
@@ -79,7 +73,11 @@ describe("tenant runtime registry", () => {
     const dir = mkdtempSync(join(tmpdir(), "trr-"));
     const registryPath = writeRegistry(dir, { demo: { catalog: "backed_demo" } });
     const blobs = memoryBlobStore();
-    const store = createVolumeOntologyStore(blobs);
+    const store = createVolumeOntologyStore(blobs, {
+      root: "/tenants",
+      schema: "backed",
+      volume: "registry",
+    });
     const model = readModelYaml(fixtureRoot);
     const record = publishSemanticModel(fixtureRoot, model, { ontologyId: "demo" });
     const modelYaml = readFileSync(join(fixtureRoot, "model.yaml"), "utf8");
@@ -87,8 +85,7 @@ describe("tenant runtime registry", () => {
     let builds = 0;
     const registry = createTenantRuntimeRegistry({
       registryPath,
-      databricksConfig: databricksStub,
-      env: {},
+      env: { BACKED_ENGINE: "files" },
       ontologyStore: {
         loadCurrent: async (catalog) => {
           builds += 1;
@@ -107,11 +104,14 @@ describe("tenant runtime registry", () => {
   it("throws for unknown tenant and missing publication", async () => {
     const dir = mkdtempSync(join(tmpdir(), "trr-"));
     const registryPath = writeRegistry(dir, { demo: { catalog: "backed_demo" } });
-    const store = createVolumeOntologyStore(memoryBlobStore());
+    const store = createVolumeOntologyStore(memoryBlobStore(), {
+      root: "/tenants",
+      schema: "backed",
+      volume: "registry",
+    });
     const registry = createTenantRuntimeRegistry({
       registryPath,
-      databricksConfig: databricksStub,
-      env: {},
+      env: { BACKED_ENGINE: "files" },
       ontologyStore: store,
       cacheTtlSeconds: 1,
     });

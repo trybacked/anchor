@@ -3,7 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 export const AUTH_SCHEME = "backedAuth";
 export const V1_PATH_PREFIX = "/v1";
 export type HttpMethod = "get" | "post" | "delete";
-export type PlatformRouteRequires = "ontology" | "tenant";
+export type PlatformRouteRequires = "ontology";
 export type JsonBodySpec<Name extends string, Schema extends z.ZodTypeAny = z.ZodTypeAny> = {
   componentName: Name;
   schema: Schema;
@@ -84,7 +84,6 @@ export const OPENAPI_TAG_DESCRIPTIONS: Record<string, string> = {
   "graph-traverse": "Multi-hop graph traversal",
   "semantic-chat":
     "Workshop AI ask — natural-language questions over contracts, dates, organizations (governed agent + warehouse)",
-  files: "Upload and manage raw document files before pipeline refresh",
 };
 export function openApiTagsFromRoutes(routes: PlatformApiRouteSpec[]): Array<{
   name: string;

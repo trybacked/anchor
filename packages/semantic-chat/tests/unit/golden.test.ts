@@ -12,7 +12,7 @@ const ontology: Ontology = {
     {
       id: "contract",
       name: "Contract",
-      sourceDatasetId: "backed.anac.contracts",
+      sourceDatasetId: "demo.procurement.contracts",
       properties: [{ id: "cig", name: "CIG", type: "string", role: "primary_key" }],
     },
   ],

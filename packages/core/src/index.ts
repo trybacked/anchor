@@ -17,15 +17,6 @@ export {
 } from "./graph-traverse.js";
 export type { TraverseDirection, RelationHop, RelationPathSegment } from "./graph-traverse.js";
 export {
-  DOC_TYPE_TABLE_PREFIX,
-  DOC_TYPE_UNKNOWN_SLUG,
-  PIPELINE_INFRA_DATASET_TABLE_NAMES,
-  PIPELINE_MATERIALIZED_DATASET_TABLE_NAMES,
-  isDocumentTypeMaterializedTable,
-  isPipelineInfraDatasetTable,
-  createPipelineMaterializedDatasetTableSet,
-} from "./tables.js";
-export {
   NATIVE_FRACTIONAL_TYPE_PATTERN,
   PROFILE_TOP_VALUES_LIMIT,
   PROFILE_PATTERN_SAMPLE_SIZE,
@@ -81,6 +72,7 @@ export type {
 } from "./model.js";
 export {
   EntitySemanticsSchema,
+  EntityDisplayLabelSchema,
   GlossaryTermSchema,
   OntologySemanticsBlockSchema,
   PropertySemanticsSchema,
@@ -88,6 +80,7 @@ export {
   VerifiedExampleSchema,
 } from "./semantics.js";
 export type {
+  EntityDisplayLabel,
   EntitySemantics,
   GlossaryTerm,
   OntologySemanticsBlock,
@@ -95,6 +88,13 @@ export type {
   SemanticPropertyRole,
   VerifiedExample,
 } from "./semantics.js";
+export {
+  findObject,
+  findProperty,
+  objectLabel,
+  propertyLabel,
+  type EntityLabelForm,
+} from "./display-labels.js";
 export {
   applySemanticCatalogs,
   CatalogGlossaryTermSchema,
@@ -258,11 +258,47 @@ export type {
   ValidationSeverity,
 } from "./ontology/index.js";
 export {
+  ONTOLOGY_FORMAT_VERSION_V2,
+  DatasourceBindingSchema,
+  OntologyActionParameterSchema,
+  OntologyActionTypeV2Schema,
+  OntologyInterfaceV2Schema,
+  OntologyLinkTypeV2Schema,
+  OntologyObjectTypeV2Schema,
+  OntologyPropertyV2Schema,
+  OntologyScalarTypeSchema,
+  OntologySharedPropertySchema,
+  OntologyTypeExprSchema,
+  OntologyV2Schema,
+  OntologyValueTypeSchema,
+  migrateOntologyV1ToV2,
+  migratePropertyTypeV1ToV2,
+  AuthoringCommandV2Error,
+  AuthoringCommandV2Schema,
+  OntologyV2DraftSchema,
+  applyCommandV2,
+  applyCommandsV2,
+  validateOntologyV2,
+} from "./ontology/index.js";
+export type {
+  DatasourceBinding,
+  OntologyActionTypeV2,
+  OntologyInterfaceV2,
+  OntologyLinkTypeV2,
+  OntologyObjectTypeV2,
+  OntologyPropertyV2,
+  OntologyScalarType,
+  OntologySharedProperty,
+  OntologyTypeExpr,
+  OntologyV2,
+  OntologyValueType,
+  AuthoringCommandV2,
+} from "./ontology/index.js";
+export {
   TenantsRegistrySchema,
   ensureTenantInRegistry,
   loadTenantsRegistry,
   resolveBundleTarget,
-  resolveTenantCatalog,
   saveTenantsRegistry,
   validateTenantId,
   type TenantsRegistry,
@@ -316,7 +352,29 @@ export {
   WarehouseColumnSchema,
   DerivedDatasetSchema,
   CreateDerivedDatasetBodySchema,
+  DiscoverDocsProposalBodySchema,
+  DiscoverDocsProposalResponseSchema,
+  DiscoveryRunSummarySchema,
+  DiscoveryRunDetailSchema,
+  ApplyDiscoveryReviewBodySchema,
+  ApplyDiscoveryReviewResponseSchema,
   type TenantRole,
   type AuthoringCommand,
   type OntologyPackSummary,
 } from "./authoring-contract.js";
+
+export {
+  DocumentArchiveBindingSchema,
+  SourceCapabilitySchema,
+  SourceDescriptorSchema,
+  SourceKindSchema,
+  sourceHasCapability,
+} from "./sources.js";
+export type {
+  DocumentArchiveBinding,
+  DocumentObjectIds,
+  DocumentTablesSpec,
+  SourceCapability,
+  SourceDescriptor,
+  SourceKind,
+} from "./sources.js";

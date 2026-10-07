@@ -104,4 +104,26 @@ describe("Anchor API app (platform mode)", () => {
     });
     expect(response.status).toBe(200);
   });
+  it("resolves anchorService for chat ask status (not file-only tenant mode)", async () => {
+    const app = createAnchorApiApp(
+      () => {
+        throw new Error("unused");
+      },
+      {
+        apiToken: "test-token-secret",
+        platform: { registry: mockRegistry() },
+      },
+    );
+    const response = await app.request("/v1/chat/ask/status", {
+      headers: {
+        Authorization: "Bearer test-token-secret",
+        "X-Backed-Tenant": "demo",
+      },
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      available: false,
+      reason: "missing_llm_gateway",
+    });
+  });
 });

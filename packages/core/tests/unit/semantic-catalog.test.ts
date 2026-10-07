@@ -99,6 +99,66 @@ describe("applySemanticCatalogs", () => {
     expect(examples).toHaveLength(1);
     expect(examples[0]?.id).toBe("ex-count");
   });
+  it("drops entity hints that reference properties the tenant object lacks", () => {
+    const partial: SemanticCatalog = {
+      ...catalog,
+      datasets: {
+        "shared.contracts": {
+          entity: {
+            displayProperties: ["month", "importo_lotto", "amount"],
+            defaultTimeDimension: "data_pubblicazione",
+          },
+          properties: {},
+        },
+      },
+    };
+    const contract = applySemanticCatalogs(ontology(), [partial]).objects[0]!;
+    expect(contract.semantics).toEqual({ displayProperties: ["month", "amount"] });
+  });
+  it("drops glossary terms whose property the tenant object lacks", () => {
+    const pointed: SemanticCatalog = {
+      ...catalog,
+      datasets: { "shared.contracts": { properties: {} } },
+      glossary: [
+        {
+          id: "known",
+          term: "mese",
+          definition: "Ingest month.",
+          datasetId: "shared.contracts",
+          propertyId: "month",
+        },
+        {
+          id: "absent",
+          term: "provincia",
+          definition: "Use provincia.",
+          datasetId: "shared.contracts",
+          propertyId: "provincia",
+        },
+      ],
+    };
+    const terms = applySemanticCatalogs(ontology(), [pointed]).semantics?.glossary ?? [];
+    expect(terms.map((term) => term.id)).toEqual(["known"]);
+  });
+  it("keeps authored display labels, which do not depend on tenant properties", () => {
+    const labelled: SemanticCatalog = {
+      ...catalog,
+      datasets: {
+        "shared.contracts": {
+          entity: {
+            labels: { it: { singular: "contratto", plural: "contratti" } },
+            displayProperties: ["ghost"],
+          },
+          properties: { month: { labels: { it: "mese dei dati" } } },
+        },
+      },
+    };
+    const contract = applySemanticCatalogs(ontology(), [labelled]).objects[0]!;
+    expect(contract.semantics?.labels?.["it"]?.plural).toBe("contratti");
+    expect(contract.semantics?.displayProperties).toEqual([]);
+    expect(
+      contract.properties.find((property) => property.id === "month")?.semantics?.labels,
+    ).toEqual({ it: "mese dei dati" });
+  });
   it("is idempotent", () => {
     const once = applySemanticCatalogs(ontology(), [catalog]);
     expect(applySemanticCatalogs(once, [catalog])).toEqual(once);

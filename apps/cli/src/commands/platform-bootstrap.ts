@@ -1,64 +1,32 @@
 import { join } from "node:path";
-import { runDatabricksCliOrThrow } from "../tenant/databricks-cli.js";
-import { loadTenantsRegistry, saveTenantsRegistry } from "../tenant/registry.js";
+import { loadTenantsRegistry } from "../tenant/registry.js";
 import { findBackedRepoRoot } from "../tenant/repo-root.js";
-import { ensureServicePrincipal, createOboToken } from "../tenant/service-principal.js";
 import { initUi } from "../ui/index.js";
-function normalizeHost(hostUrl: string): string {
-  return hostUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-}
+
 export function platformBootstrapCommand(args: string[]): void {
   const ui = initUi();
   if (args.some((arg) => arg === "--help" || arg === "-h")) {
     ui.log("Usage: backed platform bootstrap");
-    ui.log("  Create or reuse the backed-platform service principal and print deploy env.");
+    ui.log("  Print recommended files-engine env for platform api-server + gateway.");
     return;
   }
   const repoRoot = findBackedRepoRoot();
-  const registryPath = join(repoRoot, "tenants.yaml");
-  const registry = loadTenantsRegistry(registryPath);
-  const profile = registry.enrollment.profile;
-  const warehouseId = registry.enrollment.warehouse_id;
-  const hostUrl = registry.enrollment.host.startsWith("http")
-    ? registry.enrollment.host
-    : `https://${registry.enrollment.host}`;
-  const host = normalizeHost(hostUrl);
-  const spName = "backed-platform";
-  const { applicationId } = ensureServicePrincipal(profile, spName);
-  runDatabricksCliOrThrow(
-    [
-      "api",
-      "patch",
-      `/api/2.0/permissions/sql/warehouses/${warehouseId}`,
-      "--json",
-      JSON.stringify({
-        access_control_list: [
-          { service_principal_name: applicationId, permission_level: "CAN_USE" },
-        ],
-      }),
-    ],
-    { profile, label: "warehouse CAN_USE (platform)" },
-  );
-  const token = createOboToken(profile, applicationId, "platform");
-  const updated = {
-    ...registry,
-    enrollment: {
-      ...registry.enrollment,
-      platform_principal: applicationId,
-    },
-  };
-  saveTenantsRegistry(registryPath, updated);
-  ui.heading("Platform bootstrap");
-  ui.writeSuccess(`Service principal ${spName} → ${applicationId}`);
+  loadTenantsRegistry(join(repoRoot, "tenants.yaml"));
+  const filesRoot = join(repoRoot, "sources");
+  const registryRoot = join(repoRoot, ".backed", "remote-registry");
+  ui.heading("Platform bootstrap (files engine)");
   ui.blank();
-  ui.log("Add to anchor/deploy/.env (platform api-server + gateway):");
-  ui.log(`BACKED_DATABRICKS_HOST=${host}`);
-  ui.log(`BACKED_DATABRICKS_TOKEN=${token}`);
-  ui.log(`BACKED_DATABRICKS_WAREHOUSE_ID=${warehouseId}`);
+  ui.log("Add to anchor/deploy/.env (platform api-server + gateway + control-plane):");
+  ui.log("BACKED_ENGINE=files");
+  ui.log(`BACKED_FILES_ROOT=${filesRoot}`);
+  ui.log(`BACKED_FILES_REGISTRY_ROOT=${registryRoot}`);
   ui.log("ANCHOR_API_TOKEN=<generate-a-secret>");
   ui.log("GATEWAY_PLATFORM_TOKEN=<same as ANCHOR_API_TOKEN>");
-  ui.detail("platform_principal saved in tenants.yaml enrollment");
+  ui.detail(
+    "Tenant catalogs map to subfolders under BACKED_FILES_ROOT and registry paths under BACKED_FILES_REGISTRY_ROOT.",
+  );
 }
+
 export async function platformStatusCommand(args: string[]): Promise<void> {
   const ui = initUi();
   if (args.some((arg) => arg === "--help" || arg === "-h")) {
@@ -88,7 +56,7 @@ export async function platformStatusCommand(args: string[]): Promise<void> {
     await import("../tenant/remote-ontology.js");
   if (!canPublishRemoteOntology()) {
     ui.writeError(
-      "Set BACKED_DATABRICKS_HOST, BACKED_DATABRICKS_TOKEN, BACKED_DATABRICKS_WAREHOUSE_ID.",
+      "Set BACKED_FILES_REGISTRY_ROOT (or run from anchor with default .backed/remote-registry).",
     );
     process.exitCode = 1;
     return;

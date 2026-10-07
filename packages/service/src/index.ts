@@ -45,6 +45,9 @@ export {
   EntityProfileBodySchema,
   GraphTraverseBodySchema,
   SemanticAskBodySchema,
+  ConversationTurnSchema,
+  SEMANTIC_ASK_MAX_HISTORY_TURNS,
+  SEMANTIC_ASK_MAX_TURN_CHARS,
 } from "./contracts.js";
 export type {
   ObjectQueryBody,
@@ -53,6 +56,7 @@ export type {
   EntityProfileBody,
   GraphTraverseBody,
   SemanticAskBody,
+  ConversationTurn,
 } from "./contracts.js";
 export {
   searchOntologySchema,
@@ -85,16 +89,6 @@ export {
   type RowProvenance,
 } from "./provenance.js";
 export {
-  createDocumentFilesService,
-  type CreateDocumentFilesServiceOptions,
-  type DocumentFilesService,
-  type FileEntry,
-  type ListFilesResponse,
-  type RefreshRun,
-  type RefreshRunStatus,
-  type UploadedFile,
-} from "./files/index.js";
-export {
   AnchorApiError,
   type ChunkSearchResponse,
   type DocumentPreviewFile,
@@ -110,6 +104,7 @@ export {
   type ListRelationsResponse,
   type ObjectQueryResponse,
   type SemanticAskResponse,
+  type SemanticAskSource,
   type SemanticAskResult,
   type SemanticAskStep,
   type SemanticAnswerClaim,
@@ -125,3 +120,4 @@ export {
   type ChatAskResolution,
   type SemanticAskHandler,
 } from "./chat-ask-status.js";
+export { preferredLanguage } from "./accept-language.js";

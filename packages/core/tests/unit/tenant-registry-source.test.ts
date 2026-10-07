@@ -13,10 +13,7 @@ enrollment:
   host: https://example.cloud.databricks.com
   profile: DEFAULT
   warehouse_id: wh
-shared_spaces:
-  anac:
-    catalog: backed
-    schema: anac
+shared_spaces: {}
 tenants: {}
 `;
 describe("tenant-registry-source", () => {
@@ -57,7 +54,7 @@ describe("tenant-registry-source", () => {
         profile: "DEFAULT",
         warehouse_id: "wh",
       },
-      shared_spaces: { anac: { catalog: "backed", schema: "anac" } },
+      shared_spaces: {},
       tenants: {},
     };
     const fetchImpl = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
@@ -104,7 +101,7 @@ describe("tenant-registry-source", () => {
               profile: "DEFAULT",
               warehouse_id: "wh",
             },
-            shared_spaces: { anac: { catalog: "backed", schema: "anac" } },
+            shared_spaces: {},
             tenants: {},
           }),
           { status: 200 },

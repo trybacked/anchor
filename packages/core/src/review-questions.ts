@@ -20,7 +20,19 @@ export const ReviewQuestionSchema = z.object({
   risk: z.number().min(0),
   evidence: EvidenceTableSchema,
 });
+/**
+ *
+ */
 export type Doubt = z.infer<typeof DoubtSchema>;
+/**
+ *
+ */
 export type EvidenceTable = z.infer<typeof EvidenceTableSchema>;
+/**
+ *
+ */
 export type ReviewQuestionKind = z.infer<typeof ReviewQuestionKindSchema>;
+/**
+ *
+ */
 export type ReviewQuestion = z.infer<typeof ReviewQuestionSchema>;

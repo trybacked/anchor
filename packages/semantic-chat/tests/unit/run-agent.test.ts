@@ -119,12 +119,11 @@ describe("runSemanticAgent", () => {
   it("forces submit_answer on the final step", async () => {
     const { model, result } = run(
       [
-        { toolName: "search_schema", input: { query: "contracts" } },
-        { toolName: "search_schema", input: { query: "contracts" } },
+        { toolName: "query_objects", input: { ...QUERY, mode: "rows", limit: 1 } },
         { toolName: "submit_answer", input: { answer: "No data found.", claims: [] } },
       ],
       "How many contracts?",
-      3,
+      2,
     );
     const agent = await result;
     expect(agent.answer).toBe("No data found.");
@@ -133,11 +132,11 @@ describe("runSemanticAgent", () => {
   });
   it("records failing tools as error steps", async () => {
     const { result } = run([
-      { toolName: "get_entity", input: { objectId: "ghost" } },
+      { toolName: "query_objects", input: { objectId: "ghost", mode: "count" } },
       { toolName: "submit_answer", input: { answer: "Unknown object.", claims: [] } },
     ]);
     const agent = await result;
-    expect(agent.steps[0]).toMatchObject({ toolName: "get_entity", status: "error" });
+    expect(agent.steps[0]).toMatchObject({ toolName: "query_objects", status: "error" });
   });
   it("puts catalog semantics into the system prompt", async () => {
     const ontology = contractOntology();

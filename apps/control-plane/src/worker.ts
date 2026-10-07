@@ -1,7 +1,5 @@
 import "./worker-health.js";
-import { resolveTenantCatalog } from "@trybacked/core";
-import { provisionTenantCloud } from "@trybacked/platform-admin";
-import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
+import { provisionTenantFiles } from "@trybacked/platform-admin";
 import { applyControlPlaneSchema } from "./apply-schema.js";
 import { readControlPlaneConfig } from "./config.js";
 import { createPool } from "./db/pool.js";
@@ -10,55 +8,44 @@ import {
   completeJob,
   failJob,
   getOrganizationByTenantId,
-  listActiveOrganizations,
   requeueJob,
   updateOrganizationStatus,
 } from "./db/repositories.js";
 import { runPublishOntologyJob } from "./jobs/publish-ontology.js";
-import { buildTenantsRegistry } from "./registry-builder.js";
+
 const config = readControlPlaneConfig(process.env);
 const pool = createPool(config.databaseUrl);
-const adminConfig: DatabricksProviderConfig = {
-  host: config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, ""),
-  token: config.databricksToken,
-  warehouseId: config.databricksWarehouseId,
-};
 const MAX_ATTEMPTS = 5;
 const POLL_MS = 2000;
+
 async function provisionOrganization(
   organizationId: string,
   tenantId: string,
-  issueObo: boolean,
 ): Promise<Record<string, unknown>> {
   const org = await getOrganizationByTenantId(pool, tenantId);
   if (org === undefined) {
     throw new Error(`Organization ${tenantId} not found`);
   }
   await updateOrganizationStatus(pool, organizationId, "provisioning");
-  const orgs = await listActiveOrganizations(pool);
-  const registry = buildTenantsRegistry(config, orgs);
-  const shared = Array.isArray(org.shared_spaces)
-    ? org.shared_spaces.filter((v): v is string => typeof v === "string")
-    : config.defaultSharedSpaces;
-  const result = await provisionTenantCloud({
+  const result = await provisionTenantFiles({
     tenantId,
-    catalog: resolveTenantCatalog(tenantId),
-    sharedSpaceKeys: shared,
-    registry,
-    adminConfig,
-    platformPrincipal: config.platformPrincipal,
-    issueTenantOboToken: issueObo,
+    catalog: org.catalog,
+    filesRoot: config.filesRoot,
+    registryRoot: config.filesRegistryRoot,
   });
   await updateOrganizationStatus(pool, organizationId, "active", {
     servicePrincipalAppId: result.servicePrincipalAppId,
   });
   return {
     tenantId,
-    publicationVersion: result.publicationVersion,
     servicePrincipalAppId: result.servicePrincipalAppId,
-    ...(result.tenantOboToken !== undefined ? { tenantOboToken: result.tenantOboToken } : {}),
   };
 }
+
+function failureMarksOrganizationFailed(kind: string): boolean {
+  return kind !== "publish_ontology";
+}
+
 async function processJob(): Promise<boolean> {
   const job = await claimNextJob(pool);
   if (job === undefined) {
@@ -76,7 +63,7 @@ async function processJob(): Promise<boolean> {
       if (catalog === undefined) {
         throw new Error("publish_ontology payload missing catalog");
       }
-      const result = await runPublishOntologyJob(pool, adminConfig, {
+      const result = await runPublishOntologyJob(pool, config, {
         tenantId,
         catalog,
         actor,
@@ -85,20 +72,22 @@ async function processJob(): Promise<boolean> {
       await completeJob(pool, job.id, result);
       return true;
     }
-    const issueObo = job.kind === "create_tenant";
-    const result = await provisionOrganization(job.organization_id, tenantId, issueObo);
+    const result = await provisionOrganization(job.organization_id, tenantId);
     await completeJob(pool, job.id, result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (job.attempts >= MAX_ATTEMPTS) {
       await failJob(pool, job.id, message);
-      await updateOrganizationStatus(pool, job.organization_id, "failed");
+      if (failureMarksOrganizationFailed(job.kind)) {
+        await updateOrganizationStatus(pool, job.organization_id, "failed");
+      }
     } else {
       await requeueJob(pool, job.id);
     }
   }
   return true;
 }
+
 async function loop(): Promise<void> {
   for (;;) {
     const processed = await processJob();
@@ -107,11 +96,13 @@ async function loop(): Promise<void> {
     }
   }
 }
+
 async function main(): Promise<void> {
   await applyControlPlaneSchema(pool);
-  console.error("Control plane worker started");
+  console.error("Control plane worker started (files engine)");
   await loop();
 }
+
 main().catch((error: unknown) => {
   console.error(error);
   process.exit(1);

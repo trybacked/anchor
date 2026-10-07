@@ -28,9 +28,39 @@ function assertPropertyExists(ontology: Ontology, objectId: string, propertyId: 
     );
   }
 }
+/**
+ * A scalar count has no ordering. Breakdowns sort by a projected column
+ * (the compiler enforces this), plain listings by a real property.
+ */
+function validateOrdering(ontology: Ontology, query: ObjectQuery): ObjectQuery {
+  if (query.mode === "count") {
+    const scalar = { ...query };
+    delete scalar.orderBy;
+    delete scalar.orderDirection;
+    return scalar;
+  }
+  const isBreakdown = (query.aggregations ?? []).length > 0;
+  if (query.orderBy !== undefined && !isBreakdown) {
+    assertProjectedPropertyExists(ontology, query.objectId, query.orderBy);
+  }
+  return query;
+}
+/** Accepts a root property id or `objectId.propertyId` for a joined column. */
+function assertProjectedPropertyExists(
+  ontology: Ontology,
+  rootObjectId: string,
+  projected: string,
+): void {
+  const dot = projected.indexOf(".");
+  if (dot > 0) {
+    assertPropertyExists(ontology, projected.slice(0, dot), projected.slice(dot + 1));
+    return;
+  }
+  assertPropertyExists(ontology, rootObjectId, projected);
+}
 export function validateObjectQueryAgainstOntology(
   ontology: Ontology,
-  query: ObjectQuery,
+  query: unknown,
 ): ObjectQuery {
   const parsed = ObjectQuerySchema.safeParse(query);
   if (!parsed.success) {
@@ -51,14 +81,7 @@ export function validateObjectQueryAgainstOntology(
     assertPropertyExists(ontology, filterObjectId, filter.propertyId);
   }
   for (const propertyId of validated.select ?? []) {
-    if (propertyId.includes(".")) {
-      const [joinedObjectId, joinedPropertyId] = propertyId.split(".", 2);
-      if (joinedObjectId !== undefined && joinedPropertyId !== undefined) {
-        assertPropertyExists(ontology, joinedObjectId, joinedPropertyId);
-      }
-      continue;
-    }
-    assertPropertyExists(ontology, objectId, propertyId);
+    assertProjectedPropertyExists(ontology, objectId, propertyId);
   }
   const groupBy = validated.groupBy ?? [];
   const aggregations = validated.aggregations ?? [];
@@ -74,10 +97,11 @@ export function validateObjectQueryAgainstOntology(
       );
     }
     for (const propertyId of groupBy) {
-      assertPropertyExists(ontology, objectId, propertyId);
+      assertProjectedPropertyExists(ontology, objectId, propertyId);
     }
   }
-  const withSelectDefault = applySemanticChatSelectDefault(ontology, validated);
+  const ordered = validateOrdering(ontology, validated);
+  const withSelectDefault = applySemanticChatSelectDefault(ontology, ordered);
   try {
     return applyQueryExecutionBudget(withSelectDefault, "semantic_chat");
   } catch (error) {

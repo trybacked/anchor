@@ -1,6 +1,7 @@
+import { LEGACY_DOCUMENT_OBJECT_IDS } from "@trybacked/capability-documents";
 import { compileObjectQuery } from "@trybacked/compiler";
 import type { ObjectQuery } from "@trybacked/compiler";
-import type { Ontology, OntologyObject } from "@trybacked/core";
+import type { DocumentObjectIds, Ontology, OntologyObject } from "@trybacked/core";
 export type DocumentProvenance = {
   documentId: string;
   page?: number | undefined;
@@ -81,7 +82,10 @@ export function buildRowProvenance(options: {
   ontology: Ontology;
   objectId: string;
   rows: Record<string, unknown>[];
+  /** Ontology object ids that behave as documents (from the archive binding). */
+  documentObjectIds?: DocumentObjectIds | undefined;
 }): RowProvenance[] {
+  const documentObjectIds = options.documentObjectIds ?? LEGACY_DOCUMENT_OBJECT_IDS;
   const object = resolveObject(options.ontology, options.objectId);
   const entity: EntityProvenance = {
     objectId: object.id,
@@ -90,7 +94,10 @@ export function buildRowProvenance(options: {
   };
   return options.rows.map((row, rowIndex) => {
     let document = documentProvenanceFromRow(row);
-    if (object.id === "document_element" || object.id === "document") {
+    if (
+      object.id === documentObjectIds.documentElement ||
+      object.id === documentObjectIds.document
+    ) {
       const page = asNumber(readField(row, PAGE_START_KEYS));
       const filename = asString(readField(row, SOURCE_FILE_KEYS));
       const docId = asString(readField(row, DOCUMENT_ID_KEYS)) ?? "";
@@ -128,7 +135,10 @@ export function buildQueryExecutionProvenance(options: {
     }),
   };
 }
-export function buildChunkSearchProvenance(rows: Record<string, unknown>[]): RowProvenance[] {
+export function buildChunkSearchProvenance(
+  rows: Record<string, unknown>[],
+  documentObjectIds: DocumentObjectIds = LEGACY_DOCUMENT_OBJECT_IDS,
+): RowProvenance[] {
   return rows.map((row, rowIndex) => {
     const documentId = asString(row["documentId"] ?? row["document_id"]) ?? "";
     const page = asNumber(row["page"] ?? row["page_number"]);
@@ -136,7 +146,7 @@ export function buildChunkSearchProvenance(rows: Record<string, unknown>[]): Row
     return {
       rowIndex,
       entity: {
-        objectId: "document_element",
+        objectId: documentObjectIds.documentElement,
         objectName: "Document element",
       },
       row,

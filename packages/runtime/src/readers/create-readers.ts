@@ -1,5 +1,5 @@
 import type { ObjectQuery } from "@trybacked/compiler";
-import type { Ontology, SemanticModel } from "@trybacked/core";
+import type { DocumentTablesSpec, Ontology, SemanticModel } from "@trybacked/core";
 import type { WarehouseTableCapabilities } from "../capability-probe.js";
 import type { ObjectQueryResult, SqlStatementExecutor } from "../execute.js";
 import { createChunkSearchReader } from "./chunk-search.js";
@@ -13,6 +13,8 @@ export type WarehouseReadersOptions = {
   executor: SqlStatementExecutor;
   catalog?: string | undefined;
   documentsSchema?: string | undefined;
+  /** Table names from the tenant's document-archive binding. */
+  documentTables: DocumentTablesSpec;
   vectorSearchIndex?: string | undefined;
   tableCapabilities: WarehouseTableCapabilities;
   queryObjects: (query: ObjectQuery) => Promise<ObjectQueryResult>;
@@ -31,6 +33,7 @@ export function createWarehouseReaders(
     ontology: options.ontology,
     catalog: options.catalog,
     documentsSchema: options.documentsSchema,
+    tables: options.documentTables,
   });
   if (documents === undefined) {
     return undefined;

@@ -9,7 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp src/db/schema.sql dist/db/schema.sql",
+    "build": "tsc -p tsconfig.json && node scripts/copy-build-artifacts.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
     "start": "node dist/index.js",
@@ -20,10 +20,14 @@
   "dependencies": {
     "@hono/node-server": "^1.14.4",
     "@hono/zod-validator": "^0.5.0",
+    "@trybacked/capability-documents": "workspace:^",
     "@trybacked/core": "workspace:*",
-    "@trybacked/platform-admin": "workspace:*",
-    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/discovery": "workspace:*",
+    "@trybacked/infrastructure": "workspace:^",
+    "@trybacked/ontology-ai": "workspace:^",
     "@trybacked/ontology-authoring": "workspace:*",
+    "@trybacked/ontology-extract": "workspace:*",
+    "@trybacked/platform-admin": "workspace:*",
     "@trybacked/registry": "workspace:*",
     "hono": "^4.13.5",
     "pg": "^8.16.0",

@@ -102,3 +102,42 @@ export { validateOntology } from "./validate-ontology.js";
 export { validateSemanticModel } from "./validate-semantic-model.js";
 export type { ValidationIssue, ValidationResult, ValidationSeverity } from "./validation-result.js";
 export { mergeValidationResults, validationResult } from "./validation-result.js";
+export {
+  ONTOLOGY_FORMAT_VERSION_V2,
+  DatasourceBindingSchema,
+  OntologyActionParameterSchema,
+  OntologyActionTypeV2Schema,
+  OntologyInterfaceV2Schema,
+  OntologyLinkTypeV2Schema,
+  OntologyObjectTypeV2Schema,
+  OntologyPropertyV2Schema,
+  OntologyScalarTypeSchema,
+  OntologySharedPropertySchema,
+  OntologyTypeExprSchema,
+  OntologyV2Schema,
+  OntologyValueTypeSchema,
+  migrateOntologyV1ToV2,
+  migratePropertyTypeV1ToV2,
+} from "./spec-v2.js";
+export type {
+  DatasourceBinding,
+  OntologyActionTypeV2,
+  OntologyInterfaceV2,
+  OntologyLinkTypeV2,
+  OntologyObjectTypeV2,
+  OntologyPropertyV2,
+  OntologyScalarType,
+  OntologySharedProperty,
+  OntologyTypeExpr,
+  OntologyV2,
+  OntologyValueType,
+} from "./spec-v2.js";
+export {
+  AuthoringCommandV2Error,
+  AuthoringCommandV2Schema,
+  OntologyV2DraftSchema,
+  applyCommandV2,
+  applyCommandsV2,
+  validateOntologyV2,
+} from "./spec-v2-authoring.js";
+export type { AuthoringCommandV2 } from "./spec-v2-authoring.js";

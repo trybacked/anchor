@@ -20,6 +20,20 @@ export {
 } from "./create-semantic-ask.js";
 export { tenantAiAskEnabled } from "./tenant-ai-ask.js";
 export {
+  ASK_STRATEGIES,
+  agentBudgetFromEnv,
+  askStrategyFromEnv,
+  type AskStrategy,
+} from "./ask-config.js";
+export {
+  runPlanFirst,
+  type PlanFirstOutcome,
+  type PlanFirstResult,
+  type RunPlanFirstOptions,
+} from "./plan-first/run-plan-first.js";
+export { planSemanticQuery, PlannerOutputSchema, type SemanticPlan } from "./plan-first/planner.js";
+export { renderPlanAnswer, type RenderedAnswer } from "./plan-first/render-answer.js";
+export {
   groundAnswer,
   validateAnswerGrounding,
   SemanticGroundingError,

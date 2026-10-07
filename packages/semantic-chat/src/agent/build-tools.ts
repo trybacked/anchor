@@ -51,7 +51,12 @@ export type BuildAgentToolsOptions = {
   onTerminal: (terminal: AgentTerminal) => void;
 };
 const SubmitAnswerSchema = z.object({
-  answer: z.string().min(1),
+  answer: z
+    .string()
+    .min(1)
+    .describe(
+      "Final text shown to the user: professional, non-technical prose in the user's language; Markdown bullets ok; no property ids or tool names.",
+    ),
   claims: z
     .array(
       z.object({
@@ -156,66 +161,68 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
       return result;
     });
   }
-  const tools: ToolSet = {
-    search_schema: defineTool(
+  const tools: ToolSet = {};
+  const compactOntology = options.ontology.objects.length <= 4;
+  if (!compactOntology) {
+    tools.search_schema = defineTool(
       "search_schema",
       "Find ontology objects and properties relevant to the question.",
       SearchSchemaInputSchema,
       (input) => readOnly.search_schema(input),
-    ),
-    get_entity: defineTool(
+    );
+  }
+  if (!compactOntology) {
+    tools.get_entity = defineTool(
       "get_entity",
       "Load one object's properties (id, type, role, semantics) and relationships. Skip it when the system prompt already lists what you need.",
       z.object({ objectId: z.string().min(1) }),
       (input) => toAgentObjectView(options.ontology, readOnly.get_entity(input).object),
-    ),
-    get_property_values: defineSqlTool(
+    );
+  }
+  if (!compactOntology) {
+    tools.get_property_values = defineSqlTool(
       "get_property_values",
       "Top distinct values with counts for a property (optional prefix filter). Use to check value spelling or format.",
       GetPropertyValuesInputSchema,
       (input) => readOnly.get_property_values(input),
-    ),
-    query_objects: defineSqlTool(
-      "query_objects",
-      "Run a governed ObjectQuery (filters, textSearch, joins, groupBy/aggregations, orderBy, count or rows).",
-      ObjectQueryInputSchema,
-      async (input) => {
-        const validated = validateObjectQueryAgainstOntology(options.ontology, input);
-        const intentChecked = validateAgentObjectQuery(
-          options.ontology,
-          options.question,
-          validated,
-        );
-        return unwrapServiceResult(await options.service.objectQuery(intentChecked));
-      },
-    ),
-    submit_answer: defineTool(
-      "submit_answer",
-      "Submit the final answer. Every number must be backed by a claim citing the toolCallId that returned it.",
-      SubmitAnswerSchema,
-      (input) => {
-        options.onTerminal({ kind: "answer", ...input });
-        return { ok: true };
-      },
-    ),
-    ask_clarification: defineTool(
-      "ask_clarification",
-      "Ask the user to choose between materially different interpretations that the ontology cannot resolve.",
-      ClarificationSchema,
-      (input) => {
-        const verdict = evaluateClarification(options.ontology, options.question, input.ambiguity);
-        if (!verdict.accepted) {
-          throw new Error(`Clarification rejected: ${verdict.reason}`);
-        }
-        options.onTerminal({
-          kind: "clarification",
-          question: input.question,
-          options: input.options,
-        });
-        return { ok: true };
-      },
-    ),
-  };
+    );
+  }
+  tools.query_objects = defineSqlTool(
+    "query_objects",
+    "Run a governed ObjectQuery (filters, textSearch, joins, groupBy/aggregations, orderBy, count or rows).",
+    ObjectQueryInputSchema,
+    async (input) => {
+      const validated = validateObjectQueryAgainstOntology(options.ontology, input);
+      const intentChecked = validateAgentObjectQuery(options.ontology, options.question, validated);
+      return unwrapServiceResult(await options.service.objectQuery(intentChecked));
+    },
+  );
+  tools.submit_answer = defineTool(
+    "submit_answer",
+    "Submit the final user-visible answer (plain language, good formatting). Every number must have a claim with the toolCallId that returned it; put technical notes in assumptions, not in answer.",
+    SubmitAnswerSchema,
+    (input) => {
+      options.onTerminal({ kind: "answer", ...input });
+      return { ok: true };
+    },
+  );
+  tools.ask_clarification = defineTool(
+    "ask_clarification",
+    "Ask the user to choose between materially different interpretations that the ontology cannot resolve.",
+    ClarificationSchema,
+    (input) => {
+      const verdict = evaluateClarification(options.ontology, options.question, input.ambiguity);
+      if (!verdict.accepted) {
+        throw new Error(`Clarification rejected: ${verdict.reason}`);
+      }
+      options.onTerminal({
+        kind: "clarification",
+        question: input.question,
+        options: input.options,
+      });
+      return { ok: true };
+    },
+  );
   if (caps.chunkSearch) {
     tools.search_documents = defineSqlTool(
       "search_documents",
@@ -227,7 +234,7 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
       async (input) => unwrapServiceResult(await options.service.chunkSearch(input)),
     );
   }
-  if (caps.entityProfile) {
+  if (caps.entityProfile && caps.chunkSearch) {
     tools.get_entity_profile = defineSqlTool(
       "get_entity_profile",
       "Load a structured profile for a party or organization name in the docs graph.",
@@ -238,7 +245,7 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
       async (input) => unwrapServiceResult(await options.service.entityProfile(input)),
     );
   }
-  if (caps.graphTraverse) {
+  if (caps.graphTraverse && caps.chunkSearch) {
     tools.traverse_graph = defineSqlTool(
       "traverse_graph",
       "Traverse the knowledge graph along a relation from a seed value.",
