@@ -9,7 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node ../../scripts/copy-dist.mjs control-plane-schema",
+    "build": "tsc -p tsconfig.json && node scripts/copy-build-artifacts.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
     "start": "node dist/index.js",

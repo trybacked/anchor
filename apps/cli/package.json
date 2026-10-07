@@ -37,7 +37,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node ../../scripts/copy-dist.mjs cli-tenant-yaml",
+    "build": "tsc -p tsconfig.json && node scripts/copy-tenant-yaml.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
