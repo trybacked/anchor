@@ -1,3 +1,4 @@
+import { LEGACY_PIPELINE_INFRA_DATASET_TABLES } from "@trybacked/capability-documents";
 import type {
   ColumnProfile,
   DiscoveryReport,
@@ -9,7 +10,6 @@ import type {
   ProfileReport,
   TableProfile,
 } from "@trybacked/core";
-import { LEGACY_PIPELINE_INFRA_DATASET_TABLES } from "@trybacked/capability-documents";
 import { ONTOLOGY_FORMAT_VERSION } from "@trybacked/core";
 import { inspectProfileReport } from "../inspect/inspect-profile.js";
 import { inferPropertyType } from "../inspect/sql-type.js";

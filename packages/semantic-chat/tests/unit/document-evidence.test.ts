@@ -17,7 +17,9 @@ describe("document evidence", () => {
 
   it("requires every term in multi-token searches", () => {
     expect(chunkMatchesSearchTerms("Comune di San Luca (RC)", ["luca", "tropea"])).toBe(false);
-    expect(chunkMatchesSearchTerms("Luca Tropea — software engineer", ["luca", "tropea"])).toBe(true);
+    expect(chunkMatchesSearchTerms("Luca Tropea — software engineer", ["luca", "tropea"])).toBe(
+      true,
+    );
   });
 
   it("detects register tables by digit density, not domain wording", () => {

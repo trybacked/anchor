@@ -2,29 +2,28 @@
  * dependency-cruiser boundary rules — Plan Phase 0.
  *
  * Layers (outside-in):
- *   apps           → infrastructure → adapters → capabilities → packages
+ *   apps           → infrastructure (includes engine adapters) → capabilities → packages
  *   packages/*     → ports + core only (no SDK adapters)
  *   core/ports     → no dependencies beyond zod/yaml (no IO, no SDKs)
  */
 module.exports = {
   forbidden: [
     {
-      name: "apps-cannot-import-adapters-directly",
+      name: "apps-cannot-import-engine-adapters-directly",
       comment:
-        "Apps must compose infrastructure via @trybacked/infrastructure, never wire adapters themselves.",
+        "Apps must compose via @trybacked/infrastructure facade, not internal adapter modules.",
       severity: "error",
       from: { path: "^apps/[^/]+/src" },
-      to: {
-        path: "^packages/(adapter-[^/]+|provider-databricks)/src",
-        pathNot: "^packages/infrastructure",
-      },
+      to: { path: "^packages/infrastructure/src/adapters/" },
     },
     {
-      name: "engine-packages-cannot-import-adapters",
-      comment: "Engine packages depend on ports, never on concrete adapters.",
+      name: "engine-packages-cannot-import-engine-adapters",
+      comment: "Engine packages depend on ports, never on concrete warehouse adapters.",
       severity: "error",
-      from: { path: "^packages/(core|compiler|runtime|registry|discovery|service|semantic-chat|mcp|diff)/src" },
-      to: { path: "^packages/(adapter-[^/]+|provider-databricks)/src" },
+      from: {
+        path: "^packages/(core|compiler|runtime|registry|discovery|service|semantic-chat|mcp)/src",
+      },
+      to: { path: "^packages/infrastructure/src/adapters/" },
     },
     {
       name: "core-no-sdk-deps",
@@ -41,7 +40,7 @@ module.exports = {
       comment: "Ports define contracts; they must not import any adapter.",
       severity: "error",
       from: { path: "^packages/ports/src" },
-      to: { path: "^packages/(adapter-[^/]+|provider-databricks|capability-[^/]+)/src" },
+      to: { path: "^packages/(infrastructure/src/adapters|capability-[^/]+)/src" },
     },
     {
       name: "semantic-chat-no-capability-imports",

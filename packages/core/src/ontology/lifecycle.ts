@@ -7,6 +7,9 @@ export const OntologyLifecycleStageSchema = z.enum([
   "confirmed",
   "published",
 ]);
+/**
+ *
+ */
 export type OntologyLifecycleStage = z.infer<typeof OntologyLifecycleStageSchema>;
 const LIFECYCLE_ORDER: OntologyLifecycleStage[] = [
   "discovered",
@@ -15,15 +18,24 @@ const LIFECYCLE_ORDER: OntologyLifecycleStage[] = [
   "confirmed",
   "published",
 ];
+/**
+ *
+ */
 export function lifecycleStageIndex(stage: OntologyLifecycleStage): number {
   return LIFECYCLE_ORDER.indexOf(stage);
 }
+/**
+ *
+ */
 export function canAdvanceLifecycle(
   current: OntologyLifecycleStage,
   next: OntologyLifecycleStage,
 ): boolean {
   return lifecycleStageIndex(next) >= lifecycleStageIndex(current);
 }
+/**
+ *
+ */
 export function lifecycleFromModelStatus(status: ElementStatus): OntologyLifecycleStage {
   switch (status) {
     case "proposed":
@@ -38,6 +50,9 @@ export function lifecycleFromModelStatus(status: ElementStatus): OntologyLifecyc
     }
   }
 }
+/**
+ *
+ */
 export function isGovernedLifecycleStage(stage: OntologyLifecycleStage): boolean {
   return stage === "confirmed" || stage === "published";
 }

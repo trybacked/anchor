@@ -96,7 +96,5 @@ export function isLegacyDocumentTypeMaterializedTable(tableName: string): boolea
 }
 
 export function isLegacyPipelineInfraDatasetTable(tableName: string): boolean {
-  return (
-    isLegacyDocumentTypeMaterializedTable(tableName) || PIPELINE_INFRA_SET.has(tableName)
-  );
+  return isLegacyDocumentTypeMaterializedTable(tableName) || PIPELINE_INFRA_SET.has(tableName);
 }

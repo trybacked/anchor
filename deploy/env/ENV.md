@@ -50,30 +50,27 @@ Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control p
 | `ANCHOR_API_TOKEN`                              | R         | ✓     | ✓       |
 | `BACKED_REGISTRY_SOURCE`                        | R         | ✓     | ✓       |
 | `BACKED_REGISTRY_URL` / `BACKED_REGISTRY_TOKEN` | R if http | ✓     | ✓       |
-| `BACKED_DATABRICKS_HOST`                        | R         | ✓     | ✓       | Platform SP (bootstrap)                             |
-| `BACKED_DATABRICKS_TOKEN`                       | R         | ✓     | ✓       |
-| `BACKED_DATABRICKS_WAREHOUSE_ID`                | R         | ✓     | ✓       |
-| `AI_GATEWAY_API_KEY`                            | O         | ✓     | ✓       | `/v1/chat/ask` (semantic agent)                    |
-| `ANCHOR_MAX_UPLOAD_BYTES`                       | O         | ✓     | ✓       | Max multipart upload (default 50MB) on platform-api |
+| `BACKED_ENGINE`                                 | O         | ✓     | ✓       | `files` (only engine today)                 |
+| `BACKED_FILES_ROOT`                             | O         | ✓     | ✓       | Document folder per tenant / workspace      |
+| `BACKED_FILES_REGISTRY_ROOT`                    | O         | ✓     | ✓       | On-disk ontology registry for platform mode |
+| `AI_GATEWAY_API_KEY`                            | O         | ✓     | ✓       | `/v1/chat/ask` (semantic agent)             |
 | `ANCHOR_TENANTS_REGISTRY`                       | R if file | ✓     | —       |
-| `DATABASE_URL`                                  | —         | —     | —       | Not used (token auth)                               |
+| `DATABASE_URL`                                  | —         | —     | —       | Not used (token auth)                       |
 
 ### Control-plane + provisioner (worker)
 
 | Variable                           | R/O | Local | Railway |
 | ---------------------------------- | --- | ----- | ------- |
-| `DATABASE_URL`                     | R   | ✓     | ✓       | Postgres — Railway: `${{Postgres.DATABASE_URL}}` |
-| `CONTROL_PLANE_ADMIN_TOKEN`        | R   | ✓     | ✓       | CLI / `backed tenant create --remote`            |
-| `CONTROL_PLANE_INTERNAL_TOKEN`     | R   | ✓     | ✓       | HTTP registry + gateway WorkOS                   |
-| `BACKED_DATABRICKS_HOST`           | R   | ✓     | ✓       |
-| `BACKED_DATABRICKS_TOKEN`          | R   | ✓     | ✓       |
-| `BACKED_DATABRICKS_WAREHOUSE_ID`   | R   | ✓     | ✓       |
-| `BACKED_PLATFORM_PRINCIPAL`        | O   | ✓     | ✓       |
-| `CONTROL_PLANE_SHARED_SPACES_JSON` | O   | ✓     | ✓       | JSON map of shared UC spaces (default `{}`)      |
+| `DATABASE_URL`                     | R   | ✓     | ✓       | Postgres — Railway: `${{Postgres.DATABASE_URL}}`                                                                                                        |
+| `CONTROL_PLANE_ADMIN_TOKEN`        | R   | ✓     | ✓       | CLI / `backed tenant create --remote`                                                                                                                   |
+| `CONTROL_PLANE_INTERNAL_TOKEN`     | R   | ✓     | ✓       | HTTP registry + gateway WorkOS                                                                                                                          |
+| `BACKED_FILES_ROOT`                | R   | ✓     | ✓       | Tenant document trees                                                                                                                                   |
+| `BACKED_FILES_REGISTRY_ROOT`       | R   | ✓     | ✓       | Published ontology artifacts on disk                                                                                                                    |
+| `CONTROL_PLANE_SHARED_SPACES_JSON` | O   | ✓     | ✓       | JSON map of shared UC spaces (default `{}`)                                                                                                             |
 | `AI_GATEWAY_API_KEY`               | O   | ✓     | ✓       | Vercel AI Gateway — required for `POST …/discovery/docs/propose-ai` (ontology extract). Same key as platform-api `/v1/chat/ask` if you use one gateway. |
-| `ONTOLOGY_EXTRACT_MODEL`           | O   | ✓     | ✓       | Optional model id for ontology extract (defaults in `@trybacked/ontology-extract`). |
+| `ONTOLOGY_EXTRACT_MODEL`           | O   | ✓     | ✓       | Optional model id for ontology extract (defaults in `@trybacked/ontology-extract`).                                                                     |
 
-Provisioner = same image as control-plane, command `node dist/worker.js` (no HTTP port). Handles `create_tenant` and **`publish_ontology`** (writes UC registry, bumps `organizations.ontology_version`).
+Provisioner = same image as control-plane, command `node dist/worker.js` (no HTTP port). Handles `create_tenant` (mkdir tenant under files root) and **`publish_ontology`** (writes filesystem registry, bumps `organizations.ontology_version`).
 
 After deploy or schema changes: `pnpm migrate` in control-plane (applies `schema.sql`, including `ontology_*` tables).
 
@@ -105,18 +102,11 @@ openssl rand -hex 24   # ANCHOR_API_TOKEN, CONTROL_PLANE_* (≥16 char)
 
 Single rule: `GATEWAY_PLATFORM_TOKEN` = `ANCHOR_API_TOKEN`.
 
-## Document uploads (workshop)
+## File sources (read-only)
 
-Platform-api needs **READ + WRITE** on `{catalog}.docs.raw` and **CAN_MANAGE_RUN** on the `{catalog}-docs-refresh` Databricks job for the platform service principal. New tenants get `docs` schema + `raw` volume via `ensureDocsRawVolume` in provisioning. **Existing** catalogs (created before that step) need a one-time:
+Anchor does not ingest files. Place documents under `BACKED_FILES_ROOT/{tenantId}/…` (or workspace `sources/`). Discovery and pull read that tree; publish writes ontology artifacts under `BACKED_FILES_REGISTRY_ROOT`.
 
-```sql
-CREATE SCHEMA IF NOT EXISTS `{catalog}`.`docs`;
-CREATE VOLUME IF NOT EXISTS `{catalog}`.`docs`.`raw`;
-```
-
-Then re-run platform grants (or `GRANT READ VOLUME, WRITE VOLUME ON VOLUME \`{catalog}\`.\`docs\`.\`raw\` TO \`{platform_principal}\``).
-
-## Databricks bootstrap
+## Platform bootstrap
 
 One-time locally:
 
@@ -124,4 +114,4 @@ One-time locally:
 backed platform bootstrap
 ```
 
-Copy `BACKED_DATABRICKS_*` (and optionally `BACKED_PLATFORM_PRINCIPAL`) to **control-plane**, **provisioner**, and **platform-api** on Railway.
+Copy `BACKED_FILES_*` to **control-plane**, **provisioner**, and **platform-api** on Railway.

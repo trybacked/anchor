@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { OntologyExtractOutputError, parseOntologyExtractOutput } from "../../src/extract-output.js";
+import {
+  OntologyExtractOutputError,
+  parseOntologyExtractOutput,
+} from "../../src/extract-output.js";
 
 describe("parseOntologyExtractOutput", () => {
   it("parses fenced JSON", () => {

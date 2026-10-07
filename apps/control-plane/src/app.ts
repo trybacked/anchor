@@ -5,8 +5,8 @@ import { createHash } from "node:crypto";
 import type pg from "pg";
 import { z } from "zod";
 import { requireAdmin, requireInternal } from "./auth.js";
-import { registerAuthoringRoutes } from "./authoring/routes.js";
 import { registerAiProposalRoutes } from "./authoring/ai-proposal-routes.js";
+import { registerAuthoringRoutes } from "./authoring/routes.js";
 import { registerTenantProfileRoutes } from "./authoring/tenant-profile-routes.js";
 import type { ControlPlaneConfig } from "./config.js";
 import {

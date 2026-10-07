@@ -3,11 +3,7 @@ import {
   LEGACY_DOCUMENT_ARCHIVE_BINDING,
   LEGACY_PIPELINE_MATERIALIZED_DATASET_TABLES,
 } from "@trybacked/capability-documents";
-import {
-  type DiscoveryReport,
-  type ProfileReport,
-  type Proposal,
-} from "@trybacked/core";
+import { type DiscoveryReport, type ProfileReport, type Proposal } from "@trybacked/core";
 import type { DatasetProvider } from "@trybacked/core";
 import {
   normalizeProfileTableShortNames,

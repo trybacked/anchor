@@ -1,7 +1,7 @@
 import type { OntologyObject } from "@trybacked/core";
 import type { SqlDialect } from "@trybacked/ports";
-import { ObjectQueryCompileError } from "./errors.js";
 import { sparkDialect } from "./dialects.js";
+import { ObjectQueryCompileError } from "./errors.js";
 import type { ObjectQueryFilter, ObjectQueryFilterOp, SqlParameter } from "./query.js";
 
 const defaultDialect: SqlDialect = sparkDialect;

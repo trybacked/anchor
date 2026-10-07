@@ -1,5 +1,5 @@
-import { z } from "zod";
 import type { Ontology } from "@trybacked/core";
+import { z } from "zod";
 
 /**
  * Storage, registry, jobs, search, provisioning and secrets ports (Plan Phase 3).
@@ -31,8 +31,14 @@ export type PublicationRecordLike = {
 };
 
 export type OntologyRegistryPort = {
-  loadCurrent: (location: RegistryLocation) => Promise<(PublicationRecordLike & { modelYaml: string }) | null>;
-  publish: (location: RegistryLocation, record: PublicationRecordLike, modelYaml: string) => Promise<void>;
+  loadCurrent: (
+    location: RegistryLocation,
+  ) => Promise<(PublicationRecordLike & { modelYaml: string }) | null>;
+  publish: (
+    location: RegistryLocation,
+    record: PublicationRecordLike,
+    modelYaml: string,
+  ) => Promise<void>;
 };
 
 /** Async job execution on the warehouse (refresh jobs, long-running SQL). */

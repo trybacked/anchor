@@ -157,7 +157,7 @@ LIMIT 1`;
     > => {
       if (readVolumeFile === undefined) {
         throw new Error(
-          "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
+          "Document file preview is unavailable: configure local file access via BACKED_FILES_ROOT.",
         );
       }
       const row = await loadRow(documentId);

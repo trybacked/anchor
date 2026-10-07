@@ -38,8 +38,13 @@ export function renderDocumentSearchAnswer(options: {
     const folder = typeof row.folder === "string" && row.folder.length > 0 ? row.folder : null;
     const page = row.page;
     const pageLabel =
-      typeof page === "number" ? (italian ? `, pagina ${String(page)}` : `, page ${String(page)}`) : "";
-    const folderLabel = folder !== null ? (italian ? ` (cartella ${folder})` : ` (folder ${folder})`) : "";
+      typeof page === "number"
+        ? italian
+          ? `, pagina ${String(page)}`
+          : `, page ${String(page)}`
+        : "";
+    const folderLabel =
+      folder !== null ? (italian ? ` (cartella ${folder})` : ` (folder ${folder})`) : "";
     const snippet = excerpt(row.text, 220);
     return `- **${filename}**${folderLabel}${pageLabel}${snippet.length > 0 ? `: ${snippet}` : ""}`;
   });

@@ -1,18 +1,18 @@
 import { createGatewayProvider } from "@ai-sdk/gateway";
+import type { ProfileReport, Proposal } from "@trybacked/core";
 import { generateText, type LanguageModel } from "ai";
+import {
+  buildOntologyExtractUserPrompt,
+  ONTOLOGY_EXTRACT_SYSTEM_PROMPT,
+} from "./build-grounding-prompt.js";
+import type { DocTableSample } from "./collect-samples.js";
+import { ONTOLOGY_EXTRACT_TIMEOUT_MS } from "./extract-config.js";
 import {
   ONTOLOGY_EXTRACT_OUTPUT_CONTRACT,
   OntologyExtractOutputError,
   parseOntologyExtractOutput,
   type OntologyExtractOutput,
 } from "./extract-output.js";
-import {
-  buildOntologyExtractUserPrompt,
-  ONTOLOGY_EXTRACT_SYSTEM_PROMPT,
-} from "./build-grounding-prompt.js";
-import { ONTOLOGY_EXTRACT_TIMEOUT_MS } from "./extract-config.js";
-import type { DocTableSample } from "./collect-samples.js";
-import type { ProfileReport, Proposal } from "@trybacked/core";
 
 export type OntologyExtractUsage = {
   inputTokens: number;

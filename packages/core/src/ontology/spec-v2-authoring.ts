@@ -1,5 +1,11 @@
 import { z } from "zod";
 import {
+  EntitySemanticsSchema,
+  GlossaryTermSchema,
+  PropertySemanticsSchema,
+  VerifiedExampleSchema,
+} from "../semantics.js";
+import {
   DatasourceBindingSchema,
   OntologyActionTypeV2Schema,
   OntologyInterfaceV2Schema,
@@ -10,12 +16,6 @@ import {
   OntologyValueTypeSchema,
   type OntologyV2,
 } from "./spec-v2.js";
-import {
-  EntitySemanticsSchema,
-  GlossaryTermSchema,
-  PropertySemanticsSchema,
-  VerifiedExampleSchema,
-} from "../semantics.js";
 import type { ValidationResult } from "./validation-result.js";
 import { validationResult } from "./validation-result.js";
 
@@ -109,9 +109,18 @@ export const AuthoringCommandV2Schema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("upsertExample"), example: VerifiedExampleSchema }),
   z.object({ type: z.literal("removeExample"), exampleId: z.string().min(1) }),
 ]);
+/**
+ *
+ */
 export type AuthoringCommandV2 = z.infer<typeof AuthoringCommandV2Schema>;
 
+/**
+ *
+ */
 export class AuthoringCommandV2Error extends Error {
+  /**
+   *
+   */
   constructor(message: string) {
     super(message);
     this.name = "AuthoringCommandV2Error";
@@ -176,7 +185,9 @@ export function applyCommandV2(model: OntologyV2, command: AuthoringCommandV2): 
         ...model,
         objectTypes: model.objectTypes.filter((o) => o.id !== command.objectTypeId),
         linkTypes: model.linkTypes.filter(
-          (l) => l.fromObjectTypeId !== command.objectTypeId && l.toObjectTypeId !== command.objectTypeId,
+          (l) =>
+            l.fromObjectTypeId !== command.objectTypeId &&
+            l.toObjectTypeId !== command.objectTypeId,
         ),
       };
     }
@@ -238,7 +249,11 @@ export function applyCommandV2(model: OntologyV2, command: AuthoringCommandV2): 
     case "addInterface": {
       return {
         ...model,
-        interfaces: upsert(model.interfaces, (i) => i.id === command.interface.id, command.interface),
+        interfaces: upsert(
+          model.interfaces,
+          (i) => i.id === command.interface.id,
+          command.interface,
+        ),
       };
     }
     case "updateInterface": {
@@ -263,7 +278,11 @@ export function applyCommandV2(model: OntologyV2, command: AuthoringCommandV2): 
     case "addValueType": {
       return {
         ...model,
-        valueTypes: upsert(model.valueTypes, (v) => v.id === command.valueType.id, command.valueType),
+        valueTypes: upsert(
+          model.valueTypes,
+          (v) => v.id === command.valueType.id,
+          command.valueType,
+        ),
       };
     }
     case "removeValueType": {
@@ -327,9 +346,7 @@ export function applyCommandV2(model: OntologyV2, command: AuthoringCommandV2): 
             ? {
                 ...o,
                 properties: o.properties.map((p) =>
-                  p.id === command.propertyId
-                    ? ({ ...p, semantics: command.semantics } as typeof p)
-                    : p,
+                  p.id === command.propertyId ? { ...p, semantics: command.semantics } : p,
                 ),
               }
             : o,
@@ -399,7 +416,7 @@ export function validateOntologyV2(model: OntologyV2): ValidationResult {
         issues.push({
           code: "unknown_value_type",
           severity: "error",
-          message: `Value type "${node.valueTypeId}" is not defined in the ontology`,
+          message: `Value type "${node.valueTypeId ?? "unknown"}" is not defined in the ontology`,
           path,
         });
       }
@@ -433,7 +450,10 @@ export function validateOntologyV2(model: OntologyV2): ValidationResult {
     }
     for (const property of objectType.properties) {
       checkTypeExpr(`objectTypes.${objectType.id}.properties.${property.id}`, property);
-      if (property.kind === "physical" && !objectType.backing.some((b) => b.sourceId === property.bindingSourceId)) {
+      if (
+        property.kind === "physical" &&
+        !objectType.backing.some((b) => b.sourceId === property.bindingSourceId)
+      ) {
         issues.push({
           code: "property_without_binding",
           severity: "error",
@@ -462,7 +482,10 @@ export function validateOntologyV2(model: OntologyV2): ValidationResult {
     }
   }
   for (const linkType of model.linkTypes) {
-    if (!objectTypeIds.has(linkType.fromObjectTypeId) || !objectTypeIds.has(linkType.toObjectTypeId)) {
+    if (
+      !objectTypeIds.has(linkType.fromObjectTypeId) ||
+      !objectTypeIds.has(linkType.toObjectTypeId)
+    ) {
       issues.push({
         code: "unknown_link_endpoint",
         severity: "error",

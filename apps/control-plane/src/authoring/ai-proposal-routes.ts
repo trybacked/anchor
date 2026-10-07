@@ -1,5 +1,5 @@
 import { createRunId } from "@trybacked/core";
-import { createDatabricksDatasetProvider, createDatabricksSqlClient } from "@trybacked/infrastructure";
+import { createDatasetProviderFromEnv } from "@trybacked/infrastructure";
 import {
   createAiSdkLlm,
   ProposalScopeSchema,
@@ -11,8 +11,8 @@ import {
   createOntologyExtractModelFromEnv,
 } from "@trybacked/ontology-extract";
 import { Hono } from "hono";
-import { z } from "zod";
 import type pg from "pg";
+import { z } from "zod";
 import type { ControlPlaneConfig } from "../config.js";
 import {
   ensureAiProposalsTable,
@@ -21,7 +21,12 @@ import {
   listAiProposals,
   setAiProposalStatus,
 } from "../db/ai-proposal-repositories.js";
-import { getAuthoring, requireAuthoringAccess, requireAuthoringRole, type AuthoringVariables } from "./context.js";
+import {
+  getAuthoring,
+  requireAuthoringAccess,
+  requireAuthoringRole,
+  type AuthoringVariables,
+} from "./context.js";
 
 /**
  * Generic AI proposal endpoints (Plan Fase 5): the pipeline is source-agnostic,
@@ -46,17 +51,14 @@ type AuthoringEnv = {
   };
 };
 
-function databricksProvider(config: ControlPlaneConfig, catalog: string) {
-  const host = config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-  const databricksConfig = {
-    host,
-    token: config.databricksToken,
-    warehouseId: config.databricksWarehouseId,
-    catalog,
-    schema: config.documentsSchema,
-  };
-  const client = createDatabricksSqlClient(databricksConfig);
-  return createDatabricksDatasetProvider({ config: databricksConfig, client });
+function filesProvider(config: ControlPlaneConfig, tenantId: string) {
+  return createDatasetProviderFromEnv(
+    {
+      ...process.env,
+      BACKED_FILES_ROOT: config.filesRoot,
+    },
+    { tenantId },
+  );
 }
 
 function summary(row: Awaited<ReturnType<typeof getAiProposal>>) {
@@ -76,7 +78,11 @@ function summary(row: Awaited<ReturnType<typeof getAiProposal>>) {
   };
 }
 
-export function registerAiProposalRoutes(app: Hono, config: ControlPlaneConfig, pool: pg.Pool): void {
+export function registerAiProposalRoutes(
+  app: Hono,
+  config: ControlPlaneConfig,
+  pool: pg.Pool,
+): void {
   const base = "/v1/tenants/:tenantId/authoring/ai";
   const ai = new Hono<AuthoringEnv>();
   ai.use("*", requireAuthoringAccess(config, pool));
@@ -101,9 +107,9 @@ export function registerAiProposalRoutes(app: Hono, config: ControlPlaneConfig, 
     await ensureAiProposalsTable(pool);
     let provider;
     try {
-      provider = databricksProvider(config, ctx.catalog);
+      provider = filesProvider(config, ctx.tenantId);
     } catch (error) {
-      return c.json({ error: "warehouse_unavailable", message: String(error) }, 502);
+      return c.json({ error: "source_unavailable", message: String(error) }, 502);
     }
     const proposalId = createRunId();
     const runId = createRunId();

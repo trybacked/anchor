@@ -6,20 +6,25 @@ import {
   type Review,
   applyReview,
 } from "@trybacked/core";
-import { runDocsWarehouseDiscovery } from "@trybacked/discovery";
-import {
-  createGatewayLanguageModel,
-  createOntologyExtractModelFromEnv,
-  runDocsAiOntologyDiscovery,
-} from "@trybacked/ontology-extract";
 import type { DatasetProvider } from "@trybacked/core";
+import type { SemanticModel } from "@trybacked/core";
+import {
+  discoverFromDatasetProvider,
+  proposalFromDiscovery,
+  profileFromDatasetProvider,
+  runDocsWarehouseDiscovery,
+} from "@trybacked/discovery";
 import {
   applyCommands,
   chunkAuthoringCommands,
   commandsFromReviewedDiscovery,
   validateDiscoveryReview,
 } from "@trybacked/ontology-authoring";
-import type { SemanticModel } from "@trybacked/core";
+import {
+  createGatewayLanguageModel,
+  createOntologyExtractModelFromEnv,
+  runDocsAiOntologyDiscovery,
+} from "@trybacked/ontology-extract";
 
 export type DocsDiscoveryPreflightError =
   | { code: "docs_schema_empty"; message: string; missingTables: string[]; emptyTables: string[] }
@@ -50,7 +55,9 @@ export async function proposeDocsAiWarehouseDiscovery(
     requireNonEmptyTables?: boolean;
     locale?: string | undefined;
   },
-): Promise<DocsAiDiscoveryPreflightOk | DocsDiscoveryPreflightError | { code: "ai_not_configured" }> {
+): Promise<
+  DocsAiDiscoveryPreflightOk | DocsDiscoveryPreflightError | { code: "ai_not_configured" }
+> {
   const modelConfig = createOntologyExtractModelFromEnv(env);
   if (modelConfig === undefined) {
     return { code: "ai_not_configured" };
@@ -71,7 +78,7 @@ export async function proposeDocsAiWarehouseDiscovery(
     return {
       code: "docs_schema_empty",
       message:
-        "No curated docs tables found in the warehouse. Upload PDFs and run docs_refresh first.",
+        "No document archive tables found in the warehouse. Provision curated document datasets via your data platform first.",
       missingTables: aiResult.missingTables,
       emptyTables: aiResult.emptyTables,
     };
@@ -81,7 +88,7 @@ export async function proposeDocsAiWarehouseDiscovery(
     return {
       code: "docs_tables_empty",
       message:
-        "Docs tables exist but contain no rows yet. Upload files and run docs_refresh before proposing entities.",
+        "Document archive tables exist but contain no rows yet. Load data via your data platform before proposing entities.",
       missingTables: aiResult.missingTables,
       emptyTables: aiResult.emptyTables,
     };
@@ -121,7 +128,7 @@ export async function proposeDocsWarehouseDiscovery(
     return {
       code: "docs_schema_empty",
       message:
-        "No curated docs tables found in the warehouse. Upload PDFs and run docs_refresh first.",
+        "No document archive tables found in the warehouse. Provision curated document datasets via your data platform first.",
       missingTables: result.missingTables,
       emptyTables: result.emptyTables,
     };
@@ -132,7 +139,7 @@ export async function proposeDocsWarehouseDiscovery(
     return {
       code: "docs_tables_empty",
       message:
-        "Docs tables exist but contain no rows yet. Upload files and run docs_refresh before proposing entities.",
+        "Document archive tables exist but contain no rows yet. Load data via your data platform before proposing entities.",
       missingTables: result.missingTables,
       emptyTables: result.emptyTables,
     };
@@ -144,6 +151,52 @@ export async function proposeDocsWarehouseDiscovery(
     emptyTables: result.emptyTables,
     discovery: result.discovery,
     proposal: result.proposal,
+  };
+}
+
+export type FilesDiscoveryPreflightError = {
+  code: "files_empty";
+  message: string;
+};
+
+export type FilesDiscoveryPreflightOk = {
+  profileTableCount: number;
+  missingTables: string[];
+  emptyTables: string[];
+  discovery: DiscoveryReport;
+  proposal: Proposal;
+};
+
+export async function proposeFilesSourceDiscovery(
+  provider: DatasetProvider,
+  input: {
+    tenantId: string;
+    runId: string;
+    reviewConfidenceThreshold?: number;
+  },
+): Promise<FilesDiscoveryPreflightOk | FilesDiscoveryPreflightError> {
+  const profile = await profileFromDatasetProvider(provider);
+  if (profile.length === 0) {
+    return {
+      code: "files_empty",
+      message:
+        "No file collections found. Add subfolders with documents under the tenant file source root.",
+    };
+  }
+  const resolvedDiscovery = await discoverFromDatasetProvider(provider, {
+    ontologyId: input.tenantId,
+  });
+  const proposal = proposalFromDiscovery(resolvedDiscovery, {
+    runId: input.runId,
+    reviewConfidenceThreshold:
+      input.reviewConfidenceThreshold ?? DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
+  });
+  return {
+    profileTableCount: profile.length,
+    missingTables: [],
+    emptyTables: profile.filter((table) => table.rowCount === 0).map((table) => table.table),
+    discovery: resolvedDiscovery,
+    proposal,
   };
 }
 
@@ -165,10 +218,7 @@ export function buildDiscoveryReviewCommands(
   } = {},
 ): BuildDiscoveryReviewResult | { code: "review_incomplete"; unansweredQuestionIds: string[] } {
   const validation = validateDiscoveryReview(proposal, review);
-  if (
-    options.requireCompleteReview === true &&
-    validation.unansweredQuestionIds.length > 0
-  ) {
+  if (options.requireCompleteReview === true && validation.unansweredQuestionIds.length > 0) {
     return {
       code: "review_incomplete",
       unansweredQuestionIds: validation.unansweredQuestionIds,

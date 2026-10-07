@@ -2,12 +2,11 @@ import { significantQuestionTokens } from "./document-intent.js";
 
 function normalizeChunkText(row: Record<string, unknown>): string {
   const raw =
-    typeof row.text === "string"
-      ? row.text
-      : typeof row.content === "string"
-        ? row.content
-        : "";
-  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    typeof row.text === "string" ? row.text : typeof row.content === "string" ? row.content : "";
+  return raw
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function readSearchScore(row: Record<string, unknown>): number {

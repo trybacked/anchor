@@ -125,7 +125,9 @@ export function buildReviewQuestions(
   reviewConfidenceThreshold: number = DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
 ): ReviewQuestion[] {
   return [
-    ...entities.filter((entity) => entity.confidence < reviewConfidenceThreshold).map(entityQuestion),
+    ...entities
+      .filter((entity) => entity.confidence < reviewConfidenceThreshold)
+      .map(entityQuestion),
     ...relations
       .filter((relation) => relation.confidence < reviewConfidenceThreshold)
       .map(relationQuestion),

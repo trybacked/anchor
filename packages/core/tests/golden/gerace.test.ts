@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { parseModelYaml, semanticModelToOntology, SemanticModelSchema, validateOntology } from "../../src/index.js";
+import {
+  parseModelYaml,
+  semanticModelToOntology,
+  SemanticModelSchema,
+  validateOntology,
+} from "../../src/index.js";
 
 const GOLDEN_DIR = join(dirname(fileURLToPath(import.meta.url)), "gerace");
 

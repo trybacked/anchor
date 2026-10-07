@@ -15,13 +15,12 @@ import type { ReviewPolicy } from "./review-policy.js";
  * model; the prompt is a generic template with locale as a parameter.
  */
 
-const SampledColumnSchema = z.object({
-  datasetId: z.string(),
-  columnName: z.string(),
-  columnType: z.string(),
-  sampleValues: z.array(z.string()),
-});
-type SampledColumn = z.infer<typeof SampledColumnSchema>;
+type SampledColumn = {
+  datasetId: string;
+  columnName: string;
+  columnType: string;
+  sampleValues: string[];
+};
 
 export type RunOntologyProposalOptions = {
   provider: DatasetProvider;
@@ -89,8 +88,8 @@ function buildProfilePrompt(input: {
 
 async function sampleColumns(options: RunOntologyProposalOptions): Promise<SampledColumn[]> {
   const sampleSize = options.sampleSize ?? 5;
-  const datasets = options.datasetIds?.map((id) => ({ id })) ??
-    (await options.provider.listDatasets());
+  const datasets =
+    options.datasetIds?.map((id) => ({ id })) ?? (await options.provider.listDatasets());
   const columns: SampledColumn[] = [];
   for (const dataset of datasets) {
     const schema = await options.provider.getSchema(dataset);
@@ -108,7 +107,11 @@ async function sampleColumns(options: RunOntologyProposalOptions): Promise<Sampl
       const sampleValues = rows
         .map((row) => row[columnIndex])
         .filter((value) => value !== null && value !== undefined)
-        .map((value) => String(value))
+        .map((value) =>
+          typeof value === "string" || typeof value === "number" || typeof value === "boolean"
+            ? String(value)
+            : JSON.stringify(value),
+        )
         .slice(0, sampleSize);
       columns.push({
         datasetId: dataset.id,

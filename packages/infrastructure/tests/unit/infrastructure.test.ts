@@ -1,11 +1,10 @@
+import type { WarehouseConnector } from "@trybacked/ports";
+import type { DatasetProvider } from "@trybacked/core";
 import {
   createTenantInfrastructure,
   registerAdapter,
   resetAdapters,
-  type InfrastructureAdapter,
-  type WarehouseConnector,
 } from "../../src/infrastructure.js";
-import type { DatasetProvider } from "@trybacked/core";
 import { describe, expect, it, beforeEach } from "vitest";
 
 /** Minimal in-memory adapter used to prove the composition root is engine-agnostic. */
@@ -21,17 +20,17 @@ function createFakeWarehouse(): WarehouseConnector {
   return {
     provider,
     executor: {
-      execute: async (sql) => [{ sql }],
+      execute: async (sql: string) => [{ sql }],
     },
     dialect: {
       paramStyle: "named",
-      param: (index) => `:p${String(index)}`,
-      quoteIdent: (id) => `<${id}>`,
-      qualify: (id) => `<${id}>`,
-      ciContains: (col, name) => `${col} CI :${name}`,
+      param: (index: number) => `:p${String(index)}`,
+      quoteIdent: (id: string) => `<${id}>`,
+      qualify: (id: string) => `<${id}>`,
+      ciContains: (col: string, name: string) => `${col} CI :${name}`,
       regexMatch: () => null,
-      arrayContains: (col, name) => `${col} ANY :${name}`,
-      limitOffset: (limit) => ` TAKE ${String(limit)}`,
+      arrayContains: (col: string, name: string) => `${col} ANY :${name}`,
+      limitOffset: (limit: number) => ` TAKE ${String(limit)}`,
     },
   };
 }

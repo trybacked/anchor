@@ -1,4 +1,3 @@
-import { z } from "zod";
 import type {
   JobRunner,
   ObjectStorage,
@@ -8,13 +7,14 @@ import type {
   SecretResolver,
   WarehouseConnector,
 } from "@trybacked/ports";
+import { z } from "zod";
 
 /**
  * Infrastructure composition root (Plan Phase 3c).
  *
  * The ONLY layer allowed to import adapter implementations. Apps compose
  * tenant infrastructure from the TenantProfile through the adapter registry:
- * the same application code runs on Databricks, Postgres, or any engine that
+ * the same application code runs on the files engine today and future warehouse adapters
  * registers an `InfrastructureAdapter`.
  */
 
@@ -107,7 +107,9 @@ export async function createTenantInfrastructure(
       adapter.createSecretResolver?.(config),
     ]);
   const container =
-    parsed.registryContainer ?? adapter.defaultRegistryContainer?.(config) ?? preferred.connectionId;
+    parsed.registryContainer ??
+    adapter.defaultRegistryContainer?.(config) ??
+    preferred.connectionId;
   return {
     warehouse,
     registry: registryPort,

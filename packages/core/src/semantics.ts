@@ -45,10 +45,31 @@ export const OntologySemanticsBlockSchema = z.object({
   glossary: z.array(GlossaryTermSchema).default([]),
   examples: z.array(VerifiedExampleSchema).default([]),
 });
+/**
+ *
+ */
 export type SemanticPropertyRole = z.infer<typeof SemanticPropertyRoleSchema>;
+/**
+ *
+ */
 export type EntityDisplayLabel = z.infer<typeof EntityDisplayLabelSchema>;
+/**
+ *
+ */
 export type PropertySemantics = z.infer<typeof PropertySemanticsSchema>;
+/**
+ *
+ */
 export type EntitySemantics = z.infer<typeof EntitySemanticsSchema>;
+/**
+ *
+ */
 export type GlossaryTerm = z.infer<typeof GlossaryTermSchema>;
+/**
+ *
+ */
 export type VerifiedExample = z.infer<typeof VerifiedExampleSchema>;
+/**
+ *
+ */
 export type OntologySemanticsBlock = z.infer<typeof OntologySemanticsBlockSchema>;

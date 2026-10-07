@@ -1,8 +1,4 @@
-import type {
-  DatasetProvider,
-  ProfileReport,
-  TableProfile,
-} from "@trybacked/core";
+import type { DatasetProvider, ProfileReport, TableProfile } from "@trybacked/core";
 import { warehouseTableFqn, warehouseTableShortName } from "./warehouse-table-id.js";
 
 export type ProfileWarehouseTablesOptions = {
@@ -84,7 +80,8 @@ export function normalizeProfileTableShortNames(profile: ProfileReport): Profile
   return profile.map((table) => ({
     ...table,
     table: warehouseTableShortName(table.table),
-    sourceFile:
-      table.sourceFile.includes(".") ? table.sourceFile : warehouseTableShortName(table.sourceFile),
+    sourceFile: table.sourceFile.includes(".")
+      ? table.sourceFile
+      : warehouseTableShortName(table.sourceFile),
   }));
 }

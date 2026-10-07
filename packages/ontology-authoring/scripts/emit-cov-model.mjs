@@ -17,4 +17,6 @@ const model = buildCovSemanticModel(catalog, {
 });
 
 writeFileSync(resolve(outPath), serializeModelYaml(model), "utf8");
-console.error(`Wrote ${model.entities.length} entities, ${model.relations.length} relations → ${outPath}`);
+console.error(
+  `Wrote ${model.entities.length} entities, ${model.relations.length} relations → ${outPath}`,
+);

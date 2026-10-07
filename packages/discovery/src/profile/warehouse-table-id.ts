@@ -13,5 +13,7 @@ export function warehouseTableFqn(catalog: string, schema: string, table: string
 }
 
 export function warehouseTableIdsMatch(left: string, right: string): boolean {
-  return warehouseTableShortName(left).toLowerCase() === warehouseTableShortName(right).toLowerCase();
+  return (
+    warehouseTableShortName(left).toLowerCase() === warehouseTableShortName(right).toLowerCase()
+  );
 }

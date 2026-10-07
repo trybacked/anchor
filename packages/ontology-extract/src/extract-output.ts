@@ -118,15 +118,16 @@ function normalizeExtractJson(json: unknown): unknown {
     return json;
   }
   const root = json as Record<string, unknown>;
-  if (!Array.isArray(root["entities"])) {
+  const rawEntities = root["entities"];
+  if (!Array.isArray(rawEntities)) {
     return json;
   }
-  const entities = root["entities"].map((entry) => {
+  const entities = rawEntities.map((entry: unknown): unknown => {
     if (typeof entry !== "object" || entry === null) {
       return entry;
     }
     const entity = entry as Record<string, unknown>;
-    let nextEntity = entry;
+    let nextEntity: unknown = entry;
     const entitySemantics = entity["semantics"];
     if (typeof entitySemantics === "object" && entitySemantics !== null) {
       const semanticsRecord = entitySemantics as Record<string, unknown>;
@@ -142,7 +143,7 @@ function normalizeExtractJson(json: unknown): unknown {
     if (!Array.isArray(properties)) {
       return nextEntity;
     }
-    const normalizedProperties = properties.map((property) => {
+    const normalizedProperties = properties.map((property: unknown): unknown => {
       if (typeof property !== "object" || property === null) {
         return property;
       }

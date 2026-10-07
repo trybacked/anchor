@@ -10,9 +10,15 @@ import { z } from "zod";
  */
 
 export const SourceKindSchema = z.enum(["table", "document_archive", "api", "stream"]);
+/**
+ *
+ */
 export type SourceKind = z.infer<typeof SourceKindSchema>;
 
 export const SourceCapabilitySchema = z.enum(["documents", "tabular", "search"]);
+/**
+ *
+ */
 export type SourceCapability = z.infer<typeof SourceCapabilitySchema>;
 
 /** Maps a document archive onto concrete datasets and column names. */
@@ -36,6 +42,9 @@ export const DocumentArchiveBindingSchema = z.object({
     elementType: z.string().min(1),
   }),
 });
+/**
+ *
+ */
 export type DocumentArchiveBinding = z.infer<typeof DocumentArchiveBindingSchema>;
 
 export const SourceDescriptorSchema = z.object({
@@ -48,6 +57,9 @@ export const SourceDescriptorSchema = z.object({
   datasets: z.array(z.string()).optional(),
   binding: DocumentArchiveBindingSchema.optional(),
 });
+/**
+ *
+ */
 export type SourceDescriptor = z.infer<typeof SourceDescriptorSchema>;
 
 /** The document datasets the runtime readers need (subset of the binding). */
@@ -64,6 +76,12 @@ export type DocumentObjectIds = {
   documentElement: string;
 };
 
-export function sourceHasCapability(descriptor: SourceDescriptor, capability: SourceCapability): boolean {
+/**
+ *
+ */
+export function sourceHasCapability(
+  descriptor: SourceDescriptor,
+  capability: SourceCapability,
+): boolean {
   return descriptor.capabilities.includes(capability);
 }

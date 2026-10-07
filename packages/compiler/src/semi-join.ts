@@ -1,10 +1,10 @@
 import type { Ontology, OntologyObject } from "@trybacked/core";
 import type { SqlDialect } from "@trybacked/ports";
+import { sparkDialect } from "./dialects.js";
 import { ObjectQueryCompileError } from "./errors.js";
 import { compileObjectFilter, compileTextSearch } from "./filters.js";
 import { compileJoinOnClause, resolveObjectInPlan, type JoinPlan } from "./join-plan.js";
 import type { SqlParameter } from "./query.js";
-import { sparkDialect } from "./dialects.js";
 function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {

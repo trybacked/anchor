@@ -1,10 +1,10 @@
+import { LEGACY_PIPELINE_INFRA_DATASET_TABLES } from "@trybacked/capability-documents";
 import type {
   ColumnProfile,
   DatasetInspection,
   ProfileReport,
   TableProfile,
 } from "@trybacked/core";
-import { LEGACY_PIPELINE_INFRA_DATASET_TABLES } from "@trybacked/capability-documents";
 const INFRA_TABLES = new Set<string>(LEGACY_PIPELINE_INFRA_DATASET_TABLES);
 function isPrimaryKeyCandidate(column: ColumnProfile, rowCount: number): boolean {
   return rowCount > 0 && column.nullCount === 0 && column.distinctCount === rowCount;

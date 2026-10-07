@@ -38,7 +38,7 @@ export const CONTROL_PLANE_DISCOVERY_TOOL_DEFINITIONS = [
     name: CONTROL_PLANE_DISCOVERY_TOOL_NAMES.proposeDocsOntology,
     title: "Propose docs ontology from warehouse",
     description:
-      "Profiles curated docs tables (after PDF ingest + docs_refresh) and returns a discovery run with review questions.",
+      "Profiles curated document archive tables in the warehouse and returns a discovery run with review questions.",
     inputSchema: {
       reviewConfidenceThreshold: z.number().min(0).max(1).optional(),
       tables: z.array(z.string()).optional(),
@@ -47,16 +47,20 @@ export const CONTROL_PLANE_DISCOVERY_TOOL_DEFINITIONS = [
       context: ControlPlaneDiscoveryToolContext,
       args: { reviewConfidenceThreshold?: number; tables?: string[] },
     ) => {
-      const response = await authoringFetch(context.controlPlane, "/authoring/discovery/docs/propose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(args.reviewConfidenceThreshold !== undefined
-            ? { reviewConfidenceThreshold: args.reviewConfidenceThreshold }
-            : {}),
-          ...(args.tables !== undefined ? { tables: args.tables } : {}),
-        }),
-      });
+      const response = await authoringFetch(
+        context.controlPlane,
+        "/authoring/discovery/docs/propose",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(args.reviewConfidenceThreshold !== undefined
+              ? { reviewConfidenceThreshold: args.reviewConfidenceThreshold }
+              : {}),
+            ...(args.tables !== undefined ? { tables: args.tables } : {}),
+          }),
+        },
+      );
       const text = await response.text();
       if (!response.ok) {
         throw new Error(text);
@@ -168,7 +172,9 @@ export const CONTROL_PLANE_DISCOVERY_TOOL_DEFINITIONS = [
             answeredAt: args.answeredAt,
             answers: args.answers,
             ...(args.apply !== undefined ? { apply: args.apply } : {}),
-            ...(args.includeRelations !== undefined ? { includeRelations: args.includeRelations } : {}),
+            ...(args.includeRelations !== undefined
+              ? { includeRelations: args.includeRelations }
+              : {}),
           }),
           ...(args.draftRevision !== undefined ? { revision: args.draftRevision } : {}),
         },

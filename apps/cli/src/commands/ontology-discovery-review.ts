@@ -3,13 +3,15 @@ import { readControlPlaneEnv, controlPlaneFetch } from "../control-plane/client.
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
-function parseArgs(args: string[]): {
-  tenantId: string;
-  runId: string;
-  apply: boolean;
-  answersPath?: string;
-  autoYes: boolean;
-} | undefined {
+function parseArgs(args: string[]):
+  | {
+      tenantId: string;
+      runId: string;
+      apply: boolean;
+      answersPath?: string;
+      autoYes: boolean;
+    }
+  | undefined {
   const tenantId = args[0];
   const runId = args[1];
   if (tenantId === undefined || runId === undefined) {
@@ -78,7 +80,11 @@ export const ontologyDiscoveryReviewCommand: CommandHandler = async (args) => {
       decision: "yes" as const,
     }));
   }
-  const draftResponse = await controlPlaneFetch(client, parsed.tenantId, "/authoring/ontology/draft");
+  const draftResponse = await controlPlaneFetch(
+    client,
+    parsed.tenantId,
+    "/authoring/ontology/draft",
+  );
   if (!draftResponse.ok) {
     ui.writeError(await draftResponse.text());
     process.exitCode = 1;

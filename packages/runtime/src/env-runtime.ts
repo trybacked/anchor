@@ -30,7 +30,8 @@ export type BuiltQueryRuntime = {
 export async function buildQueryRuntimeFromEnv(
   options: BuildQueryRuntimeFromEnvOptions,
 ): Promise<BuiltQueryRuntime> {
-  const catalog = options.catalog ?? options.env["BACKED_DATABRICKS_CATALOG"];
+  const catalog =
+    options.catalog ?? options.env["BACKED_CATALOG"] ?? options.env["BACKED_DATABRICKS_CATALOG"];
   const documentsSchema = options.env["BACKED_DOCUMENTS_SCHEMA"] ?? "docs";
   const vectorSearchIndex = options.env["BACKED_VECTOR_SEARCH_INDEX"];
   // The resolver falls back to inferring the catalog from the ontology's

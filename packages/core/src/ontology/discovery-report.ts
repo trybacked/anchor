@@ -15,6 +15,15 @@ export const DiscoveryReportSchema = z.object({
   inspection: DatasetInspectionSchema,
   ontology: OntologySchema,
 });
+/**
+ *
+ */
 export type DatasetInspectionTable = z.infer<typeof DatasetInspectionTableSchema>;
+/**
+ *
+ */
 export type DatasetInspection = z.infer<typeof DatasetInspectionSchema>;
+/**
+ *
+ */
 export type DiscoveryReport = z.infer<typeof DiscoveryReportSchema>;

@@ -2,17 +2,17 @@ import { Hono } from "hono";
 import type pg from "pg";
 import type { ControlPlaneConfig } from "../config.js";
 import {
-  requireAuthoringAccess,
-  requireAuthoringRole,
-  type AuthoringVariables,
-} from "./context.js";
-import {
   TenantSettingsSchema,
   TenantSourceSchema,
   getTenantProfile,
   putTenantSettings,
   upsertTenantSource,
 } from "../db/tenant-profile-repositories.js";
+import {
+  requireAuthoringAccess,
+  requireAuthoringRole,
+  type AuthoringVariables,
+} from "./context.js";
 
 /** Tenant profile routes (Plan Phase 2): configuration as data. */
 export function registerTenantProfileRoutes(

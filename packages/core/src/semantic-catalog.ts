@@ -25,8 +25,17 @@ export const SemanticCatalogSchema = z.object({
   glossary: z.array(CatalogGlossaryTermSchema).default([]),
   examples: z.array(VerifiedExampleSchema).default([]),
 });
+/**
+ *
+ */
 export type DatasetSemantics = z.infer<typeof DatasetSemanticsSchema>;
+/**
+ *
+ */
 export type CatalogGlossaryTerm = z.infer<typeof CatalogGlossaryTermSchema>;
+/**
+ *
+ */
 export type SemanticCatalog = z.infer<typeof SemanticCatalogSchema>;
 function withDefaults<T extends object>(
   defaults: T | undefined,
@@ -115,6 +124,9 @@ function resolveGlossary(
     }),
   );
 }
+/**
+ *
+ */
 export function applySemanticCatalogs(
   ontology: Ontology,
   catalogs: readonly SemanticCatalog[],

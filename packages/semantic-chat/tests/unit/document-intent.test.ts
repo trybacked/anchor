@@ -8,7 +8,12 @@ import {
 
 function ontologyWithTerms(): Ontology {
   return {
-    metadata: { id: "t", formatVersion: "1", version: 1, runId: "r", generatedAt: new Date().toISOString() },
+    metadata: {
+      id: "t",
+      formatVersion: "1",
+      version: 1,
+      generatedAt: new Date().toISOString(),
+    },
     objects: [
       {
         id: "cv",

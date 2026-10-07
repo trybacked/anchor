@@ -8,10 +8,10 @@ const config: ControlPlaneConfig = {
   databaseUrl: "postgresql://unused",
   adminToken: "admin-token-test",
   internalToken: "internal-token-test",
-  databricksHost: "https://example.cloud.databricks.com",
-  databricksToken: "token",
-  databricksWarehouseId: "wh",
+  filesRoot: "./sources",
+  filesRegistryRoot: "./.backed/remote-registry",
   sharedSpacesJson: "{}",
+  defaultSharedSpaces: [],
 };
 
 describe("discovery routes", () => {

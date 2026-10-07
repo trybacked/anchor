@@ -1,7 +1,7 @@
+import { LEGACY_DOCUMENT_OBJECT_IDS } from "@trybacked/capability-documents";
 import { compileObjectQuery } from "@trybacked/compiler";
 import type { ObjectQuery } from "@trybacked/compiler";
 import type { DocumentObjectIds, Ontology, OntologyObject } from "@trybacked/core";
-import { LEGACY_DOCUMENT_OBJECT_IDS } from "@trybacked/capability-documents";
 export type DocumentProvenance = {
   documentId: string;
   page?: number | undefined;
@@ -94,7 +94,10 @@ export function buildRowProvenance(options: {
   };
   return options.rows.map((row, rowIndex) => {
     let document = documentProvenanceFromRow(row);
-    if (object.id === documentObjectIds.documentElement || object.id === documentObjectIds.document) {
+    if (
+      object.id === documentObjectIds.documentElement ||
+      object.id === documentObjectIds.document
+    ) {
       const page = asNumber(readField(row, PAGE_START_KEYS));
       const filename = asString(readField(row, SOURCE_FILE_KEYS));
       const docId = asString(readField(row, DOCUMENT_ID_KEYS)) ?? "";

@@ -1,14 +1,14 @@
 import { isServiceErrorResult, type AnchorService } from "@trybacked/service";
+import type { SemanticAskResponse, SemanticAskSource } from "@trybacked/service";
 import { generateText } from "ai";
 import { randomUUID } from "node:crypto";
-import type { SemanticAskResponse, SemanticAskSource } from "@trybacked/service";
+import type { ModelResolver } from "./agent/run-agent.js";
 import {
   normalizeChunkText,
   primaryDocumentSearchPhrase,
   rankDocumentSearchRows,
 } from "./document-evidence.js";
 import { documentSearchQueries, matchesDocumentTerms } from "./document-intent.js";
-import type { ModelResolver } from "./agent/run-agent.js";
 
 const MIN_EVIDENCE_CHARS = 380;
 const MAX_CONTEXT_CHARS = 14_000;
@@ -120,8 +120,8 @@ export async function collectDocumentEvidence(
     if (isServiceErrorResult(search)) {
       continue;
     }
-    const rows = (search.rows ?? []).filter(
-      (row): row is Record<string, unknown> => typeof row === "object" && row !== null,
+    const rows = search.rows.filter(
+      (row): row is Record<string, unknown> => typeof row === "object",
     );
     for (const record of rankDocumentSearchRows(rows, question)) {
       const elementId = readString(record, "elementId") ?? readString(record, "element_id");
@@ -129,7 +129,8 @@ export async function collectDocumentEvidence(
       if (block === undefined) {
         continue;
       }
-      const key = elementId ?? `${readString(record, "documentId") ?? ""}:${block.text.slice(0, 80)}`;
+      const key =
+        elementId ?? `${readString(record, "documentId") ?? ""}:${block.text.slice(0, 80)}`;
       const existing = merged.get(key);
       if (existing !== undefined && existing.text.length >= block.text.length) {
         continue;
@@ -237,7 +238,10 @@ export async function synthesizeAnswerFromDocumentEvidence(options: {
 
 export type DocumentSynthesisOutcome =
   | { kind: "answered"; response: SemanticAskResponse }
-  | { kind: "skip"; reason: "no_capability" | "structured_intent" | "insufficient_evidence" | "empty_answer" };
+  | {
+      kind: "skip";
+      reason: "no_capability" | "structured_intent" | "insufficient_evidence" | "empty_answer";
+    };
 
 export async function tryDocumentSynthesisAnswer(options: {
   service: AnchorService;

@@ -65,12 +65,6 @@ export function createAnchorApiApp(
       }
       return getService();
     },
-    resolveFilesService: async (tenantId) => {
-      if (platformRegistry === undefined) {
-        throw new Error("Platform registry required for file operations");
-      }
-      return await platformRegistry.resolveFiles(tenantId);
-    },
   });
   app.route("/v1", v1);
   return app;

@@ -15,16 +15,19 @@ function fakeProvider(): DatasetProvider {
     }),
     getMetadata: async () => ({ rowCount: 10 }),
     getStatistics: async () => ({ columns: [] }),
-    sample: async (limit) => ({
-      columns: ["contract_id", "supplier_name"],
-      rows: Array.from({ length: Math.min(limit, 2) }, (_, i) => [`C-${String(i)}`, "Acme"]),
-    }),
+    sample: async (_dataset, options) => {
+      const limit = options?.limit ?? 2;
+      return {
+        columns: ["contract_id", "supplier_name"],
+        rows: Array.from({ length: Math.min(limit, 2) }, (_, i) => [`C-${String(i)}`, "Acme"]),
+      };
+    },
   };
 }
 
 function fakeLlm() {
   return {
-    generateObject: async <T,>({ schema, prompt }: { schema: unknown; prompt: string }) => {
+    generateObject: async <T>({ schema, prompt }: { schema: unknown; prompt: string }) => {
       const parsedPrompt = prompt;
       const object = {
         changes: [
@@ -57,7 +60,9 @@ function fakeLlm() {
             },
             confidence: 0.93,
             rationale: "contract_id is a stable identifier column.",
-            evidence: [{ datasetId: "db.main.contracts", columnName: "contract_id", sampleValues: ["C-0"] }],
+            evidence: [
+              { datasetId: "db.main.contracts", columnName: "contract_id", sampleValues: ["C-0"] },
+            ],
           },
         ],
       };
@@ -95,7 +100,10 @@ describe("runOntologyProposal", () => {
       { command: { type: "addObjectType", objectType: {} } as never, confidence: 0.99 },
       { command: { type: "addObjectType", objectType: {} } as never, confidence: 0.5 },
     ];
-    const { autoApproved, requiresReview } = partitionProposalChanges(changes, DEFAULT_REVIEW_POLICY);
+    const { autoApproved, requiresReview } = partitionProposalChanges(
+      changes,
+      DEFAULT_REVIEW_POLICY,
+    );
     expect(autoApproved).toHaveLength(1);
     expect(requiresReview).toHaveLength(1);
   });

@@ -54,8 +54,8 @@ export async function getAuthoringPack(
 ): Promise<AuthoringPackRow | undefined> {
   await ensureAuthoringPacksTable(pool);
   const result = await pool.query(`SELECT * FROM authoring_packs WHERE id = $1`, [packId]);
-  const row = result.rows[0];
-  return row === undefined ? undefined : rowToPack(row as Parameters<typeof rowToPack>[0]);
+  const row = result.rows[0] as Parameters<typeof rowToPack>[0] | undefined;
+  return row === undefined ? undefined : rowToPack(row);
 }
 
 export async function upsertAuthoringPack(

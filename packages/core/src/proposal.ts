@@ -16,5 +16,11 @@ export const ProposalSchema = z.object({
   questions: z.array(ReviewQuestionSchema),
   usage: ProposalUsageSchema.optional(),
 });
+/**
+ *
+ */
 export type ProposalUsage = z.infer<typeof ProposalUsageSchema>;
+/**
+ *
+ */
 export type Proposal = z.infer<typeof ProposalSchema>;

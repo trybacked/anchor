@@ -47,7 +47,9 @@ export function resolveSqlDialect(name: string | undefined): SqlDialect {
   }
   const dialect = DIALECTS[name];
   if (dialect === undefined) {
-    throw new Error(`Unknown SQL dialect "${name}". Available: ${Object.keys(DIALECTS).join(", ")}`);
+    throw new Error(
+      `Unknown SQL dialect "${name}". Available: ${Object.keys(DIALECTS).join(", ")}`,
+    );
   }
   return dialect;
 }

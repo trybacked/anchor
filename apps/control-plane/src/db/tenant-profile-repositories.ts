@@ -39,7 +39,11 @@ export type TenantConnection = z.infer<typeof TenantConnectionSchema>;
 export type TenantSource = z.infer<typeof TenantSourceSchema>;
 export type TenantProfile = z.infer<typeof TenantProfileSchema>;
 
-const DEFAULT_SETTINGS: TenantSettings = { locale: "en", aiPolicy: "propose_review", aiModel: null };
+const DEFAULT_SETTINGS: TenantSettings = {
+  locale: "en",
+  aiPolicy: "propose_review",
+  aiModel: null,
+};
 
 function mapSettings(row: Record<string, unknown> | null): TenantSettings {
   if (row === null) {
@@ -52,15 +56,13 @@ function mapSettings(row: Record<string, unknown> | null): TenantSettings {
   };
 }
 
-export async function getTenantSettings(
-  pool: Pool,
-  tenantId: string,
-): Promise<TenantSettings> {
+export async function getTenantSettings(pool: Pool, tenantId: string): Promise<TenantSettings> {
   const result = await pool.query(
     "SELECT locale, ai_policy, ai_model FROM tenant_settings WHERE tenant_id = $1",
     [tenantId],
   );
-  return mapSettings(result.rows[0] ?? null);
+  const row = result.rows[0] as Record<string, unknown> | undefined;
+  return mapSettings(row ?? null);
 }
 
 export async function putTenantSettings(
@@ -87,12 +89,15 @@ export async function listTenantConnections(
      FROM tenant_connections WHERE tenant_id = $1 ORDER BY connection_id`,
     [tenantId],
   );
-  return result.rows.map((row) => ({
-    connectionId: String(row.connection_id),
-    engine: String(row.engine),
-    config: (row.config ?? {}) as Record<string, unknown>,
-    secretRef: typeof row.secret_ref === "string" ? row.secret_ref : null,
-  }));
+  return result.rows.map((raw) => {
+    const row = raw as Record<string, unknown>;
+    return {
+      connectionId: String(row["connection_id"]),
+      engine: String(row["engine"]),
+      config: (row["config"] ?? {}) as Record<string, unknown>,
+      secretRef: typeof row["secret_ref"] === "string" ? row["secret_ref"] : null,
+    };
+  });
 }
 
 export async function upsertTenantConnection(
@@ -105,7 +110,13 @@ export async function upsertTenantConnection(
      VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (tenant_id, connection_id) DO UPDATE
        SET engine = EXCLUDED.engine, config = EXCLUDED.config, secret_ref = EXCLUDED.secret_ref`,
-    [tenantId, connection.connectionId, connection.engine, JSON.stringify(connection.config), connection.secretRef],
+    [
+      tenantId,
+      connection.connectionId,
+      connection.engine,
+      JSON.stringify(connection.config),
+      connection.secretRef,
+    ],
   );
 }
 
@@ -115,14 +126,18 @@ export async function listTenantSources(pool: Pool, tenantId: string): Promise<T
      FROM tenant_sources WHERE tenant_id = $1 ORDER BY source_id`,
     [tenantId],
   );
-  return result.rows.map((row) => ({
-    sourceId: String(row.source_id),
-    kind: TenantSourceSchema.shape.kind.parse(row.kind),
-    connectionId: String(row.connection_id),
-    namespace: String(row.namespace),
-    capabilities: Array.isArray(row.capabilities) ? row.capabilities.map(String) : [],
-    binding: (row.binding ?? {}) as Record<string, unknown>,
-  }));
+  return result.rows.map((raw) => {
+    const row = raw as Record<string, unknown>;
+    const capabilities = row["capabilities"];
+    return {
+      sourceId: String(row["source_id"]),
+      kind: TenantSourceSchema.shape.kind.parse(row["kind"]),
+      connectionId: String(row["connection_id"]),
+      namespace: String(row["namespace"]),
+      capabilities: Array.isArray(capabilities) ? capabilities.map(String) : [],
+      binding: (row["binding"] ?? {}) as Record<string, unknown>,
+    };
+  });
 }
 
 export async function upsertTenantSource(

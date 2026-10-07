@@ -56,7 +56,5 @@ export const ontologyDiscoverDocsAiCommand: CommandHandler = async (args) => {
   ui.detail(
     `Token LLM: ${String(payload.aiUsage.inputTokens)} in / ${String(payload.aiUsage.outputTokens)} out`,
   );
-  ui.log(
-    `Review: backed ontology discovery-review ${tenantId} ${payload.runId} --yes-all --apply`,
-  );
+  ui.log(`Review: backed ontology discovery-review ${tenantId} ${payload.runId} --yes-all --apply`);
 };

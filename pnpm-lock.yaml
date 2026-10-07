@@ -56,9 +56,6 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.5.0
         version: 0.5.0(hono@4.13.5)(zod@3.25.76)
-      '@trybacked/adapter-databricks':
-        specifier: workspace:*
-        version: link:../../packages/adapter-databricks
       '@trybacked/capability-documents':
         specifier: workspace:^
         version: link:../../packages/capability-documents
@@ -96,9 +93,6 @@ importers:
 
   apps/cli:
     dependencies:
-      '@trybacked/adapter-databricks':
-        specifier: workspace:*
-        version: link:../../packages/adapter-databricks
       '@trybacked/capability-documents':
         specifier: workspace:^
         version: link:../../packages/capability-documents
@@ -151,9 +145,6 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.5.0
         version: 0.5.0(hono@4.13.5)(zod@3.25.76)
-      '@trybacked/adapter-databricks':
-        specifier: workspace:*
-        version: link:../../packages/adapter-databricks
       '@trybacked/capability-documents':
         specifier: workspace:^
         version: link:../../packages/capability-documents
@@ -229,46 +220,6 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
-  packages/adapter-databricks:
-    dependencies:
-      '@trybacked/core':
-        specifier: workspace:*
-        version: link:../core
-      '@trybacked/registry':
-        specifier: workspace:*
-        version: link:../registry
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.76
-
-  packages/adapter-postgres:
-    dependencies:
-      '@trybacked/compiler':
-        specifier: workspace:*
-        version: link:../compiler
-      '@trybacked/core':
-        specifier: workspace:*
-        version: link:../core
-      '@trybacked/ports':
-        specifier: workspace:*
-        version: link:../ports
-      '@trybacked/registry':
-        specifier: workspace:*
-        version: link:../registry
-      pg:
-        specifier: ^8.13.1
-        version: 8.23.1
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.76
-    devDependencies:
-      '@types/pg':
-        specifier: ^8.11.10
-        version: 8.23.1
-      vitest:
-        specifier: ^3.0.5
-        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
-
   packages/anchor:
     dependencies:
       '@trybacked/core':
@@ -330,15 +281,6 @@ importers:
         specifier: ^3.24.0
         version: 3.25.2(zod@3.25.76)
 
-  packages/diff:
-    dependencies:
-      '@trybacked/capability-documents':
-        specifier: workspace:^
-        version: link:../capability-documents
-      '@trybacked/core':
-        specifier: workspace:*
-        version: link:../core
-
   packages/discovery:
     dependencies:
       '@trybacked/capability-documents':
@@ -350,12 +292,6 @@ importers:
 
   packages/infrastructure:
     dependencies:
-      '@trybacked/adapter-databricks':
-        specifier: workspace:*
-        version: link:../adapter-databricks
-      '@trybacked/adapter-postgres':
-        specifier: workspace:*
-        version: link:../adapter-postgres
       '@trybacked/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -444,21 +380,21 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@trybacked/adapter-databricks':
+      '@trybacked/infrastructure':
         specifier: workspace:*
-        version: link:../adapter-databricks
+        version: link:../infrastructure
       vitest:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
   packages/platform-admin:
     dependencies:
-      '@trybacked/adapter-databricks':
-        specifier: workspace:*
-        version: link:../adapter-databricks
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+      '@trybacked/infrastructure':
+        specifier: workspace:*
+        version: link:../infrastructure
       '@trybacked/ontology-authoring':
         specifier: workspace:*
         version: link:../ontology-authoring

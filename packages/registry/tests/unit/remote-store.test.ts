@@ -67,7 +67,9 @@ describe("createVolumeOntologyStore", () => {
         volume: "registry",
       });
       await store.publish("backed_gerace", record, "entities: []\n");
-      expect(blobs.files.has("/tenants/backed_gerace/backed/registry/publications/v1.json")).toBe(true);
+      expect(blobs.files.has("/tenants/backed_gerace/backed/registry/publications/v1.json")).toBe(
+        true,
+      );
       expect(blobs.files.has("/tenants/backed_gerace/backed/registry/current.json")).toBe(true);
       const loaded = await store.loadCurrent("backed_gerace");
       expect(loaded?.version).toBe(1);

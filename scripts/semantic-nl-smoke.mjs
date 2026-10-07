@@ -5,10 +5,9 @@ import { fileURLToPath } from "node:url";
 import { readModelYaml } from "../packages/core/dist/index.js";
 import { legacyDocumentTables } from "../packages/capability-documents/dist/index.js";
 import {
-  createDatabricksSqlClient,
-  databricksConfigFromEnv,
-  hasDatabricksEnv,
-} from "../packages/adapter-databricks/dist/index.js";
+  createLocalDocumentFileReader,
+  tenantFilesRoot,
+} from "../packages/infrastructure/dist/index.js";
 import { loadPublishedOntology } from "../packages/registry/dist/index.js";
 import { buildQueryRuntimeFromEnv } from "../packages/runtime/dist/index.js";
 import {
@@ -62,8 +61,10 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  if (!hasDatabricksEnv(process.env)) {
-    console.error("Missing BACKED_DATABRICKS_* env for warehouse execution.");
+  const tenantId = tenant;
+  const filesRoot = tenantFilesRoot(process.env, tenantId);
+  if (filesRoot.length === 0) {
+    console.error("Missing BACKED_FILES_ROOT for file-backed execution.");
     process.exitCode = 1;
     return;
   }
@@ -74,13 +75,15 @@ async function main() {
     return;
   }
   const model = readModelYaml(workspaceRoot);
-  const client = createDatabricksSqlClient(databricksConfigFromEnv(process.env));
   const { runtime } = await buildQueryRuntimeFromEnv({
     ontology,
     model,
-    executor: (sql, parameters) => client.execute(sql, parameters),
+    executor: () => {
+      throw new Error("Object SQL is not available on the files engine.");
+    },
     documentTables: legacyDocumentTables(),
     env: process.env,
+    readVolumeFile: createLocalDocumentFileReader(filesRoot),
   });
   const service = createAnchorService({
     model,

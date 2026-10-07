@@ -16,19 +16,17 @@
   </p>
 </div>
 
-Organizations hold curated datasets in their warehouse. They rarely hold a single, auditable definition of what that data **means**. Anchor produces that definition: a **governed ontology** above your datasets, without replacing the systems that store the rows.
+Organizations accumulate curated data in many systems, yet rarely maintain one auditable definition of what that data **means**. Anchor provides that layer: a **governed ontology** that sits above your sources without replacing the systems of record.
 
-Anchor is **multi-source and multi-engine**: the kernel knows no table names, no language, and no domain — engine access goes through ports and adapters (Databricks, Postgres), sources are described by declared capabilities and bindings, and an AI authoring pipeline proposes the ontology as reviewable change sets.
+The ontology model does not embed physical schema names, locale, or domain-specific vocabulary—those concerns stay in connector configuration (capabilities and bindings). The default installation discovers structure from **document collections on the filesystem**; additional engines can be added behind the same contracts. Discovery is deterministic; optional AI assistance turns inspection results into **reviewable change sets** before publication.
 
-**Anchor does not turn raw data into datasets. Anchor turns datasets into meaning.** Ingestion, parsing, and storage belong to your data platform; Anchor starts where a structured, queryable dataset already exists.
-
-Discovery is deterministic; agents consume the synced registry via deploy.
+Anchor does not operate ingestion pipelines. It assumes you already expose structured, inspectable material (for example, organized folders of documents or tables in a warehouse) and focuses on meaning, versioning, and agent-safe publication. After `sync`, agents consume the published registry through `deploy` (MCP).
 
 ---
 
 ## Quick start
 
-**Requirements:** Node.js ≥ 22 · pnpm · curated tables in a SQL warehouse (for `pull`). Copy [`.env.example`](./.env.example) and set the engine connection (`BACKED_DATABRICKS_HOST`, `BACKED_DATABRICKS_TOKEN`, `BACKED_DATABRICKS_WAREHOUSE_ID`). Optional configuration: `BACKED_DOCUMENTS_SCHEMA` (schema of the tenant's document archive) and `BACKED_DOCUMENT_REFRESH_JOB` (document refresh job name); both come from the tenant's source bindings in deployment configuration, not from code.
+**Requirements:** Node.js ≥ 22 · pnpm. Copy [`.env.example`](./.env.example), set `BACKED_FILES_ROOT` (default `./sources`), add tenant documents, then run `backed anchor pull`.
 
 ```bash
 npm install -g @trybacked/cli
@@ -86,12 +84,12 @@ Datasets become objects. Properties, relationships, logic, and actions describe 
 
 The flow before Anchor stays in your platform: **files / databases / APIs → ingestion → warehouse pipeline → curated dataset**. Anchor begins at the curated dataset.
 
-| Step        | Question                    | What happens                                                          |
-| ----------- | --------------------------- | --------------------------------------------------------------------- |
-| **Connect** | Where is the data?          | A SQL warehouse (Databricks or Postgres), queried in place through the engine adapter                          |
-| **Pull**    | What does the schema show?  | Warehouse profile → `model.yaml` (objects, properties, relationships) |
-| **Sync**    | What is active for queries? | `sync` snapshots `model.yaml` into the local registry                 |
-| **Agents**  | What can an agent rely on?  | `deploy` — MCP tools and object queries against the synced version    |
+| Step        | Question                    | What happens                                                                    |
+| ----------- | --------------------------- | ------------------------------------------------------------------------------- |
+| **Connect** | Where is the data?          | Local file collections under `BACKED_FILES_ROOT` (one subfolder per collection) |
+| **Pull**    | What does the schema show?  | File index profile → `model.yaml` (objects, properties, relationships)          |
+| **Sync**    | What is active for queries? | `sync` snapshots `model.yaml` into the local registry                           |
+| **Agents**  | What can an agent rely on?  | `deploy` — MCP tools and object queries against the synced version              |
 
 ```mermaid
 flowchart LR
@@ -100,10 +98,10 @@ flowchart LR
   ontology --> registry["Registry"]
   registry --> compiler["Compiler"]
   compiler --> runtime["Runtime"]
-  runtime --> warehouse["Warehouse (Databricks · Postgres)"]
+  runtime --> files["File source tree"]
 ```
 
-Discovery is deterministic: schema and statistics only, no language model. Rows never leave your warehouse; object queries run on it directly.
+Discovery is deterministic: file metadata and statistics only, no language model. Object SQL queries are not available on the files engine yet; agents still consume the synced ontology registry.
 
 ---
 
@@ -114,8 +112,7 @@ The engine is layered outside-in; dependencies always point toward `core`.
 ```mermaid
 flowchart TB
   apps["Apps (cli, api-server, control-plane, gateway)"] --> infra["infrastructure — composition root"]
-  infra --> adapters["adapter-databricks · adapter-postgres"]
-  adapters --> ports["ports — WarehouseConnector, ObjectStorage, JobRunner, SearchIndex, Provisioner, SecretResolver"]
+  infra --> ports["ports — WarehouseConnector, ObjectStorage, JobRunner, SearchIndex, Provisioner, SecretResolver"]
   capabilities["capability-documents · capability-tabular"] --> ports
   ai["ontology-ai — proposals as change sets"] --> ports
   review["Review policy → draft → publish"] --> spec["core — OntologySpec v2 + authoring commands"]
@@ -137,13 +134,13 @@ Tenant configuration (locale, connections, sources, AI review policy, model rout
 
 ## Capabilities
 
-| Capability | Outcome                                                            |
-| ---------- | ------------------------------------------------------------------ |
-| Workspace  | Local artifacts and a committable ontology                         |
-| Pull       | Deterministic objects and relationships from warehouse schema      |
-| Registry   | Versioned snapshots under `.backed/`                               |
-| Query      | Compiled, parameterized SQL over published objects                 |
-| Agents     | MCP over the agreed ontology, with no model call on the query path |
+| Capability   | Outcome                                                                |
+| ------------ | ---------------------------------------------------------------------- |
+| Workspace    | Local artifacts and a committable ontology                             |
+| Pull         | Deterministic objects and relationships from warehouse schema          |
+| Registry     | Versioned snapshots under `.backed/`                                   |
+| Query        | Compiled, parameterized SQL over published objects                     |
+| Agents       | MCP over the agreed ontology, with no model call on the query path     |
 | AI authoring | Ontology and semantics proposed as change sets, gated by review policy |
 
 ---
@@ -186,7 +183,7 @@ Edit `model.yaml` without re-syncing and agents still query the previous registr
 | `get_definition` | A confirmed logic statement, or a structured miss           |
 | `query_objects`  | Rows of one synced object, with property filters and limit  |
 
-`query_objects` requires a synced registry and engine connection env vars. SQL is compiled from registry mappings — with the dialect of the engine adapter (Spark for Databricks, Postgres otherwise) — and runs on your warehouse.
+`query_objects` requires a synced registry and a warehouse executor. On the **files** engine, object SQL is not available yet; MCP still exposes catalog search and document preview when `BACKED_FILES_ROOT` is configured.
 
 Tool names follow the current MCP contract.
 
@@ -194,11 +191,11 @@ Tool names follow the current MCP contract.
 
 ## Data residency
 
-| Data               | Leaves your infrastructure                               |
-| ------------------ | -------------------------------------------------------- |
-| Rows               | No — object queries run inside your warehouse engine |
-| Agreed ontology    | No, unless you commit it yourself (for example via Git)  |
-| Warehouse metadata | Only to your warehouse engine workspace                   |
+| Data            | Leaves your infrastructure                              |
+| --------------- | ------------------------------------------------------- |
+| Rows            | No — stay on disk under your `BACKED_FILES_ROOT`        |
+| Agreed ontology | No, unless you commit it yourself (for example via Git) |
+| Source metadata | Read locally from the configured file tree              |
 
 ---
 
@@ -221,9 +218,7 @@ anchor/
 ├── packages/
 │   ├── core/                   # OntologySpec v2, authoring commands, sources, validation
 │   ├── ports/                  # engine interfaces (no IO, no SDKs)
-│   ├── infrastructure/         # adapter registry + composition root
-│   ├── adapter-databricks/     # Databricks adapter (warehouse, files, jobs, registry)
-│   ├── adapter-postgres/       # Postgres adapter (information_schema, pg_trgm/pgvector)
+│   ├── infrastructure/         # composition root (files engine + adapters)
 │   ├── capability-documents/   # document archive features, binding-driven
 │   ├── capability-tabular/     # structured source features
 │   ├── discovery/              # inspect/ evidence · propose/ deterministic proposal
@@ -234,30 +229,26 @@ anchor/
 │   ├── compiler/               # object query → parameterized SQL (per dialect)
 │   ├── runtime/                # executes compiled queries
 │   ├── semantic-chat/          # LLM chat over the ontology, capability-routed
-│   ├── service/                # tenant services (ask, files, profiles)
-│   ├── diff/                   # run and ontology diffs
+│   ├── service/                # tenant runtime services (model, query, documents, ask)
 │   └── mcp/                    # agent tools + query_objects
 ├── schema/                     # JSON Schema for ontology serialization
 └── docs/
 ```
 
-| Package                          | Responsibility                                            |
-| -------------------------------- | --------------------------------------------------------- |
-| `@trybacked/core`                | OntologySpec v2, authoring commands, sources, validation  |
-| `@trybacked/ports`               | Engine interfaces: connector, storage, jobs, search       |
-| `@trybacked/infrastructure`      | Adapter registry and `createTenantInfrastructure`         |
-| `@trybacked/adapter-databricks`  | Databricks engine adapter                                 |
-| `@trybacked/adapter-postgres`    | Postgres engine adapter                                   |
-| `@trybacked/capability-*`        | Binding-driven capability modules (documents, tabular)    |
-| `@trybacked/ontology-ai`         | AI authoring pipeline and review policy                   |
-| `@trybacked/ontology-authoring`  | Apply/diff authoring commands                             |
-| `@trybacked/discovery`           | Deterministic inspection and proposal                     |
-| `@trybacked/registry`            | Publications, versioning, rollback                        |
-| `@trybacked/compiler`            | Object queries → parameterized SQL                        |
-| `@trybacked/runtime`             | Executes compiled queries via an injected executor        |
-| `@trybacked/semantic-chat`       | Domain-free chat over the published ontology              |
-| `@trybacked/mcp`                 | Agent tools over the published ontology                   |
-| `@trybacked/cli`                 | Command line (`npm install -g @trybacked/cli`)            |
-| `@trybacked/diff`                | Run and ontology diffs (workspace only)                   |
+| Package                         | Responsibility                                                 |
+| ------------------------------- | -------------------------------------------------------------- |
+| `@trybacked/core`               | OntologySpec v2, authoring commands, sources, validation       |
+| `@trybacked/ports`              | Engine interfaces: connector, storage, jobs, search            |
+| `@trybacked/infrastructure`     | Files engine + `createDatasetProviderFromEnv` / ontology store |
+| `@trybacked/capability-*`       | Binding-driven capability modules (documents, tabular)         |
+| `@trybacked/ontology-ai`        | AI authoring pipeline and review policy                        |
+| `@trybacked/ontology-authoring` | Apply/diff authoring commands                                  |
+| `@trybacked/discovery`          | Deterministic inspection and proposal                          |
+| `@trybacked/registry`           | Publications, versioning, rollback                             |
+| `@trybacked/compiler`           | Object queries → parameterized SQL                             |
+| `@trybacked/runtime`            | Executes compiled queries via an injected executor             |
+| `@trybacked/semantic-chat`      | Domain-free chat over the published ontology                   |
+| `@trybacked/mcp`                | Agent tools over the published ontology                        |
+| `@trybacked/cli`                | Command line (`npm install -g @trybacked/cli`)                 |
 
 Dependencies flow toward `core`, never the reverse.

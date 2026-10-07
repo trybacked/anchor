@@ -83,7 +83,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
     if (queryRuntime?.documentAccess === undefined) {
       return serviceError(
         "unavailable",
-        "Document preview is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+        "Document preview is unavailable: document tables must exist in the warehouse (provision via your data platform).",
       );
     }
     const metadata = await queryRuntime.documentAccess.getMetadata(documentId);
@@ -102,7 +102,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
     if (!hasDocumentPreview) {
       return serviceError(
         "unavailable",
-        "Document file preview is unavailable: configure Databricks volume file access (BACKED_DATABRICKS_*).",
+        "Document file preview is unavailable: set BACKED_FILES_ROOT and place tenant documents under the configured source tree.",
       );
     }
     return { access: queryRuntime.documentAccess };
@@ -211,7 +211,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
       if (queryRuntime?.entityProfile === undefined) {
         return serviceError(
           "unavailable",
-          "Entity profiles are unavailable: docs tables missing or warehouse not configured (BACKED_DATABRICKS_CATALOG, BACKED_DOCUMENTS_SCHEMA).",
+          "Entity profiles are unavailable: document archive bindings or file source not configured (BACKED_FILES_ROOT, BACKED_CATALOG).",
         );
       }
       const started = Date.now();
@@ -240,7 +240,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
       if (queryRuntime?.documentAccess === undefined) {
         return serviceError(
           "unavailable",
-          "Document metadata is unavailable: docs.documents must exist in the warehouse (run docs_refresh).",
+          "Document metadata is unavailable: document tables must exist in the warehouse (provision via your data platform).",
         );
       }
       const metadata = await queryRuntime.documentAccess.getMetadata(documentId);

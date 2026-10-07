@@ -83,10 +83,7 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     ui.log(
       "Usage: backed tenant create <tenant-id> [--shared <key>] [--dry-run] [--skip-bundle] [--remote]",
     );
-    ui.log(
-      "  Provisions UC catalog, bundle deploy, SP token, env file, ontology bootstrap, tenants.yaml.",
-    );
-    ui.log("  Requires databricks CLI + admin profile from tenants.yaml enrollment.");
+    ui.log("  Provisions tenant file layout, env file (BACKED_FILES_*), and tenants.yaml entry.");
     return;
   }
   if (parsed.tenantId.length === 0) {

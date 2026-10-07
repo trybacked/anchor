@@ -1,23 +1,21 @@
 import { serve } from "@hono/node-server";
 import { createRegistrySourceFromEnv } from "@trybacked/core";
-import { databricksConfigFromEnv, hasDatabricksEnv } from "@trybacked/infrastructure";
 import { createAnchorApiApp } from "./app.js";
 import { createAuditLogHook } from "./audit-log.js";
 import { readApiConfig } from "./config.js";
 import { createTenantRuntimeRegistry } from "./tenant-runtime-registry.js";
 import { createWorkspaceService } from "./workspace.js";
+
 const config = readApiConfig(process.env);
 const onOperation = createAuditLogHook({
   logPath: config.auditLogPath,
   mirrorStderr: config.auditLogMirrorStderr,
 });
+
 let app;
 let workspaceRoot: string | undefined;
+
 if (config.platformMode) {
-  if (!hasDatabricksEnv(process.env)) {
-    throw new Error("Platform mode requires BACKED_DATABRICKS_HOST, TOKEN, and WAREHOUSE_ID.");
-  }
-  const databricksConfig = databricksConfigFromEnv(process.env);
   const registrySource = createRegistrySourceFromEnv({
     ...process.env,
     ...(config.tenantsRegistryPath !== undefined
@@ -26,10 +24,8 @@ if (config.platformMode) {
   });
   const registry = createTenantRuntimeRegistry({
     registrySource,
-    databricksConfig,
     env: process.env,
     cacheTtlSeconds: config.tenantCacheTtlSeconds,
-    maxUploadBytes: config.maxUploadBytes,
     audit: { onOperation, auditPrincipal: config.auditPrincipalId },
   });
   app = createAnchorApiApp(
@@ -49,6 +45,7 @@ if (config.platformMode) {
   workspaceRoot = workspace.root;
   app = createAnchorApiApp(() => workspace.service, { apiToken: config.apiToken });
 }
+
 const server = serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => {
   const host = info.address === "::" ? "0.0.0.0" : info.address;
   const mode = config.platformMode ? "platform" : "workspace";
@@ -60,6 +57,7 @@ const server = serve({ fetch: app.fetch, port: config.port, hostname: config.hos
     console.error(`Audit log: ${config.auditLogPath}`);
   }
 });
+
 function shutdown(signal: string): void {
   console.error(`Anchor API received ${signal}, shutting down`);
   server.close((error) => {
@@ -71,6 +69,7 @@ function shutdown(signal: string): void {
     }
   });
 }
+
 process.on("SIGTERM", () => {
   shutdown("SIGTERM");
 });

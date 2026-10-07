@@ -1,7 +1,3 @@
-export {
-  canonicalVolumePathForDocumentId,
-  documentIdFromVolumePath,
-} from "./document-id.js";
 export { hashSql, writeAuditJsonLine } from "./audit.js";
 export type { AnchorOperationAuditEvent, AnchorOperationAuditHook } from "./audit.js";
 export { createAnchorService } from "./anchor-service.js";
@@ -92,16 +88,6 @@ export {
   type EntityProvenance,
   type RowProvenance,
 } from "./provenance.js";
-export {
-  createDocumentFilesService,
-  type CreateDocumentFilesServiceOptions,
-  type DocumentFilesService,
-  type FileEntry,
-  type ListFilesResponse,
-  type RefreshRun,
-  type RefreshRunStatus,
-  type UploadedFile,
-} from "./files/index.js";
 export {
   AnchorApiError,
   type ChunkSearchResponse,

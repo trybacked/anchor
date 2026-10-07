@@ -1,10 +1,10 @@
+import { LEGACY_PIPELINE_INFRA_DATASET_TABLES } from "@trybacked/capability-documents";
 import type {
   DatasetProvider,
   DiscoveryReport,
   ProfileReport,
   TableProfile,
 } from "@trybacked/core";
-import { LEGACY_PIPELINE_INFRA_DATASET_TABLES } from "@trybacked/capability-documents";
 import { discoverFromProfile, type DiscoverFromProfileOptions } from "./discover-from-profile.js";
 const INFRA_TABLES = new Set<string>(LEGACY_PIPELINE_INFRA_DATASET_TABLES);
 export async function profileFromDatasetProvider(

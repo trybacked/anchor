@@ -90,12 +90,12 @@ export async function getAiProposal(
   tenantId: string,
   proposalId: string,
 ): Promise<AiProposalRow | undefined> {
-  const result = await pool.query(
-    `SELECT * FROM ai_proposals WHERE tenant_id = $1 AND id = $2`,
-    [tenantId, proposalId],
-  );
-  const row = result.rows[0];
-  return row === undefined ? undefined : rowToProposal(row as Parameters<typeof rowToProposal>[0]);
+  const result = await pool.query(`SELECT * FROM ai_proposals WHERE tenant_id = $1 AND id = $2`, [
+    tenantId,
+    proposalId,
+  ]);
+  const row = result.rows[0] as Parameters<typeof rowToProposal>[0] | undefined;
+  return row === undefined ? undefined : rowToProposal(row);
 }
 
 export async function listAiProposals(
@@ -122,6 +122,6 @@ export async function setAiProposalStatus(
      RETURNING *`,
     [tenantId, proposalId, status],
   );
-  const row = result.rows[0];
-  return row === undefined ? undefined : rowToProposal(row as Parameters<typeof rowToProposal>[0]);
+  const row = result.rows[0] as Parameters<typeof rowToProposal>[0] | undefined;
+  return row === undefined ? undefined : rowToProposal(row);
 }

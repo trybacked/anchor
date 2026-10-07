@@ -51,7 +51,5 @@ export const ontologyDiscoverDocsCommand: CommandHandler = async (args) => {
   if (payload.emptyTables.length > 0) {
     ui.detail(`Senza righe (schema ok): ${payload.emptyTables.join(", ")}`);
   }
-  ui.log(
-    `Review: backed ontology discovery-review ${tenantId} ${payload.runId} --yes-all --apply`,
-  );
+  ui.log(`Review: backed ontology discovery-review ${tenantId} ${payload.runId} --yes-all --apply`);
 };

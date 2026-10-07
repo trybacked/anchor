@@ -5,6 +5,8 @@ import type {
   SemanticAskBody,
   SemanticAskResponse,
 } from "@trybacked/service";
+import { isServiceErrorResult } from "@trybacked/service";
+import { randomUUID } from "node:crypto";
 import {
   createGatewayModelResolver,
   createSemanticAgentModelFromEnv,
@@ -18,18 +20,16 @@ import {
   agentSkipRepairAfterMsFromEnv,
   askStrategyFromEnv,
 } from "./ask-config.js";
-import { runPlanFirst, type PlanFirstResult } from "./plan-first/run-plan-first.js";
 import { searchTermsForQuestion } from "./document-evidence.js";
 import {
   documentArchiveTermsFromOntology,
   documentSearchQueries,
   questionPrefersDocumentArchive,
 } from "./document-intent.js";
-import { tryDocumentSynthesisAnswer } from "./document-synthesis.js";
 import { renderDocumentSearchAnswer } from "./document-search-answer.js";
+import { tryDocumentSynthesisAnswer } from "./document-synthesis.js";
+import { runPlanFirst, type PlanFirstResult } from "./plan-first/run-plan-first.js";
 import { isSparseListingProse, isThinWarehouseListing } from "./plan-first/thin-plan.js";
-import { isServiceErrorResult } from "@trybacked/service";
-import { randomUUID } from "node:crypto";
 import { tenantAiAskEnabled, type TenantAiAskCapabilities } from "./tenant-ai-ask.js";
 export type { TenantAiAskCapabilities };
 export type SemanticAskHandler = NonNullable<AnchorService["semanticAsk"]>;
@@ -150,7 +150,9 @@ export function attachSemanticAsk(
       ...(fallbackModelId !== undefined ? { fallbackModelId } : {}),
     });
 
-  async function tryDocumentArchiveAnswer(context: AskContext): Promise<SemanticAskResponse | undefined> {
+  async function tryDocumentArchiveAnswer(
+    context: AskContext,
+  ): Promise<SemanticAskResponse | undefined> {
     if (!questionPrefersDocumentArchive(context.question, documentTerms)) {
       return undefined;
     }
@@ -158,8 +160,8 @@ export function attachSemanticAsk(
     if (!base.capabilities().chunkSearch) {
       const italian = (context.locale ?? "it").toLowerCase().startsWith("it");
       const answer = italian
-        ? "L’archivio documenti non è ancora disponibile per questo tenant (mancano tabelle docs indicizzate). Carica i PDF in una cartella ammessa (es. contratti) e lancia l’indicizzazione."
-        : "The document archive is not available for this tenant yet. Upload PDFs to an allowed folder and run indexing.";
+        ? "L’archivio documenti non è ancora disponibile per questo tenant: mancano le tabelle documenti curate nel warehouse. Provisionale tramite la tua data platform."
+        : "The document archive is not available for this tenant yet: curated document tables are missing in the warehouse. Provision them via your data platform.";
       return {
         text: answer,
         answer,
@@ -196,7 +198,7 @@ export function attachSemanticAsk(
               : JSON.stringify(row);
         if (!seen.has(key)) {
           seen.add(key);
-          mergedRows.push(row as Record<string, unknown>);
+          mergedRows.push(row);
         }
       }
       if (mergedRows.length >= 12) {
@@ -241,7 +243,9 @@ export function attachSemanticAsk(
     };
   }
 
-  async function tryDocumentSynthesis(context: AskContext): Promise<SemanticAskResponse | undefined> {
+  async function tryDocumentSynthesis(
+    context: AskContext,
+  ): Promise<SemanticAskResponse | undefined> {
     const outcome = await tryDocumentSynthesisAnswer({
       service: base,
       question: context.question,
@@ -288,8 +292,7 @@ export function attachSemanticAsk(
       });
       if (outcome.kind === "answered") {
         const sparseListing =
-          isThinWarehouseListing(outcome.result) ||
-          isSparseListingProse(outcome.result);
+          isThinWarehouseListing(outcome.result) || isSparseListingProse(outcome.result);
         if (!sparseListing) {
           return planFirstResponse(context.question, ontologyVersion, outcome.result);
         }

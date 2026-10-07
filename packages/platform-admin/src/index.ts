@@ -1,23 +1,6 @@
-export { grantDocsRefreshJobRunIfPresent } from "./admin-jobs.js";
+export { ensureTenantFileLayout } from "./admin-sql.js";
 export {
-  createAdminSqlClient,
-  createTenantCatalog,
-  ensureDocsRawVolume,
-  ensureRegistryVolume,
-  grantPlatformPrincipalOnTenant,
-  grantSharedSpacesToPrincipal,
-  grantTenantCatalogToPrincipal,
-  type AdminSqlClient,
-} from "./admin-sql.js";
-export {
-  createOboToken,
-  ensureServicePrincipal,
-  grantTokenCanUse,
-  patchWarehousePermissions,
-  type DatabricksAdminClientDeps,
-} from "./databricks-admin-client.js";
-export {
-  provisionTenantCloud,
-  type CloudProvisionTenantOptions,
-  type CloudProvisionTenantResult,
+  provisionTenantFiles,
+  type FilesProvisionTenantOptions,
+  type FilesProvisionTenantResult,
 } from "./provision-tenant.js";

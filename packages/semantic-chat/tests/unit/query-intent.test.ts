@@ -50,6 +50,7 @@ function procurementJoinOntology(): Ontology {
           propertyId: "sezione_regionale",
         },
       ],
+      examples: [],
     },
     logic: [],
     actions: [],

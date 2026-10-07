@@ -48,5 +48,5 @@ export function missingWarehouseTablesMessage(
   if (missing.length === 0) {
     return "";
   }
-  return `Missing docs tables: ${missing.join(", ")}. Run the docs pipeline refresh (docs_refresh job) for this catalog.`;
+  return `Missing document archive tables: ${missing.join(", ")}. Provision them via your data platform for this catalog.`;
 }

@@ -4,9 +4,8 @@ import {
   createRunId,
   DiscoverDocsProposalBodySchema,
 } from "@trybacked/core";
-import { legacyDocumentTables } from "@trybacked/capability-documents";
+import { createDatasetProviderFromEnv } from "@trybacked/infrastructure";
 import { AuthoringCommandError } from "@trybacked/ontology-authoring";
-import { createDatabricksDatasetProvider, createDatabricksSqlClient } from "@trybacked/infrastructure";
 import { Hono } from "hono";
 import type pg from "pg";
 import type { ControlPlaneConfig } from "../config.js";
@@ -19,19 +18,19 @@ import {
 } from "../db/discovery-repositories.js";
 import { applyDraftCommandsTx } from "../db/ontology-repositories.js";
 import {
-  applyAuthoringCommandBatches,
-  buildDiscoveryReviewCommands,
-  proposeDocsAiWarehouseDiscovery,
-  proposeDocsWarehouseDiscovery,
-} from "./discovery-service.js";
-import { listWarehouseDocumentExtractionStatus } from "./docs-document-status.js";
-import {
   getAuthoring,
   requireAuthoringAccess,
   requireAuthoringRole,
   type AuthoringVariables,
 } from "./context.js";
+import {
+  applyAuthoringCommandBatches,
+  buildDiscoveryReviewCommands,
+  proposeDocsAiWarehouseDiscovery,
+  proposeFilesSourceDiscovery,
+} from "./discovery-service.js";
 import { ensureOntologyDraft, validateDraftModel } from "./draft-service.js";
+import { listFileSourceDocumentStatus } from "./files-document-status.js";
 
 const LIST_RUNS_LIMIT = 30;
 
@@ -61,25 +60,22 @@ function runSummary(row: OntologyDiscoveryRunRow) {
   };
 }
 
-function databricksProvider(config: ControlPlaneConfig, catalog: string) {
-  const host = config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-  const databricksConfig = {
-    host,
-    token: config.databricksToken,
-    warehouseId: config.databricksWarehouseId,
-    catalog,
-    schema: config.documentsSchema,
-  };
-  const client = createDatabricksSqlClient(databricksConfig);
-  return createDatabricksDatasetProvider({ config: databricksConfig, client });
+function filesProvider(config: ControlPlaneConfig, tenantId: string) {
+  return createDatasetProviderFromEnv(
+    {
+      ...process.env,
+      BACKED_FILES_ROOT: config.filesRoot,
+    },
+    { tenantId },
+  );
 }
 
-function warehouseErrorResponse(error: unknown): { status: 502; body: Record<string, string> } {
+function sourceErrorResponse(error: unknown): { status: 502; body: Record<string, string> } {
   const message = error instanceof Error ? error.message : String(error);
   return {
     status: 502,
     body: {
-      error: "warehouse_unavailable",
+      error: "source_unavailable",
       message,
     },
   };
@@ -97,97 +93,74 @@ export function registerDiscoveryRoutes(
   discovery.get("/docs/status", requireAuthoringRole("viewer"), async (c) => {
     const ctx = getAuthoring(c);
     let provider;
-    let client;
     try {
-      provider = databricksProvider(config, ctx.catalog);
-      const host = config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-      client = createDatabricksSqlClient({
-        host,
-        token: config.databricksToken,
-        warehouseId: config.databricksWarehouseId,
-        catalog: ctx.catalog,
-        schema: config.documentsSchema,
-      });
+      provider = filesProvider(config, ctx.tenantId);
     } catch (error) {
-      const err = warehouseErrorResponse(error);
+      const err = sourceErrorResponse(error);
       return c.json(err.body, err.status);
     }
     try {
-      const outcome = await listWarehouseDocumentExtractionStatus(
-        provider,
-        client,
-        ctx.catalog,
-        config.documentsSchema,
-        legacyDocumentTables(),
-      );
-      if (!outcome.ok) {
-        return c.json({ code: outcome.code, missingTables: outcome.missingTables }, 200);
-      }
-      return c.json({ documents: outcome.documents });
+      const outcome = await listFileSourceDocumentStatus(provider);
+      return c.json({ collections: outcome.collections });
     } catch (error) {
-      const err = warehouseErrorResponse(error);
+      const err = sourceErrorResponse(error);
       return c.json(err.body, err.status);
     }
   });
 
   discovery.post("/docs/propose", requireAuthoringRole("editor"), async (c) => {
-      const ctx = getAuthoring(c);
-      const raw: unknown = await c.req.json().catch(() => ({}));
-      const parsedBody = DiscoverDocsProposalBodySchema.safeParse(raw);
-      if (!parsedBody.success) {
-        return c.json({ error: "invalid_body", issues: parsedBody.error.flatten() }, 400);
-      }
-      const body = parsedBody.data;
-      const runId = createRunId();
-      let provider;
-      try {
-        provider = databricksProvider(config, ctx.catalog);
-      } catch (error) {
-        const err = warehouseErrorResponse(error);
-        return c.json(err.body, err.status);
-      }
-      let outcome;
-      try {
-        outcome = await proposeDocsWarehouseDiscovery(provider, {
-          tenantId: ctx.tenantId,
-          catalog: ctx.catalog,
-          runId,
-          ...(body.reviewConfidenceThreshold !== undefined
-            ? { reviewConfidenceThreshold: body.reviewConfidenceThreshold }
-            : {}),
-          ...(body.tables !== undefined ? { tables: body.tables } : {}),
-          ...(body.requireNonEmptyTables !== undefined
-            ? { requireNonEmptyTables: body.requireNonEmptyTables }
-            : {}),
-        });
-      } catch (error) {
-        const err = warehouseErrorResponse(error);
-        return c.json(err.body, err.status);
-      }
-      if ("code" in outcome) {
-        return c.json(outcome, 422);
-      }
-      const row = await insertOntologyDiscoveryRun(pool, {
-        id: runId,
+    const ctx = getAuthoring(c);
+    const raw: unknown = await c.req.json().catch(() => ({}));
+    const parsedBody = DiscoverDocsProposalBodySchema.safeParse(raw);
+    if (!parsedBody.success) {
+      return c.json({ error: "invalid_body", issues: parsedBody.error.flatten() }, 400);
+    }
+    const body = parsedBody.data;
+    const runId = createRunId();
+    let provider;
+    try {
+      provider = filesProvider(config, ctx.tenantId);
+    } catch (error) {
+      const err = sourceErrorResponse(error);
+      return c.json(err.body, err.status);
+    }
+    let outcome;
+    try {
+      outcome = await proposeFilesSourceDiscovery(provider, {
         tenantId: ctx.tenantId,
-        kind: "docs_warehouse",
-        catalog: ctx.catalog,
-        schemaName: config.documentsSchema,
+        runId,
+        ...(body.reviewConfidenceThreshold !== undefined
+          ? { reviewConfidenceThreshold: body.reviewConfidenceThreshold }
+          : {}),
+      });
+    } catch (error) {
+      const err = sourceErrorResponse(error);
+      return c.json(err.body, err.status);
+    }
+    if ("code" in outcome) {
+      return c.json(outcome, 422);
+    }
+    const row = await insertOntologyDiscoveryRun(pool, {
+      id: runId,
+      tenantId: ctx.tenantId,
+      kind: "docs_warehouse",
+      catalog: ctx.catalog,
+      schemaName: "files",
+      discovery: outcome.discovery,
+      proposal: outcome.proposal,
+      missingTables: outcome.missingTables,
+      emptyTables: outcome.emptyTables,
+      createdBy: ctx.username,
+    });
+    return c.json(
+      {
+        ...runSummary(row),
+        profileTableCount: outcome.profileTableCount,
         discovery: outcome.discovery,
         proposal: outcome.proposal,
-        missingTables: outcome.missingTables,
-        emptyTables: outcome.emptyTables,
-        createdBy: ctx.username,
-      });
-      return c.json(
-        {
-          ...runSummary(row),
-          profileTableCount: outcome.profileTableCount,
-          discovery: outcome.discovery,
-          proposal: outcome.proposal,
-        },
-        201,
-      );
+      },
+      201,
+    );
   });
 
   discovery.post("/docs/propose-ai", requireAuthoringRole("editor"), async (c) => {
@@ -201,9 +174,9 @@ export function registerDiscoveryRoutes(
     const runId = createRunId();
     let provider;
     try {
-      provider = databricksProvider(config, ctx.catalog);
+      provider = filesProvider(config, ctx.tenantId);
     } catch (error) {
-      const err = warehouseErrorResponse(error);
+      const err = sourceErrorResponse(error);
       return c.json(err.body, err.status);
     }
     let outcome;
@@ -222,7 +195,7 @@ export function registerDiscoveryRoutes(
         ...(body.locale !== undefined ? { locale: body.locale } : {}),
       });
     } catch (error) {
-      const err = warehouseErrorResponse(error);
+      const err = sourceErrorResponse(error);
       return c.json(err.body, err.status);
     }
     if ("code" in outcome) {
@@ -242,7 +215,7 @@ export function registerDiscoveryRoutes(
       tenantId: ctx.tenantId,
       kind: "docs_warehouse_ai",
       catalog: ctx.catalog,
-      schemaName: config.documentsSchema,
+      schemaName: "files",
       discovery: outcome.discovery,
       proposal: outcome.proposal,
       missingTables: outcome.missingTables,
@@ -288,7 +261,7 @@ export function registerDiscoveryRoutes(
     zValidator("json", ApplyDiscoveryReviewBodySchema),
     async (c) => {
       const ctx = getAuthoring(c);
-      const runId = c.req.param("runId") ?? "";
+      const runId = c.req.param("runId");
       const body = c.req.valid("json");
       const row = await getOntologyDiscoveryRun(pool, ctx.tenantId, runId);
       if (row === undefined) {
@@ -313,7 +286,13 @@ export function registerDiscoveryRoutes(
         answers: body.answers,
         ...(body.reviewer !== undefined ? { reviewer: body.reviewer } : {}),
       };
-      const draft = await ensureOntologyDraft(pool, ctx.tenantId, ctx.username);
+      const draft = await ensureOntologyDraft(
+        pool,
+        ctx.tenantId,
+        ctx.catalog,
+        config,
+        ctx.username,
+      );
       const built = buildDiscoveryReviewCommands(draft.model, row.proposal, review, {
         ...(body.reviewConfidenceThreshold !== undefined
           ? { reviewConfidenceThreshold: body.reviewConfidenceThreshold }

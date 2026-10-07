@@ -65,9 +65,7 @@ export function createOntologyQueryRuntime(
     };
   };
   const readers =
-    model !== undefined &&
-    tableCapabilities !== undefined &&
-    documentTables !== undefined
+    model !== undefined && tableCapabilities !== undefined && documentTables !== undefined
       ? createWarehouseReaders({
           model,
           ontology,

@@ -37,7 +37,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp src/tenant/*.yaml dist/tenant/",
+    "build": "tsc -p tsconfig.json && node ../../scripts/copy-dist.mjs cli-tenant-yaml",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run --config vitest.config.ts",
@@ -45,7 +45,6 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@trybacked/adapter-databricks": "workspace:*",
     "@trybacked/capability-documents": "workspace:^",
     "@trybacked/core": "workspace:*",
     "@trybacked/discovery": "workspace:*",

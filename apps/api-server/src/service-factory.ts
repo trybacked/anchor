@@ -1,10 +1,6 @@
-import { parseModelYaml, type Ontology, type SemanticModel } from "@trybacked/core";
-import {
-  createDatabricksFilesClient,
-  createDatabricksSqlClient,
-  type DatabricksProviderConfig,
-} from "@trybacked/infrastructure";
 import { legacyDocumentTables } from "@trybacked/capability-documents";
+import { parseModelYaml, type Ontology, type SemanticModel } from "@trybacked/core";
+import { createLocalDocumentFileReader, tenantFilesRoot } from "@trybacked/infrastructure";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import { attachSemanticAsk, type TenantAiAskCapabilities } from "@trybacked/semantic-chat";
 import {
@@ -12,12 +8,20 @@ import {
   type AnchorOperationAuditHook,
   type AnchorService,
 } from "@trybacked/service";
+
 export type TenantRuntimeCapabilities = TenantAiAskCapabilities;
+
+const filesSqlUnavailable = (): never => {
+  throw new Error(
+    "Object SQL queries are not available on the files engine. Publish mappings for future warehouse adapters or use workspace tools.",
+  );
+};
+
 export async function createAnchorServiceForModel(options: {
   model: SemanticModel;
   ontology: Ontology;
   catalog?: string | undefined;
-  databricksConfig: DatabricksProviderConfig;
+  tenantId?: string | undefined;
   env: NodeJS.ProcessEnv;
   tenantCapabilities?: TenantRuntimeCapabilities | undefined;
   audit?: {
@@ -26,16 +30,17 @@ export async function createAnchorServiceForModel(options: {
     tenant?: string;
   };
 }): Promise<AnchorService> {
-  const client = createDatabricksSqlClient(options.databricksConfig);
-  const filesClient = createDatabricksFilesClient(options.databricksConfig);
+  const tenantId = options.tenantId ?? options.ontology.metadata.id;
+  const filesRoot = tenantFilesRoot(options.env, tenantId);
+  const readVolumeFile = createLocalDocumentFileReader(filesRoot);
   const built = await buildQueryRuntimeFromEnv({
     ontology: options.ontology,
     model: options.model,
-    executor: (sql, parameters) => client.execute(sql, parameters),
+    executor: filesSqlUnavailable,
     env: options.env,
     documentTables: legacyDocumentTables(),
     ...(options.catalog !== undefined ? { catalog: options.catalog } : {}),
-    readVolumeFile: (path, init) => filesClient.readFile(path, init),
+    readVolumeFile,
   });
   const wrapAudit = options.audit?.onOperation;
   const onOperation =
@@ -65,6 +70,7 @@ export async function createAnchorServiceForModel(options: {
     ...(options.audit?.tenant !== undefined ? { tenant: options.audit.tenant } : {}),
   });
 }
+
 export function modelFromRemoteYaml(modelYaml: string): SemanticModel {
   return parseModelYaml(modelYaml);
 }

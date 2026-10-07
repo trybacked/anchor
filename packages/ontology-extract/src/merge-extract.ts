@@ -4,7 +4,10 @@ import type { OntologyExtractOutput } from "./extract-output.js";
 
 const LLM_EVIDENCE = "llm_file_extraction";
 
-function mergeProperty(base: Property, patch: NonNullable<OntologyExtractOutput["entities"][number]["properties"]>[number]): Property {
+function mergeProperty(
+  base: Property,
+  patch: NonNullable<OntologyExtractOutput["entities"][number]["properties"]>[number],
+): Property {
   return {
     ...base,
     ...(patch.name !== undefined ? { name: patch.name } : {}),
@@ -23,7 +26,9 @@ function mergeEntity(base: Entity, patch: OntologyExtractOutput["entities"][numb
   let properties = base.properties;
   if (patch.properties !== undefined && patch.properties.length > 0) {
     properties = base.properties.map((property) => {
-      const columnPatch = patch.properties?.find((entry) => entry.columnName === property.columnName);
+      const columnPatch = patch.properties?.find(
+        (entry) => entry.columnName === property.columnName,
+      );
       if (columnPatch === undefined) {
         return property;
       }
@@ -99,7 +104,10 @@ export function mergeOntologyExtractIntoProposal(
       continue;
     }
     const key = `${mapped.fromEntity}:${mapped.fromColumn}->${mapped.toEntity}:${mapped.toColumn}`;
-    if (existingRelationKeys.has(key) || baseline.relations.some((existing) => existing.id === mapped.id)) {
+    if (
+      existingRelationKeys.has(key) ||
+      baseline.relations.some((existing) => existing.id === mapped.id)
+    ) {
       continue;
     }
     existingRelationKeys.add(key);

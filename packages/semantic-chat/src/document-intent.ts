@@ -9,7 +9,6 @@ import type { Ontology } from "@trybacked/core";
  * which picks tools based on capabilities.
  */
 
-
 /**
  * Linguistic function words (pronouns, auxiliaries, prepositions) for the
  * supported locales — generic language data, not domain knowledge. Domain
@@ -78,9 +77,7 @@ const FUNCTION_WORDS = new Set([
 ]);
 
 function nameLikeTokens(text: string): string[] {
-  return text
-    .split(/\s+/)
-    .filter((part) => part.length > 0 && /^[\p{L}'-]+$/u.test(part));
+  return text.split(/\s+/).filter((part) => part.length > 0 && /^[\p{L}'-]+$/u.test(part));
 }
 
 const MIN_SINGLE_TOKEN_QUERY_LENGTH = 5;
@@ -115,10 +112,7 @@ function addNameQueryVariants(queries: Set<string>, tokens: string[]): void {
 }
 
 function normalizeQueryToken(token: string): string {
-  return token
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "");
+  return token.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 }
 
 /** Tokens worth searching: function words and bare numbers dropped. */

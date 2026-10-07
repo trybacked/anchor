@@ -56,9 +56,7 @@ export function getEntity(model: SemanticModel, id: string): EntityDetail | null
     ...entitySummaryFields(entity),
     sourceTable: entity.sourceTable,
     ...(primaryKeyProperty !== undefined ? { primaryKeyProperty } : {}),
-    ...(titleKeyProperty !== undefined && titleKeyProperty.length > 0
-      ? { titleKeyProperty }
-      : {}),
+    ...(titleKeyProperty !== undefined && titleKeyProperty.length > 0 ? { titleKeyProperty } : {}),
     provenance: entity.provenance,
     properties: entity.properties.map((property) => ({
       name: property.name,

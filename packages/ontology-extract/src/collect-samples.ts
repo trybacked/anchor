@@ -14,7 +14,13 @@ function truncateCell(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
-  const text = String(value).replace(/\s+/g, " ").trim();
+  const text = (
+    typeof value === "string" || typeof value === "number" || typeof value === "boolean"
+      ? String(value)
+      : JSON.stringify(value)
+  )
+    .replace(/\s+/g, " ")
+    .trim();
   if (text.length <= CONTENT_MAX_CHARS) {
     return text;
   }
