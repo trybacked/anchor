@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@trybacked/core": "workspace:*",
+    "@trybacked/ontology-authoring": "workspace:*",
     "@trybacked/provider-databricks": "workspace:*",
     "@trybacked/registry": "workspace:*"
   },

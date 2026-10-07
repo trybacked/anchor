@@ -96,6 +96,9 @@ importers:
       '@trybacked/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
+      '@trybacked/platform-admin':
+        specifier: workspace:*
+        version: link:../../packages/platform-admin
       '@trybacked/provider-databricks':
         specifier: workspace:*
         version: link:../../packages/provider-databricks
@@ -311,6 +314,9 @@ importers:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+      '@trybacked/ontology-authoring':
+        specifier: workspace:*
+        version: link:../ontology-authoring
       '@trybacked/provider-databricks':
         specifier: workspace:*
         version: link:../provider-databricks

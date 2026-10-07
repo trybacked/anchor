@@ -12,7 +12,7 @@ if (outPath === undefined) {
 }
 
 const model = buildCovSemanticModel(catalog, {
-  runId: `cov-${catalog.replace(/\W/g, "-")}`,
+  runId: `foundry-doc-${catalog.replace(/\W/g, "-")}`,
   generatedAt: new Date().toISOString(),
 });
 

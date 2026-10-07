@@ -4,8 +4,11 @@ import {
   emptySemanticModel,
   validateAuthoringModel,
 } from "@trybacked/ontology-authoring";
+import { createDatabricksBlobStore } from "@trybacked/provider-databricks";
+import { createVolumeOntologyStore } from "@trybacked/registry";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
+import type { ControlPlaneConfig } from "../config.js";
 import {
   getLatestOntologyVersion,
   getOntologyDraft,
@@ -13,6 +16,42 @@ import {
   upsertOntologyDraft,
   type OntologyDraftRow,
 } from "../db/ontology-repositories.js";
+
+function databricksAdminConfig(config: ControlPlaneConfig) {
+  return {
+    host: config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, ""),
+    token: config.databricksToken,
+    warehouseId: config.databricksWarehouseId,
+  };
+}
+
+/** Prefer UC volume `current.json` when it is at least as new as Postgres. */
+export async function resolvePublishedModelForDraftReset(
+  pool: pg.Pool,
+  tenantId: string,
+  catalog: string,
+  config: ControlPlaneConfig,
+): Promise<{ model: SemanticModel; version: number } | undefined> {
+  try {
+    const store = createVolumeOntologyStore(createDatabricksBlobStore(databricksAdminConfig(config)));
+    const remote = await store.loadCurrent(catalog);
+    if (remote !== null) {
+      return { model: parseModelYaml(remote.modelYaml), version: remote.version };
+    }
+  } catch {
+    // Fall back to Postgres mirror below.
+  }
+
+  const pgLatest = await getLatestOntologyVersion(pool, tenantId);
+  if (pgLatest > 0) {
+    const published = await getOntologyVersion(pool, tenantId, pgLatest);
+    if (published !== undefined) {
+      return { model: published.model, version: pgLatest };
+    }
+  }
+
+  return undefined;
+}
 export async function ensureOntologyDraft(
   pool: pg.Pool,
   tenantId: string,

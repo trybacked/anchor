@@ -3,11 +3,7 @@ import {
   createDatabricksBlobStore,
   type DatabricksProviderConfig,
 } from "@trybacked/provider-databricks";
-import {
-  buildPublicationRecord,
-  createVolumeOntologyStore,
-  type OntologyStore,
-} from "@trybacked/registry";
+import { createVolumeOntologyStore, type OntologyStore } from "@trybacked/registry";
 import { grantDocsRefreshJobRunIfPresent } from "./admin-jobs.js";
 import {
   createAdminSqlClient,
@@ -18,7 +14,7 @@ import {
   grantSharedSpacesToPrincipal,
   grantTenantCatalogToPrincipal,
 } from "./admin-sql.js";
-import { bootstrapModelYaml, loadBootstrapModel } from "./bootstrap-model.js";
+import { publishTenantDocumentOntologyToVolume } from "./document-ontology.js";
 import {
   createOboToken,
   ensureServicePrincipal,
@@ -71,12 +67,12 @@ export async function provisionTenantCloud(
     await grantDocsRefreshJobRunIfPresent(adminConfig, catalog, platformPrincipal);
   }
   await patchWarehousePermissions(adminConfig, warehouseId, applicationId, "CAN_USE", deps);
-  const remote = await ontologyStore.loadCurrent(catalog);
-  const nextVersion = (remote?.version ?? 0) + 1;
-  const model = loadBootstrapModel(tenantId);
-  const record = buildPublicationRecord(model, { ontologyId: tenantId, version: nextVersion });
-  const modelYaml = bootstrapModelYaml(tenantId);
-  await ontologyStore.publish(catalog, record, modelYaml);
+  const { version: nextVersion } = await publishTenantDocumentOntologyToVolume({
+    tenantId,
+    catalog,
+    adminConfig,
+    ontologyStore,
+  });
   let tenantOboToken: string | undefined;
   if (options.issueTenantOboToken === true) {
     tenantOboToken = await createOboToken(adminConfig, applicationId, `backed ${tenantId}`, deps);
@@ -86,6 +82,6 @@ export async function provisionTenantCloud(
     catalog,
     servicePrincipalAppId: applicationId,
     ...(tenantOboToken !== undefined ? { tenantOboToken } : {}),
-    publicationVersion: record.version,
+    publicationVersion: nextVersion,
   };
 }

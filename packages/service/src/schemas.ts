@@ -17,13 +17,29 @@ export const EntityPropertySchema = z.object({
   columnName: z.string(),
   semanticType: SemanticTypeSchema,
   role: PropertyRoleSchema,
+  nullable: z.boolean().optional(),
+  description: z.string().optional(),
+  labelIt: z.string().optional(),
+  valueFormat: z.string().optional(),
+  backingTable: z.string(),
+  backingColumn: z.string().optional(),
   provenance: ProvenanceSchema,
+});
+export const EntityDisplayLabelsSchema = z.object({
+  singular: z.string(),
+  plural: z.string(),
 });
 export const EntityDetailSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
   status: ElementStatusSchema,
+  sourceTable: z.string(),
+  primaryKeyProperty: z.string().optional(),
+  titleKeyProperty: z.string().optional(),
+  displayProperties: z.array(z.string()).optional(),
+  labelsIt: EntityDisplayLabelsSchema.optional(),
+  synonyms: z.array(z.string()).optional(),
   provenance: ProvenanceSchema,
   properties: z.array(EntityPropertySchema),
 });

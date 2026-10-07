@@ -1,6 +1,6 @@
 {
   "corpus": "gerace",
-  "description": "COV-AP_IT + Person — canonical tenant ontology (replaces legacy doc-type model)",
+  "description": "Foundry-style document ontology for gerace (6 object types, 2 link types)",
   "formatVersion": "1",
   "entityCount": 6,
   "relationCount": 2,

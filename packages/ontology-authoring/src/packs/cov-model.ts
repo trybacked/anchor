@@ -1,84 +1,72 @@
 import type { Entity, Relation, SemanticModel } from "@trybacked/core";
 
-export const COV_ONTOLOGY_URI = "https://w3id.org/italia/onto/COV" as const;
-
-function manualProvenance(table: string, column: string, evidence: string) {
+function columnProvenance(table: string, column: string, evidence: string) {
   return { table, column, evidence };
 }
 
-function profileProperties(table: string) {
+/** Shared profile shape backed by docs.*_profiles tables (Foundry object type). */
+function profileObjectProperties(table: string) {
   return [
     {
-      name: "Identificativo normalizzato",
+      name: "Normalized name",
       columnName: "normalized_name",
       semanticType: "identifier" as const,
       role: "primary_key" as const,
       nullable: false,
-      confidence: 0.95,
-      provenance: manualProvenance(table, "normalized_name", "Chiave di deduplicazione"),
-      semantics: {
-        description:
-          "Identificativo normalizzato (allineato a cov:hasAlternativeIdentifier via profilo documentale).",
-        labels: { it: "identificativo normalizzato" },
-      },
+      confidence: 1,
+      provenance: columnProvenance(table, "normalized_name", "Primary key for deduplicated entity"),
     },
     {
-      name: "Denominazione",
+      name: "Name",
       columnName: "name",
       semanticType: "text" as const,
       role: "attribute" as const,
       nullable: false,
-      confidence: 0.9,
-      provenance: manualProvenance(table, "name", "Denominazione estratta"),
-      semantics: {
-        description: "Denominazione o nome legale (cov:legalName / rdfs:label).",
-        labels: { it: "denominazione" },
-      },
+      confidence: 1,
+      provenance: columnProvenance(table, "name", "Display title for object instances"),
     },
     {
-      name: "Tipo entità estratta",
+      name: "Entity type",
       columnName: "entity_type",
       semanticType: "category" as const,
       role: "attribute" as const,
       nullable: true,
-      confidence: 0.85,
-      provenance: manualProvenance(table, "entity_type", "Tipo assegnato in estrazione NER"),
+      confidence: 1,
+      provenance: columnProvenance(table, "entity_type", "NER entity type from extraction"),
     },
     {
-      name: "Menioni",
+      name: "Mention count",
       columnName: "mention_count",
       semanticType: "number" as const,
       role: "attribute" as const,
       nullable: false,
-      confidence: 0.9,
-      provenance: manualProvenance(table, "mention_count", "Conteggio menzioni nel corpus"),
+      confidence: 1,
+      provenance: columnProvenance(table, "mention_count", "Corpus mention count"),
     },
     {
-      name: "Primo documento",
+      name: "First seen document id",
       columnName: "first_seen_document_id",
       semanticType: "identifier" as const,
       role: "attribute" as const,
       nullable: true,
-      confidence: 0.85,
-      provenance: manualProvenance(table, "first_seen_document_id", "Provenienza documentale"),
+      confidence: 1,
+      provenance: columnProvenance(table, "first_seen_document_id", "First document id"),
     },
     {
-      name: "Ultimo documento",
+      name: "Last seen document id",
       columnName: "last_seen_document_id",
       semanticType: "identifier" as const,
       role: "attribute" as const,
       nullable: true,
-      confidence: 0.85,
-      provenance: manualProvenance(table, "last_seen_document_id", "Provenienza documentale"),
+      confidence: 1,
+      provenance: columnProvenance(table, "last_seen_document_id", "Last document id"),
     },
   ];
 }
 
-function covProfileEntity(options: {
+function profileObjectType(options: {
   id: string;
   name: string;
-  nameIt: { singular: string; plural: string };
-  covClass: string;
   tableSuffix: string;
   description: string;
   catalog: string;
@@ -87,56 +75,38 @@ function covProfileEntity(options: {
   return {
     id: options.id,
     name: options.name,
-    description: `${options.description} Classe COV: ${options.covClass}.`,
+    description: options.description,
     sourceTable: table,
     status: "confirmed",
-    confidence: 0.9,
-    provenance: { table, evidence: `Vista materializzata allineata a ${options.covClass}` },
+    confidence: 1,
+    provenance: { table, evidence: "Materialized profile view" },
     semantics: {
-      labels: { it: options.nameIt },
-      synonyms: [options.covClass.split("/").pop() ?? options.id],
-      displayProperties: ["name", "mention_count"],
+      displayProperties: ["name"],
     },
-    properties: profileProperties(table),
+    properties: profileObjectProperties(table),
   };
 }
 
-function personEntity(catalog: string): Entity {
-  const table = `${catalog}.docs.person_profiles`;
-  return {
+function personObjectType(catalog: string): Entity {
+  return profileObjectType({
     id: "person",
     name: "Person",
-    description:
-      "Persona fisica citata nei documenti (estensione operativa accanto a COV-AP_IT). Classe di riferimento: https://w3id.org/italia/onto/CPV/Person.",
-    sourceTable: table,
-    status: "confirmed",
-    confidence: 0.9,
-    provenance: { table, evidence: "Profili persona materializzati da entity_profiles" },
-    semantics: {
-      labels: { it: { singular: "persona", plural: "persone" } },
-      displayProperties: ["name", "mention_count"],
-      synonyms: ["persone", "persona fisica"],
-    },
-    properties: profileProperties(table),
-  };
+    tableSuffix: "person_profiles",
+    description: "Natural person referenced in the document corpus.",
+    catalog,
+  });
 }
 
-function affiliationEntity(catalog: string): Entity {
+function affiliationObjectType(catalog: string): Entity {
   const table = `${catalog}.docs.person_organization_affiliations`;
   return {
     id: "person_organization_affiliation",
     name: "Person organization affiliation",
-    description:
-      "Associazione persona–organizzazione dedotta da co-occorrenza negli stessi documenti (ruolo/affiliazione COV).",
+    description: "Link object between a person and an organization from co-occurrence in documents.",
     sourceTable: table,
     status: "confirmed",
-    confidence: 0.85,
-    provenance: { table, evidence: "Vista person_organization_affiliations" },
-    semantics: {
-      labels: {
-        it: { singular: "affiliazione persona-organizzazione", plural: "affiliazioni persona-organizzazione" },
-      },
-    },
+    confidence: 1,
+    provenance: { table, evidence: "person_organization_affiliations view" },
     properties: [
       {
         name: "Affiliation id",
@@ -144,8 +114,8 @@ function affiliationEntity(catalog: string): Entity {
         semanticType: "identifier",
         role: "primary_key",
         nullable: false,
-        confidence: 0.95,
-        provenance: manualProvenance(table, "affiliation_id", "Surrogate key"),
+        confidence: 1,
+        provenance: columnProvenance(table, "affiliation_id", "Surrogate primary key"),
       },
       {
         name: "Person normalized name",
@@ -153,8 +123,8 @@ function affiliationEntity(catalog: string): Entity {
         semanticType: "identifier",
         role: "foreign_key",
         nullable: false,
-        confidence: 0.9,
-        provenance: manualProvenance(table, "person_normalized_name", "FK verso person"),
+        confidence: 1,
+        provenance: columnProvenance(table, "person_normalized_name", "Foreign key to person"),
       },
       {
         name: "Organization normalized name",
@@ -162,128 +132,109 @@ function affiliationEntity(catalog: string): Entity {
         semanticType: "identifier",
         role: "foreign_key",
         nullable: false,
-        confidence: 0.9,
-        provenance: manualProvenance(table, "organization_normalized_name", "FK verso organization"),
+        confidence: 1,
+        provenance: columnProvenance(
+          table,
+          "organization_normalized_name",
+          "Foreign key to organization",
+        ),
       },
       {
-        name: "Co-document count",
+        name: "Co document count",
         columnName: "co_document_count",
         semanticType: "number",
         role: "attribute",
         nullable: false,
-        confidence: 0.9,
-        provenance: manualProvenance(table, "co_document_count", "Documenti condivisi"),
+        confidence: 1,
+        provenance: columnProvenance(table, "co_document_count", "Shared document count"),
       },
     ],
   };
 }
 
-function affiliationRelations(catalog: string): Relation[] {
+function affiliationLinkTypes(catalog: string): Relation[] {
   const table = `${catalog}.docs.person_organization_affiliations`;
   return [
     {
-      id: "affiliation_has_person",
-      name: "Affiliation has person",
+      id: "affiliation_to_person",
+      name: "Person",
       fromEntity: "person_organization_affiliation",
       toEntity: "person",
       fromColumn: "person_normalized_name",
       toColumn: "normalized_name",
-      cardinality: "one_to_many",
+      cardinality: "many_to_many",
       status: "confirmed",
-      confidence: 0.9,
-      provenance: manualProvenance(table, "person_normalized_name", "Join su normalized_name"),
+      confidence: 1,
+      provenance: columnProvenance(table, "person_normalized_name", "Join to person"),
     },
     {
-      id: "affiliation_has_organization",
-      name: "Affiliation has organization",
+      id: "affiliation_to_organization",
+      name: "Organization",
       fromEntity: "person_organization_affiliation",
       toEntity: "organization",
       fromColumn: "organization_normalized_name",
       toColumn: "normalized_name",
-      cardinality: "one_to_many",
+      cardinality: "many_to_many",
       status: "confirmed",
-      confidence: 0.9,
-      provenance: manualProvenance(table, "organization_normalized_name", "Join su normalized_name"),
+      confidence: 1,
+      provenance: columnProvenance(
+        table,
+        "organization_normalized_name",
+        "Join to organization",
+      ),
     },
   ];
 }
 
-/** Canonical COV-AP_IT + Person semantic model for a tenant catalog. */
+/** Foundry-style document ontology (object types + link types) for a tenant catalog. */
 export function buildCovSemanticModel(
   catalog: string,
   metadata: { runId: string; generatedAt: string },
 ): SemanticModel {
-  const cov = COV_ONTOLOGY_URI;
   return {
     metadata: {
       formatVersion: "1",
       runId: metadata.runId,
       generatedAt: metadata.generatedAt,
     },
-    semantics: {
-      glossary: [
-        {
-          id: "cov-ap-it",
-          term: "COV-AP_IT",
-          definition:
-            "Ontologia delle Organizzazioni (pubbliche e private) — profilo applicativo italiano AgID, v0.12. https://w3id.org/italia/onto/COV",
-        },
-        {
-          id: "cov-organization",
-          term: "Organizzazione",
-          definition: "Classe radice COV per organizzazioni pubbliche e private.",
-          objectId: "organization",
-        },
-        {
-          id: "cov-person",
-          term: "Persona",
-          definition: "Persone fisiche citate nel corpus documentale del tenant.",
-          objectId: "person",
-        },
-      ],
-      examples: [],
-    },
     entities: [
-      covProfileEntity({
+      profileObjectType({
         id: "organization",
         name: "Organization",
-        nameIt: { singular: "organizzazione", plural: "organizzazioni" },
-        covClass: `${cov}/Organization`,
         tableSuffix: "organization_profiles",
-        description: "Organizzazione pubblica o privata registrata o citata nei documenti.",
+        description: "Public or private organization referenced in documents.",
         catalog,
       }),
-      covProfileEntity({
+      profileObjectType({
         id: "public_organization",
         name: "Public organization",
-        nameIt: { singular: "amministrazione pubblica", plural: "amministrazioni pubbliche" },
-        covClass: `${cov}/PublicOrganization`,
         tableSuffix: "public_organization_profiles",
-        description: "Organizzazione pubblica (PA, enti, amministrazioni).",
+        description: "Public-sector organization.",
         catalog,
       }),
-      covProfileEntity({
+      profileObjectType({
         id: "private_organization",
         name: "Private organization",
-        nameIt: { singular: "organizzazione privata", plural: "organizzazioni private" },
-        covClass: `${cov}/PrivateOrganization`,
         tableSuffix: "private_organization_profiles",
-        description: "Organizzazione privata o impresa.",
+        description: "Private-sector organization.",
         catalog,
       }),
-      covProfileEntity({
+      profileObjectType({
         id: "support_unit",
         name: "Support unit",
-        nameIt: { singular: "unità di supporto", plural: "unità di supporto" },
-        covClass: `${cov}/SupportUnit`,
         tableSuffix: "support_unit_profiles",
-        description: "Unità organizzativa di supporto (ufficio, servizio, settore).",
+        description: "Organizational support unit or office.",
         catalog,
       }),
-      personEntity(catalog),
-      affiliationEntity(catalog),
+      personObjectType(catalog),
+      affiliationObjectType(catalog),
     ],
-    relations: affiliationRelations(catalog),
+    relations: affiliationLinkTypes(catalog),
     rules: [],
   };
 }
+
+/** @deprecated Use buildCovSemanticModel — kept for imports expecting COV URI constant. */
+export const COV_ONTOLOGY_URI = "https://w3id.org/italia/onto/COV" as const;
+
+export const buildFoundryDocumentOntology = buildCovSemanticModel;

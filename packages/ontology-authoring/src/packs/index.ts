@@ -7,9 +7,9 @@ export const SHARED_SEMANTIC_CATALOGS: readonly SemanticCatalog[] = [];
 export const ONTOLOGY_PACKS: OntologyPackSummary[] = [
   {
     id: "cov",
-    name: "COV-AP_IT + Person",
+    name: "Document ontology",
     description:
-      "Organizzazione, PublicOrganization, PrivateOrganization, SupportUnit (schema.gov.it COV) e Person",
+      "Foundry-style object types: Organization, Public organization, Private organization, Support unit, Person, and link types.",
   },
 ];
 

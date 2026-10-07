@@ -44,7 +44,7 @@ describe("applyCommand", () => {
       "support_unit",
     ]);
     expect(result.relations).toHaveLength(2);
-    expect(result.semantics?.glossary?.some((term) => term.id === "cov-ap-it")).toBe(true);
+    expect(result.semantics?.glossary ?? []).toHaveLength(0);
   });
   it("sets property semantics", () => {
     const withPack = applyCommands(emptySemanticModel("sem-test"), [

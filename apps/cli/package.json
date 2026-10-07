@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@trybacked/core": "workspace:*",
+    "@trybacked/platform-admin": "workspace:*",
     "@trybacked/discovery": "workspace:*",
     "@trybacked/mcp": "workspace:*",
     "@trybacked/provider-databricks": "workspace:*",

@@ -13,6 +13,7 @@ export {
   ONTOLOGY_PACKS,
   SHARED_SEMANTIC_CATALOGS,
 } from "./packs/index.js";
+export { buildCovSemanticModel, COV_ONTOLOGY_URI } from "./packs/cov.js";
 export {
   commandsFromReviewedDiscovery,
   type CommandsFromReviewedDiscoveryOptions,

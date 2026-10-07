@@ -10,6 +10,7 @@ import {
   applyCommands,
   AuthoringCommandError,
   diffSemanticModels,
+  buildCovSemanticModel,
   listPacks,
 } from "@trybacked/ontology-authoring";
 import { createDatabricksSqlClient } from "@trybacked/provider-databricks";
@@ -30,14 +31,19 @@ import {
   insertDerivedDataset,
 } from "../db/ontology-repositories.js";
 import { enqueueJob, getJob, getOrganizationByTenantId } from "../db/repositories.js";
-import { exportDraftYaml } from "../jobs/publish-ontology.js";
+import { exportDraftYaml, runPublishOntologyJob } from "../jobs/publish-ontology.js";
 import {
   getAuthoring,
   requireAuthoringAccess,
   requireAuthoringRole,
   type AuthoringVariables,
 } from "./context.js";
-import { ensureOntologyDraft, importModelContent, validateDraftModel } from "./draft-service.js";
+import {
+  ensureOntologyDraft,
+  importModelContent,
+  resolvePublishedModelForDraftReset,
+  validateDraftModel,
+} from "./draft-service.js";
 import { registerDiscoveryRoutes } from "./discovery-routes.js";
 import { sqlCellString } from "./sql-row.js";
 type AuthoringEnv = {
@@ -137,19 +143,20 @@ export function registerAuthoringRoutes(
   });
   authoring.post("/ontology/draft/reset", requireAuthoringRole("editor"), async (c) => {
     const ctx = getAuthoring(c);
-    const version = await getLatestOntologyVersion(pool, ctx.tenantId);
-    if (version === 0) {
-      return c.json({ error: "No published version to reset from" }, 404);
-    }
-    const published = await getOntologyVersion(pool, ctx.tenantId, version);
+    const published = await resolvePublishedModelForDraftReset(
+      pool,
+      ctx.tenantId,
+      ctx.catalog,
+      config,
+    );
     if (published === undefined) {
-      return c.json({ error: "Published version missing" }, 404);
+      return c.json({ error: "No published version to reset from" }, 404);
     }
     const draft = await upsertOntologyDraft(pool, {
       tenantId: ctx.tenantId,
       revision: (await ensureOntologyDraft(pool, ctx.tenantId, ctx.username)).revision + 1,
       model: published.model,
-      basedOnVersion: version,
+      basedOnVersion: published.version,
       updatedBy: ctx.username,
     });
     return c.json({
@@ -157,6 +164,42 @@ export function registerAuthoringRoutes(
       basedOnVersion: draft.based_on_version,
       model: draft.model,
     });
+  });
+  authoring.post("/ontology/publish/document-pack", requireAuthoringRole("publisher"), async (c) => {
+    const ctx = getAuthoring(c);
+    const org = await getOrganizationByTenantId(pool, ctx.tenantId);
+    if (org === undefined) {
+      return c.json({ error: "Tenant not found" }, 404);
+    }
+    const model = buildCovSemanticModel(ctx.catalog, {
+      runId: `cp-doc-${ctx.tenantId}-${Date.now().toString(36)}`,
+      generatedAt: new Date().toISOString(),
+    });
+    const existing = await ensureOntologyDraft(pool, ctx.tenantId, ctx.username);
+    await upsertOntologyDraft(pool, {
+      tenantId: ctx.tenantId,
+      revision: existing.revision + 1,
+      model,
+      basedOnVersion: existing.based_on_version,
+      updatedBy: ctx.username,
+    });
+    const adminConfig = {
+      host: config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, ""),
+      token: config.databricksToken,
+      warehouseId: config.databricksWarehouseId,
+    };
+    try {
+      const result = await runPublishOntologyJob(pool, adminConfig, {
+        tenantId: ctx.tenantId,
+        catalog: org.catalog,
+        actor: ctx.username,
+        notes: "document-pack",
+      });
+      return c.json({ version: result.version, artifactPath: result.artifactPath });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return c.json({ error: message }, 400);
+    }
   });
   authoring.post(
     "/ontology/publish",
@@ -288,12 +331,20 @@ export function registerAuthoringRoutes(
     const ifMatch = c.req.header("If-Match")?.replace(/^"|"$/g, "");
     const expectedRevision =
       ifMatch !== undefined && ifMatch.length > 0 ? Number.parseInt(ifMatch, 10) : draft.revision;
+    const replace = c.req.query("replace") === "true";
     const commands = [{ type: "applyPack" as const, packId, catalog: ctx.catalog }];
     let nextModel;
-    try {
-      nextModel = applyCommands(draft.model, commands);
-    } catch (error) {
-      return c.json({ error: error instanceof Error ? error.message : String(error) }, 400);
+    if (replace && (packId === "cov" || packId === "foundry")) {
+      nextModel = buildCovSemanticModel(ctx.catalog, {
+        runId: `cov-pack-${ctx.tenantId}`,
+        generatedAt: new Date().toISOString(),
+      });
+    } else {
+      try {
+        nextModel = applyCommands(draft.model, commands);
+      } catch (error) {
+        return c.json({ error: error instanceof Error ? error.message : String(error) }, 400);
+      }
     }
     const applied = await applyDraftCommandsTx(pool, {
       tenantId: ctx.tenantId,

@@ -154,7 +154,7 @@ export const tenantCreateCommand: CommandHandler = async (args) => {
     ui.writeSuccess(`Catalog ${result.catalog} · SP ${result.servicePrincipalAppId}`);
     ui.detail(`Env: ${ui.path(result.envFile)}`);
     ui.detail(
-      `Ontology: ${ui.path(result.ontologyDir)} (publication v${String(result.publicationVersion)})`,
+      `Ontology: UC registry in catalog ${result.catalog} (publication v${String(result.publicationVersion)})`,
     );
     if (result.registryUpdated) {
       ui.detail("Updated tenants.yaml");

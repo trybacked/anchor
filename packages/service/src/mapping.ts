@@ -42,14 +42,34 @@ export function getEntity(model: SemanticModel, id: string): EntityDetail | null
   if (entity === undefined) {
     return null;
   }
+  const primaryKeyProperty = entity.properties.find(
+    (property) => property.role === "primary_key",
+  )?.columnName;
+  const displayProperties = entity.semantics?.displayProperties ?? [];
+  const titleKeyProperty =
+    displayProperties.find((column) =>
+      entity.properties.some(
+        (property) => property.columnName === column && property.role !== "primary_key",
+      ),
+    ) ?? displayProperties[0];
   const detail: EntityDetail = {
     ...entitySummaryFields(entity),
+    sourceTable: entity.sourceTable,
+    ...(primaryKeyProperty !== undefined ? { primaryKeyProperty } : {}),
+    ...(titleKeyProperty !== undefined && titleKeyProperty.length > 0
+      ? { titleKeyProperty }
+      : {}),
     provenance: entity.provenance,
     properties: entity.properties.map((property) => ({
       name: property.name,
       columnName: property.columnName,
       semanticType: property.semanticType,
       role: property.role,
+      nullable: property.nullable,
+      backingTable: property.provenance.table,
+      ...(property.provenance.column !== undefined
+        ? { backingColumn: property.provenance.column }
+        : {}),
       provenance: property.provenance,
     })),
   };

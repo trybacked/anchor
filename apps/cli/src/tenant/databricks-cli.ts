@@ -43,8 +43,21 @@ export function runDatabricksCliOrThrow(
   }
   return result.stdout;
 }
+export function parseDatabricksAuthTokenOutput(stdout: string): string {
+  const trimmed = stdout.trim();
+  if (!trimmed.startsWith("{")) {
+    return trimmed;
+  }
+  const parsed = JSON.parse(trimmed) as { access_token?: unknown };
+  if (typeof parsed.access_token !== "string" || parsed.access_token.length === 0) {
+    throw new Error("databricks auth token JSON missing access_token");
+  }
+  return parsed.access_token;
+}
+
 export function databricksAccessToken(profile: string): string {
-  return runDatabricksCliOrThrow(["auth", "token"], { profile, label: "auth token" }).trim();
+  const stdout = runDatabricksCliOrThrow(["auth", "token"], { profile, label: "auth token" });
+  return parseDatabricksAuthTokenOutput(stdout);
 }
 export function databricksJson(
   args: string[],
