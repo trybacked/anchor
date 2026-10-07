@@ -35,9 +35,6 @@ export function loadTenantsRegistry(registryPath: string): TenantsRegistry {
 export function saveTenantsRegistry(registryPath: string, registry: TenantsRegistry): void {
   writeFileSync(registryPath, stringifyYaml(registry), "utf8");
 }
-export function resolveTenantCatalog(tenantId: string): string {
-  return tenantId === "backed" ? "backed" : `backed_${tenantId}`;
-}
 export function resolveBundleTarget(
   tenantId: string,
   enrollmentTarget: string | undefined,
@@ -51,11 +48,11 @@ export function ensureTenantInRegistry(
   registry: TenantsRegistry,
   tenantId: string,
   sharedKeys: string[],
+  catalog: string,
 ): TenantsRegistry {
   if (registry.tenants[tenantId] !== undefined) {
     return registry;
   }
-  const catalog = resolveTenantCatalog(tenantId);
   return {
     ...registry,
     tenants: {

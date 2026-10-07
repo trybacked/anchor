@@ -1,4 +1,5 @@
 import { semanticModelToOntology, type SemanticModel } from "@trybacked/core";
+import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { describe, expect, it } from "vitest";
 import { buildQueryRuntimeFromEnv } from "../../src/env-runtime.js";
 const minimalModel: SemanticModel = {
@@ -21,6 +22,7 @@ describe("buildQueryRuntimeFromEnv catalog override", () => {
       executor,
       env: { BACKED_DATABRICKS_CATALOG: "from_env" },
       catalog: "backed_gerace",
+      documentTables: legacyDocumentTables(),
     });
     expect(built.runtime).toBeDefined();
     expect(built.warehouseCapabilities).toBeDefined();

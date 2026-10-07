@@ -23,7 +23,8 @@
     "generate:schema": "pnpm --filter @trybacked/core run generate:schema",
     "deploy:check": "node deploy/scripts/check-stack.mjs",
     "deploy:smoke": "bash deploy/scripts/smoke-stack.sh",
-    "check:ci": "pnpm lint && pnpm format:check && pnpm build && pnpm typecheck && pnpm generate:schema && pnpm --filter @trybacked/api-server generate:openapi && git diff --exit-code schema/anchor-schema-v1.json apps/api-server/openapi.json && pnpm test:coverage"
+    "check:ci": "pnpm lint && pnpm format:check && pnpm build && pnpm typecheck && pnpm generate:schema && pnpm --filter @trybacked/api-server generate:openapi && git diff --exit-code schema/anchor-schema-v1.json apps/api-server/openapi.json && pnpm guardrails && pnpm test:coverage",
+    "guardrails": "node scripts/no-domain-literals.mjs && depcruise --validate .dependency-cruiser.cjs packages apps"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
@@ -37,6 +38,7 @@
     "turbo": "^2.3.4",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.22.0",
-    "vitest": "^3.0.5"
+    "vitest": "^3.0.5",
+    "dependency-cruiser": "^16.10.0"
   }
 }

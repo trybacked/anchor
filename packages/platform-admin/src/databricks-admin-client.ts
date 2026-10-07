@@ -1,4 +1,4 @@
-import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
+import type { DatabricksProviderConfig } from "@trybacked/adapter-databricks";
 export type DatabricksAdminClientDeps = {
   fetchImpl?: typeof fetch;
 };

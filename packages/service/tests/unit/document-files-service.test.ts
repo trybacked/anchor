@@ -13,9 +13,13 @@ describe("createDocumentFilesService", () => {
       runNow: vi.fn(),
       getRun: vi.fn(),
     };
+    // Container-relative volume root (Plan Fase 4): the engine-specific
+    // `/Volumes/<catalog>` prefix is added by the adapter caller, not here.
     const service = createDocumentFilesService({
       catalog: "backed_gerace",
       files,
+      refreshJobName: "backed_gerace-docs-refresh",
+      refreshJobName: "backed-docs-refresh",
       jobs,
       maxUploadBytes: 1024,
     });
@@ -25,7 +29,7 @@ describe("createDocumentFilesService", () => {
     });
     expect(isServiceErrorResult(result)).toBe(false);
     if (!isServiceErrorResult(result)) {
-      expect(result.path).toBe("/Volumes/backed_gerace/docs/raw/contratti/report.pdf");
+      expect(result.path).toBe("backed_gerace/docs/raw/contratti/report.pdf");
       expect(result.documentId).toMatch(/^[a-f0-9]{64}$/);
     }
   });

@@ -5,15 +5,21 @@ import {
   PublishOntologyBodySchema,
   PutMemberBodySchema,
   CreateDerivedDatasetBodySchema,
+  AuthoringCommandSchema,
 } from "@trybacked/core";
 import {
   applyCommands,
   AuthoringCommandError,
   diffSemanticModels,
-  buildCovSemanticModel,
-  listPacks,
+  emptySemanticModel,
 } from "@trybacked/ontology-authoring";
-import { createDatabricksSqlClient } from "@trybacked/provider-databricks";
+import { z } from "zod";
+import { createDatabricksSqlClient } from "@trybacked/infrastructure";
+import {
+  getAuthoringPack,
+  listAuthoringPacks,
+  upsertAuthoringPack,
+} from "../db/authoring-pack-repositories.js";
 import { Hono } from "hono";
 import type pg from "pg";
 import type { ControlPlaneConfig } from "../config.js";
@@ -31,7 +37,7 @@ import {
   insertDerivedDataset,
 } from "../db/ontology-repositories.js";
 import { enqueueJob, getJob, getOrganizationByTenantId } from "../db/repositories.js";
-import { exportDraftYaml, runPublishOntologyJob } from "../jobs/publish-ontology.js";
+import { exportDraftYaml } from "../jobs/publish-ontology.js";
 import {
   getAuthoring,
   requireAuthoringAccess,
@@ -165,42 +171,6 @@ export function registerAuthoringRoutes(
       model: draft.model,
     });
   });
-  authoring.post("/ontology/publish/document-pack", requireAuthoringRole("publisher"), async (c) => {
-    const ctx = getAuthoring(c);
-    const org = await getOrganizationByTenantId(pool, ctx.tenantId);
-    if (org === undefined) {
-      return c.json({ error: "Tenant not found" }, 404);
-    }
-    const model = buildCovSemanticModel(ctx.catalog, {
-      runId: `cp-doc-${ctx.tenantId}-${Date.now().toString(36)}`,
-      generatedAt: new Date().toISOString(),
-    });
-    const existing = await ensureOntologyDraft(pool, ctx.tenantId, ctx.username);
-    await upsertOntologyDraft(pool, {
-      tenantId: ctx.tenantId,
-      revision: existing.revision + 1,
-      model,
-      basedOnVersion: existing.based_on_version,
-      updatedBy: ctx.username,
-    });
-    const adminConfig = {
-      host: config.databricksHost.replace(/^https?:\/\//, "").replace(/\/+$/, ""),
-      token: config.databricksToken,
-      warehouseId: config.databricksWarehouseId,
-    };
-    try {
-      const result = await runPublishOntologyJob(pool, adminConfig, {
-        tenantId: ctx.tenantId,
-        catalog: org.catalog,
-        actor: ctx.username,
-        notes: "document-pack",
-      });
-      return c.json({ version: result.version, artifactPath: result.artifactPath });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return c.json({ error: message }, 400);
-    }
-  });
   authoring.post(
     "/ontology/publish",
     requireAuthoringRole("publisher"),
@@ -318,9 +288,35 @@ export function registerAuthoringRoutes(
     }
     return c.json(draft.model);
   });
-  authoring.get("/ontology/packs", requireAuthoringRole("viewer"), (c) => {
-    return c.json({ packs: listPacks() });
+  authoring.get("/ontology/packs", requireAuthoringRole("viewer"), async (c) => {
+    const packs = await listAuthoringPacks(pool);
+    return c.json({
+      packs: packs.map((pack) => ({
+        id: pack.id,
+        name: pack.name,
+        description: pack.description,
+      })),
+    });
   });
+  authoring.put(
+    "/ontology/packs/:packId",
+    requireAuthoringRole("publisher"),
+    zValidator("json", z.object({ name: z.string().min(1), description: z.string().optional(), commands: z.array(z.unknown()) })),
+    async (c) => {
+      const packId = c.req.param("packId") ?? "";
+      if (packId.length === 0) {
+        return c.json({ error: "Missing packId" }, 400);
+      }
+      const body = c.req.valid("json");
+      const pack = await upsertAuthoringPack(pool, {
+        id: packId,
+        name: body.name,
+        ...(body.description !== undefined ? { description: body.description } : {}),
+        commands: body.commands,
+      });
+      return c.json({ id: pack.id, name: pack.name }, 201);
+    },
+  );
   authoring.post("/ontology/draft/packs/:packId", requireAuthoringRole("editor"), async (c) => {
     const ctx = getAuthoring(c);
     const packId = c.req.param("packId") ?? "";
@@ -332,19 +328,18 @@ export function registerAuthoringRoutes(
     const expectedRevision =
       ifMatch !== undefined && ifMatch.length > 0 ? Number.parseInt(ifMatch, 10) : draft.revision;
     const replace = c.req.query("replace") === "true";
-    const commands = [{ type: "applyPack" as const, packId, catalog: ctx.catalog }];
+    const pack = await getAuthoringPack(pool, packId);
+    if (pack === undefined) {
+      return c.json({ error: `Unknown pack "${packId}"` }, 404);
+    }
+    const commands = AuthoringCommandSchema.array().parse(pack.commands);
     let nextModel;
-    if (replace && (packId === "cov" || packId === "foundry")) {
-      nextModel = buildCovSemanticModel(ctx.catalog, {
-        runId: `cov-pack-${ctx.tenantId}`,
-        generatedAt: new Date().toISOString(),
-      });
-    } else {
-      try {
-        nextModel = applyCommands(draft.model, commands);
-      } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : String(error) }, 400);
-      }
+    try {
+      nextModel = replace
+        ? applyCommands(emptySemanticModel(`pack-${packId}-${ctx.tenantId}`), commands)
+        : applyCommands(draft.model, commands);
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : String(error) }, 400);
     }
     const applied = await applyDraftCommandsTx(pool, {
       tenantId: ctx.tenantId,

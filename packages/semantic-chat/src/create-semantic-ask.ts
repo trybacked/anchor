@@ -21,8 +21,8 @@ import {
 import { runPlanFirst, type PlanFirstResult } from "./plan-first/run-plan-first.js";
 import { searchTermsForQuestion } from "./document-evidence.js";
 import {
+  documentArchiveTermsFromOntology,
   documentSearchQueries,
-  PROCUREMENT_KEYWORDS,
   questionPrefersDocumentArchive,
 } from "./document-intent.js";
 import { tryDocumentSynthesisAnswer } from "./document-synthesis.js";
@@ -132,6 +132,9 @@ export function attachSemanticAsk(
   const resolveModel = options.resolveModel ?? createGatewayModelResolver(apiKey);
   const strategy = askStrategyFromEnv(options.env);
   const ontologyVersion = options.ontology.metadata.version;
+  // Archive intent terms come from the published ontology semantics, not from
+  // keywords in code (Plan Fase 6).
+  const documentTerms = documentArchiveTermsFromOntology(options.ontology);
   const tenantField = options.tenant !== undefined ? { tenant: options.tenant } : {};
 
   const runAgent = (context: AskContext) =>
@@ -148,7 +151,7 @@ export function attachSemanticAsk(
     });
 
   async function tryDocumentArchiveAnswer(context: AskContext): Promise<SemanticAskResponse | undefined> {
-    if (!questionPrefersDocumentArchive(context.question)) {
+    if (!questionPrefersDocumentArchive(context.question, documentTerms)) {
       return undefined;
     }
     const started = Date.now();
@@ -242,6 +245,7 @@ export function attachSemanticAsk(
     const outcome = await tryDocumentSynthesisAnswer({
       service: base,
       question: context.question,
+      documentTerms,
       locale: context.locale,
       ontologyVersion,
       resolveModel,
@@ -254,7 +258,10 @@ export function attachSemanticAsk(
   }
 
   function prefersDocumentEvidenceFirst(question: string): boolean {
-    if (PROCUREMENT_KEYWORDS.test(question)) {
+    // Archive-explicit questions are handled by the archive reader; the rest go
+    // document-first when they carry at least two search terms (semantics-driven
+    // routing, no domain keywords in code).
+    if (questionPrefersDocumentArchive(question, documentTerms)) {
       return false;
     }
     return searchTermsForQuestion(question).length >= 2;
@@ -282,7 +289,7 @@ export function attachSemanticAsk(
       if (outcome.kind === "answered") {
         const sparseListing =
           isThinWarehouseListing(outcome.result) ||
-          isSparseListingProse(outcome.result.answer);
+          isSparseListingProse(outcome.result);
         if (!sparseListing) {
           return planFirstResponse(context.question, ontologyVersion, outcome.result);
         }

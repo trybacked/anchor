@@ -1,9 +1,7 @@
 import type { TenantsRegistry } from "@trybacked/core";
 import {
-  createDatabricksBlobStore,
   type DatabricksProviderConfig,
-} from "@trybacked/provider-databricks";
-import { createVolumeOntologyStore, type OntologyStore } from "@trybacked/registry";
+} from "@trybacked/adapter-databricks";
 import { grantDocsRefreshJobRunIfPresent } from "./admin-jobs.js";
 import {
   createAdminSqlClient,
@@ -14,7 +12,6 @@ import {
   grantSharedSpacesToPrincipal,
   grantTenantCatalogToPrincipal,
 } from "./admin-sql.js";
-import { publishTenantDocumentOntologyToVolume } from "./document-ontology.js";
 import {
   createOboToken,
   ensureServicePrincipal,
@@ -29,7 +26,6 @@ export type CloudProvisionTenantOptions = {
   adminConfig: DatabricksProviderConfig;
   platformPrincipal?: string | undefined;
   issueTenantOboToken?: boolean | undefined;
-  ontologyStore?: OntologyStore | undefined;
   deps?: DatabricksAdminClientDeps | undefined;
 };
 export type CloudProvisionTenantResult = {
@@ -37,7 +33,6 @@ export type CloudProvisionTenantResult = {
   catalog: string;
   servicePrincipalAppId: string;
   tenantOboToken?: string | undefined;
-  publicationVersion: number;
 };
 export async function provisionTenantCloud(
   options: CloudProvisionTenantOptions,
@@ -46,8 +41,6 @@ export async function provisionTenantCloud(
   const deps = options.deps ?? {};
   const warehouseId = registry.enrollment.warehouse_id;
   const admin = createAdminSqlClient(adminConfig);
-  const ontologyStore =
-    options.ontologyStore ?? createVolumeOntologyStore(createDatabricksBlobStore(adminConfig));
   await createTenantCatalog(admin, catalog, tenantId);
   await ensureRegistryVolume(admin, catalog);
   await ensureDocsRawVolume(admin, catalog);
@@ -67,12 +60,8 @@ export async function provisionTenantCloud(
     await grantDocsRefreshJobRunIfPresent(adminConfig, catalog, platformPrincipal);
   }
   await patchWarehousePermissions(adminConfig, warehouseId, applicationId, "CAN_USE", deps);
-  const { version: nextVersion } = await publishTenantDocumentOntologyToVolume({
-    tenantId,
-    catalog,
-    adminConfig,
-    ontologyStore,
-  });
+  // Bootstrap ships an empty ontology: the AI proposal pipeline (ontology-ai)
+  // seeds object types from the registered sources (Plan Fase 7).
   let tenantOboToken: string | undefined;
   if (options.issueTenantOboToken === true) {
     tenantOboToken = await createOboToken(adminConfig, applicationId, `backed ${tenantId}`, deps);
@@ -82,6 +71,5 @@ export async function provisionTenantCloud(
     catalog,
     servicePrincipalAppId: applicationId,
     ...(tenantOboToken !== undefined ? { tenantOboToken } : {}),
-    publicationVersion: nextVersion,
   };
 }

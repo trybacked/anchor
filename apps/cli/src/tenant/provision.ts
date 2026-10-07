@@ -1,4 +1,3 @@
-import { publishTenantDocumentOntologyToVolume } from "@trybacked/platform-admin";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { executeAdminSql, runDatabricksCliOrThrow } from "./databricks-cli.js";
@@ -11,7 +10,6 @@ import {
   saveTenantsRegistry,
   type TenantsRegistry,
 } from "./registry.js";
-import { databricksConfigFromEnrollment } from "./remote-ontology.js";
 import { findBackedRepoRoot } from "./repo-root.js";
 import { createOboToken, ensureServicePrincipal } from "./service-principal.js";
 export type TenantCreateOptions = {
@@ -219,13 +217,10 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
     { profile, label: "warehouse CAN_USE" },
   );
   writeTenantEnvFile({ envFile, host, token, warehouseId, catalog });
-  const { version: publicationVersion } = await publishTenantDocumentOntologyToVolume({
-    tenantId: options.tenantId,
-    catalog,
-    adminConfig: databricksConfigFromEnrollment(registry),
-  });
+  // Bootstrap ships an empty ontology; AI proposals seed it from the
+  // registered sources (Plan Fase 7).
   const hadTenant = registry.tenants[options.tenantId] !== undefined;
-  const updated = ensureTenantInRegistry(registry, options.tenantId, options.sharedSpaceKeys);
+  const updated = ensureTenantInRegistry(registry, options.tenantId, options.sharedSpaceKeys, catalog);
   if (!hadTenant) {
     saveTenantsRegistry(registryPath, updated);
   }
@@ -236,6 +231,6 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
     bundleTarget,
     servicePrincipalAppId: applicationId,
     registryUpdated: !hadTenant,
-    publicationVersion,
+    publicationVersion: 0,
   };
 }

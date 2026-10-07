@@ -88,6 +88,8 @@ export type DocumentFilesService = {
 export type CreateDocumentFilesServiceOptions = {
   catalog: string;
   docsSchema?: string | undefined;
+  /** Job id resolved from the tenant's document-archive binding, not a naming convention. */
+  refreshJobName: string;
   files: DocumentVolumeClient;
   jobs: DocumentJobsClient;
   maxUploadBytes: number;
@@ -97,7 +99,9 @@ function documentIdFromPath(path: string): string {
   return documentIdFromVolumePath(path);
 }
 function volumeRoot(catalog: string, docsSchema: string): string {
-  return `/Volumes/${catalog}/${docsSchema}/raw`;
+  // Container-relative root (e.g. "<catalog>/<schema>/raw"); the engine adapter
+  // maps it onto its storage layout (Databricks UC volumes, S3 prefixes, ...).
+  return `${catalog}/${docsSchema}/raw`;
 }
 function normalizeSegment(
   value: string,
@@ -188,7 +192,7 @@ export function createDocumentFilesService(
 ): DocumentFilesService {
   const docsSchema = options.docsSchema ?? "docs";
   const root = volumeRoot(options.catalog, docsSchema);
-  const refreshJobName = `${options.catalog}-docs-refresh`;
+  const refreshJobName = options.refreshJobName;
   const isFileExists = options.isFileExistsError ?? defaultFileExists;
   return {
     upload: async (data, uploadOptions) => {

@@ -1,6 +1,10 @@
 import type { OntologyObject } from "@trybacked/core";
+import type { SqlDialect } from "@trybacked/ports";
 import { ObjectQueryCompileError } from "./errors.js";
+import { sparkDialect } from "./dialects.js";
 import type { ObjectQueryFilter, ObjectQueryFilterOp, SqlParameter } from "./query.js";
+
+const defaultDialect: SqlDialect = sparkDialect;
 const COMPARISON_OPS = ["eq", "neq", "gt", "gte", "lt", "lte"] as const;
 type ComparisonOp = (typeof COMPARISON_OPS)[number];
 const FILTER_OP_SQL: Record<ComparisonOp, string> = {
@@ -30,14 +34,18 @@ function wholeWordRegex(term: string): string {
  * Case-insensitive text match; binds one parameter and returns a predicate
  * builder so the same bound term can be applied to several columns (OR).
  */
-function textMatchPredicate(term: string, parameters: SqlParameter[]): (column: string) => string {
+function textMatchPredicate(
+  dialect: SqlDialect,
+  term: string,
+  parameters: SqlParameter[],
+): (column: string) => string {
   const name = `p${String(parameters.length)}`;
   if (term.length <= WHOLE_WORD_MAX_TERM_LENGTH) {
     parameters.push({ name, value: wholeWordRegex(term) });
-    return (column) => `${column} RLIKE :${name}`;
+    return (column) => dialect.regexMatch(column, name) ?? dialect.ciContains(column, name);
   }
   parameters.push({ name, value: `%${escapeLikePattern(term)}%` });
-  return (column) => `LOWER(${column}) LIKE LOWER(:${name})`;
+  return (column) => dialect.ciContains(column, name);
 }
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
@@ -55,6 +63,7 @@ export function compileObjectFilter(
   tableAlias: string,
   filter: ObjectQueryFilter,
   parameters: SqlParameter[],
+  dialect: SqlDialect = defaultDialect,
 ): string {
   assertKnownProperty(object, filter.propertyId);
   const column = `${quoteIdentifier(tableAlias)}.${quoteIdentifier(filter.propertyId)}`;
@@ -74,9 +83,9 @@ export function compileObjectFilter(
     if (filter.op === "starts_with") {
       const name = `p${String(parameters.length)}`;
       parameters.push({ name, value: `${escapeLikePattern(filter.value)}%` });
-      return `LOWER(${column}) LIKE LOWER(:${name})`;
+      return dialect.ciContains(column, name);
     }
-    const predicate = textMatchPredicate(filter.value, parameters)(column);
+    const predicate = textMatchPredicate(dialect, filter.value, parameters)(column);
     return filter.op === "not_contains" ? `NOT (${predicate})` : predicate;
   }
   if (filter.op === "in" || filter.op === "not_in") {
@@ -138,6 +147,7 @@ export function compileTextSearch(
   query: string,
   propertyIds: string[] | undefined,
   parameters: SqlParameter[],
+  dialect: SqlDialect = defaultDialect,
 ): string {
   const trimmed = query.trim();
   if (trimmed.length === 0) {
@@ -155,7 +165,7 @@ export function compileTextSearch(
       `textSearch on object "${object.id}" has no string columns to search.`,
     );
   }
-  const match = textMatchPredicate(trimmed, parameters);
+  const match = textMatchPredicate(dialect, trimmed, parameters);
   const parts = targets.map((propertyId) => {
     assertKnownProperty(object, propertyId);
     return match(`${quoteIdentifier(tableAlias)}.${quoteIdentifier(propertyId)}`);

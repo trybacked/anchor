@@ -16,6 +16,8 @@ const ControlPlaneConfigSchema = z.object({
   databricksHost: z.string().min(1),
   databricksToken: z.string().min(1),
   databricksWarehouseId: z.string().min(1),
+  /** Namespace of the document archive (Plan Fase 4: from config, not hardcoded). */
+  documentsSchema: z.string().min(1),
 });
 export type ControlPlaneConfig = z.infer<typeof ControlPlaneConfigSchema>;
 const DEFAULT_SHARED_SPACES_JSON = "{}";
@@ -66,6 +68,10 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
   const databricksHost = env["BACKED_DATABRICKS_HOST"]?.trim();
   const databricksToken = env["BACKED_DATABRICKS_TOKEN"]?.trim();
   const databricksWarehouseId = env["BACKED_DATABRICKS_WAREHOUSE_ID"]?.trim();
+  const documentsSchema = (env["BACKED_DOCUMENTS_SCHEMA"] ?? "docs").trim();
+  if (documentsSchema.length === 0) {
+    throw new Error("BACKED_DOCUMENTS_SCHEMA must not be empty when set.");
+  }
   if (enrollmentHost === undefined || enrollmentHost.length === 0) {
     throw new Error("CONTROL_PLANE_ENROLLMENT_HOST or BACKED_DATABRICKS_HOST is required.");
   }
@@ -96,6 +102,7 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
     platformPrincipal: env["BACKED_PLATFORM_PRINCIPAL"]?.trim(),
     sharedSpacesJson,
     defaultSharedSpaces: resolveDefaultSharedSpaces(env, configuredSharedSpaces),
+    documentsSchema,
     databricksHost,
     databricksToken,
     databricksWarehouseId,

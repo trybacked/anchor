@@ -31,26 +31,32 @@ describe("applyCommand", () => {
     const removed = applyCommand(withEntity, { type: "removeEntity", entityId: "item" });
     expect(removed.entities).toHaveLength(0);
   });
-  it("applies applyPack for cov", () => {
-    const result = applyCommands(emptySemanticModel("pack-test"), [
-      { type: "applyPack", packId: "cov", catalog: "backed_demo" },
-    ]);
-    expect(result.entities.map((entity) => entity.id).sort()).toEqual([
-      "organization",
-      "person",
-      "person_organization_affiliation",
-      "private_organization",
-      "public_organization",
-      "support_unit",
-    ]);
-    expect(result.relations).toHaveLength(2);
-    expect(result.semantics?.glossary ?? []).toHaveLength(0);
-  });
   it("sets property semantics", () => {
-    const withPack = applyCommands(emptySemanticModel("sem-test"), [
-      { type: "applyPack", packId: "cov", catalog: "backed_demo" },
+    const withEntity = applyCommands(emptySemanticModel("sem-test"), [
+      {
+        type: "addEntity",
+        entity: {
+          id: "person",
+          name: "Person",
+          sourceTable: "cat.schema.people",
+          status: "confirmed",
+          confidence: 1,
+          provenance: { table: "cat.schema.people", evidence: "test" },
+          properties: [
+            {
+              name: "Name",
+              columnName: "name",
+              semanticType: "text",
+              role: "attribute",
+              nullable: true,
+              confidence: 1,
+              provenance: { table: "cat.schema.people", column: "name", evidence: "test" },
+            },
+          ],
+        },
+      },
     ]);
-    const updated = applyCommand(withPack, {
+    const updated = applyCommand(withEntity, {
       type: "setPropertySemantics",
       entityId: "person",
       columnName: "name",

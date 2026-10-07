@@ -1,12 +1,12 @@
 import { createFileRegistrySource, type TenantRegistrySource } from "@trybacked/core";
+import type { OntologyStore } from "@trybacked/registry";
 import {
-  createDatabricksBlobStore,
   createDatabricksFilesClient,
   createDatabricksJobsClient,
+  createDatabricksOntologyRegistry,
   DatabricksFileExistsError,
   type DatabricksProviderConfig,
-} from "@trybacked/provider-databricks";
-import { createVolumeOntologyStore, type OntologyStore } from "@trybacked/registry";
+} from "@trybacked/infrastructure";
 import {
   createDocumentFilesService,
   type AnchorOperationAuditHook,
@@ -58,7 +58,7 @@ export function createTenantRuntimeRegistry(options: {
     createFileRegistrySource(options.registryPath ?? "/etc/backed/tenants.yaml");
   const ontologyStore =
     options.ontologyStore ??
-    createVolumeOntologyStore(createDatabricksBlobStore(options.databricksConfig));
+    createDatabricksOntologyRegistry(options.databricksConfig);
   const cache = new Map<string, CacheEntry>();
   type FilesCacheEntry = {
     service: DocumentFilesService;
@@ -74,6 +74,11 @@ export function createTenantRuntimeRegistry(options: {
   }
   const filesCache = new Map<string, FilesCacheEntry>();
   const maxUploadBytes = options.maxUploadBytes ?? 50 * 1024 * 1024;
+  // Refresh job naming is deployment configuration (env), not a code convention.
+  const refreshJobNameTemplate =
+    options.env["BACKED_DOCUMENT_REFRESH_JOB"]?.trim() ?? "<catalog>-docs-refresh";
+  const docRefreshJobName = (catalog: string): string =>
+    refreshJobNameTemplate.replace("<catalog>", catalog);
   const docsSchemaFromEnv = options.env["BACKED_DOCUMENTS_SCHEMA"]?.trim();
   const docsSchema =
     options.docsSchema ??
@@ -182,8 +187,9 @@ export function createTenantRuntimeRegistry(options: {
       const files = createDatabricksFilesClient(options.databricksConfig);
       const jobs = createDatabricksJobsClient(options.databricksConfig);
       const service = createDocumentFilesService({
-        catalog,
+        catalog: `/Volumes/${catalog}`,
         docsSchema,
+        refreshJobName: docRefreshJobName(catalog),
         files,
         jobs,
         maxUploadBytes,

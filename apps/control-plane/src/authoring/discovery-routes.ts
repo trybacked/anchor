@@ -4,8 +4,9 @@ import {
   createRunId,
   DiscoverDocsProposalBodySchema,
 } from "@trybacked/core";
+import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { AuthoringCommandError } from "@trybacked/ontology-authoring";
-import { createDatabricksDatasetProvider, createDatabricksSqlClient } from "@trybacked/provider-databricks";
+import { createDatabricksDatasetProvider, createDatabricksSqlClient } from "@trybacked/infrastructure";
 import { Hono } from "hono";
 import type pg from "pg";
 import type { ControlPlaneConfig } from "../config.js";
@@ -32,7 +33,6 @@ import {
 } from "./context.js";
 import { ensureOntologyDraft, validateDraftModel } from "./draft-service.js";
 
-const DOCS_SCHEMA = "docs";
 const LIST_RUNS_LIMIT = 30;
 
 type AuthoringEnv = {
@@ -68,7 +68,7 @@ function databricksProvider(config: ControlPlaneConfig, catalog: string) {
     token: config.databricksToken,
     warehouseId: config.databricksWarehouseId,
     catalog,
-    schema: DOCS_SCHEMA,
+    schema: config.documentsSchema,
   };
   const client = createDatabricksSqlClient(databricksConfig);
   return createDatabricksDatasetProvider({ config: databricksConfig, client });
@@ -106,7 +106,7 @@ export function registerDiscoveryRoutes(
         token: config.databricksToken,
         warehouseId: config.databricksWarehouseId,
         catalog: ctx.catalog,
-        schema: DOCS_SCHEMA,
+        schema: config.documentsSchema,
       });
     } catch (error) {
       const err = warehouseErrorResponse(error);
@@ -117,7 +117,8 @@ export function registerDiscoveryRoutes(
         provider,
         client,
         ctx.catalog,
-        DOCS_SCHEMA,
+        config.documentsSchema,
+        legacyDocumentTables(),
       );
       if (!outcome.ok) {
         return c.json({ code: outcome.code, missingTables: outcome.missingTables }, 200);
@@ -171,7 +172,7 @@ export function registerDiscoveryRoutes(
         tenantId: ctx.tenantId,
         kind: "docs_warehouse",
         catalog: ctx.catalog,
-        schemaName: DOCS_SCHEMA,
+        schemaName: config.documentsSchema,
         discovery: outcome.discovery,
         proposal: outcome.proposal,
         missingTables: outcome.missingTables,
@@ -241,7 +242,7 @@ export function registerDiscoveryRoutes(
       tenantId: ctx.tenantId,
       kind: "docs_warehouse_ai",
       catalog: ctx.catalog,
-      schemaName: DOCS_SCHEMA,
+      schemaName: config.documentsSchema,
       discovery: outcome.discovery,
       proposal: outcome.proposal,
       missingTables: outcome.missingTables,

@@ -17,8 +17,13 @@ function stringCellChars(rows: Record<string, unknown>[]): number {
 }
 
 /** Rendered plan-first listing with no substantive body (e.g. a single name). */
-export function isSparseListingProse(prose: string): boolean {
-  const trimmed = prose.trim();
+export function isSparseListingProse(result: PlanFirstResult): boolean {
+  // A count total is a complete answer by construction — only row listings can
+  // be too sparse to stand alone.
+  if (result.result.mode === "count") {
+    return false;
+  }
+  const trimmed = result.answer.trim();
   if (!/^(Ecco|Here are|Ci sono|There are) \*\*\d+\*\*/i.test(trimmed)) {
     return false;
   }

@@ -1,4 +1,4 @@
-import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
+import type { DatabricksProviderConfig } from "@trybacked/adapter-databricks";
 import { describe, expect, it, vi } from "vitest";
 import { createOboToken, ensureServicePrincipal } from "../../src/databricks-admin-client.js";
 const config: DatabricksProviderConfig = {

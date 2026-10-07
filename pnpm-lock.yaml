@@ -20,6 +20,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^3.2.7
         version: 3.2.7(vitest@3.2.7(@types/node@22.20.1)(yaml@2.9.0))
+      dependency-cruiser:
+        specifier: ^16.10.0
+        version: 16.10.4
       eslint:
         specifier: ^9.19.0
         version: 9.39.5
@@ -53,12 +56,18 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.5.0
         version: 0.5.0(hono@4.13.5)(zod@3.25.76)
+      '@trybacked/adapter-databricks':
+        specifier: workspace:*
+        version: link:../../packages/adapter-databricks
+      '@trybacked/capability-documents':
+        specifier: workspace:^
+        version: link:../../packages/capability-documents
       '@trybacked/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@trybacked/provider-databricks':
-        specifier: workspace:*
-        version: link:../../packages/provider-databricks
+      '@trybacked/infrastructure':
+        specifier: workspace:^
+        version: link:../../packages/infrastructure
       '@trybacked/registry':
         specifier: workspace:*
         version: link:../../packages/registry
@@ -87,21 +96,27 @@ importers:
 
   apps/cli:
     dependencies:
+      '@trybacked/adapter-databricks':
+        specifier: workspace:*
+        version: link:../../packages/adapter-databricks
+      '@trybacked/capability-documents':
+        specifier: workspace:^
+        version: link:../../packages/capability-documents
       '@trybacked/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@trybacked/discovery':
         specifier: workspace:*
         version: link:../../packages/discovery
+      '@trybacked/infrastructure':
+        specifier: workspace:^
+        version: link:../../packages/infrastructure
       '@trybacked/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
       '@trybacked/platform-admin':
         specifier: workspace:*
         version: link:../../packages/platform-admin
-      '@trybacked/provider-databricks':
-        specifier: workspace:*
-        version: link:../../packages/provider-databricks
       '@trybacked/registry':
         specifier: workspace:*
         version: link:../../packages/registry
@@ -136,12 +151,24 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.5.0
         version: 0.5.0(hono@4.13.5)(zod@3.25.76)
+      '@trybacked/adapter-databricks':
+        specifier: workspace:*
+        version: link:../../packages/adapter-databricks
+      '@trybacked/capability-documents':
+        specifier: workspace:^
+        version: link:../../packages/capability-documents
       '@trybacked/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@trybacked/discovery':
         specifier: workspace:*
         version: link:../../packages/discovery
+      '@trybacked/infrastructure':
+        specifier: workspace:^
+        version: link:../../packages/infrastructure
+      '@trybacked/ontology-ai':
+        specifier: workspace:^
+        version: link:../../packages/ontology-ai
       '@trybacked/ontology-authoring':
         specifier: workspace:*
         version: link:../../packages/ontology-authoring
@@ -151,9 +178,6 @@ importers:
       '@trybacked/platform-admin':
         specifier: workspace:*
         version: link:../../packages/platform-admin
-      '@trybacked/provider-databricks':
-        specifier: workspace:*
-        version: link:../../packages/provider-databricks
       '@trybacked/registry':
         specifier: workspace:*
         version: link:../../packages/registry
@@ -205,6 +229,46 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
+  packages/adapter-databricks:
+    dependencies:
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+      '@trybacked/registry':
+        specifier: workspace:*
+        version: link:../registry
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+
+  packages/adapter-postgres:
+    dependencies:
+      '@trybacked/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+      '@trybacked/ports':
+        specifier: workspace:*
+        version: link:../ports
+      '@trybacked/registry':
+        specifier: workspace:*
+        version: link:../registry
+      pg:
+        specifier: ^8.13.1
+        version: 8.23.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.23.1
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
+
   packages/anchor:
     dependencies:
       '@trybacked/core':
@@ -218,11 +282,33 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
+  packages/capability-documents:
+    dependencies:
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
+
+  packages/capability-tabular:
+    dependencies:
+      '@trybacked/capability-documents':
+        specifier: workspace:^
+        version: link:../capability-documents
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/compiler:
     dependencies:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+      '@trybacked/ports':
+        specifier: workspace:*
+        version: link:../ports
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -246,15 +332,55 @@ importers:
 
   packages/diff:
     dependencies:
+      '@trybacked/capability-documents':
+        specifier: workspace:^
+        version: link:../capability-documents
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
 
   packages/discovery:
     dependencies:
+      '@trybacked/capability-documents':
+        specifier: workspace:^
+        version: link:../capability-documents
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/infrastructure:
+    dependencies:
+      '@trybacked/adapter-databricks':
+        specifier: workspace:*
+        version: link:../adapter-databricks
+      '@trybacked/adapter-postgres':
+        specifier: workspace:*
+        version: link:../adapter-postgres
+      '@trybacked/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+      '@trybacked/ports':
+        specifier: workspace:*
+        version: link:../ports
+      '@trybacked/registry':
+        specifier: workspace:*
+        version: link:../registry
+      pg:
+        specifier: ^8.13.1
+        version: 8.23.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.23.1
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
   packages/mcp:
     dependencies:
@@ -273,6 +399,22 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+
+  packages/ontology-ai:
+    dependencies:
+      '@trybacked/core':
+        specifier: workspace:*
+        version: link:../core
+      ai:
+        specifier: ^7
+        version: 7.0.122(zod@3.25.76)
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
   packages/ontology-authoring:
     dependencies:
@@ -302,24 +444,24 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@trybacked/provider-databricks':
+      '@trybacked/adapter-databricks':
         specifier: workspace:*
-        version: link:../provider-databricks
+        version: link:../adapter-databricks
       vitest:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
   packages/platform-admin:
     dependencies:
+      '@trybacked/adapter-databricks':
+        specifier: workspace:*
+        version: link:../adapter-databricks
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
       '@trybacked/ontology-authoring':
         specifier: workspace:*
         version: link:../ontology-authoring
-      '@trybacked/provider-databricks':
-        specifier: workspace:*
-        version: link:../provider-databricks
       '@trybacked/registry':
         specifier: workspace:*
         version: link:../registry
@@ -328,7 +470,7 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
-  packages/provider-databricks:
+  packages/ports:
     dependencies:
       '@trybacked/core':
         specifier: workspace:*
@@ -336,6 +478,10 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
   packages/registry:
     dependencies:
@@ -352,6 +498,9 @@ importers:
 
   packages/runtime:
     dependencies:
+      '@trybacked/capability-documents':
+        specifier: workspace:^
+        version: link:../capability-documents
       '@trybacked/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -396,6 +545,9 @@ importers:
 
   packages/service:
     dependencies:
+      '@trybacked/capability-documents':
+        specifier: workspace:^
+        version: link:../capability-documents
       '@trybacked/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -1218,10 +1370,21 @@ packages:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
     engines: {node: '>= 0.6'}
 
+  acorn-jsx-walk@2.0.0:
+    resolution: {integrity: sha512-uuo6iJj4D4ygkdzd6jPtcxs8vZgDX9YFIkqczGImoypX2fQ4dVImmu3UzA4ynixCIMTrEOWW+95M2HuBaCEOVA==}
+
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
       acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
+
+  acorn-loose@8.5.2:
+    resolution: {integrity: sha512-PPvV6g8UGMGgjrMu+n/f9E/tCSkNQ2Y97eFvuVdJfG11+xdIeDcLyNdC8SHcrHbRqkfwLASdplyR6B6sKM1U4A==}
+    engines: {node: '>=0.4.0'}
+
+  acorn-walk@8.3.5:
+    resolution: {integrity: sha512-HEHNfbars9v4pgpW6SO1KSPkfoS0xVOM/9UzkJltjlsHZmJasxg8aXkuZa7SMf8vKGIBhpUsPluQSqhJFCqebw==}
+    engines: {node: '>=0.4.0'}
 
   acorn@8.18.0:
     resolution: {integrity: sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==}
@@ -1388,6 +1551,10 @@ packages:
   color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
 
+  commander@13.1.0:
+    resolution: {integrity: sha512-/rFeCpNJQbhSZjGVwO9RFV3xPqbnERS8MmIQzCtD/zl6gpJuV/bMLuN92oG3F7d8oDEHHRrujSXNUr8fpjntKw==}
+    engines: {node: '>=18'}
+
   comment-parser@1.4.8:
     resolution: {integrity: sha512-rKZTGo4fzKYna8UcL0isTg5wkBNla7bxTypLwZQXjIdi++IdP1OJ41rI5Mti3/jltkPujbu4i9LIARYA+zpotQ==}
     engines: {node: '>= 12.0.0'}
@@ -1475,6 +1642,11 @@ packages:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
     engines: {node: '>= 0.8'}
 
+  dependency-cruiser@16.10.4:
+    resolution: {integrity: sha512-hrxVOjIm8idZ9ZVDGSyyG3SHiNcEUPhL6RTEmO/3wfQWLepH5pA3nuDMMrcJ1DkZztFA7xg3tk8OVO+MmwwH9w==}
+    engines: {node: ^18.17||>=20}
+    hasBin: true
+
   doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
     engines: {node: '>=0.10.0'}
@@ -1498,6 +1670,10 @@ packages:
   encodeurl@2.0.0:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
     engines: {node: '>= 0.8'}
+
+  enhanced-resolve@5.26.0:
+    resolution: {integrity: sha512-9vhedylFonb2YGogzUKX6+Ja72gOJbN1QHAqdrvqLwhdl/QWbKopzoUC9EbQNVsAns/bx/4uyqalrQAoy1IByw==}
+    engines: {node: '>=10.13.0'}
 
   es-abstract-get@1.0.0:
     resolution: {integrity: sha512-6PMWXpdhshVvFp+FoWYs1EvG1Nj0tvk0dZM+XcK0xMEM1czRVcP6ohqPWHy6qPagSpC8j4+p89WXlT+xXJs/fg==}
@@ -1779,6 +1955,10 @@ packages:
     deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
+  global-directory@4.0.1:
+    resolution: {integrity: sha512-wHTUcDUoZ1H5/0iVqEudYW4/kAlN5cZ3j/bXn0Dpbizl9iaUVeWSHqiOjsgk6OW2bkLclbBjzewBz6weQ1zA2Q==}
+    engines: {node: '>=18'}
+
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
@@ -1790,6 +1970,9 @@ packages:
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
+
+  graceful-fs@4.2.11:
+    resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
   has-bigints@1.1.0:
     resolution: {integrity: sha512-R3pbpkcIqv2Pm3dUwgjclDRVmWpTJW2DcMzcIhEXEx1oh/CEMObMm3KLmRJOdvhM7o4uQBnwr8pzRK2sJWIqfg==}
@@ -1865,9 +2048,17 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
+  ini@4.1.1:
+    resolution: {integrity: sha512-QQnnxNyfvmHFIsj7gkPcYymR8Jdw/o7mp5ZFihxn6h8Ci6fh3Dx4E1gPjpQEpIuPo9XVNY/ZUwh4BPMjGyL01g==}
+    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
+
   internal-slot@1.1.0:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
     engines: {node: '>= 0.4'}
+
+  interpret@3.1.1:
+    resolution: {integrity: sha512-6xwYfHbajpoF0xLW+iwLkhwgvLoZDfjYfoFNu8ftMoXINzwuymNLd9u/KmwtdT2GbR+/Cz66otEGEVVUHX9QLQ==}
+    engines: {node: '>=10.13.0'}
 
   ip-address@10.7.0:
     resolution: {integrity: sha512-BGFsyJd5mpXp3rK6jIdADLNgpJUK1jnjzvYF8lK+VyDab9JAmqN0YOKDdP17HlgKb2+ehPgDc8EtnRLbGCAMhA==}
@@ -1919,6 +2110,10 @@ packages:
     resolution: {integrity: sha512-evOr8xfXKxE6qSR0hSXL2r3sd7ALj8+7jQEUvPYcm5sgZFdJ+AYzT6yNmJenvIYQBgIGwfwz08sL8zoL7yq2BA==}
     engines: {node: '>= 0.4'}
 
+  is-core-module@2.17.0:
+    resolution: {integrity: sha512-J/vG0zBCbIKOQFfufSwyXdMrsohyJIUNkrnmo6WZGzoM7tr/lsbfW5b2BvisL6zsyMzK9UxV9L6c7AoFbyXHOA==}
+    engines: {node: '>= 0.4'}
+
   is-data-view@1.0.2:
     resolution: {integrity: sha512-RKtWF8pGmS87i2D6gqQu/l7EYRlVdfzemCJN/P3UOs//x1QE7mfhvzHIApBTRf7axvT6DMGwSwBXYCT0nfB9xw==}
     engines: {node: '>= 0.4'}
@@ -1951,6 +2146,10 @@ packages:
     resolution: {integrity: sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg==}
     engines: {node: '>=0.10.0'}
 
+  is-installed-globally@1.0.1:
+    resolution: {integrity: sha512-li88H4QGRoNMX27jEmY8nR515oJVspAgC/WFMlhHfFV8RJ4QyGpHhXnwAe9gH5RIgKmdYRUmrOhQobcgEjIdSw==}
+    engines: {node: '>=18'}
+
   is-map@2.0.3:
     resolution: {integrity: sha512-1Qed0/Hr2m+YqxnM09CjA2d/i6YZNfF6R2oRAOj36eUdS6qIV/huPJNSEpKbupewFs+ZsJlxsjjPbc0/afW6Lw==}
     engines: {node: '>= 0.4'}
@@ -1962,6 +2161,10 @@ packages:
   is-number-object@1.1.1:
     resolution: {integrity: sha512-lZhclumE1G6VYD8VHe35wFaIif+CTy5SJIi5+3y4psDgWu4wPDoBhF8NxUOinEc7pHgiTsT6MaBb92rKhhD+Xw==}
     engines: {node: '>= 0.4'}
+
+  is-path-inside@4.0.0:
+    resolution: {integrity: sha512-lJJV/5dYS+RcL8uQdBDW9c9uWFLLBNRyFhnAKXw5tVqLlKZ4RMGZKv+YQ/IA3OhD+RpbJa1LLFM1FQPGyIXvOA==}
+    engines: {node: '>=12'}
 
   is-promise@4.0.0:
     resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==}
@@ -2072,11 +2275,20 @@ packages:
     resolution: {integrity: sha512-g1MWMLBiz8FKi1e4w0UyVL3w+iJceWAFBAaBnnGKOpNa5f8TLktkbre1+s6oICydWAm+HRUGTmI+//xv2hvXYA==}
     hasBin: true
 
+  json5@2.2.3:
+    resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
+    engines: {node: '>=6'}
+    hasBin: true
+
   jsonc-parser@3.3.1:
     resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
+
+  kleur@3.0.3:
+    resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}
+    engines: {node: '>=6'}
 
   launch-editor@2.14.1:
     resolution: {integrity: sha512-QWBrQsMpH7gPr965dsKD/3cKWiNoTjpATQf++Xq63N6sKRGMwlVXz41O1IZTMfZQgBctD/K5Zt06+/I6pP6+HA==}
@@ -2119,6 +2331,10 @@ packages:
     resolution: {integrity: sha512-yz3xRaG20c6/BOzvYoDaGtPmGscs7YivItZEEqe6GbwNfHuxu9YNmvnEkMzKldAGY4/80pRcQRZSEnhquk9XuQ==}
     engines: {node: '>= 0.8'}
 
+  memoize@10.2.0:
+    resolution: {integrity: sha512-DeC6b7QBrZsRs3Y02A6A7lQyzFbsQbqgjI6UW0GigGWV+u1s25TycMr0XHZE4cJce7rY/vyw2ctMQqfDkIhUEA==}
+    engines: {node: '>=18'}
+
   merge-descriptors@2.0.0:
     resolution: {integrity: sha512-Snk314V5ayFLhp3fkUREub6WtjBfPdCPY1Ln8/8munuLuiYhsABgBVWsozAG+MWMbVEvcdcpbi9R7ww22l9Q3g==}
     engines: {node: '>=18'}
@@ -2129,6 +2345,10 @@ packages:
 
   mime-types@3.0.2:
     resolution: {integrity: sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==}
+    engines: {node: '>=18'}
+
+  mimic-function@5.0.1:
+    resolution: {integrity: sha512-VP79XUPxV2CigYP3jWwAUFSku2aKqBH7uTAapFWCBqutsbmDo96KY5o8uh6U+/YSIn5OxJnXp73beVkpqMIGhA==}
     engines: {node: '>=18'}
 
   minimatch@10.2.6:
@@ -2354,6 +2574,10 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
+  prompts@2.4.2:
+    resolution: {integrity: sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==}
+    engines: {node: '>= 6'}
+
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
     engines: {node: '>= 0.10'}
@@ -2385,9 +2609,17 @@ packages:
     resolution: {integrity: sha512-K5zQjDllxWkf7Z5xJdV0/B0WTNqx6vxG70zJE4N0kBs4LovmEYWJzQGxC9bS9RAKu3bgM40lrd5zoLJ12MQ5BA==}
     engines: {node: '>= 0.10'}
 
+  rechoir@0.8.0:
+    resolution: {integrity: sha512-/vxpCXddiX8NGfGO/mTafwjq4aFa/71pvamip0++IQk3zG8cbCj0fifNPrjjF1XMXUne91jL9OoxmdykoEtifQ==}
+    engines: {node: '>= 10.13.0'}
+
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
     engines: {node: '>= 0.4'}
+
+  regexp-tree@0.1.27:
+    resolution: {integrity: sha512-iETxpjK6YoRWJG5o6hXLwvjYAoW+FEZn9os0PD/b6AP6xQwsa/Y7lCVgIixBbUPMfhu+i2LtdeAqVTgGlQarfA==}
+    hasBin: true
 
   regexp.prototype.flags@1.5.4:
     resolution: {integrity: sha512-dYqgNSZbDwkaJ2ceRd9ojCGjBq+mOm9LmtXnAnEGyHhN/5R7iDW2TRw3h+o/jCFxus3P2LfWIIiwowAjANm7IA==}
@@ -2404,6 +2636,11 @@ packages:
   resolve-from@4.0.0:
     resolution: {integrity: sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==}
     engines: {node: '>=4'}
+
+  resolve@1.22.13:
+    resolution: {integrity: sha512-Dj/cW9zBV2aRj6XzCxuGIs3ESZKv02jixne3q6jFZYZ3/Tg09gHHviSMDL4kObh9pqSahdRHEnDoaP2gn8YLhA==}
+    engines: {node: '>= 0.4'}
+    hasBin: true
 
   resolve@2.0.0-next.7:
     resolution: {integrity: sha512-tqt+NBWwyaMgw3zDsnygx4CByWjQEJHOPMdslYhppaQSJUtL/D4JO9CcBBlhPoI8lz9oJIDXkwXfhF4aWqP8xQ==}
@@ -2430,6 +2667,9 @@ packages:
   safe-regex-test@1.1.0:
     resolution: {integrity: sha512-x/+Cz4YrimQxQccJf5mKEbIa1NzeCRNI5Ecl/ekmlYaampdNLPalVyIcCZNNH3MvmqBugV5TMYZXv0ljslUlaw==}
     engines: {node: '>= 0.4'}
+
+  safe-regex@2.1.1:
+    resolution: {integrity: sha512-rx+x8AMzKb5Q5lQ95Zoi6ZbJqwCLkqi3XuJXp5P3rT8OEc6sZCJG5AE5dU3lsgRr/F4Bs31jSlVN+j5KrsGu9A==}
 
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
@@ -2586,6 +2826,13 @@ packages:
     resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
     engines: {node: '>=20'}
 
+  tapable@2.3.3:
+    resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
+    engines: {node: '>=6'}
+
+  teamcity-service-messages@0.1.14:
+    resolution: {integrity: sha512-29aQwaHqm8RMX74u2o/h1KbMLP89FjNiMxD9wbF2BbWOnbM+q+d1sCEC+MqCc4QW3NJykn77OMpTFw/xTHIc0w==}
+
   test-exclude@7.0.2:
     resolution: {integrity: sha512-u9E6A+ZDYdp7a4WnarkXPZOx8Ilz46+kby6p1yZ8zsGTz9gYa6FIS7lj2oezzNKmtdyyJNNmmXDppga5GB7kSw==}
     engines: {node: '>=18'}
@@ -2630,8 +2877,16 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
+  tsconfig-paths-webpack-plugin@4.2.0:
+    resolution: {integrity: sha512-zbem3rfRS8BgeNK50Zz5SIQgXzLafiHjOwUAvk/38/o1jHn/V5QAgVUcz884or7WYcPaH3N2CIfUc2u0ul7UcA==}
+    engines: {node: '>=10.13.0'}
+
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==}
+
+  tsconfig-paths@4.2.0:
+    resolution: {integrity: sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==}
+    engines: {node: '>=6'}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -2777,6 +3032,11 @@ packages:
         optional: true
       jsdom:
         optional: true
+
+  watskeburt@4.2.3:
+    resolution: {integrity: sha512-uG9qtQYoHqAsnT711nG5iZc/8M5inSmkGCOp7pFaytKG2aTfIca7p//CjiVzAE4P7hzaYuCozMjNNaLgmhbK5g==}
+    engines: {node: ^18||>=20}
+    hasBin: true
 
   webcrypto-core@1.9.2:
     resolution: {integrity: sha512-gsXecm82UQNlTBURJGuqOWy1Ww08S3kZUcr3aOJS02Pk0xLtkfeUAVC0u0xhgdonFme80edSJUIJyuvL/7250Q==}
@@ -3663,7 +3923,17 @@ snapshots:
       mime-types: 3.0.2
       negotiator: 1.1.0
 
+  acorn-jsx-walk@2.0.0: {}
+
   acorn-jsx@5.3.2(acorn@8.18.0):
+    dependencies:
+      acorn: 8.18.0
+
+  acorn-loose@8.5.2:
+    dependencies:
+      acorn: 8.18.0
+
+  acorn-walk@8.3.5:
     dependencies:
       acorn: 8.18.0
 
@@ -3862,6 +4132,8 @@ snapshots:
 
   color-name@1.1.4: {}
 
+  commander@13.1.0: {}
+
   comment-parser@1.4.8: {}
 
   concat-map@0.0.1: {}
@@ -3933,6 +4205,31 @@ snapshots:
 
   depd@2.0.0: {}
 
+  dependency-cruiser@16.10.4:
+    dependencies:
+      acorn: 8.18.0
+      acorn-jsx: 5.3.2(acorn@8.18.0)
+      acorn-jsx-walk: 2.0.0
+      acorn-loose: 8.5.2
+      acorn-walk: 8.3.5
+      ajv: 8.20.0
+      commander: 13.1.0
+      enhanced-resolve: 5.26.0
+      ignore: 7.0.8
+      interpret: 3.1.1
+      is-installed-globally: 1.0.1
+      json5: 2.2.3
+      memoize: 10.2.0
+      picocolors: 1.1.1
+      picomatch: 4.0.7
+      prompts: 2.4.2
+      rechoir: 0.8.0
+      safe-regex: 2.1.1
+      semver: 7.8.5
+      teamcity-service-messages: 0.1.14
+      tsconfig-paths-webpack-plugin: 4.2.0
+      watskeburt: 4.2.3
+
   doctrine@2.1.0:
     dependencies:
       esutils: 2.0.3
@@ -3952,6 +4249,11 @@ snapshots:
   emoji-regex@9.2.2: {}
 
   encodeurl@2.0.0: {}
+
+  enhanced-resolve@5.26.0:
+    dependencies:
+      graceful-fs: 4.2.11
+      tapable: 2.3.3
 
   es-abstract-get@1.0.0:
     dependencies:
@@ -4401,6 +4703,10 @@ snapshots:
       package-json-from-dist: 1.0.1
       path-scurry: 1.11.1
 
+  global-directory@4.0.1:
+    dependencies:
+      ini: 4.1.1
+
   globals@14.0.0: {}
 
   globalthis@1.0.4:
@@ -4409,6 +4715,8 @@ snapshots:
       gopd: 1.2.0
 
   gopd@1.2.0: {}
+
+  graceful-fs@4.2.11: {}
 
   has-bigints@1.1.0: {}
 
@@ -4469,11 +4777,15 @@ snapshots:
 
   inherits@2.0.4: {}
 
+  ini@4.1.1: {}
+
   internal-slot@1.1.0:
     dependencies:
       es-errors: 1.3.0
       hasown: 2.0.4
       side-channel: 1.1.1
+
+  interpret@3.1.1: {}
 
   ip-address@10.7.0: {}
 
@@ -4524,6 +4836,10 @@ snapshots:
     dependencies:
       hasown: 2.0.4
 
+  is-core-module@2.17.0:
+    dependencies:
+      hasown: 2.0.4
+
   is-data-view@1.0.2:
     dependencies:
       call-bound: 1.0.4
@@ -4559,6 +4875,11 @@ snapshots:
     dependencies:
       is-extglob: 2.1.1
 
+  is-installed-globally@1.0.1:
+    dependencies:
+      global-directory: 4.0.1
+      is-path-inside: 4.0.0
+
   is-map@2.0.3: {}
 
   is-negative-zero@2.0.3: {}
@@ -4567,6 +4888,8 @@ snapshots:
     dependencies:
       call-bound: 1.0.4
       has-tostringtag: 1.0.2
+
+  is-path-inside@4.0.0: {}
 
   is-promise@4.0.0: {}
 
@@ -4675,11 +4998,15 @@ snapshots:
     dependencies:
       minimist: 1.2.8
 
+  json5@2.2.3: {}
+
   jsonc-parser@3.3.1: {}
 
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
+
+  kleur@3.0.3: {}
 
   launch-editor@2.14.1:
     dependencies:
@@ -4721,6 +5048,10 @@ snapshots:
 
   media-typer@1.1.1: {}
 
+  memoize@10.2.0:
+    dependencies:
+      mimic-function: 5.0.1
+
   merge-descriptors@2.0.0: {}
 
   mime-db@1.54.0: {}
@@ -4728,6 +5059,8 @@ snapshots:
   mime-types@3.0.2:
     dependencies:
       mime-db: 1.54.0
+
+  mimic-function@5.0.1: {}
 
   minimatch@10.2.6:
     dependencies:
@@ -4936,6 +5269,11 @@ snapshots:
 
   prettier@3.9.6: {}
 
+  prompts@2.4.2:
+    dependencies:
+      kleur: 3.0.3
+      sisteransi: 1.0.5
+
   proxy-addr@2.0.7:
     dependencies:
       forwarded: 0.2.0
@@ -4967,6 +5305,10 @@ snapshots:
       iconv-lite: 0.7.3
       unpipe: 1.0.0
 
+  rechoir@0.8.0:
+    dependencies:
+      resolve: 1.22.13
+
   reflect.getprototypeof@1.0.10:
     dependencies:
       call-bind: 1.0.9
@@ -4977,6 +5319,8 @@ snapshots:
       get-intrinsic: 1.3.0
       get-proto: 1.0.1
       which-builtin-type: 1.2.1
+
+  regexp-tree@0.1.27: {}
 
   regexp.prototype.flags@1.5.4:
     dependencies:
@@ -4992,6 +5336,13 @@ snapshots:
   reserved-identifiers@1.2.0: {}
 
   resolve-from@4.0.0: {}
+
+  resolve@1.22.13:
+    dependencies:
+      es-errors: 1.3.0
+      is-core-module: 2.17.0
+      path-parse: 1.0.7
+      supports-preserve-symlinks-flag: 1.0.0
 
   resolve@2.0.0-next.7:
     dependencies:
@@ -5062,6 +5413,10 @@ snapshots:
       call-bound: 1.0.4
       es-errors: 1.3.0
       is-regex: 1.2.1
+
+  safe-regex@2.1.1:
+    dependencies:
+      regexp-tree: 0.1.27
 
   safer-buffer@2.1.2: {}
 
@@ -5244,6 +5599,10 @@ snapshots:
 
   tagged-tag@1.0.0: {}
 
+  tapable@2.3.3: {}
+
+  teamcity-service-messages@0.1.14: {}
+
   test-exclude@7.0.2:
     dependencies:
       '@istanbuljs/schema': 0.1.6
@@ -5278,10 +5637,23 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
+  tsconfig-paths-webpack-plugin@4.2.0:
+    dependencies:
+      chalk: 4.1.2
+      enhanced-resolve: 5.26.0
+      tapable: 2.3.3
+      tsconfig-paths: 4.2.0
+
   tsconfig-paths@3.15.0:
     dependencies:
       '@types/json5': 0.0.29
       json5: 1.0.2
+      minimist: 1.2.8
+      strip-bom: 3.0.0
+
+  tsconfig-paths@4.2.0:
+    dependencies:
+      json5: 2.2.3
       minimist: 1.2.8
       strip-bom: 3.0.0
 
@@ -5526,6 +5898,8 @@ snapshots:
       - terser
       - tsx
       - yaml
+
+  watskeburt@4.2.3: {}
 
   webcrypto-core@1.9.2:
     dependencies:

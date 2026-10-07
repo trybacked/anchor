@@ -185,7 +185,7 @@ export function createAnchorService(options: AnchorServiceOptions) {
       if (queryRuntime?.chunkSearch === undefined) {
         return serviceError(
           "unavailable",
-          "Document chunk search is unavailable: docs.documents and docs.document_elements must exist in the warehouse (run docs_refresh).",
+          "Document chunk search is unavailable: the document archive datasets must exist in the warehouse (run the document refresh job).",
         );
       }
       const started = Date.now();

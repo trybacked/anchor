@@ -27,6 +27,10 @@ export type {
   DatabricksFileStat,
   DatabricksFilesClient,
 } from "./files-client.js";
+export {
+  createDatabricksOntologyRegistry,
+  type DatabricksOntologyRegistryLayout,
+} from "./registry.js";
 export { createDatabricksJobsClient } from "./jobs-client.js";
 export type {
   DatabricksJobRunResult,

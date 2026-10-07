@@ -9,12 +9,6 @@ export {
   grantTenantCatalogToPrincipal,
   type AdminSqlClient,
 } from "./admin-sql.js";
-export { bootstrapModelYaml, loadBootstrapModel } from "./bootstrap-model.js";
-export {
-  buildTenantDocumentOntologyModel,
-  publishTenantDocumentOntologyToVolume,
-  tenantDocumentOntologyYaml,
-} from "./document-ontology.js";
 export {
   createOboToken,
   ensureServicePrincipal,

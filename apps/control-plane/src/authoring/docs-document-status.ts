@@ -1,8 +1,5 @@
-import type { DatasetProvider } from "@trybacked/core";
-import type { DatabricksSqlClient } from "@trybacked/provider-databricks";
-
-const DOCUMENTS_TABLE = "documents";
-const DOCUMENT_ENTITIES_TABLE = "document_entities";
+import type { DocumentTablesSpec, DatasetProvider } from "@trybacked/core";
+import type { DatabricksSqlClient } from "@trybacked/infrastructure";
 
 export type WarehouseDocumentStatusRow = {
   documentId: string;
@@ -59,21 +56,22 @@ export async function listWarehouseDocumentExtractionStatus(
   client: DatabricksSqlClient,
   catalog: string,
   schema: string,
+  tables: DocumentTablesSpec,
 ): Promise<
   | { ok: true; documents: WarehouseDocumentStatusRow[] }
   | { ok: false; code: "docs_schema_empty"; missingTables: string[] }
 > {
   const datasets = await provider.listDatasets();
   const tableNames = new Set(datasets.map((dataset) => dataset.id));
-  if (!tableNames.has(DOCUMENTS_TABLE)) {
-    return { ok: false, code: "docs_schema_empty", missingTables: [DOCUMENTS_TABLE] };
+  if (!tableNames.has(tables.documents)) {
+    return { ok: false, code: "docs_schema_empty", missingTables: [tables.documents] };
   }
 
   const catalogId = quoteIdentifier(catalog);
   const schemaId = quoteIdentifier(schema);
-  const documentsTable = `${catalogId}.${schemaId}.${quoteIdentifier(DOCUMENTS_TABLE)}`;
-  const hasEntityTable = tableNames.has(DOCUMENT_ENTITIES_TABLE);
-  const entitiesTable = `${catalogId}.${schemaId}.${quoteIdentifier(DOCUMENT_ENTITIES_TABLE)}`;
+  const documentsTable = `${catalogId}.${schemaId}.${quoteIdentifier(tables.documents)}`;
+  const hasEntityTable = tableNames.has(tables.documentEntities);
+  const entitiesTable = `${catalogId}.${schemaId}.${quoteIdentifier(tables.documentEntities)}`;
 
   const entityJoin = hasEntityTable
     ? `LEFT JOIN (

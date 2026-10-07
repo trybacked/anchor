@@ -11,24 +11,28 @@ describe("document evidence", () => {
     expect(searchTermsForQuestion("chi è luca tropea")).toEqual(["luca", "tropea"]);
   });
 
+  it("drops function words", () => {
+    expect(searchTermsForQuestion("quanti documenti per Luca")).toEqual(["documenti", "luca"]);
+  });
+
   it("requires every term in multi-token searches", () => {
     expect(chunkMatchesSearchTerms("Comune di San Luca (RC)", ["luca", "tropea"])).toBe(false);
     expect(chunkMatchesSearchTerms("Luca Tropea — software engineer", ["luca", "tropea"])).toBe(true);
   });
 
-  it("detects register tables by content shape", () => {
+  it("detects register tables by digit density, not domain wording", () => {
     const table =
-      "N. Impresa Attività Categoria Linea 1 IL GUSTO di Toma Servizio Ristorazione L2 2 DOLCE E SALATO Bar L2";
+      "Riga Importo Quantita 1 1234 5678 2 2345 6789 3 3456 7890 4 4567 8901 5 5678 9012";
     expect(isLikelyRegisterTable(table)).toBe(true);
     expect(isLikelyRegisterTable("Luca Tropea — consulenza e sviluppo software")).toBe(false);
   });
 
-  it("ranks CV chunks above register tables for a person question", () => {
+  it("ranks prose chunks above register tables for a person question", () => {
     const rows = rankDocumentSearchRows(
       [
         {
           score: 0.9,
-          text: "N. Impresa Attività Categoria Linea 1 IL GUSTO di Toma 123 456 L2",
+          text: "Riga Importo Quantita 1 1234 5678 2 2345 6789 3 3456 7890 4 4567 8901",
           filename: "prospetto.pdf",
         },
         {

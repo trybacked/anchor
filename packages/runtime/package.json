@@ -33,6 +33,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@trybacked/capability-documents": "workspace:^",
     "@trybacked/compiler": "workspace:*",
     "@trybacked/core": "workspace:*"
   },

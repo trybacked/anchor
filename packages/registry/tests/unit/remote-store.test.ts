@@ -59,12 +59,16 @@ describe("createVolumeOntologyStore", () => {
     try {
       const record = sampleRecord(root);
       const blobs = memoryBlobStore();
-      const store = createVolumeOntologyStore(blobs);
+      // The registry root is resolved by the caller (Plan Fase 3b): adapters
+      // own engine-specific layouts, the registry only writes to it.
+      const store = createVolumeOntologyStore(blobs, {
+        root: "/tenants",
+        schema: "backed",
+        volume: "registry",
+      });
       await store.publish("backed_gerace", record, "entities: []\n");
-      expect(blobs.files.has("/Volumes/backed_gerace/backed/registry/publications/v1.json")).toBe(
-        true,
-      );
-      expect(blobs.files.has("/Volumes/backed_gerace/backed/registry/current.json")).toBe(true);
+      expect(blobs.files.has("/tenants/backed_gerace/backed/registry/publications/v1.json")).toBe(true);
+      expect(blobs.files.has("/tenants/backed_gerace/backed/registry/current.json")).toBe(true);
       const loaded = await store.loadCurrent("backed_gerace");
       expect(loaded?.version).toBe(1);
       expect(loaded?.modelYaml).toBe("entities: []\n");
@@ -82,12 +86,16 @@ describe("createVolumeOntologyStore", () => {
         { ontologyId: "gerace" },
       );
       const blobs = memoryBlobStore();
-      const store = createVolumeOntologyStore(blobs);
+      const store = createVolumeOntologyStore(blobs, {
+        root: "/tenants",
+        schema: "backed",
+        volume: "registry",
+      });
       await store.publish("backed", v1, "a: 1\n");
       await store.publish("backed", v2, "a: 2\n");
       const current = await store.loadCurrent("backed");
       expect(current?.version).toBe(2);
-      expect(blobs.files.get("/Volumes/backed/backed/registry/publications/v2.json")).toContain(
+      expect(blobs.files.get("/tenants/backed/backed/registry/publications/v2.json")).toContain(
         "a: 2",
       );
     } finally {

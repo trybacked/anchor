@@ -1,10 +1,21 @@
-const DOCUMENT_KEYWORDS =
-  /\b(cv|curriculum|vitae|resume|documento|documenti|pdf|archivio|file|allegat|testo del|contenuto del)\b/i;
+import type { Ontology } from "@trybacked/core";
 
-export const PROCUREMENT_KEYWORDS =
-  /\b(gara|gare|appalt|appalti|contratt|cig|oggetto|ente appalt|aggiudicat|stazione appaltante|bandit|comune di|quanti|quante|numero di|totale)\b/i;
+/**
+ * Semantics-driven intent routing (Plan Fase 6).
+ *
+ * No procurement/sector keywords and no language data in code: the terms that
+ * identify "document archive" intent come from the tenant ontology (glossary,
+ * object names, synonyms), and anything else falls through to the LLM agent,
+ * which picks tools based on capabilities.
+ */
 
-const QUERY_STOPWORDS = new Set([
+
+/**
+ * Linguistic function words (pronouns, auxiliaries, prepositions) for the
+ * supported locales — generic language data, not domain knowledge. Domain
+ * vocabulary must come from the ontology (see documentArchiveTermsFromOntology).
+ */
+const FUNCTION_WORDS = new Set([
   "a",
   "an",
   "the",
@@ -19,19 +30,26 @@ const QUERY_STOPWORDS = new Set([
   "how",
   "why",
   "which",
-  "tell",
-  "me",
-  "about",
+  "of",
+  "in",
+  "on",
+  "for",
+  "and",
+  "or",
+  "to",
   "chi",
   "che",
   "cosa",
   "come",
   "quando",
   "dove",
-  "perché",
   "perche",
+  "perché",
   "quale",
   "quali",
+  "quanti",
+  "quante",
+  "quanto",
   "è",
   "e",
   "sono",
@@ -50,8 +68,11 @@ const QUERY_STOPWORDS = new Set([
   "i",
   "gli",
   "le",
-  "informazioni",
   "su",
+  "per",
+  "nel",
+  "nella",
+  "informazioni",
   "parlami",
   "dimmi",
 ]);
@@ -100,16 +121,17 @@ function normalizeQueryToken(token: string): string {
     .replace(/\p{M}/gu, "");
 }
 
+/** Tokens worth searching: function words and bare numbers dropped. */
 export function significantQuestionTokens(question: string): string[] {
   return question
     .trim()
     .replace(/\?+$/u, "")
     .split(/\s+/)
     .filter((part) => part.length > 0)
-    .filter((part) => !QUERY_STOPWORDS.has(normalizeQueryToken(part)));
+    .filter((part) => !FUNCTION_WORDS.has(normalizeQueryToken(part)));
 }
 
-/** Search phrases derived from the user question (stopwords stripped, name order variants). */
+/** Search phrases derived from the user question (name order variants included). */
 export function documentSearchQueries(question: string): string[] {
   const trimmed = question.trim();
   const queries = new Set<string>([trimmed]);
@@ -121,14 +143,40 @@ export function documentSearchQueries(question: string): string[] {
   return [...queries];
 }
 
-/** Explicit document-archive lookup (file list), not general Q&A. */
-export function questionPrefersDocumentArchive(question: string): boolean {
+/**
+ * Document-archive intent terms, derived from the published ontology: glossary
+ * terms plus object names and their synonyms. Domain knowledge stays in data.
+ */
+export function documentArchiveTermsFromOntology(ontology: Ontology): string[] {
+  const terms = new Set<string>();
+  for (const term of ontology.semantics?.glossary ?? []) {
+    terms.add(term.term.toLowerCase());
+  }
+  for (const object of ontology.objects) {
+    terms.add(object.name.toLowerCase());
+    for (const synonym of object.semantics?.synonyms ?? []) {
+      terms.add(synonym.toLowerCase());
+    }
+  }
+  return [...terms].filter((term) => term.length >= 2);
+}
+
+export function matchesDocumentTerms(question: string, terms: readonly string[]): boolean {
+  if (terms.length === 0) {
+    return false;
+  }
+  const lower = question.toLowerCase();
+  return terms.some((term) => lower.includes(term));
+}
+
+/** Explicit document-archive lookup, decided by ontology semantics — not keywords. */
+export function questionPrefersDocumentArchive(
+  question: string,
+  documentTerms: readonly string[] = [],
+): boolean {
   const trimmed = question.trim();
   if (trimmed.length === 0) {
     return false;
   }
-  if (PROCUREMENT_KEYWORDS.test(trimmed)) {
-    return false;
-  }
-  return DOCUMENT_KEYWORDS.test(trimmed);
+  return matchesDocumentTerms(trimmed, documentTerms);
 }

@@ -30,20 +30,15 @@ export function searchTermsForQuestion(question: string): string[] {
     .filter((part) => part.length >= 3);
 }
 
-/** Register-style tables: high digit density plus column-like headers (content-based, not filenames). */
+/** Register-style tables: high digit density plus columnar layout (content-based). */
 export function isLikelyRegisterTable(text: string): boolean {
-  if (/\bN\.\s*Impresa\b/i.test(text) && /\b(categoria|linea)\b/i.test(text)) {
-    return true;
-  }
-  if (text.length < 120) {
+  if (text.length < 60) {
     return false;
   }
   const digits = (text.match(/\d/g) ?? []).length;
   const digitRatio = digits / text.length;
-  if (digitRatio < 0.08) {
-    return false;
-  }
-  return /\b(categoria|linea|impresa|attività|attivita)\b/i.test(text);
+  // Columnar records are digit-dense; prose rarely exceeds ~10% digits.
+  return digitRatio >= 0.1;
 }
 
 export function chunkMatchesSearchTerms(text: string, terms: readonly string[]): boolean {

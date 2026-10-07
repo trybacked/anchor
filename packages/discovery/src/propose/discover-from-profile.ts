@@ -9,10 +9,11 @@ import type {
   ProfileReport,
   TableProfile,
 } from "@trybacked/core";
-import { ONTOLOGY_FORMAT_VERSION, PIPELINE_INFRA_DATASET_TABLE_NAMES } from "@trybacked/core";
+import { LEGACY_PIPELINE_INFRA_DATASET_TABLES } from "@trybacked/capability-documents";
+import { ONTOLOGY_FORMAT_VERSION } from "@trybacked/core";
 import { inspectProfileReport } from "../inspect/inspect-profile.js";
 import { inferPropertyType } from "../inspect/sql-type.js";
-const INFRA_TABLES = new Set<string>(PIPELINE_INFRA_DATASET_TABLE_NAMES);
+const INFRA_TABLES = new Set<string>(LEGACY_PIPELINE_INFRA_DATASET_TABLES);
 const PROPOSED = "proposed" as const;
 const INFERRED = "inferred" as const;
 const DISCOVERY_TYPE = "schema_analysis" as const;
@@ -120,7 +121,7 @@ function discoverRelationship(
 export type DiscoverFromProfileOptions = {
   ontologyId: string;
   version?: number;
-  /** Pipeline infra tables (e.g. document_entities) to include when explicitly discovered. */
+  /** Pipeline infrastructure datasets to include when explicitly discovered. */
   includeInfraTables?: ReadonlySet<string>;
 };
 export function discoverFromProfile(

@@ -97,16 +97,11 @@ async function main(): Promise<void> {
   }
   if (first === "tenant") {
     if (second === undefined || isHelpFlag(second)) {
-      getUi().log("Usage: backed tenant create <tenant-id> | backed tenant publish-ontology <tenant-id>");
+      getUi().log("Usage: backed tenant create <tenant-id>");
       return;
     }
     if (second === "create") {
       await tenantCreateCommand(rest);
-      return;
-    }
-    if (second === "publish-ontology") {
-      const { tenantPublishOntologyCommand } = await import("./commands/tenant-publish-ontology.js");
-      await tenantPublishOntologyCommand(rest);
       return;
     }
     getUi().writeError(`Unknown tenant subcommand: ${second}`);

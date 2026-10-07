@@ -1,6 +1,6 @@
 import { serve } from "@hono/node-server";
 import { createRegistrySourceFromEnv } from "@trybacked/core";
-import { databricksConfigFromEnv, hasDatabricksEnv } from "@trybacked/provider-databricks";
+import { databricksConfigFromEnv, hasDatabricksEnv } from "@trybacked/infrastructure";
 import { createAnchorApiApp } from "./app.js";
 import { createAuditLogHook } from "./audit-log.js";
 import { readApiConfig } from "./config.js";

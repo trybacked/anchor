@@ -4,8 +4,7 @@ import {
   emptySemanticModel,
   validateAuthoringModel,
 } from "@trybacked/ontology-authoring";
-import { createDatabricksBlobStore } from "@trybacked/provider-databricks";
-import { createVolumeOntologyStore } from "@trybacked/registry";
+import { createDatabricksOntologyRegistry } from "@trybacked/infrastructure";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
 import type { ControlPlaneConfig } from "../config.js";
@@ -33,7 +32,7 @@ export async function resolvePublishedModelForDraftReset(
   config: ControlPlaneConfig,
 ): Promise<{ model: SemanticModel; version: number } | undefined> {
   try {
-    const store = createVolumeOntologyStore(createDatabricksBlobStore(databricksAdminConfig(config)));
+    const store = createDatabricksOntologyRegistry(databricksAdminConfig(config));
     const remote = await store.loadCurrent(catalog);
     if (remote !== null) {
       return { model: parseModelYaml(remote.modelYaml), version: remote.version };

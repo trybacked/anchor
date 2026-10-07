@@ -10,14 +10,6 @@ export type DocTableSample = {
 const SAMPLE_LIMIT = 8;
 const CONTENT_MAX_CHARS = 400;
 
-const TABLE_SAMPLE_COLUMNS: Record<string, readonly string[]> = {
-  documents: ["document_id", "filename", "path"],
-  document_pages: ["document_id", "page_number"],
-  document_elements: ["document_id", "element_id", "content"],
-  document_entities: ["document_id", "entity_type", "entity_value"],
-  entity_profiles: ["entity_type", "entity_value", "mention_count"],
-};
-
 function truncateCell(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
@@ -38,13 +30,11 @@ export async function collectDocsTableSamples(
   }
   const samples: DocTableSample[] = [];
   for (const table of options.tables) {
-    const columns = TABLE_SAMPLE_COLUMNS[table];
-    if (columns === undefined) {
-      continue;
-    }
     const id = warehouseTableFqn(options.catalog, options.schema, table);
     try {
-      const sample = await provider.sample({ id }, { limit: SAMPLE_LIMIT, columns: [...columns] });
+      // Sample all columns: column selection is binding-driven (Plan Fase 4),
+      // not hardcoded per table name.
+      const sample = await provider.sample({ id }, { limit: SAMPLE_LIMIT });
       samples.push({
         table,
         columns: sample.columns,

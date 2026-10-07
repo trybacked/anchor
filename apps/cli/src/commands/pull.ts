@@ -10,7 +10,7 @@ import {
   proposalFromDiscovery,
   profileFromDatasetProvider,
 } from "@trybacked/discovery";
-import { createDatabricksProviderFromEnv } from "@trybacked/provider-databricks";
+import { createDatabricksProviderFromEnv } from "@trybacked/infrastructure";
 import path from "node:path";
 import { commandErrorMessage, parseHelpOnlyArgs } from "../args.js";
 import { COMMANDS, formatCliCommand } from "../config.js";

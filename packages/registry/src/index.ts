@@ -29,5 +29,5 @@ export type {
   BlobStore,
   OntologyStore,
   RemotePublication,
-  VolumeOntologyLayout,
+  VolumeOntologyRoot,
 } from "./remote-store.js";

@@ -1,7 +1,6 @@
 import "./worker-health.js";
-import { resolveTenantCatalog } from "@trybacked/core";
 import { provisionTenantCloud } from "@trybacked/platform-admin";
-import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
+import type { DatabricksProviderConfig } from "@trybacked/infrastructure";
 import { applyControlPlaneSchema } from "./apply-schema.js";
 import { readControlPlaneConfig } from "./config.js";
 import { createPool } from "./db/pool.js";
@@ -42,7 +41,7 @@ async function provisionOrganization(
     : config.defaultSharedSpaces;
   const result = await provisionTenantCloud({
     tenantId,
-    catalog: resolveTenantCatalog(tenantId),
+    catalog: org.catalog,
     sharedSpaceKeys: shared,
     registry,
     adminConfig,
@@ -54,7 +53,6 @@ async function provisionOrganization(
   });
   return {
     tenantId,
-    publicationVersion: result.publicationVersion,
     servicePrincipalAppId: result.servicePrincipalAppId,
     ...(result.tenantOboToken !== undefined ? { tenantOboToken: result.tenantOboToken } : {}),
   };

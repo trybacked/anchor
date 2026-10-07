@@ -1,10 +1,4 @@
-import type { Entity, Ontology, SemanticModel } from "@trybacked/core";
-import {
-  DOCUMENT_ELEMENTS_TABLE,
-  DOCUMENT_ENTITIES_TABLE,
-  DOCUMENTS_TABLE,
-  ENTITY_PROFILES_TABLE,
-} from "@trybacked/core/tables";
+import type { DocumentTablesSpec, Entity, Ontology, SemanticModel } from "@trybacked/core";
 export type DocumentsDatasetResolver = {
   qualifyTable: (tableName: string) => string;
   documentsTable: string;
@@ -25,10 +19,16 @@ function inferCatalogFromOntology(ontology: Ontology): string | undefined {
   }
   return undefined;
 }
+/**
+ * Builds the document dataset resolver from a binding-driven table spec
+ * (Plan Phase 4): table names come from the tenant's document-archive binding,
+ * never from kernel constants.
+ */
 export function createDocumentsDatasetResolver(options: {
   ontology: Ontology;
   catalog?: string | undefined;
   documentsSchema?: string | undefined;
+  tables: DocumentTablesSpec;
 }): DocumentsDatasetResolver | undefined {
   const catalog = options.catalog ?? inferCatalogFromOntology(options.ontology);
   const schema = options.documentsSchema ?? "docs";
@@ -39,10 +39,10 @@ export function createDocumentsDatasetResolver(options: {
     [catalog, schema, tableName].map(quoteIdentifier).join(".");
   return {
     qualifyTable,
-    documentsTable: qualifyTable(DOCUMENTS_TABLE),
-    documentElementsTable: qualifyTable(DOCUMENT_ELEMENTS_TABLE),
-    documentEntitiesTable: qualifyTable(DOCUMENT_ENTITIES_TABLE),
-    entityProfilesTable: qualifyTable(ENTITY_PROFILES_TABLE),
+    documentsTable: qualifyTable(options.tables.documents),
+    documentElementsTable: qualifyTable(options.tables.documentElements),
+    documentEntitiesTable: qualifyTable(options.tables.documentEntities),
+    entityProfilesTable: qualifyTable(options.tables.entityProfiles),
   };
 }
 export function resolveEntityTable(

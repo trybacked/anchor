@@ -1,8 +1,8 @@
-import { isPipelineInfraDatasetTable } from "@trybacked/core";
+import { isLegacyPipelineInfraDatasetTable } from "@trybacked/capability-documents";
 import type { ProfileReport } from "@trybacked/core";
 import { diffProfile, tableFromProfileChange } from "./profile-diff.js";
 function isPipelineInfraTable(tableName: string): boolean {
-  return isPipelineInfraDatasetTable(tableName);
+  return isLegacyPipelineInfraDatasetTable(tableName);
 }
 export function affectedTablesFromProfileDiff(
   previous: ProfileReport,

@@ -1,4 +1,3 @@
-import { resolveTenantCatalog } from "@trybacked/core";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
 export type OrganizationRow = {
@@ -26,12 +25,12 @@ export async function insertOrganization(
   pool: pg.Pool,
   input: {
     tenantId: string;
+    catalog: string;
     sharedSpaces: string[];
     workosOrganizationId?: string | undefined;
   },
 ): Promise<OrganizationRow> {
   const id = randomUUID();
-  const catalog = resolveTenantCatalog(input.tenantId);
   const mcpName = `backed-${input.tenantId}`;
   const result = await pool.query<OrganizationRow>(
     `INSERT INTO organizations (id, tenant_id, catalog, mcp_name, shared_spaces, workos_organization_id, status)
@@ -40,7 +39,7 @@ export async function insertOrganization(
     [
       id,
       input.tenantId,
-      catalog,
+      input.catalog,
       mcpName,
       JSON.stringify(input.sharedSpaces),
       input.workosOrganizationId ?? null,

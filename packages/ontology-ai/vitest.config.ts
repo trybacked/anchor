@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
-    name: "provider-databricks-unit",
+    name: "ontology-ai-unit",
     include: ["tests/**/*.test.ts"],
   },
 });

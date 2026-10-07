@@ -2,7 +2,7 @@ import { createRunId } from "@trybacked/core";
 import {
   createDatabricksProviderFromEnv,
   hasDatabricksEnv,
-} from "@trybacked/provider-databricks";
+} from "@trybacked/adapter-databricks";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

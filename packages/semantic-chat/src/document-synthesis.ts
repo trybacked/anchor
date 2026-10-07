@@ -7,7 +7,7 @@ import {
   primaryDocumentSearchPhrase,
   rankDocumentSearchRows,
 } from "./document-evidence.js";
-import { documentSearchQueries, PROCUREMENT_KEYWORDS } from "./document-intent.js";
+import { documentSearchQueries, matchesDocumentTerms } from "./document-intent.js";
 import type { ModelResolver } from "./agent/run-agent.js";
 
 const MIN_EVIDENCE_CHARS = 380;
@@ -237,11 +237,13 @@ export async function synthesizeAnswerFromDocumentEvidence(options: {
 
 export type DocumentSynthesisOutcome =
   | { kind: "answered"; response: SemanticAskResponse }
-  | { kind: "skip"; reason: "no_capability" | "procurement" | "insufficient_evidence" | "empty_answer" };
+  | { kind: "skip"; reason: "no_capability" | "structured_intent" | "insufficient_evidence" | "empty_answer" };
 
 export async function tryDocumentSynthesisAnswer(options: {
   service: AnchorService;
   question: string;
+  /** Ontology-derived archive terms (document-archive intent routing). */
+  documentTerms?: readonly string[] | undefined;
   locale?: string | undefined;
   ontologyVersion: number;
   resolveModel: ModelResolver;
@@ -250,8 +252,8 @@ export async function tryDocumentSynthesisAnswer(options: {
   if (!options.service.capabilities().chunkSearch) {
     return { kind: "skip", reason: "no_capability" };
   }
-  if (PROCUREMENT_KEYWORDS.test(options.question)) {
-    return { kind: "skip", reason: "procurement" };
+  if (matchesDocumentTerms(options.question, options.documentTerms ?? [])) {
+    return { kind: "skip", reason: "structured_intent" };
   }
   const started = Date.now();
   const [blocks, profileSection] = await Promise.all([

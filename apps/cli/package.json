@@ -45,11 +45,13 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@trybacked/adapter-databricks": "workspace:*",
+    "@trybacked/capability-documents": "workspace:^",
     "@trybacked/core": "workspace:*",
-    "@trybacked/platform-admin": "workspace:*",
     "@trybacked/discovery": "workspace:*",
+    "@trybacked/infrastructure": "workspace:^",
     "@trybacked/mcp": "workspace:*",
-    "@trybacked/provider-databricks": "workspace:*",
+    "@trybacked/platform-admin": "workspace:*",
     "@trybacked/registry": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/semantic-chat": "workspace:*",

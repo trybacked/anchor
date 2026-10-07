@@ -1,4 +1,6 @@
 import type { Ontology, OntologyObject } from "@trybacked/core";
+import type { SqlDialect } from "@trybacked/ports";
+import { sparkDialect } from "./dialects.js";
 import { ObjectQueryCompileError } from "./errors.js";
 import { compileObjectFilter, compileTextSearch } from "./filters.js";
 import {
@@ -15,11 +17,12 @@ import type {
   SqlParameter,
 } from "./query.js";
 import { compileExistsSemiJoin, queryUsesPhysicalJoins } from "./semi-join.js";
+export function createObjectQueryCompiler(dialect: SqlDialect = sparkDialect) {
 function quoteIdentifier(identifier: string): string {
-  return `\`${identifier.replaceAll("`", "``")}\``;
+  return dialect.quoteIdent(identifier);
 }
 function quoteDatasetId(datasetId: string): string {
-  return datasetId.split(".").map(quoteIdentifier).join(".");
+  return dialect.qualify(datasetId);
 }
 function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
@@ -156,7 +159,7 @@ function compileWhereClause(
       continue;
     }
     const { object, alias } = resolveFilterTarget(ontology, query, from, targetObjectId);
-    conditions.push(compileObjectFilter(object, alias, filter, parameters));
+    conditions.push(compileObjectFilter(object, alias, filter, parameters, dialect));
   }
   if (query.textSearch !== undefined) {
     const searchObjectId = query.textSearch.objectId ?? query.objectId;
@@ -169,13 +172,14 @@ function compileWhereClause(
           query.textSearch.query,
           query.textSearch.propertyIds,
           parameters,
+          dialect,
         ),
       );
     }
   }
   if (!from.usePhysicalJoins && from.joinPlan !== null) {
     conditions.push(
-      compileExistsSemiJoin(ontology, from.joinPlan, from.rootAlias, query, parameters),
+      compileExistsSemiJoin(ontology, from.joinPlan, from.rootAlias, query, parameters, dialect),
     );
   }
   return conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
@@ -265,7 +269,7 @@ function resolveSelectColumns(
     columns: resolved.map((column) => column.outputName),
   };
 }
-export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): CompiledObjectQuery {
+function compileObjectQuery(ontology: Ontology, input: ObjectQuery): CompiledObjectQuery {
   const query = ObjectQuerySchema.parse(input);
   const rootObject = resolveObject(ontology, query.objectId);
   const parameters: SqlParameter[] = [];
@@ -340,3 +344,12 @@ export function compileObjectQuery(ontology: Ontology, input: ObjectQuery): Comp
     joinedObjectIds: from.joinedObjectIds,
   };
 }
+
+  return { compileObjectQuery };
+}
+
+const defaultCompiler = createObjectQueryCompiler();
+
+/** Compile with the default (Spark) dialect. */
+export const compileObjectQuery: typeof defaultCompiler.compileObjectQuery =
+  defaultCompiler.compileObjectQuery;

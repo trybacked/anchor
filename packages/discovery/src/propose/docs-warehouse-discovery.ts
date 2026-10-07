@@ -1,5 +1,9 @@
 import {
-  DOCS_ONTOLOGY_DISCOVERY_TABLE_NAMES,
+  discoveryTablesFromBinding,
+  LEGACY_DOCUMENT_ARCHIVE_BINDING,
+  LEGACY_PIPELINE_MATERIALIZED_DATASET_TABLES,
+} from "@trybacked/capability-documents";
+import {
   type DiscoveryReport,
   type ProfileReport,
   type Proposal,
@@ -17,7 +21,7 @@ import {
   type ProposalFromDiscoveryOptions,
 } from "./proposal-from-discovery.js";
 
-const DOCS_INFRA_INCLUDE = new Set<string>(["document_entities", "entity_profiles"]);
+const DOCS_INFRA_INCLUDE = new Set<string>(LEGACY_PIPELINE_MATERIALIZED_DATASET_TABLES);
 
 export type RunDocsWarehouseDiscoveryOptions = DiscoverFromProfileOptions &
   ProposalFromDiscoveryOptions & {
@@ -36,7 +40,7 @@ export async function runDocsWarehouseDiscovery(
   options: RunDocsWarehouseDiscoveryOptions,
 ): Promise<DocsWarehouseDiscoveryResult> {
   const schema = options.schema ?? "docs";
-  const tables = options.tables ?? DOCS_ONTOLOGY_DISCOVERY_TABLE_NAMES;
+  const tables = options.tables ?? discoveryTablesFromBinding(LEGACY_DOCUMENT_ARCHIVE_BINDING);
   const profiled = await profileWarehouseTables(provider, {
     catalog: options.catalog,
     schema,
@@ -64,7 +68,7 @@ export async function runDocsWarehouseDiscovery(
 
 export function filterProfileForDocsDiscovery(
   profile: ProfileReport,
-  tables: readonly string[] = DOCS_ONTOLOGY_DISCOVERY_TABLE_NAMES,
+  tables: readonly string[] = discoveryTablesFromBinding(LEGACY_DOCUMENT_ARCHIVE_BINDING),
 ): { profile: ProfileReport; missingTables: string[] } {
   const wanted = new Set(tables.map((name) => warehouseTableShortName(name)));
   const present = new Set(profile.map((table) => warehouseTableShortName(table.table)));
@@ -80,7 +84,7 @@ export function discoverDocsFromProfile(
   profile: ProfileReport,
   options: RunDocsWarehouseDiscoveryOptions,
 ): Omit<DocsWarehouseDiscoveryResult, "emptyTables"> & { missingTables: string[] } {
-  const tables = options.tables ?? DOCS_ONTOLOGY_DISCOVERY_TABLE_NAMES;
+  const tables = options.tables ?? discoveryTablesFromBinding(LEGACY_DOCUMENT_ARCHIVE_BINDING);
   const filtered = filterProfileForDocsDiscovery(normalizeProfileTableShortNames(profile), tables);
   const discovery = discoverFromProfile(filtered.profile, {
     ontologyId: options.ontologyId,

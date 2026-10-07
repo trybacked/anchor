@@ -1,7 +1,8 @@
 export { compileObjectFilter, compileTextSearch } from "./filters.js";
-export { compileObjectQuery } from "./compile.js";
+export { compileObjectQuery, createObjectQueryCompiler } from "./compile.js";
 export { ObjectQueryCompileError } from "./errors.js";
 export type { ObjectQueryCompileErrorCode } from "./errors.js";
+export { postgresDialect, resolveSqlDialect, sparkDialect } from "./dialects.js";
 export {
   DEFAULT_OBJECT_QUERY_LIMIT,
   OBJECT_QUERY_AGGREGATE_OPS,

@@ -1,14 +1,10 @@
 import type { Ontology, OntologyObject } from "@trybacked/core";
+import type { SqlDialect } from "@trybacked/ports";
 import { ObjectQueryCompileError } from "./errors.js";
 import { compileObjectFilter, compileTextSearch } from "./filters.js";
 import { compileJoinOnClause, resolveObjectInPlan, type JoinPlan } from "./join-plan.js";
 import type { SqlParameter } from "./query.js";
-function quoteIdentifier(identifier: string): string {
-  return `\`${identifier.replaceAll("`", "``")}\``;
-}
-function quoteDatasetId(datasetId: string): string {
-  return datasetId.split(".").map(quoteIdentifier).join(".");
-}
+import { sparkDialect } from "./dialects.js";
 function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
@@ -63,7 +59,10 @@ export function compileExistsSemiJoin(
       | undefined;
   },
   parameters: SqlParameter[],
+  dialect: SqlDialect = sparkDialect,
 ): string {
+  const quoteIdentifier = (identifier: string): string => dialect.quoteIdent(identifier);
+  const quoteDatasetId = (datasetId: string): string => dialect.qualify(datasetId);
   const quoteColumn = (objectId: string, propertyId: string): string => {
     const alias = plan.objectAliases.get(objectId);
     if (alias === undefined) {
@@ -106,6 +105,7 @@ export function compileExistsSemiJoin(
         alias,
         filter as Parameters<typeof compileObjectFilter>[2],
         parameters,
+        dialect,
       ),
     );
   }
@@ -120,6 +120,7 @@ export function compileExistsSemiJoin(
           query.textSearch.query,
           query.textSearch.propertyIds,
           parameters,
+          dialect,
         ),
       );
     }

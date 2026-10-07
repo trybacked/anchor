@@ -90,11 +90,6 @@ export const AuthoringCommandSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("removeRule"), ruleId: z.string().min(1) }),
   z.object({
-    type: z.literal("applyPack"),
-    packId: z.string().min(1),
-    catalog: z.string().min(1).optional(),
-  }),
-  z.object({
     type: z.literal("setPropertySemantics"),
     entityId: z.string().min(1),
     columnName: z.string().min(1),

@@ -26,6 +26,7 @@ describe("tenant registry helpers", () => {
       },
       "comune_x",
       [],
+      resolveTenantCatalog("comune_x"),
     );
     expect(registry.tenants["comune_x"]).toEqual({
       catalog: "backed_comune_x",

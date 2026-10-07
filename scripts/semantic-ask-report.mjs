@@ -8,7 +8,7 @@ import {
   createDatabricksSqlClient,
   databricksConfigFromEnv,
   hasDatabricksEnv,
-} from "../packages/provider-databricks/dist/index.js";
+} from "../packages/adapter-databricks/dist/index.js";
 import { loadPublishedOntology } from "../packages/registry/dist/index.js";
 import { buildQueryRuntimeFromEnv } from "../packages/runtime/dist/index.js";
 import {

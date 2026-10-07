@@ -18,6 +18,7 @@
     "test:coverage": "vitest run --config vitest.config.ts --coverage"
   },
   "dependencies": {
+    "@trybacked/capability-documents": "workspace:^",
     "@trybacked/core": "workspace:*"
   }
 }

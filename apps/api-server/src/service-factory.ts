@@ -3,7 +3,8 @@ import {
   createDatabricksFilesClient,
   createDatabricksSqlClient,
   type DatabricksProviderConfig,
-} from "@trybacked/provider-databricks";
+} from "@trybacked/infrastructure";
+import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import { attachSemanticAsk, type TenantAiAskCapabilities } from "@trybacked/semantic-chat";
 import {
@@ -32,6 +33,7 @@ export async function createAnchorServiceForModel(options: {
     model: options.model,
     executor: (sql, parameters) => client.execute(sql, parameters),
     env: options.env,
+    documentTables: legacyDocumentTables(),
     ...(options.catalog !== undefined ? { catalog: options.catalog } : {}),
     readVolumeFile: (path, init) => filesClient.readFile(path, init),
   });

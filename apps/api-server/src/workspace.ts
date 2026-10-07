@@ -4,8 +4,9 @@ import {
   createDatabricksSqlClient,
   databricksConfigFromEnv,
   hasDatabricksEnv,
-} from "@trybacked/provider-databricks";
+} from "@trybacked/infrastructure";
 import { loadPublishedOntology } from "@trybacked/registry";
+import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import type { AnchorOperationAuditHook, AnchorService } from "@trybacked/service";
@@ -46,6 +47,7 @@ export async function buildQueryRuntime(root: string): Promise<OntologyQueryRunt
     model,
     executor: (sql, parameters) => client.execute(sql, parameters),
     env: process.env,
+    documentTables: legacyDocumentTables(),
     readVolumeFile: (path, init) => filesClient.readFile(path, init),
   });
   return built.runtime;

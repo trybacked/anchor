@@ -1,0 +1,32 @@
+{
+  "name": "@trybacked/ontology-ai",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Source-agnostic AI authoring pipeline: profile -> sample -> propose -> ChangeSet -> review policy.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@trybacked/core": "workspace:*",
+    "ai": "^7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}

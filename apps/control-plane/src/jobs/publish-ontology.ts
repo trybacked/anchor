@@ -1,11 +1,10 @@
 import { serializeModelYaml, type SemanticModel } from "@trybacked/core";
 import { validateAuthoringModel } from "@trybacked/ontology-authoring";
-import type { DatabricksProviderConfig } from "@trybacked/provider-databricks";
-import { createDatabricksBlobStore } from "@trybacked/provider-databricks";
-import { createDatabricksSqlClient } from "@trybacked/provider-databricks";
+import type { DatabricksProviderConfig } from "@trybacked/infrastructure";
+import { createDatabricksOntologyRegistry } from "@trybacked/infrastructure";
+import { createDatabricksSqlClient } from "@trybacked/infrastructure";
 import {
   buildRemotePublication,
-  createVolumeOntologyStore,
   type OntologyStore,
 } from "@trybacked/registry";
 import type pg from "pg";
@@ -102,7 +101,7 @@ export async function runPublishOntologyJob(
   if (warehouseErrors.length > 0) {
     throw new Error(warehouseErrors.join("; "));
   }
-  const store = createVolumeOntologyStore(createDatabricksBlobStore(adminConfig));
+  const store = createDatabricksOntologyRegistry(adminConfig);
   const nextVersion = await nextPublicationVersion(pool, store, input);
   const { record, modelYaml } = buildRemotePublication(draft.model, {
     ontologyId: input.tenantId,

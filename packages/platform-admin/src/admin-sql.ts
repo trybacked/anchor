@@ -2,7 +2,7 @@ import type { TenantsRegistry } from "@trybacked/core";
 import {
   createDatabricksSqlClient,
   type DatabricksProviderConfig,
-} from "@trybacked/provider-databricks";
+} from "@trybacked/adapter-databricks";
 export type AdminSqlClient = {
   execute: (statement: string) => Promise<void>;
 };

@@ -5,8 +5,9 @@ import {
   createDatabricksSqlClient,
   databricksConfigFromEnv,
   hasDatabricksEnv,
-} from "@trybacked/provider-databricks";
+} from "@trybacked/infrastructure";
 import { loadPublishedOntology } from "@trybacked/registry";
+import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { attachSemanticAsk } from "@trybacked/semantic-chat";
@@ -32,6 +33,7 @@ async function buildQueryRuntime(root: string): Promise<OntologyQueryRuntime | u
     model,
     executor: (sql, parameters) => client.execute(sql, parameters),
     env: process.env,
+    documentTables: legacyDocumentTables(),
   });
   if (built.warehouseUnavailableReason !== undefined) {
     writeDeployStderr(built.warehouseUnavailableReason);

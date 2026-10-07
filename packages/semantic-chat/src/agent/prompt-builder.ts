@@ -31,7 +31,7 @@ const PLATFORM_POLICY = [
   QUERY_CONSTRUCTION_RULES,
   "Prefer answering with explicit assumptions over asking. Call ask_clarification only when interpretations would materially change the answer and the semantics below cannot settle it; when unsure between properties, fill ambiguity with the candidate property ids.",
   "If a tool returns an error, read it, correct the input, and retry once — then answer with what you have.",
-  "Efficiency: structured warehouse counts use query_objects when the ontology exposes matching entities. Questions about CVs, file contents, named people, or the tenant document archive must use search_documents first.",
+  "Efficiency: structured warehouse counts use query_objects when the ontology exposes matching entities. Questions about file contents or the tenant document archive must use search_documents first.",
   "When search_documents returns hits, cite filenames and short excerpts in submit_answer; when it returns no rows, say so and only then mention warehouse limits.",
   "Finish with submit_answer: claims cite toolCallId for each number (internal only); assumptions and followUps are separate fields.",
 ].join("\n");
@@ -41,8 +41,8 @@ const ANSWER_STYLE = [
   "Style: professional, concise, in the user's language. Open with the direct result in one or two short sentences.",
   "Formatting: use Markdown bullets for examples or options; keep paragraphs short; at most five examples unless the user asked for more.",
   "Never put in answer: tool/API names, object or property ids, ontology/schema/SQL, filter operators, JSON, toolCallId, or how the query was built.",
-  "Use plain labels instead of field names (e.g. codice CIG, oggetto della gara, ente appaltante, periodo dei dati / mese di riferimento).",
-  "Listings: one line per item — CIG plus a shortened oggetto; avoid long comma-separated runs in prose.",
+  "Use plain labels instead of field names: derive them from the ontology glossary and property display labels for the tenant's domain.",
+  "Listings: one line per item, led by the label the glossary defines as the primary identifier; avoid long comma-separated runs in prose.",
   "When data is missing: briefly say what cannot be done and suggest two or three useful alternatives — do not enumerate schema properties.",
   "Technical caveats belong in assumptions (brief); followUps should read like natural next questions for the user.",
 ].join("\n");

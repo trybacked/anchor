@@ -1,11 +1,10 @@
 import {
-  createDatabricksBlobStore,
+  createDatabricksOntologyRegistry,
   databricksConfigFromEnv,
   hasDatabricksEnv,
   type DatabricksProviderConfig,
-} from "@trybacked/provider-databricks";
+} from "@trybacked/infrastructure";
 import {
-  createVolumeOntologyStore,
   type PublicationRecord,
   type RemotePublication,
 } from "@trybacked/registry";
@@ -30,7 +29,7 @@ export function canPublishRemoteOntology(env: NodeJS.ProcessEnv = process.env): 
 }
 export async function loadRemoteCurrent(catalog: string): Promise<RemotePublication | null> {
   const config = databricksConfigFromEnv(process.env);
-  const store = createVolumeOntologyStore(createDatabricksBlobStore(config));
+  const store = createDatabricksOntologyRegistry(config);
   return store.loadCurrent(catalog);
 }
 export async function publishOntologyRemote(
@@ -40,7 +39,7 @@ export async function publishOntologyRemote(
   config?: DatabricksProviderConfig,
 ): Promise<void> {
   const resolved = config ?? databricksConfigFromEnv(process.env);
-  const store = createVolumeOntologyStore(createDatabricksBlobStore(resolved));
+  const store = createDatabricksOntologyRegistry(resolved);
   await store.publish(catalog, record, modelYaml);
 }
 export async function publishOntologyRemoteForRegistry(
