@@ -9,6 +9,7 @@ import {
 } from "@trybacked/core";
 import { buildReviewQuestions } from "@trybacked/discovery";
 import type { OntologyExtractOutput } from "./extract-output.js";
+import { appendNewExtractEntities } from "./merge-extract-new-entities.js";
 
 const LLM_EVIDENCE = "llm_file_extraction";
 const DEFAULT_LLM_RELATION_CONFIDENCE = 0.7;
@@ -171,13 +172,17 @@ export function mergeOntologyExtractIntoProposal(
   options: { reviewConfidenceThreshold: number },
 ): Proposal {
   const patchById = new Map(extract.entities.map((entity) => [entity.id, entity]));
-  const entities = baseline.entities.map((entity) => {
+  const patchedBaseline = baseline.entities.map((entity) => {
     const patch = patchById.get(entity.id);
     if (patch === undefined) {
       return entity;
     }
     return mergeEntity(entity, patch);
   });
+  const entities = appendNewExtractEntities(
+    { ...baseline, entities: patchedBaseline },
+    extract,
+  );
   const entityById = new Map(entities.map((entity) => [entity.id, entity]));
   const sourceTableByEntity = new Map(entities.map((entity) => [entity.id, entity.sourceTable]));
   const existingRelationKeys = new Set(

@@ -183,7 +183,9 @@ export function registerDiscoveryRoutes(
     try {
       outcome = await proposeDocsAiFilesSourceDiscovery(provider, process.env, {
         tenantId: ctx.tenantId,
+        catalog: ctx.catalog,
         runId,
+        filesRegistryRoot: config.filesRegistryRoot,
         ...(body.reviewConfidenceThreshold !== undefined
           ? { reviewConfidenceThreshold: body.reviewConfidenceThreshold }
           : {}),

@@ -3,6 +3,10 @@ export { materializeFoundryRowsToDuckDb, type FoundryTableRows } from "./materia
 export { listAllArchiveFiles, syncDocumentArchiveToWarehouse } from "./document-archive-index.js";
 export { applyFoundryExtractToCatalogWarehouse } from "./apply-foundry-extract-to-catalog.js";
 export {
+  loadFoundryWarehouseDiscoveryProfile,
+  type FoundryWarehouseDiscoveryProfile,
+} from "./foundry-warehouse-discovery-profile.js";
+export {
   createCatalogWarehouseSqlExecutor,
   resolveTenantWarehouseDuckDbPath,
   resolveWarehouseMainDuckDbPath,

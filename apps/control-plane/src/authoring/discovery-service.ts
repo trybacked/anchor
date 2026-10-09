@@ -21,6 +21,11 @@ import {
   validateDiscoveryReview,
 } from "@trybacked/ontology-authoring";
 import {
+  loadFoundryWarehouseDiscoveryProfile,
+  type FoundryWarehouseDiscoveryProfile,
+} from "@trybacked/infrastructure";
+import { fetchWarehouseDiscoveryProfileFromPlatform } from "./warehouse-discovery-profile-fetch.js";
+import {
   createGatewayLanguageModel,
   createOntologyExtractModelFromEnv,
   runDocsAiOntologyDiscovery,
@@ -173,9 +178,11 @@ export async function proposeDocsAiFilesSourceDiscovery(
   env: NodeJS.ProcessEnv,
   input: {
     tenantId: string;
+    catalog: string;
     runId: string;
     reviewConfidenceThreshold?: number;
     locale?: string | undefined;
+    filesRegistryRoot?: string | undefined;
   },
 ): Promise<
   DocsAiDiscoveryPreflightOk | FilesDiscoveryPreflightError | { code: "ai_not_configured" }
@@ -184,11 +191,40 @@ export async function proposeDocsAiFilesSourceDiscovery(
   if (modelConfig === undefined) {
     return { code: "ai_not_configured" };
   }
+  const warehouseEnv =
+    input.filesRegistryRoot !== undefined && input.filesRegistryRoot.length > 0
+      ? { ...env, BACKED_FILES_REGISTRY_ROOT: input.filesRegistryRoot }
+      : env;
+  let warehouse: FoundryWarehouseDiscoveryProfile | undefined = await loadFoundryWarehouseDiscoveryProfile(
+    {
+      env: warehouseEnv,
+      catalog: input.catalog,
+    },
+  );
+  if (warehouse === undefined) {
+    const platformBase = env["PLATFORM_API_INTERNAL_URL"]?.trim();
+    const platformToken = env["ANCHOR_API_TOKEN"]?.trim();
+    if (
+      platformBase !== undefined &&
+      platformBase.length > 0 &&
+      platformToken !== undefined &&
+      platformToken.length > 0
+    ) {
+      warehouse = await fetchWarehouseDiscoveryProfileFromPlatform({
+        baseUrl: platformBase,
+        tenantId: input.tenantId,
+        bearerToken: platformToken,
+      });
+    }
+  }
   const model = createGatewayLanguageModel(modelConfig.apiKey, modelConfig.modelId);
   const aiResult = await runFilesAiOntologyDiscovery(provider, {
     ontologyId: input.tenantId,
     runId: input.runId,
     model,
+    ...(warehouse !== undefined
+      ? { warehouseProfile: warehouse.profile, warehouseSamples: warehouse.samples }
+      : {}),
     ...(input.reviewConfidenceThreshold !== undefined
       ? { reviewConfidenceThreshold: input.reviewConfidenceThreshold }
       : {}),

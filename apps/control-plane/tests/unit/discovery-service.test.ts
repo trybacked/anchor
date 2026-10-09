@@ -126,6 +126,7 @@ describe("proposeDocsAiFilesSourceDiscovery", () => {
     });
     const outcome = await proposeDocsAiFilesSourceDiscovery(mockProvider({}), { AI_GATEWAY_API_KEY: "k" }, {
       tenantId: "leonardo",
+      catalog: "backed_leonardo",
       runId: "run-ai-files",
     });
     expect(outcome).toMatchObject({ code: "files_empty" });
@@ -156,6 +157,7 @@ describe("proposeDocsAiFilesSourceDiscovery", () => {
     });
     const outcome = await proposeDocsAiFilesSourceDiscovery(mockProvider({}), { AI_GATEWAY_API_KEY: "k" }, {
       tenantId: "leonardo",
+      catalog: "backed_leonardo",
       runId: "run-ai-files-2",
       locale: "it",
     });

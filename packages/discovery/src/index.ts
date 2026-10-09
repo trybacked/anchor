@@ -19,6 +19,7 @@ export {
 } from "./profile/profile-warehouse-tables.js";
 export {
   discoverDocsFromProfile,
+  DOCS_WAREHOUSE_INFRA_INCLUDE,
   filterProfileForDocsDiscovery,
   runDocsWarehouseDiscovery,
   type RunDocsWarehouseDiscoveryOptions,

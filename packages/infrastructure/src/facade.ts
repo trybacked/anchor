@@ -41,6 +41,8 @@ export {
   syncDocumentArchiveToWarehouse,
   listAllArchiveFiles,
   applyFoundryExtractToCatalogWarehouse,
+  loadFoundryWarehouseDiscoveryProfile,
+  type FoundryWarehouseDiscoveryProfile,
   type FoundryTableRows,
   type SqlStatementExecutor,
 } from "./adapters/duckdb/index.js";
