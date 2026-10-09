@@ -27,6 +27,29 @@ function truncateCell(value: unknown): string {
   return `${text.slice(0, CONTENT_MAX_CHARS)}…`;
 }
 
+export async function collectProfileDatasetSamples(
+  provider: DatasetProvider,
+  tables: readonly { table: string; datasetId: string }[],
+): Promise<DocTableSample[]> {
+  if (provider.sample === undefined) {
+    return [];
+  }
+  const samples: DocTableSample[] = [];
+  for (const target of tables) {
+    try {
+      const sample = await provider.sample({ id: target.datasetId }, { limit: SAMPLE_LIMIT });
+      samples.push({
+        table: target.table,
+        columns: sample.columns,
+        rows: sample.rows.map((row) => row.map(truncateCell)),
+      });
+    } catch {
+      continue;
+    }
+  }
+  return samples;
+}
+
 export async function collectDocsTableSamples(
   provider: DatasetProvider,
   options: { catalog: string; schema: string; tables: readonly string[] },

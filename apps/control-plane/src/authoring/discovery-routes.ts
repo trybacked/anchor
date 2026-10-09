@@ -26,7 +26,7 @@ import {
 import {
   applyAuthoringCommandBatches,
   buildDiscoveryReviewCommands,
-  proposeDocsAiWarehouseDiscovery,
+  proposeDocsAiFilesSourceDiscovery,
   proposeFilesSourceDiscovery,
 } from "./discovery-service.js";
 import { ensureOntologyDraft, validateDraftModel } from "./draft-service.js";
@@ -181,16 +181,11 @@ export function registerDiscoveryRoutes(
     }
     let outcome;
     try {
-      outcome = await proposeDocsAiWarehouseDiscovery(provider, process.env, {
+      outcome = await proposeDocsAiFilesSourceDiscovery(provider, process.env, {
         tenantId: ctx.tenantId,
-        catalog: ctx.catalog,
         runId,
         ...(body.reviewConfidenceThreshold !== undefined
           ? { reviewConfidenceThreshold: body.reviewConfidenceThreshold }
-          : {}),
-        ...(body.tables !== undefined ? { tables: body.tables } : {}),
-        ...(body.requireNonEmptyTables !== undefined
-          ? { requireNonEmptyTables: body.requireNonEmptyTables }
           : {}),
         ...(body.locale !== undefined ? { locale: body.locale } : {}),
       });

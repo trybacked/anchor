@@ -24,6 +24,7 @@ import {
   createGatewayLanguageModel,
   createOntologyExtractModelFromEnv,
   runDocsAiOntologyDiscovery,
+  runFilesAiOntologyDiscovery,
 } from "@trybacked/ontology-extract";
 
 export type DocsDiscoveryPreflightError =
@@ -166,6 +167,58 @@ export type FilesDiscoveryPreflightOk = {
   discovery: DiscoveryReport;
   proposal: Proposal;
 };
+
+export async function proposeDocsAiFilesSourceDiscovery(
+  provider: DatasetProvider,
+  env: NodeJS.ProcessEnv,
+  input: {
+    tenantId: string;
+    runId: string;
+    reviewConfidenceThreshold?: number;
+    locale?: string | undefined;
+  },
+): Promise<
+  DocsAiDiscoveryPreflightOk | FilesDiscoveryPreflightError | { code: "ai_not_configured" }
+> {
+  const modelConfig = createOntologyExtractModelFromEnv(env);
+  if (modelConfig === undefined) {
+    return { code: "ai_not_configured" };
+  }
+  const model = createGatewayLanguageModel(modelConfig.apiKey, modelConfig.modelId);
+  const aiResult = await runFilesAiOntologyDiscovery(provider, {
+    ontologyId: input.tenantId,
+    runId: input.runId,
+    model,
+    ...(input.reviewConfidenceThreshold !== undefined
+      ? { reviewConfidenceThreshold: input.reviewConfidenceThreshold }
+      : {}),
+    ...(input.locale !== undefined ? { localeHint: input.locale } : {}),
+  });
+  if (aiResult.profile.length === 0) {
+    return {
+      code: "files_empty",
+      message:
+        "No file collections found. Add subfolders with documents under the tenant file source root.",
+    };
+  }
+  const profiledNonEmpty = aiResult.profile.filter((table) => table.rowCount > 0);
+  if (profiledNonEmpty.length === 0) {
+    return {
+      code: "files_empty",
+      message:
+        "No file collections found. Add subfolders with documents under the tenant file source root.",
+    };
+  }
+  return {
+    profileTableCount: aiResult.profile.length,
+    missingTables: aiResult.missingTables,
+    emptyTables: aiResult.emptyTables,
+    discovery: aiResult.discovery,
+    proposal: aiResult.proposal,
+    aiUsage: aiResult.aiUsage,
+    sampleTableCount: aiResult.sampleTableCount,
+  };
+}
 
 export async function proposeFilesSourceDiscovery(
   provider: DatasetProvider,

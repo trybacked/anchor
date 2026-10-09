@@ -3,7 +3,11 @@ export {
   ONTOLOGY_EXTRACT_TIMEOUT_MS,
   type OntologyExtractModelConfig,
 } from "./extract-config.js";
-export { collectDocsTableSamples, type DocTableSample } from "./collect-samples.js";
+export {
+  collectDocsTableSamples,
+  collectProfileDatasetSamples,
+  type DocTableSample,
+} from "./collect-samples.js";
 export {
   ONTOLOGY_EXTRACT_OUTPUT_CONTRACT,
   OntologyExtractOutputError,
@@ -27,6 +31,10 @@ export {
   type DocsAiOntologyDiscoveryResult,
   type RunDocsAiOntologyDiscoveryOptions,
 } from "./run-docs-ai-discovery.js";
+export {
+  runFilesAiOntologyDiscovery,
+  type RunFilesAiOntologyDiscoveryOptions,
+} from "./run-files-ai-discovery.js";
 export {
   FOUNDRY_DOCUMENT_OBJECT_TYPE_IDS,
   FOUNDRY_EXTRACT_OBJECT_TYPE_IDS,
