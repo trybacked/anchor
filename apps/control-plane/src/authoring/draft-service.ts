@@ -30,6 +30,7 @@ export async function resolvePublishedModelForDraftReset(
       return { model: parseModelYaml(remote.modelYaml), version: remote.version };
     }
   } catch {
+    // fall through to Postgres registry
   }
 
   const pgLatest = await getLatestOntologyVersion(pool, tenantId);

@@ -105,7 +105,6 @@ export const AuthoringCommandV2Schema = z.discriminatedUnion("type", [
 export type AuthoringCommandV2 = z.infer<typeof AuthoringCommandV2Schema>;
 
 export class AuthoringCommandV2Error extends Error {
-
   constructor(message: string) {
     super(message);
     this.name = "AuthoringCommandV2Error";

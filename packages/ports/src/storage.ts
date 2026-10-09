@@ -7,7 +7,6 @@ export type ObjectStorage = {
 };
 
 export const RegistryLocationSchema = z.object({
-
   container: z.string().min(1),
 
   rootPath: z.string().min(1).optional(),
@@ -39,7 +38,6 @@ export type JobRunner = {
 };
 
 export type SearchIndexPort = {
-
   semanticSearch: (
     index: { name: string; columns: string[] },
     query: string,

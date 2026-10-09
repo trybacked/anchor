@@ -30,6 +30,7 @@ export async function collectProfileSamples(
         await provider.sample({ id: datasetId }, { limit: PROFILE_FK_SAMPLE_SIZE }),
       );
     } catch {
+      continue;
     }
   }
   return samples;

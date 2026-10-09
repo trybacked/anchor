@@ -22,7 +22,9 @@ export const platformApiModelRoutes: RouteFactory[] = [
       path: `${V1_PATH_PREFIX}/model/document-archive-intent-terms`,
       summary: "Ontology-derived terms for document-archive intent routing",
       tags: ["model"],
-      responses: { "200": { description: "Intent terms from glossary, object names, and synonyms" } },
+      responses: {
+        "200": { description: "Intent terms from glossary, object names, and synonyms" },
+      },
     },
     () => (c) => c.json(getAnchorService(c).listDocumentArchiveIntentTerms()),
   ),

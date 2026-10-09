@@ -267,7 +267,6 @@ export function attachSemanticAsk(
       case "answered":
         return outcome.response;
       case "abstained":
-
         return outcome.response;
       case "skip":
         return undefined;
@@ -279,7 +278,6 @@ export function attachSemanticAsk(
   }
 
   function prefersDocumentEvidenceFirst(question: string): boolean {
-
     if (questionPrefersDocumentArchive(question, documentTerms)) {
       return false;
     }

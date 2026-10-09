@@ -9,10 +9,7 @@ export type S3StorageConfig = {
 const RAW_SEGMENT = "/raw/";
 const VOLUME_ROOT = /^Volumes\/[^/]+\//;
 
-function envValue(
-  env: Record<string, string | undefined>,
-  key: string,
-): string | undefined {
+function envValue(env: Record<string, string | undefined>, key: string): string | undefined {
   const value = env[key]?.trim();
   if (value === undefined || value.length === 0) {
     return undefined;
@@ -48,9 +45,7 @@ export function s3BucketFromEnv(
   return undefined;
 }
 
-export function s3RegionFromEnv(
-  env: Record<string, string | undefined> = process.env,
-): string {
+export function s3RegionFromEnv(env: Record<string, string | undefined> = process.env): string {
   return envValue(env, "BACKED_S3_REGION") ?? DEFAULT_BACKED_S3_REGION;
 }
 

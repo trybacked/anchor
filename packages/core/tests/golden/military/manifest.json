@@ -1,0 +1,21 @@
+{
+  "corpus": "military-pilot",
+  "description": "Foundry-style document ontology for military pilot (document, organization, person, topic, legal instrument, mention links)",
+  "formatVersion": "1",
+  "entityCount": 11,
+  "relationCount": 10,
+  "ruleCount": 0,
+  "entityIds": [
+    "document",
+    "organization",
+    "person",
+    "legal_instrument",
+    "topic",
+    "military_asset",
+    "document_topic_mention",
+    "document_organization_mention",
+    "document_person_mention",
+    "document_legal_instrument_mention",
+    "person_organization_affiliation"
+  ]
+}

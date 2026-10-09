@@ -74,7 +74,6 @@ describe("inferForeignKeyCandidates", () => {
   });
 
   it("drops candidates below the overlap threshold", () => {
-
     const weakSample = sample(
       ["order_id", "customer_id"],
       [

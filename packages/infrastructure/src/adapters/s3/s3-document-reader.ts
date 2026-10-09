@@ -1,9 +1,8 @@
-import {
-  GetObjectCommand,
-  type GetObjectCommandInput,
-  S3Client,
-} from "@aws-sdk/client-s3";
-import type { LocalDocumentFileReader, LocalFileReadResult } from "../files/local-document-reader.js";
+import { GetObjectCommand, type GetObjectCommandInput, S3Client } from "@aws-sdk/client-s3";
+import type {
+  LocalDocumentFileReader,
+  LocalFileReadResult,
+} from "../files/local-document-reader.js";
 import { s3ObjectKey, type S3StorageConfig } from "./s3-config.js";
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -31,7 +30,7 @@ async function bodyToUint8Array(body: unknown): Promise<Uint8Array> {
   if (typeof body === "string") {
     return new TextEncoder().encode(body);
   }
-  if (typeof body === "object" && body !== null && "transformToByteArray" in body) {
+  if (typeof body === "object" && "transformToByteArray" in body) {
     const transform = (body as { transformToByteArray: () => Promise<Uint8Array> })
       .transformToByteArray;
     return transform();

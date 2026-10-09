@@ -16,7 +16,6 @@ export type OntologyStore = {
   publish: (catalog: string, record: PublicationRecord, modelYaml: string) => Promise<void>;
 };
 export type VolumeOntologyRoot = {
-
   root: string;
   schema: string;
   volume: string;

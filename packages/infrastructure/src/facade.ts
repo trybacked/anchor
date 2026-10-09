@@ -1,4 +1,3 @@
-
 export {
   createDatasetProviderFromEnv,
   createDocumentFileReaderFromEnv,
@@ -22,3 +21,10 @@ export {
   createLocalDocumentFileReader,
   type LocalDocumentFileReader,
 } from "./adapters/files/index.js";
+export {
+  createSqlStatementExecutorFromDuckDbPath,
+  duckDbPathFromEnv,
+  materializeFoundryRowsToDuckDb,
+  type FoundryTableRows,
+  type SqlStatementExecutor,
+} from "./adapters/duckdb/index.js";

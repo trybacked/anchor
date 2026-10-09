@@ -9,7 +9,7 @@ export type OntologyLlm = {
 export function createAiSdkLlm(model: LanguageModel): OntologyLlm {
   return {
     generateObject: async <T>({ schema, prompt }: { schema: z.ZodType<T>; prompt: string }) => {
-
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- wrapped for OntologyLlm port; migrate when ai SDK stabilizes output API
       const result = await generateObject({ model, schema, prompt });
       return result.object as T;
     },

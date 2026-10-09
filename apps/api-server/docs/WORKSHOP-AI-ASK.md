@@ -21,12 +21,12 @@ Esplorare cosa si può chiedere all’AI quando i dati sono **modellati** (entit
 
 ## Cosa c’è in produzione (modello semplice)
 
-| Pezzo                          | Ruolo                                  |
-| ------------------------------ | -------------------------------------- |
-| **Gateway** (`api.backed.app`) | Login WorkOS, proxy verso platform-api |
+| Pezzo                          | Ruolo                                    |
+| ------------------------------ | ---------------------------------------- |
+| **Gateway** (`api.backed.app`) | Login WorkOS, proxy verso platform-api   |
 | **Platform-api** (privato)     | Esegue l’agente + query sul files engine |
-| **`GET …/v1/chat/ask/status`** | Dice se l’ask è attivo per il tenant   |
-| **`POST …/v1/chat/ask`**       | Body `{ "question": "…" }` → risposta  |
+| **`GET …/v1/chat/ask/status`** | Dice se l’ask è attivo per il tenant     |
+| **`POST …/v1/chat/ask`**       | Body `{ "question": "…" }` → risposta    |
 
 L’LLM passa da **Vercel AI Gateway** (`AI_GATEWAY_API_KEY` solo su platform-api).  
 Nessun flag “abilita semantic chat” per tenant: è **on** salvo disabilitazione esplicita lato registry.

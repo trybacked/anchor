@@ -3,7 +3,6 @@ import type { DatasetProvider } from "@trybacked/core";
 export type SqlIdentifier = string;
 
 export type SqlDialect = {
-
   quoteIdent: (identifier: SqlIdentifier) => string;
 
   qualify: (datasetId: string) => string;

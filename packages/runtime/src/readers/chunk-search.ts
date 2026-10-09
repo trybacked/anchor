@@ -223,7 +223,6 @@ LIMIT ${kwLimitLiteral}`;
       })),
     );
     if (vectorSearchIndex !== undefined && vectorSearchIndex.length > 0) {
-
       const semLimit = filtersActive ? limit * RRF_CANDIDATE_MULTIPLIER : limit * 3;
       const semanticList = await fetchSemanticRankedList({
         executor,

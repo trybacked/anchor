@@ -1,5 +1,3 @@
-
-
 const MIN_TERM_LENGTH = 2;
 const MAX_TERMS = 12;
 

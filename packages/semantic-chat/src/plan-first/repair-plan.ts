@@ -5,7 +5,6 @@ import type { LanguageModel } from "ai";
 import { planSemanticQuery, type SemanticPlan } from "./planner.js";
 
 export type RepairPlanOptions = {
-
   previous: ObjectQuery;
   issues: readonly QueryIssue[];
   question: string;

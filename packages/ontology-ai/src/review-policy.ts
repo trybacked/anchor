@@ -2,7 +2,6 @@ import type { AuthoringCommandV2 } from "@trybacked/core";
 import { z } from "zod";
 
 export const ReviewPolicySchema = z.object({
-
   autoApproveThreshold: z.number().min(0).max(1).default(0.85),
   allowNonBreakingAutoApprove: z.boolean().default(true),
 });

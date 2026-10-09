@@ -38,7 +38,6 @@ export async function collectDocsTableSamples(
   for (const table of options.tables) {
     const id = warehouseTableFqn(options.catalog, options.schema, table);
     try {
-
       const sample = await provider.sample({ id }, { limit: SAMPLE_LIMIT });
       samples.push({
         table,
@@ -46,6 +45,7 @@ export async function collectDocsTableSamples(
         rows: sample.rows.map((row) => row.map(truncateCell)),
       });
     } catch {
+      continue;
     }
   }
   return samples;

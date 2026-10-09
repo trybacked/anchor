@@ -41,7 +41,6 @@ export function isGovernancePatchAction(action: AuditAction): action is Governan
 }
 
 export class OntologyGovernanceError extends Error {
-
   constructor(message: string) {
     super(message);
     this.name = "OntologyGovernanceError";

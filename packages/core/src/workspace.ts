@@ -16,6 +16,7 @@ export const RUN_ARTIFACTS = {
   proposal: "proposal.json",
   review: "review.json",
   diff: "diff.json",
+  foundryExtract: "foundry-extract.json",
 } as const;
 
 export type RunArtifactName = keyof typeof RUN_ARTIFACTS;

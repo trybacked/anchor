@@ -1,4 +1,3 @@
-
 export function preferredLanguage(header: string | undefined): string | undefined {
   if (header === undefined) return undefined;
   const ranked = header

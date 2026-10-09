@@ -5,11 +5,7 @@ import {
 } from "@trybacked/service";
 import functionWordsList from "./function-words.json" with { type: "json" };
 
-export {
-  documentArchiveTermsFromOntology,
-  matchesDocumentTerms,
-  questionPrefersDocumentArchive,
-};
+export { documentArchiveTermsFromOntology, matchesDocumentTerms, questionPrefersDocumentArchive };
 
 const FUNCTION_WORDS = new Set<string>(functionWordsList);
 

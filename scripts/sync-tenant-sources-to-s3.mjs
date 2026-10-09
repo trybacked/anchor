@@ -3,10 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  DEFAULT_BACKED_S3_BUCKET,
-  DEFAULT_BACKED_S3_REGION,
-} from "../packages/core/dist/index.js";
+import { DEFAULT_BACKED_S3_BUCKET, DEFAULT_BACKED_S3_REGION } from "../packages/core/dist/index.js";
 
 const require = createRequire(
   join(dirname(fileURLToPath(import.meta.url)), "../packages/infrastructure/package.json"),

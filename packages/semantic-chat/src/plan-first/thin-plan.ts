@@ -17,7 +17,6 @@ function stringCellChars(rows: Record<string, unknown>[]): number {
 }
 
 export function isSparseListingProse(result: PlanFirstResult): boolean {
-
   if (result.result.mode === "count") {
     return false;
   }

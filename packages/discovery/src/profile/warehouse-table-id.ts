@@ -1,4 +1,3 @@
-
 export function warehouseTableShortName(tableId: string): string {
   const trimmed = tableId.trim();
   if (trimmed.length === 0) {

@@ -18,7 +18,6 @@ export {
   type ProfileWarehouseTablesResult,
 } from "./profile/profile-warehouse-tables.js";
 export {
-
   discoverDocsFromProfile,
   filterProfileForDocsDiscovery,
   runDocsWarehouseDiscovery,

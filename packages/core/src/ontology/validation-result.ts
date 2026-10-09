@@ -1,4 +1,3 @@
-
 export type ValidationSeverity = "error" | "warning";
 
 export type ValidationIssue = {

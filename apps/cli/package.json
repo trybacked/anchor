@@ -48,6 +48,7 @@
     "@trybacked/core": "workspace:*",
     "@trybacked/discovery": "workspace:*",
     "@trybacked/infrastructure": "workspace:^",
+    "@trybacked/ontology-extract": "workspace:*",
     "@trybacked/mcp": "workspace:*",
     "@trybacked/platform-admin": "workspace:*",
     "@trybacked/registry": "workspace:*",

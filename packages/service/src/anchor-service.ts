@@ -11,12 +11,12 @@ import type {
   ObjectQueryBody,
   SemanticAskBody,
 } from "./contracts.js";
+import { documentArchiveTermsFromOntology } from "./document-archive-intent.js";
 import {
   applyQueryExecutionBudget,
   QueryExecutionBudgetError,
   type ExecutionBudgetProfile,
 } from "./execution-budget.js";
-import { documentArchiveTermsFromOntology } from "./document-archive-intent.js";
 import {
   getDefinition,
   getEntity,

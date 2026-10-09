@@ -3,10 +3,7 @@ import { resolveS3StorageConfig, s3ObjectKey } from "../../../src/adapters/s3/s3
 
 describe("s3 storage config", () => {
   it("uses the enrollment bucket and region when asked for the default", () => {
-    const config = resolveS3StorageConfig(
-      { BACKED_S3_USE_DEFAULT_BUCKET: "1" },
-      "backed",
-    );
+    const config = resolveS3StorageConfig({ BACKED_S3_USE_DEFAULT_BUCKET: "1" }, "backed");
     expect(config).toEqual({
       bucket: "backed-v1",
       region: "eu-north-1",

@@ -242,7 +242,6 @@ export function createObjectQueryCompiler(dialect: SqlDialect = sparkDialect) {
     return ` ORDER BY ${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(orderBy)} ${direction}`;
   }
   type ProjectedColumn = {
-
     sql: string;
 
     outputName: string;

@@ -15,7 +15,6 @@ export const sparkDialect: SqlDialect = {
 };
 
 export const postgresDialect: SqlDialect = {
-
   paramStyle: "named",
   param: (index) => `:p${String(index)}`,
   quoteIdent: (identifier) => `"${identifier.replaceAll('"', '""')}"`,
