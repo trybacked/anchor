@@ -155,10 +155,13 @@ function columnStats(
   };
 }
 
-export function createFileIndexDatasetProvider(options: { root: string }): DatasetProvider {
+export function createFileIndexDatasetProviderFromLoader(options: {
+  provenance: string;
+  load: () => Promise<Map<string, FileCollection>>;
+}): DatasetProvider {
   let cache: Map<string, FileCollection> | null = null;
   async function collections(): Promise<Map<string, FileCollection>> {
-    cache = await loadCollections(options.root);
+    cache = await options.load();
     return cache;
   }
   return {
@@ -167,7 +170,7 @@ export function createFileIndexDatasetProvider(options: { root: string }): Datas
       return [...map.values()].map((collection) => ({
         id: collection.id,
         name: collection.id === "_root" ? "files (root)" : collection.id,
-        description: `File collection under ${options.root}`,
+        description: `File collection under ${options.provenance}`,
       }));
     },
     getSchema: (): Promise<DatasetSchema> =>
@@ -180,7 +183,7 @@ export function createFileIndexDatasetProvider(options: { root: string }): Datas
       const collection = map.get(dataset.id);
       return {
         rowCount: collection?.entries.length ?? 0,
-        upstreamProvenance: options.root,
+        upstreamProvenance: options.provenance,
         tags: { source: "files" },
       };
     },
@@ -195,10 +198,10 @@ export function createFileIndexDatasetProvider(options: { root: string }): Datas
         }),
       };
     },
-    sample: async (dataset: DatasetIdentifier, options?: SampleOptions): Promise<DatasetSample> => {
+    sample: async (dataset: DatasetIdentifier, sampleOptions?: SampleOptions): Promise<DatasetSample> => {
       const map = await collections();
       const collection = map.get(dataset.id);
-      const limit = options?.limit ?? 20;
+      const limit = sampleOptions?.limit ?? 20;
       const rows = (collection?.entries ?? []).slice(0, limit).map(entryToRow);
       return {
         columns: FILE_COLUMNS.map((column) => column.name),
@@ -206,4 +209,11 @@ export function createFileIndexDatasetProvider(options: { root: string }): Datas
       };
     },
   };
+}
+
+export function createFileIndexDatasetProvider(options: { root: string }): DatasetProvider {
+  return createFileIndexDatasetProviderFromLoader({
+    provenance: options.root,
+    load: () => loadCollections(options.root),
+  });
 }

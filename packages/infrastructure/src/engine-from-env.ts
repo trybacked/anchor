@@ -7,6 +7,7 @@ import {
   tenantFilesRoot,
   type LocalDocumentFileReader,
 } from "./adapters/files/index.js";
+import { createS3FileIndexDatasetProvider } from "./adapters/s3/s3-file-index-provider.js";
 import { createS3DocumentFileReader, resolveS3StorageConfig } from "./adapters/s3/index.js";
 
 export {
@@ -21,6 +22,12 @@ export function createDatasetProviderFromEnv(
   env: Record<string, string | undefined> = process.env,
   options?: { workspaceRoot?: string; tenantId?: string },
 ): DatasetProvider {
+  if (options?.tenantId !== undefined && options.tenantId.length > 0) {
+    const s3Config = resolveS3StorageConfig(env, options.tenantId);
+    if (s3Config !== undefined) {
+      return createS3FileIndexDatasetProvider({ config: s3Config });
+    }
+  }
   const root =
     options !== undefined && options.tenantId !== undefined && options.tenantId.length > 0
       ? tenantFilesRoot(env, options.tenantId, options.workspaceRoot)
