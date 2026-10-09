@@ -53,4 +53,30 @@ describe("parseFoundryExtractOutput", () => {
     expect(output.doubts).toHaveLength(1);
     expect(output.doubts?.[0]?.reason.length).toBeGreaterThan(0);
   });
+
+  it("maps title/label and nested properties to instance name", () => {
+    const output = parseFoundryExtractOutput(
+      JSON.stringify({
+        locale: "it",
+        instances: [
+          {
+            objectTypeId: "organization",
+            title: "Leonardo S.p.A.",
+            sourceFile: "leonardo.pdf",
+            quote: "Società quotata",
+          },
+          {
+            properties: {
+              type: "person",
+              label: "Alessandro Profumo",
+            },
+            source_files: ["leonardo.pdf"],
+          },
+        ],
+      }),
+    );
+    expect(output.instances).toHaveLength(2);
+    expect(output.instances[0]?.name).toBe("Leonardo S.p.A.");
+    expect(output.instances[1]?.objectTypeId).toBe("person");
+  });
 });

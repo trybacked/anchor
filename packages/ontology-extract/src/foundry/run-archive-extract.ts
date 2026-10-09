@@ -59,13 +59,25 @@ export async function runArchiveFoundryExtract(
     documents,
     localeHint: options.localeHint,
   });
-  const seed = buildFoundrySeedFromArchive(extracted.output, pdfs, {
+  const output =
+    extracted.output.instances.length > 0
+      ? extracted.output
+      : {
+          ...extracted.output,
+          instances: pdfs.map((pdf) => ({
+            objectTypeId: "document" as const,
+            name: pdf.filename.replace(/\.pdf$/i, "") || pdf.filename,
+            sourceFiles: [pdf.relativePath],
+            evidence: "Documento catalogato in archivio (fallback estrattore).",
+          })),
+        };
+  const seed = buildFoundrySeedFromArchive(output, pdfs, {
     tenantId: options.tenantId,
     catalog: options.catalog,
   });
-  const rows = buildFoundryTableRows(extracted.output, seed);
+  const rows = buildFoundryTableRows(output, seed);
   return {
-    output: extracted.output,
+    output,
     seed,
     rows,
     pageCountByDocumentId,

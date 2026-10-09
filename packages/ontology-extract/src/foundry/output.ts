@@ -70,6 +70,113 @@ function isObjectTypeId(value: unknown): value is z.infer<typeof ObjectTypeIdSch
   );
 }
 
+function stringList(value: unknown): string[] {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value.trim()];
+  }
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.flatMap((entry) =>
+    typeof entry === "string" && entry.trim().length > 0 ? [entry.trim()] : [],
+  );
+}
+
+function flattenInstanceEntry(entry: unknown): Record<string, unknown> | null {
+  if (!isRecord(entry)) {
+    return null;
+  }
+  for (const key of ["instance", "properties", "attributes", "data"] as const) {
+    const nested = entry[key];
+    if (isRecord(nested)) {
+      return {
+        ...nested,
+        ...entry,
+        objectTypeId:
+          entry.objectTypeId ??
+          entry.objectType ??
+          nested.objectTypeId ??
+          nested.objectType ??
+          nested.type,
+        sourceFiles:
+          entry.sourceFiles ??
+          entry.source_files ??
+          nested.sourceFiles ??
+          nested.source_files ??
+          entry.sourceFile ??
+          nested.sourceFile,
+      };
+    }
+  }
+  return entry;
+}
+
+function normalizeInstanceEntry(
+  entry: unknown,
+): z.infer<typeof FoundryExtractInstanceSchema> | null {
+  const entryRecord = flattenInstanceEntry(entry);
+  if (entryRecord === null) {
+    return null;
+  }
+  const objectTypeId =
+    entryRecord.objectTypeId ??
+    entryRecord.objectType ??
+    entryRecord.type ??
+    entryRecord.object_type;
+  if (!isObjectTypeId(objectTypeId)) {
+    return null;
+  }
+  const sourceFiles = stringList(
+    entryRecord.sourceFiles ??
+      entryRecord.source_files ??
+      entryRecord.sourceFile ??
+      entryRecord.source_file ??
+      entryRecord.files,
+  );
+  if (sourceFiles.length === 0) {
+    return null;
+  }
+  const nameFromFile = (() => {
+    const first = sourceFiles[0];
+    if (first === undefined) {
+      return undefined;
+    }
+    const segment = first.split("/").pop() ?? first;
+    const base = segment.replace(/\.[a-z0-9]+$/i, "").trim();
+    return base.length > 0 ? base : undefined;
+  })();
+  const name =
+    nonEmptyString(entryRecord.name) ??
+    nonEmptyString(entryRecord.label) ??
+    nonEmptyString(entryRecord.title) ??
+    nonEmptyString(entryRecord.entityName) ??
+    nonEmptyString(entryRecord.instanceName) ??
+    nonEmptyString(entryRecord.text) ??
+    nonEmptyString(entryRecord.displayName) ??
+    nonEmptyString(entryRecord.display_name) ??
+    nonEmptyString(entryRecord.normalizedName) ??
+    nonEmptyString(entryRecord.normalized_name) ??
+    nonEmptyString(entryRecord.value) ??
+    nameFromFile;
+  if (name === undefined) {
+    return null;
+  }
+  const evidence =
+    nonEmptyString(entryRecord.evidence) ??
+    nonEmptyString(entryRecord.quote) ??
+    nonEmptyString(entryRecord.snippet) ??
+    nonEmptyString(entryRecord.note) ??
+    "Riferimento nel documento sorgente.";
+  const normalizedName = nonEmptyString(entryRecord.normalizedName ?? entryRecord.normalized_name);
+  return {
+    objectTypeId,
+    name,
+    sourceFiles,
+    evidence,
+    ...(normalizedName !== undefined ? { normalizedName } : {}),
+  };
+}
+
 function normalizeLinkTypeEntry(entry: unknown): z.infer<typeof FoundryExtractLinkTypeSchema> | null {
   if (!isRecord(entry)) {
     return null;
@@ -124,6 +231,13 @@ export function sanitizeFoundryExtractPayload(parsed: unknown): unknown {
   if (!isRecord(parsed)) {
     return parsed;
   }
+  const instancesRaw = parsed.instances;
+  const instances = Array.isArray(instancesRaw)
+    ? instancesRaw.flatMap((entry) => {
+        const normalized = normalizeInstanceEntry(entry);
+        return normalized !== null ? [normalized] : [];
+      })
+    : [];
   const linkTypesRaw = parsed.linkTypes ?? parsed.link_types;
   const doubtsRaw = parsed.doubts;
   const linkTypes = Array.isArray(linkTypesRaw)
@@ -140,6 +254,7 @@ export function sanitizeFoundryExtractPayload(parsed: unknown): unknown {
     : undefined;
   return {
     ...parsed,
+    instances,
     ...(linkTypes !== undefined ? { linkTypes } : {}),
     ...(doubts !== undefined ? { doubts } : {}),
   };
@@ -170,5 +285,5 @@ export const FOUNDRY_EXTRACT_OUTPUT_CONTRACT = [
   "Topics are thematic labels (artillery, cyber warfare), not duplicate document titles as types.",
   "Optional linkTypes[] with fromType/toType from the same allowed set.",
   "Optional doubts[] for human review (Ontology 101 / competency gaps).",
-  "Every instance needs sourceFiles[] and a short evidence quote or note.",
+  "Every instance MUST include: objectTypeId, name (display string), sourceFiles[] (paths), evidence (short quote or note).",
 ].join("\n");
