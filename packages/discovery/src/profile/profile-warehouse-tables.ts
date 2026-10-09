@@ -1,18 +1,19 @@
 import type { DatasetProvider, ProfileReport, TableProfile } from "@trybacked/core";
+import { collectProfileSamples, inferProfileForeignKeys } from "./infer-foreign-keys.js";
 import { warehouseTableFqn, warehouseTableShortName } from "./warehouse-table-id.js";
 
 export type ProfileWarehouseTablesOptions = {
   catalog: string;
   schema: string;
-  /** Short table names (e.g. `documents`, not `cat.docs.documents`). */
+
   tables: readonly string[];
 };
 
 export type ProfileWarehouseTablesResult = {
   profile: ProfileReport;
-  /** Requested short names with no readable table in the warehouse. */
+
   missingTables: string[];
-  /** Short names skipped because row count is 0 (schema may still exist). */
+
   emptyTables: string[];
 };
 
@@ -27,6 +28,7 @@ export async function profileWarehouseTables(
   const profile: TableProfile[] = [];
   const missingTables: string[] = [];
   const emptyTables: string[] = [];
+  const datasetIdByTable = new Map<string, string>();
 
   for (const shortName of options.tables) {
     const id = datasetId(options, shortName);
@@ -47,6 +49,7 @@ export async function profileWarehouseTables(
     if (rowCount === 0) {
       emptyTables.push(shortName);
     }
+    datasetIdByTable.set(shortName, id);
     const statsByName = new Map(statistics.columns.map((column) => [column.name, column]));
     profile.push({
       table: shortName,
@@ -72,10 +75,22 @@ export async function profileWarehouseTables(
     });
   }
 
-  return { profile, missingTables, emptyTables };
+  const samples = await collectProfileSamples(
+    provider,
+    profile
+      .filter((table) => table.rowCount > 0)
+      .map((table) => ({
+        table: table.table,
+        datasetId: datasetIdByTable.get(table.table) ?? table.sourceFile,
+      })),
+  );
+  return {
+    profile: samples.size > 0 ? inferProfileForeignKeys(profile, samples) : profile,
+    missingTables,
+    emptyTables,
+  };
 }
 
-/** Re-key profile rows to short names when a provider returned fully qualified `table` ids. */
 export function normalizeProfileTableShortNames(profile: ProfileReport): ProfileReport {
   return profile.map((table) => ({
     ...table,

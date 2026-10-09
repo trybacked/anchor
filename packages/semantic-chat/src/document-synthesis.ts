@@ -3,12 +3,15 @@ import type { SemanticAskResponse, SemanticAskSource } from "@trybacked/service"
 import { generateText } from "ai";
 import { randomUUID } from "node:crypto";
 import type { ModelResolver } from "./agent/run-agent.js";
+import { abstainedAskResponse } from "./ask-abstention.js";
+import type { DocumentRerankMode } from "./ask-config.js";
 import {
   normalizeChunkText,
   primaryDocumentSearchPhrase,
   rankDocumentSearchRows,
 } from "./document-evidence.js";
 import { documentSearchQueries, matchesDocumentTerms } from "./document-intent.js";
+import { gradeEvidence, hasUsableEvidence } from "./document-relevance.js";
 
 const MIN_EVIDENCE_CHARS = 380;
 const MAX_CONTEXT_CHARS = 14_000;
@@ -32,6 +35,14 @@ type DocumentEvidenceGroup = {
 };
 
 const SOURCE_SNIPPET_MAX_CHARS = 180;
+
+export const SYNTHESIS_INSUFFICIENT_EVIDENCE_MARKER = "INSUFFICIENT_EVIDENCE";
+
+export function orderForContext<T>(ranked: readonly T[]): T[] {
+  const top = ranked.filter((_, index) => index % 2 === 0);
+  const bottom = ranked.filter((_, index) => index % 2 === 1);
+  return [...top, ...bottom];
+}
 
 function readString(row: Record<string, unknown>, key: string): string | undefined {
   const value = row[key];
@@ -207,6 +218,7 @@ function synthesisSystemPrompt(locale: string | undefined): string {
       "Per ogni fatto supportato da un estratto usa un riferimento numerico [1], [2], … come nell’intestazione degli estratti (un numero = un documento).",
       "Non scrivere nomi file, estensioni .pdf o elenchi di documenti nel corpo della risposta.",
       "Non dire che i dettagli mancano se gli estratti li contengono. Non inventare oltre il testo.",
+      `Se gli estratti non contengono elementi sufficienti per una risposta fonata, rispondi esattamente ${SYNTHESIS_INSUFFICIENT_EVIDENCE_MARKER} e nient’altro.`,
     ].join(" ");
   }
   return [
@@ -214,7 +226,16 @@ function synthesisSystemPrompt(locale: string | undefined): string {
     "Be concise and professional; extract concrete facts when present.",
     "Cite facts with numeric references [1], [2], … matching excerpt headers. Do not list filenames in the answer body.",
     "Do not invent beyond the excerpts.",
+    `If the excerpts do not contain enough information for a grounded answer, reply with exactly ${SYNTHESIS_INSUFFICIENT_EVIDENCE_MARKER} and nothing else.`,
   ].join(" ");
+}
+
+function synthesisAbstentionMessage(locale: string | undefined): string {
+  const italian = (locale ?? "it").toLowerCase().startsWith("it");
+  if (italian) {
+    return "Non ho trovato negli archivi documentali abbastanza elementi per rispondere a questa domanda in modo fondato. Prova a riformularla oppure chiedimi un dato presente nel warehouse.";
+  }
+  return "The document archive does not contain enough evidence to answer this question reliably. Try rephrasing it, or ask for a figure available in the warehouse.";
 }
 
 export async function synthesizeAnswerFromDocumentEvidence(options: {
@@ -238,20 +259,89 @@ export async function synthesizeAnswerFromDocumentEvidence(options: {
 
 export type DocumentSynthesisOutcome =
   | { kind: "answered"; response: SemanticAskResponse }
+  | { kind: "abstained"; response: SemanticAskResponse }
   | {
       kind: "skip";
       reason: "no_capability" | "structured_intent" | "insufficient_evidence" | "empty_answer";
     };
 
+function insufficientEvidenceOutcome(
+  options: {
+    question: string;
+    locale?: string | undefined;
+    ontologyVersion: number;
+  },
+  started: number,
+): {
+  kind: "abstained";
+  response: SemanticAskResponse;
+} {
+  return {
+    kind: "abstained",
+    response: abstainedAskResponse({
+      question: options.question,
+      ontologyVersion: options.ontologyVersion,
+      route: "document-synthesis",
+      abstention: {
+        reason: "insufficient_evidence",
+        explanation: synthesisAbstentionMessage(options.locale),
+      },
+      agentSteps: [
+        {
+          toolCallId: "document-synthesis",
+          toolName: "search_documents",
+          input: {
+            queries: documentSearchQueries(options.question),
+            limit: CHUNK_SEARCH_LIMIT,
+          },
+          status: "ok",
+          rowCount: 0,
+          durationMs: Date.now() - started,
+        },
+      ],
+      startedAt: started,
+    }),
+  };
+}
+
+async function gradeCollectedEvidence(
+  options: {
+    question: string;
+    resolveModel: ModelResolver;
+    modelId: string;
+    rerank?: DocumentRerankMode | undefined;
+  },
+  blocks: readonly EvidenceBlock[],
+): Promise<EvidenceBlock[]> {
+  if (options.rerank !== "llm") {
+    return [...blocks];
+  }
+  const graded = await gradeEvidence(
+    options.question,
+    blocks,
+    (block) => block.text,
+    options.resolveModel,
+    options.modelId,
+  );
+  if (!hasUsableEvidence(graded)) {
+    return [];
+  }
+  return graded.map((entry) => entry.item);
+}
+
 export async function tryDocumentSynthesisAnswer(options: {
   service: AnchorService;
   question: string;
-  /** Ontology-derived archive terms (document-archive intent routing). */
+
   documentTerms?: readonly string[] | undefined;
   locale?: string | undefined;
   ontologyVersion: number;
   resolveModel: ModelResolver;
   modelId: string;
+
+  abstainOnInsufficientEvidence?: boolean | undefined;
+
+  rerank?: DocumentRerankMode | undefined;
 }): Promise<DocumentSynthesisOutcome> {
   if (!options.service.capabilities().chunkSearch) {
     return { kind: "skip", reason: "no_capability" };
@@ -265,9 +355,19 @@ export async function tryDocumentSynthesisAnswer(options: {
     profileContextSection(options.service, options.question),
   ]);
   if (totalEvidenceChars(blocks) < MIN_EVIDENCE_CHARS && profileSection === undefined) {
+    if (options.abstainOnInsufficientEvidence === true) {
+      return insufficientEvidenceOutcome(options, started);
+    }
     return { kind: "skip", reason: "insufficient_evidence" };
   }
-  const groups = groupEvidenceByDocument(blocks);
+  const gradedBlocks = await gradeCollectedEvidence(options, blocks);
+  if (gradedBlocks.length === 0) {
+    if (options.abstainOnInsufficientEvidence === true) {
+      return insufficientEvidenceOutcome(options, started);
+    }
+    return { kind: "skip", reason: "insufficient_evidence" };
+  }
+  const groups = orderForContext(groupEvidenceByDocument(gradedBlocks));
   const sources = buildDocumentSourcesFromGroups(groups);
   const answer = await synthesizeAnswerFromDocumentEvidence({
     question: options.question,
@@ -279,6 +379,12 @@ export async function tryDocumentSynthesisAnswer(options: {
   });
   if (answer.length === 0) {
     return { kind: "skip", reason: "empty_answer" };
+  }
+  if (answer.trim() === SYNTHESIS_INSUFFICIENT_EVIDENCE_MARKER) {
+    if (options.abstainOnInsufficientEvidence === true) {
+      return insufficientEvidenceOutcome(options, started);
+    }
+    return { kind: "skip", reason: "insufficient_evidence" };
   }
   const runId = randomUUID();
   return {

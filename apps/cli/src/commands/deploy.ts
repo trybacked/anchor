@@ -1,6 +1,11 @@
 import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { readModelYaml } from "@trybacked/core";
-import { createLocalDocumentFileReader, tenantFilesRoot } from "@trybacked/infrastructure";
+import {
+  createLocalDocumentFileReader,
+  createSqlStatementExecutorFromDuckDbPath,
+  duckDbPathFromEnv,
+  tenantFilesRoot,
+} from "@trybacked/infrastructure";
 import { runStdioMcpServerUntilClose, SERVER_NAME } from "@trybacked/mcp";
 import type { SemanticAskHandler } from "@trybacked/mcp";
 import { loadPublishedOntology } from "@trybacked/registry";
@@ -13,7 +18,7 @@ import { ANSI, wrap } from "../ui/ansi.js";
 import { initUi } from "../ui/index.js";
 
 const DEPLOY_PRIVACY_NOTE =
-  "Ontology data stays local — object SQL needs a warehouse engine; file preview uses BACKED_FILES_ROOT.";
+  "Ontology data stays local — object SQL uses BACKED_DUCKDB_PATH when set; file preview uses BACKED_FILES_ROOT.";
 
 function writeDeployStderr(text: string, style: "dim" | "brand" = "dim"): void {
   console.error(wrap(style === "brand" ? ANSI.brand : ANSI.dim, text));
@@ -32,10 +37,15 @@ export const deployCommand: CommandHandler = async () => {
   let queryRuntime;
   if (ontology !== null) {
     const tenantId = ontology.metadata.id;
+    const duckPath = duckDbPathFromEnv(process.env);
+    const executor =
+      duckPath !== undefined
+        ? createSqlStatementExecutorFromDuckDbPath(duckPath)
+        : filesSqlUnavailable;
     const built = await buildQueryRuntimeFromEnv({
       ontology,
       model,
-      executor: filesSqlUnavailable,
+      executor,
       env: process.env,
       documentTables: legacyDocumentTables(),
       readVolumeFile: createLocalDocumentFileReader(tenantFilesRoot(process.env, tenantId)),

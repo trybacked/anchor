@@ -65,8 +65,8 @@ describe.skipIf(!e2eEnabled)("docs AI ontology discovery (e2e)", () => {
     expect(result.aiUsage.totalTokens).toBeGreaterThan(0);
     expect(result.sampleTableCount).toBeGreaterThan(0);
 
-    const llmTouched = result.proposal.entities.some((entity) =>
-      entity.provenance.evidence.includes("llm_file_extraction"),
+    const llmTouched = result.proposal.entities.some(
+      (entity) => entity.provenance.method === "llm",
     );
     expect(llmTouched).toBe(true);
 

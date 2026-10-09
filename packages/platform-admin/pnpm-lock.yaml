@@ -14,9 +14,6 @@ importers:
       '@trybacked/ontology-authoring':
         specifier: workspace:*
         version: link:../ontology-authoring
-      '@trybacked/provider-databricks':
-        specifier: workspace:*
-        version: link:../provider-databricks
       '@trybacked/registry':
         specifier: workspace:*
         version: link:../registry

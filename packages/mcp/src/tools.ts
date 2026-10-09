@@ -301,6 +301,16 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
         .array(z.string())
         .optional()
         .describe("Optional filter — only search within these document ids"),
+      folder: z
+        .array(z.string())
+        .max(20)
+        .optional()
+        .describe("Optional filter — only search within these archive folders (exact match)"),
+      elementTypes: z
+        .array(z.string())
+        .max(20)
+        .optional()
+        .describe("Optional filter — restrict to these element types (e.g. text, table, header)"),
     },
     handler: async (context, args) =>
       serviceFromContext(context).chunkSearch({
@@ -310,6 +320,20 @@ export const WAREHOUSE_READER_TOOL_DEFINITIONS: ToolDefinition[] = [
         ...(Array.isArray(args["documentIds"])
           ? {
               documentIds: args["documentIds"].filter((id): id is string => typeof id === "string"),
+            }
+          : {}),
+        ...(Array.isArray(args["folder"])
+          ? {
+              folder: args["folder"].filter(
+                (folder): folder is string => typeof folder === "string",
+              ),
+            }
+          : {}),
+        ...(Array.isArray(args["elementTypes"])
+          ? {
+              elementTypes: args["elementTypes"].filter(
+                (elementType): elementType is string => typeof elementType === "string",
+              ),
             }
           : {}),
       }),

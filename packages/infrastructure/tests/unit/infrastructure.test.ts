@@ -7,7 +7,6 @@ import {
 } from "../../src/infrastructure.js";
 import { describe, expect, it, beforeEach } from "vitest";
 
-/** Minimal in-memory adapter used to prove the composition root is engine-agnostic. */
 function createFakeWarehouse(): WarehouseConnector {
   const provider: DatasetProvider = {
     listDatasets: async () => [{ id: "main.things", name: "things" }],

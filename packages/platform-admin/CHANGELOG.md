@@ -6,7 +6,6 @@
 
 - Updated dependencies
   - @trybacked/core@0.4.0
-  - @trybacked/provider-databricks@0.3.1
   - @trybacked/registry@0.3.1
 
 ## 0.2.0
@@ -23,4 +22,3 @@
 - Updated dependencies [f6cb39e]
   - @trybacked/core@0.3.0
   - @trybacked/registry@0.3.0
-  - @trybacked/provider-databricks@0.3.0

@@ -1,4 +1,9 @@
-import { TenantsRegistrySchema, type TenantsRegistry } from "@trybacked/core";
+import {
+  DEFAULT_BACKED_S3_BUCKET,
+  DEFAULT_BACKED_S3_REGION,
+  TenantsRegistrySchema,
+  type TenantsRegistry,
+} from "@trybacked/core";
 import { z } from "zod";
 
 const ControlPlaneConfigSchema = z.object({
@@ -81,13 +86,16 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
 
 export function buildEnrollmentRegistry(
   config: ControlPlaneConfig,
+  env: NodeJS.ProcessEnv = process.env,
 ): Pick<TenantsRegistry, "enrollment" | "shared_spaces"> {
   const sharedRaw = JSON.parse(config.sharedSpacesJson) as unknown;
   const partial = {
     enrollment: {
-      host: "files://anchor",
-      profile: "local",
-      warehouse_id: "files",
+      storage: {
+        provider: "s3",
+        bucket: env["BACKED_S3_BUCKET"]?.trim() ?? DEFAULT_BACKED_S3_BUCKET,
+        region: env["BACKED_S3_REGION"]?.trim() ?? DEFAULT_BACKED_S3_REGION,
+      },
     },
     shared_spaces: sharedRaw,
     tenants: {},

@@ -2,14 +2,6 @@ import type { AuthoringCommandV2 } from "@trybacked/core";
 import { AuthoringCommandV2Schema } from "@trybacked/core";
 import { z } from "zod";
 
-/**
- * Structured AI proposals (Plan Phase 5).
- *
- * Every AI output is a `ChangeSet` of AuthoringCommands, each with a confidence
- * score, a rationale, and evidence pointing at datasets/columns/samples. The
- * AI proposes; the review policy decides.
- */
-
 export const ProposalEvidenceSchema = z.object({
   datasetId: z.string().min(1).optional(),
   columnName: z.string().min(1).optional(),
@@ -39,14 +31,13 @@ export const AiProposalSchema = z.object({
   runId: z.string().min(1),
   scope: ProposalScopeSchema,
   createdAt: z.string().datetime(),
-  /** Ontology format the commands apply to (v2). */
+
   formatVersion: z.literal("2"),
   changes: z.array(ProposedChangeSchema),
   status: z.enum(["proposed", "approved", "rejected", "applied"]).default("proposed"),
 });
 export type AiProposal = z.infer<typeof AiProposalSchema>;
 
-/** Typed view of a proposal whose commands are parsed AuthoringCommands. */
 export type ValidatedProposal = AiProposal & {
   changes: Array<ProposedChange & { command: AuthoringCommandV2 }>;
 };

@@ -45,8 +45,7 @@ export async function createWorkspaceService(
   const model = readModelYaml(workspaceRoot);
   const ontology = loadPublishedOntology(workspaceRoot);
   if (ontology !== null) {
-    const catalog =
-      process.env["BACKED_CATALOG"]?.trim() ?? process.env["BACKED_DATABRICKS_CATALOG"]?.trim();
+    const catalog = process.env["BACKED_CATALOG"]?.trim();
     const tenantId = ontology.metadata.id;
     const service = await createAnchorServiceForModel({
       model,

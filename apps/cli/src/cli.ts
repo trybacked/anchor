@@ -8,7 +8,10 @@ import {
 import { ontologyDiscoverDocsAiCommand } from "./commands/ontology-discover-docs-ai.js";
 import { ontologyDiscoverDocsCommand } from "./commands/ontology-discover-docs.js";
 import { ontologyDiscoveryReviewCommand } from "./commands/ontology-discovery-review.js";
+import { ontologyExtractFoundryCommand } from "./commands/ontology-extract-foundry.js";
 import { ontologyImportCommand } from "./commands/ontology-import.js";
+import { ontologyInitFoundryCommand } from "./commands/ontology-init-foundry.js";
+import { ontologyMaterializeFoundryCommand } from "./commands/ontology-materialize-foundry.js";
 import { platformBootstrapCommand, platformStatusCommand } from "./commands/platform-bootstrap.js";
 import { tenantCreateCommand } from "./commands/tenant-create.js";
 import { printCliVersion } from "./commands/version.js";
@@ -89,8 +92,20 @@ async function main(): Promise<void> {
       await ontologyDiscoveryReviewCommand(rest);
       return;
     }
+    if (second === "init-foundry") {
+      await ontologyInitFoundryCommand(rest);
+      return;
+    }
+    if (second === "extract-foundry") {
+      await ontologyExtractFoundryCommand(rest);
+      return;
+    }
+    if (second === "materialize-foundry") {
+      await ontologyMaterializeFoundryCommand(rest);
+      return;
+    }
     getUi().writeError(
-      "Usage: backed ontology import | discover-docs | discover-docs-ai | discovery-review … (see backed ontology --help)",
+      "Usage: backed ontology import | init-foundry | extract-foundry | materialize-foundry | discover-docs | discover-docs-ai | discovery-review …",
     );
     process.exitCode = 1;
     return;

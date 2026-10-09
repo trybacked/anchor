@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { renderPlanAnswer } from "../../src/plan-first/render-answer.js";
 import { contractOntology } from "./agent-fixtures.js";
 
-/** The pack-authored layer a tenant gets at ask time: user-facing labels and sample values. */
 function labelledContractOntology(): Ontology {
   const ontology = contractOntology();
   const [contract] = ontology.objects;

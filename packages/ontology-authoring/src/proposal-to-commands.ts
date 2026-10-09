@@ -39,7 +39,6 @@ export type CommandsFromReviewedDiscoveryOptions = {
   includeRelations?: boolean;
 };
 
-/** Turns a post-review discovery model into non-destructive draft commands. */
 export function commandsFromReviewedDiscovery(
   draft: SemanticModel,
   reviewed: SemanticModel,
@@ -64,6 +63,15 @@ export function commandsFromReviewedDiscovery(
     }
     entityIdByReviewedId.set(entity.id, target.id);
     commands.push(...propertyCommands(target.id, target.properties, entity.properties));
+  }
+
+  const knownTermIds = new Set((draft.semantics?.glossary ?? []).map((term) => term.id));
+  for (const term of reviewed.semantics?.glossary ?? []) {
+    if (knownTermIds.has(term.id)) {
+      continue;
+    }
+    knownTermIds.add(term.id);
+    commands.push({ type: "upsertGlossaryTerm", term });
   }
 
   if (!includeRelations) {

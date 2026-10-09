@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
+
 const SharedSpaceSchema = z.object({
   catalog: z.string().min(1),
   schema: z.string().min(1),
@@ -16,49 +17,43 @@ const TenantEntrySchema = z.object({
   ontologyVersion: z.number().int().nonnegative().optional(),
   capabilities: TenantCapabilitiesSchema.optional(),
 });
+export const DEFAULT_BACKED_S3_BUCKET = "backed-v1";
+
+export const DEFAULT_BACKED_S3_REGION = "eu-north-1";
+
+export const EnrollmentStorageSchema = z.object({
+  provider: z.literal("s3"),
+  bucket: z.string().min(1),
+  region: z.string().min(1).optional(),
+});
+
 export const TenantsRegistrySchema = z.object({
   enrollment: z.object({
-    host: z.string().min(1),
-    profile: z.string().min(1),
-    bundle_target: z.string().min(1).optional(),
-    warehouse_id: z.string().min(1),
-    platform_principal: z.string().min(1).optional(),
+    storage: EnrollmentStorageSchema,
   }),
   shared_spaces: z.record(SharedSpaceSchema),
   tenants: z.record(TenantEntrySchema),
 });
-/**
- *
- */
+
 export type TenantsRegistry = z.infer<typeof TenantsRegistrySchema>;
-/**
- *
- */
+
 export function loadTenantsRegistry(registryPath: string): TenantsRegistry {
   const raw = readFileSync(registryPath, "utf8");
   return TenantsRegistrySchema.parse(parseYaml(raw));
 }
-/**
- *
- */
+
 export function saveTenantsRegistry(registryPath: string, registry: TenantsRegistry): void {
   writeFileSync(registryPath, stringifyYaml(registry), "utf8");
 }
-/**
- *
- */
-export function resolveBundleTarget(
-  tenantId: string,
-  enrollmentTarget: string | undefined,
-): string {
-  if (tenantId === "backed") {
-    return enrollmentTarget ?? "ff";
-  }
-  return `tenant_${tenantId}`;
+
+export function resolveEnrollmentBucket(registry: TenantsRegistry): string {
+  return registry.enrollment.storage.bucket;
 }
-/**
- *
- */
+
+export function resolveEnrollmentRegion(registry: TenantsRegistry): string {
+  return registry.enrollment.storage.region ?? DEFAULT_BACKED_S3_REGION;
+}
+
 export function ensureTenantInRegistry(
   registry: TenantsRegistry,
   tenantId: string,
@@ -80,9 +75,7 @@ export function ensureTenantInRegistry(
     },
   };
 }
-/**
- *
- */
+
 export function validateTenantId(tenantId: string): void {
   if (!/^[a-z][a-z0-9_]*$/.test(tenantId)) {
     throw new Error(

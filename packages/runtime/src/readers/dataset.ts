@@ -19,11 +19,7 @@ function inferCatalogFromOntology(ontology: Ontology): string | undefined {
   }
   return undefined;
 }
-/**
- * Builds the document dataset resolver from a binding-driven table spec
- * (Plan Phase 4): table names come from the tenant's document-archive binding,
- * never from kernel constants.
- */
+
 export function createDocumentsDatasetResolver(options: {
   ontology: Ontology;
   catalog?: string | undefined;

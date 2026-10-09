@@ -22,24 +22,28 @@ export const ChunkSearchBodySchema = z.object({
   limit: z.number().int().positive().max(100).optional(),
   minScore: z.number().min(0).max(1).optional(),
   documentIds: z.array(z.string()).optional(),
+
+  folder: z.array(z.string()).max(20).optional(),
+
+  elementTypes: z.array(z.string()).max(20).optional(),
 });
-/** Prior turns accepted per ask; older turns are the client's to drop. */
+
 export const SEMANTIC_ASK_MAX_HISTORY_TURNS = 12;
 export const SEMANTIC_ASK_MAX_TURN_CHARS = 2_000;
 export const ConversationTurnSchema = z.object({
   role: z.enum(["user", "assistant"]),
   text: z.string().min(1).max(SEMANTIC_ASK_MAX_TURN_CHARS),
-  /** The governed query that produced an assistant turn, when the client kept it. */
+
   query: ObjectQuerySchema.optional(),
 });
 export const SemanticAskBodySchema = z.object({
   question: z.string().min(1),
   evidence: z.boolean().optional(),
-  /** BCP-47 language of the user interface; wins over Accept-Language. */
+
   locale: z.string().min(2).max(8).optional(),
-  /** Client-side chat identifier, used for audit correlation only. */
+
   conversationId: z.string().min(1).max(128).optional(),
-  /** Earlier turns of the same chat, oldest first, excluding the current question. */
+
   history: z.array(ConversationTurnSchema).max(SEMANTIC_ASK_MAX_HISTORY_TURNS).optional(),
 });
 export const EntityProfileBodySchema = z.object({

@@ -2,13 +2,12 @@
   "name": "@trybacked/cli",
   "version": "0.3.1",
   "type": "module",
-  "description": "Anchor CLI (`backed`): pull, sync, and deploy a governed ontology over Databricks",
+  "description": "Anchor CLI (`backed`): pull, sync, and deploy a governed ontology over the files engine and S3",
   "license": "Apache-2.0",
   "keywords": [
     "anchor",
     "backed",
     "ontology",
-    "databricks",
     "mcp",
     "cli"
   ],
@@ -49,6 +48,7 @@
     "@trybacked/core": "workspace:*",
     "@trybacked/discovery": "workspace:*",
     "@trybacked/infrastructure": "workspace:^",
+    "@trybacked/ontology-extract": "workspace:*",
     "@trybacked/mcp": "workspace:*",
     "@trybacked/platform-admin": "workspace:*",
     "@trybacked/registry": "workspace:*",

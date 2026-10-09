@@ -77,7 +77,7 @@ const IT: Messages = {
 
 const MESSAGES_BY_LANGUAGE: Record<string, Messages> = { en: EN, it: IT };
 const MAX_LISTED_ROWS = 10;
-/** Enough to show the shape of a column's values without turning the answer into a dump. */
+
 const MAX_HINTED_VALUES = 3;
 const MAX_HINTED_PROPERTIES = 2;
 
@@ -90,7 +90,6 @@ function capitalize(text: string): string {
   return text.length === 0 ? text : `${text[0]?.toUpperCase() ?? ""}${text.slice(1)}`;
 }
 
-/** Names the owning object next to the property, unless the property already says it. */
 function qualified(property: string, object: string): string {
   return property.toLowerCase().includes(object.toLowerCase())
     ? property
@@ -151,11 +150,6 @@ function describeCriteria(
   return parts.length > 0 ? `${messages.criteria}: ${parts.join("; ")}` : undefined;
 }
 
-/**
- * An empty result is often a value written differently in the warehouse ("REGGIO CALABRIA"
- * vs "Reggio Calabria"), so show how the filtered columns actually look when the semantic
- * layer declares sample values.
- */
 function valueHints(
   ontology: Ontology,
   query: ObjectQuery,
@@ -184,7 +178,6 @@ function countValue(result: RenderableResult): number {
   return Number.isFinite(numeric) ? numeric : result.rowCount;
 }
 
-/** Group keys in bold, then measures: a lone measure is shown bare, several keep their alias. */
 function renderBreakdownRow(
   groupCount: number,
   columns: string[],

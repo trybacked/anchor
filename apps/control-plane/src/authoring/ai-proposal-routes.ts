@@ -28,11 +28,6 @@ import {
   type AuthoringVariables,
 } from "./context.js";
 
-/**
- * Generic AI proposal endpoints (Plan Fase 5): the pipeline is source-agnostic,
- * works on any DatasetProvider, and stores ChangeSets of AuthoringCommands.
- */
-
 const CreateProposalBodySchema = z.object({
   scope: ProposalScopeSchema,
   datasetIds: z.array(z.string().min(1)).optional(),

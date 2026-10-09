@@ -5,6 +5,7 @@ import type {
   ProfileReport,
   TableProfile,
 } from "@trybacked/core";
+import { collectProfileSamples, inferProfileForeignKeys } from "../profile/infer-foreign-keys.js";
 import { discoverFromProfile, type DiscoverFromProfileOptions } from "./discover-from-profile.js";
 const INFRA_TABLES = new Set<string>(LEGACY_PIPELINE_INFRA_DATASET_TABLES);
 export async function profileFromDatasetProvider(
@@ -12,6 +13,7 @@ export async function profileFromDatasetProvider(
 ): Promise<ProfileReport> {
   const datasets = await provider.listDatasets();
   const tables: TableProfile[] = [];
+  const datasetIdByTable = new Map<string, string>();
   for (const dataset of datasets) {
     if (INFRA_TABLES.has(dataset.id)) {
       continue;
@@ -23,6 +25,7 @@ export async function profileFromDatasetProvider(
     ]);
     const statsByName = new Map(statistics.columns.map((column) => [column.name, column]));
     const rowCount = metadata.rowCount ?? 0;
+    datasetIdByTable.set(dataset.id, dataset.id);
     tables.push({
       table: dataset.id,
       sourceFile: metadata.upstreamProvenance ?? dataset.id,
@@ -46,7 +49,17 @@ export async function profileFromDatasetProvider(
       }),
     });
   }
-  return tables;
+
+  const samples = await collectProfileSamples(
+    provider,
+    tables
+      .filter((table) => table.rowCount > 0)
+      .map((table) => ({
+        table: table.table,
+        datasetId: datasetIdByTable.get(table.table) ?? table.table,
+      })),
+  );
+  return samples.size > 0 ? inferProfileForeignKeys(tables, samples) : tables;
 }
 export async function discoverFromDatasetProvider(
   provider: DatasetProvider,

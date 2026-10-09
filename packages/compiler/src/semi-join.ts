@@ -24,7 +24,7 @@ function resolveDatasetId(object: OntologyObject): string {
   }
   return object.sourceDatasetId;
 }
-/** True when any projected column (select or groupBy) belongs to a joined object. */
+
 export function queryUsesPhysicalJoins(
   rootObjectId: string,
   projected: readonly string[],

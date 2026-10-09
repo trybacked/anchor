@@ -15,7 +15,6 @@ import {
   type OntologyDraftRow,
 } from "../db/ontology-repositories.js";
 
-/** Prefer filesystem registry `current.json` when it is at least as new as Postgres. */
 export async function resolvePublishedModelForDraftReset(
   pool: pg.Pool,
   tenantId: string,
@@ -31,7 +30,7 @@ export async function resolvePublishedModelForDraftReset(
       return { model: parseModelYaml(remote.modelYaml), version: remote.version };
     }
   } catch {
-    // Fall back to Postgres mirror below.
+    // fall through to Postgres registry
   }
 
   const pgLatest = await getLatestOntologyVersion(pool, tenantId);

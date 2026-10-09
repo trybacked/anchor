@@ -17,9 +17,7 @@ import {
   VerifiedExampleSchema,
 } from "./semantics.js";
 export const TenantRoleSchema = z.enum(["viewer", "editor", "publisher", "admin"]);
-/**
- *
- */
+
 export type TenantRole = z.infer<typeof TenantRoleSchema>;
 export const AuthoringCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("addEntity"), entity: EntitySchema }),
@@ -120,9 +118,7 @@ export const AuthoringCommandSchema = z.discriminatedUnion("type", [
     exampleId: z.string().min(1),
   }),
 ]);
-/**
- *
- */
+
 export type AuthoringCommand = z.infer<typeof AuthoringCommandSchema>;
 export const ApplyCommandsBodySchema = z.object({
   commands: z.array(AuthoringCommandSchema).min(1).max(100),
@@ -175,9 +171,7 @@ export const OntologyPackSummarySchema = z.object({
   name: z.string().min(1),
   description: z.string(),
 });
-/**
- *
- */
+
 export type OntologyPackSummary = z.infer<typeof OntologyPackSummarySchema>;
 export const ImportOntologyBodySchema = z.object({
   format: z.enum(["yaml", "json"]),
@@ -232,9 +226,9 @@ export const DiscoverDocsProposalBodySchema = z
   .object({
     reviewConfidenceThreshold: z.number().min(0).max(1).optional(),
     tables: z.array(z.string().min(1)).max(20).optional(),
-    /** When true (default), reject propose if tables exist but all have zero rows. */
+
     requireNonEmptyTables: z.boolean().optional(),
-    /** BCP-47 hint for LLM labels (e.g. `it`). Used by propose-ai only. */
+
     locale: z.string().min(2).max(8).optional(),
   })
   .default({});
@@ -264,9 +258,9 @@ export const ApplyDiscoveryReviewBodySchema = ReviewSchema.extend({
   apply: z.boolean().optional(),
   reviewConfidenceThreshold: z.number().min(0).max(1).optional(),
   includeRelations: z.boolean().optional(),
-  /** When true with apply, every proposal question must have an answer. Default: true when apply is true. */
+
   requireCompleteReview: z.boolean().optional(),
-  /** Allow merging into draft again after a prior apply. */
+
   allowReapply: z.boolean().optional(),
 });
 export const ApplyDiscoveryReviewResponseSchema = z.object({

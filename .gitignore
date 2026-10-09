@@ -37,6 +37,9 @@ docs/*
 # Tests use temp dirs; nothing here belongs in git.
 apps/worker-service/worker-data/
 
+# Local research library (third-party papers): never published.
+research/
+
 # Fixtures: ignore everything, then allow the curated golden-test inputs.
 fixtures/*
 !fixtures/pmi-minimal/

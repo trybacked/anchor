@@ -10,9 +10,10 @@ import {
 } from "../../src/tenant-registry-source.js";
 const MINIMAL_TENANTS_YAML = `
 enrollment:
-  host: https://example.cloud.databricks.com
-  profile: DEFAULT
-  warehouse_id: wh
+  storage:
+    provider: s3
+    bucket: backed-example-bucket
+    region: eu-central-1
 shared_spaces: {}
 tenants: {}
 `;
@@ -43,16 +44,18 @@ describe("tenant-registry-source", () => {
     writeFileSync(path, MINIMAL_TENANTS_YAML, "utf8");
     const source = createFileRegistrySource(path);
     const snapshot = await source.load();
-    expect(snapshot.registry.enrollment.host).toBe("https://example.cloud.databricks.com");
+    expect(snapshot.registry.enrollment.storage.bucket).toBe("backed-example-bucket");
     expect(Number(snapshot.version)).toBeGreaterThan(0);
   });
   it("createHttpRegistrySource fetches and caches by ttl", async () => {
     vi.useFakeTimers();
     const registryJson = {
       enrollment: {
-        host: "https://example.cloud.databricks.com",
-        profile: "DEFAULT",
-        warehouse_id: "wh",
+        storage: {
+          provider: "s3",
+          bucket: "backed-example-bucket",
+          region: "eu-central-1",
+        },
       },
       shared_spaces: {},
       tenants: {},
@@ -97,9 +100,11 @@ describe("tenant-registry-source", () => {
         new Response(
           JSON.stringify({
             enrollment: {
-              host: "https://example.cloud.databricks.com",
-              profile: "DEFAULT",
-              warehouse_id: "wh",
+              storage: {
+                provider: "s3",
+                bucket: "backed-example-bucket",
+                region: "eu-central-1",
+              },
             },
             shared_spaces: {},
             tenants: {},

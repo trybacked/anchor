@@ -39,7 +39,7 @@ Interactive docs (Scalar): **`GET /docs`**, **`GET /docs/platform`** (platform b
 | `WORKOS_REDIRECT_URI`          | R if workos        | O     | ✓       | **Must be** `{gateway URL}/callback` (not Carta `/auth/callback`)                                                                                                                        |
 | `WORKOS_COOKIE_PASSWORD`       | —                  | —     | —       | **Next.js AuthKit only** (console); gateway **does not** use it                                                                                                                          |
 | `WORKOS_CONSOLE_REDIRECT_URI`  | —                  | —     | —       | Next.js console only                                                                                                                                                                     |
-| `BACKED_DATABRICKS_*`          | —                  | —     | —       | **Not** on the gateway                                                                                                                                                                   |
+| `BACKED_S3_BUCKET`             | O                  | ✓     | ✓       | Document archive. Default `backed-v1` (`eu-north-1`)                                                                                                                                     |
 
 Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control plane (`POST /v1/admin/oauth-clients`); gateway reads them via `GET /v1/oauth-clients` using `CONTROL_PLANE_INTERNAL_TOKEN`. See [OAUTH_APPS.md](./OAUTH_APPS.md).
 

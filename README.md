@@ -222,7 +222,7 @@ anchor/
 │   ├── capability-documents/   # document archive features, binding-driven
 │   ├── capability-tabular/     # structured source features
 │   ├── discovery/              # inspect/ evidence · propose/ deterministic proposal
-│   ├── ontology-extract/       # legacy document-warehouse extraction (superseded by ontology-ai)
+│   ├── ontology-extract/       # docs warehouse enrich + Foundry document ontology (init/extract-foundry)
 │   ├── ontology-ai/            # AI proposals: pipeline, review policy, change sets
 │   ├── ontology-authoring/     # applies authoring commands, model diffs
 │   ├── registry/               # publications, versioning, rollback

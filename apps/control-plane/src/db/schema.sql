@@ -143,8 +143,8 @@ CREATE INDEX IF NOT EXISTS ontology_discovery_runs_tenant_idx
 ALTER TABLE ontology_discovery_runs
   ADD COLUMN IF NOT EXISTS empty_tables JSONB NOT NULL DEFAULT '[]'::jsonb;
 
--- Tenant profile (Plan Phase 2): configuration as data — locale, AI policy,
--- engine connections, and ingested sources with capabilities/bindings.
+
+
 CREATE TABLE IF NOT EXISTS tenant_settings (
   tenant_id TEXT PRIMARY KEY REFERENCES organizations (tenant_id) ON DELETE CASCADE,
   locale TEXT NOT NULL DEFAULT 'en',

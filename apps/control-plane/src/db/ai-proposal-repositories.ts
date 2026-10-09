@@ -1,8 +1,6 @@
 import type pg from "pg";
 import { z } from "zod";
 
-/** Storage for AI ontology proposals (Plan Fase 5). */
-
 export const AiProposalScopeKindSchema = z.enum(["source", "dataset", "tenant"]);
 export const AiProposalStatusSchema = z.enum(["proposed", "approved", "rejected", "applied"]);
 

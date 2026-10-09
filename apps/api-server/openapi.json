@@ -36,7 +36,7 @@
     },
     {
       "name": "semantic-chat",
-      "description": "Workshop AI ask — natural-language questions over contracts, dates, organizations (governed agent + warehouse)"
+      "description": "Workshop AI ask — natural-language questions over the published ontology and warehouse (governed agent)"
     }
   ],
   "components": {
@@ -284,6 +284,20 @@
             "items": {
               "type": "string"
             }
+          },
+          "folder": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20
+          },
+          "elementTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20
           }
         },
         "required": ["query"],
@@ -730,6 +744,23 @@
         }
       }
     },
+    "/v1/model/document-archive-intent-terms": {
+      "get": {
+        "operationId": "listDocumentArchiveIntentTerms",
+        "summary": "Ontology-derived terms for document-archive intent routing",
+        "tags": ["model"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intent terms from glossary, object names, and synonyms"
+          }
+        }
+      }
+    },
     "/v1/model/entities/{id}": {
       "get": {
         "operationId": "getEntity",
@@ -1052,7 +1083,7 @@
                 "$ref": "#/components/schemas/EntityProfileBody"
               },
               "example": {
-                "name": "Example organization",
+                "name": "Acme Corp",
                 "matchLimit": 3
               }
             }
@@ -1086,8 +1117,8 @@
                 "$ref": "#/components/schemas/GraphTraverseBody"
               },
               "example": {
-                "relationId": "contract_awarded_to_organization",
-                "value": "01234567890",
+                "relationId": "order_customer",
+                "value": "CUST-001",
                 "depth": 1,
                 "limit": 20,
                 "mode": "rows"

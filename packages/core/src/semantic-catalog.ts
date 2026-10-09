@@ -25,17 +25,11 @@ export const SemanticCatalogSchema = z.object({
   glossary: z.array(CatalogGlossaryTermSchema).default([]),
   examples: z.array(VerifiedExampleSchema).default([]),
 });
-/**
- *
- */
+
 export type DatasetSemantics = z.infer<typeof DatasetSemanticsSchema>;
-/**
- *
- */
+
 export type CatalogGlossaryTerm = z.infer<typeof CatalogGlossaryTermSchema>;
-/**
- *
- */
+
 export type SemanticCatalog = z.infer<typeof SemanticCatalogSchema>;
 function withDefaults<T extends object>(
   defaults: T | undefined,
@@ -56,12 +50,7 @@ function enrichProperty(property: OntologyProperty, dataset: DatasetSemantics): 
   const semantics = withDefaults(dataset.properties[property.id], property.semantics);
   return semantics === undefined ? property : { ...property, semantics };
 }
-/**
- * Catalogs describe a dataset family; a tenant may expose only part of it.
- * Property references that do not exist on this object are dropped so hints
- * never leak into prompts or query defaults. Glossary terms are pruned the
- * same way in resolveGlossary.
- */
+
 function pruneEntitySemantics(semantics: EntitySemantics, object: OntologyObject): EntitySemantics {
   const known = new Set(object.properties.map((property) => property.id));
   const { displayProperties, defaultTimeDimension, ...rest } = semantics;
@@ -124,9 +113,7 @@ function resolveGlossary(
     }),
   );
 }
-/**
- *
- */
+
 export function applySemanticCatalogs(
   ontology: Ontology,
   catalogs: readonly SemanticCatalog[],

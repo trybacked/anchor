@@ -17,6 +17,19 @@ export const platformApiModelRoutes: RouteFactory[] = [
   ),
   platformRoute(
     {
+      operationId: "listDocumentArchiveIntentTerms",
+      method: "get",
+      path: `${V1_PATH_PREFIX}/model/document-archive-intent-terms`,
+      summary: "Ontology-derived terms for document-archive intent routing",
+      tags: ["model"],
+      responses: {
+        "200": { description: "Intent terms from glossary, object names, and synonyms" },
+      },
+    },
+    () => (c) => c.json(getAnchorService(c).listDocumentArchiveIntentTerms()),
+  ),
+  platformRoute(
+    {
       operationId: "getEntity",
       method: "get",
       path: `${V1_PATH_PREFIX}/model/entities/{id}`,

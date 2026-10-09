@@ -21,9 +21,9 @@ See [deploy/README.md](../../deploy/README.md) and `deploy/docker-compose.yml`.
 ```bash
 export ANCHOR_API_TOKEN=dev-secret
 export ANCHOR_TENANTS_REGISTRY="$(pwd)/tenants.yaml"
-export BACKED_DATABRICKS_HOST=...
-export BACKED_DATABRICKS_TOKEN=...
-export BACKED_DATABRICKS_WAREHOUSE_ID=...
+export BACKED_ENGINE=files
+export BACKED_S3_BUCKET=backed-v1
+export BACKED_S3_REGION=eu-north-1
 pnpm --filter @trybacked/api-server start
 ```
 

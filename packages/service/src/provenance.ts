@@ -82,7 +82,7 @@ export function buildRowProvenance(options: {
   ontology: Ontology;
   objectId: string;
   rows: Record<string, unknown>[];
-  /** Ontology object ids that behave as documents (from the archive binding). */
+
   documentObjectIds?: DocumentObjectIds | undefined;
 }): RowProvenance[] {
   const documentObjectIds = options.documentObjectIds ?? LEGACY_DOCUMENT_OBJECT_IDS;

@@ -1,27 +1,13 @@
 import { z } from "zod";
 
-/**
- * Generic ingested-source model (Plan Phase 4).
- *
- * A `SourceDescriptor` describes one ingested source as data: its kind, the
- * capabilities it exposes, and — for document archives — the binding that maps
- * the archive onto concrete datasets and columns. No table names, entity ids,
- * or language keywords live in the kernel: bindings carry them.
- */
-
 export const SourceKindSchema = z.enum(["table", "document_archive", "api", "stream"]);
-/**
- *
- */
+
 export type SourceKind = z.infer<typeof SourceKindSchema>;
 
 export const SourceCapabilitySchema = z.enum(["documents", "tabular", "search"]);
-/**
- *
- */
+
 export type SourceCapability = z.infer<typeof SourceCapabilitySchema>;
 
-/** Maps a document archive onto concrete datasets and column names. */
 export const DocumentArchiveBindingSchema = z.object({
   datasets: z.object({
     documents: z.string().min(1),
@@ -42,9 +28,7 @@ export const DocumentArchiveBindingSchema = z.object({
     elementType: z.string().min(1),
   }),
 });
-/**
- *
- */
+
 export type DocumentArchiveBinding = z.infer<typeof DocumentArchiveBindingSchema>;
 
 export const SourceDescriptorSchema = z.object({
@@ -53,16 +37,13 @@ export const SourceDescriptorSchema = z.object({
   capabilities: z.array(SourceCapabilitySchema).min(1),
   connectionId: z.string().min(1).optional(),
   namespace: z.string().min(1).optional(),
-  /** Dataset ids owned by the source (tabular/api/stream sources list them here). */
+
   datasets: z.array(z.string()).optional(),
   binding: DocumentArchiveBindingSchema.optional(),
 });
-/**
- *
- */
+
 export type SourceDescriptor = z.infer<typeof SourceDescriptorSchema>;
 
-/** The document datasets the runtime readers need (subset of the binding). */
 export type DocumentTablesSpec = {
   documents: string;
   documentElements: string;
@@ -70,15 +51,11 @@ export type DocumentTablesSpec = {
   entityProfiles: string;
 };
 
-/** Ontology object ids that behave as documents in provenance extraction. */
 export type DocumentObjectIds = {
   document: string;
   documentElement: string;
 };
 
-/**
- *
- */
 export function sourceHasCapability(
   descriptor: SourceDescriptor,
   capability: SourceCapability,

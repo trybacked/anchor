@@ -8,6 +8,9 @@ PORT="${GATEWAY_PUBLIC_PORT:-8080}"
 BASE="http://127.0.0.1:${PORT}"
 SMOKE_USER="${SMOKE_USER:-demo}"
 SMOKE_PASSWORD="${SMOKE_PASSWORD:-}"
+SMOKE_TENANT="${SMOKE_TENANT:-gerace}"
+SMOKE_OBJECT_ID="${SMOKE_OBJECT_ID:-contract}"
+SMOKE_FILTER_JSON="${SMOKE_FILTER_JSON:-{\"source_year_month\":\"2025-06\"}}"
 
 if [[ -z "$SMOKE_PASSWORD" ]]; then
   echo "Set SMOKE_PASSWORD (gateway user from users.yaml)." >&2
@@ -39,15 +42,15 @@ curl -sf -c "$JAR" -X POST "${BASE}/login" \
   -H 'Content-Type: application/json' \
   -d "{\"username\":\"${SMOKE_USER}\",\"password\":\"${SMOKE_PASSWORD}\"}" >/dev/null
 
-echo "==> gerace objectQuery count"
-RESP="$(curl -sf -b "$JAR" -X POST "${BASE}/t/gerace/v1/query/objects" \
+echo "==> ${SMOKE_TENANT} objectQuery count"
+RESP="$(curl -sf -b "$JAR" -X POST "${BASE}/t/${SMOKE_TENANT}/v1/query/objects" \
   -H 'Content-Type: application/json' \
-  -d '{"objectId":"contract","mode":"count","filters":{"source_year_month":"2025-06"}}')"
+  -d "{\"objectId\":\"${SMOKE_OBJECT_ID}\",\"mode\":\"count\",\"filters\":${SMOKE_FILTER_JSON}}")"
 echo "$RESP" | head -c 200
 echo ""
 ROW_COUNT="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.rowCount??0)" "$RESP")"
 if [[ "$ROW_COUNT" -le 0 ]]; then
-  echo "Expected rowCount > 0 for gerace contracts 2025-06" >&2
+  echo "Expected rowCount > 0 for ${SMOKE_TENANT} ${SMOKE_OBJECT_ID} (${SMOKE_FILTER_JSON})" >&2
   exit 1
 fi
 

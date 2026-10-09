@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OntologyRelationshipCardinalitySchema } from "../cardinality.js";
 import { ConfidenceSchema, ElementStatusSchema } from "../model.js";
 import {
   EntitySemanticsSchema,
@@ -55,12 +56,7 @@ export const OntologyObjectSchema = z.object({
   source: z.enum(["inferred", "manual"]).optional(),
   semantics: EntitySemanticsSchema.optional(),
 });
-export const OntologyRelationshipCardinalitySchema = z.enum([
-  "one_to_one",
-  "one_to_many",
-  "many_to_one",
-  "many_to_many",
-]);
+export { OntologyRelationshipCardinalitySchema } from "../cardinality.js";
 export const OntologyRelationshipSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -123,47 +119,25 @@ export const OntologySchema = z.object({
   actions: z.array(OntologyActionSchema).default([]),
   semantics: OntologySemanticsBlockSchema.optional(),
 });
-/**
- *
- */
+
 export type OntologyPropertyType = z.infer<typeof OntologyPropertyTypeSchema>;
-/**
- *
- */
+
 export type OntologyPropertyRole = z.infer<typeof OntologyPropertyRoleSchema>;
-/**
- *
- */
+
 export type OntologyProvenance = z.infer<typeof OntologyProvenanceSchema>;
-/**
- *
- */
+
 export type OntologyProperty = z.infer<typeof OntologyPropertySchema>;
-/**
- *
- */
+
 export type OntologyObject = z.infer<typeof OntologyObjectSchema>;
-/**
- *
- */
+
 export type OntologyRelationshipCardinality = z.infer<typeof OntologyRelationshipCardinalitySchema>;
-/**
- *
- */
+
 export type OntologyRelationship = z.infer<typeof OntologyRelationshipSchema>;
-/**
- *
- */
+
 export type OntologyLogic = z.infer<typeof OntologyLogicSchema>;
-/**
- *
- */
+
 export type OntologyAction = z.infer<typeof OntologyActionSchema>;
-/**
- *
- */
+
 export type OntologyMetadata = z.infer<typeof OntologyMetadataSchema>;
-/**
- *
- */
+
 export type Ontology = z.infer<typeof OntologySchema>;

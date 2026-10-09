@@ -25,7 +25,7 @@ describe("OntologySpec v2 migration", () => {
     expect(v2.linkTypes.map((l) => l.id)).toEqual(v1.relationships.map((r) => r.id));
     const result = validateOntologyV2(v2);
     expect(result.issues.filter((i) => i.severity === "error")).toEqual([]);
-    // Deterministic: identical output on re-run.
+
     expect(migrateOntologyV1ToV2(v1)).toEqual(v2);
   });
 

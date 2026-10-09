@@ -4,7 +4,8 @@ import { dirname, join } from "node:path";
 import {
   ensureTenantInRegistry,
   loadTenantsRegistry,
-  resolveBundleTarget,
+  resolveEnrollmentBucket,
+  resolveEnrollmentRegion,
   resolveTenantCatalog,
   saveTenantsRegistry,
 } from "./registry.js";
@@ -24,7 +25,7 @@ export type TenantCreateResult = {
   tenantId: string;
   catalog: string;
   envFile: string;
-  bundleTarget: string;
+  storageBucket: string;
   servicePrincipalAppId: string;
   registryUpdated: boolean;
   publicationVersion: number;
@@ -35,6 +36,8 @@ function writeTenantEnvFile(options: {
   filesRoot: string;
   registryRoot: string;
   catalog: string;
+  storageBucket: string;
+  storageRegion: string;
 }): void {
   mkdirSync(dirname(options.envFile), { recursive: true });
   const body = [
@@ -42,6 +45,8 @@ function writeTenantEnvFile(options: {
     `BACKED_FILES_ROOT=${options.filesRoot}`,
     `BACKED_FILES_REGISTRY_ROOT=${options.registryRoot}`,
     `BACKED_CATALOG=${options.catalog}`,
+    `BACKED_S3_BUCKET=${options.storageBucket}`,
+    `BACKED_S3_REGION=${options.storageRegion}`,
     "",
   ].join("\n");
   writeFileSync(options.envFile, body, "utf8");
@@ -57,7 +62,7 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
   const registryPath = join(repoRoot, "tenants.yaml");
   const registry = loadTenantsRegistry(registryPath);
   const catalog = resolveTenantCatalog(options.tenantId);
-  const bundleTarget = resolveBundleTarget(options.tenantId, registry.enrollment.bundle_target);
+  const storageBucket = resolveEnrollmentBucket(registry);
   const filesRoot = options.filesRoot ?? join(repoRoot, "sources");
   const registryRoot = options.registryRoot ?? join(repoRoot, ".backed", "remote-registry");
   const envFile = join(
@@ -71,7 +76,7 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
       tenantId: options.tenantId,
       catalog,
       envFile,
-      bundleTarget,
+      storageBucket,
       servicePrincipalAppId: "(dry-run)",
       registryUpdated: false,
       publicationVersion: 0,
@@ -83,7 +88,14 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
     filesRoot,
     registryRoot,
   });
-  writeTenantEnvFile({ envFile, filesRoot, registryRoot, catalog });
+  writeTenantEnvFile({
+    envFile,
+    filesRoot,
+    registryRoot,
+    catalog,
+    storageBucket,
+    storageRegion: resolveEnrollmentRegion(registry),
+  });
   const hadTenant = registry.tenants[options.tenantId] !== undefined;
   const updated = ensureTenantInRegistry(
     registry,
@@ -101,7 +113,7 @@ export async function provisionTenant(options: TenantCreateOptions): Promise<Ten
     tenantId: options.tenantId,
     catalog,
     envFile,
-    bundleTarget,
+    storageBucket,
     servicePrincipalAppId: provisioned.servicePrincipalAppId,
     registryUpdated: !hadTenant,
     publicationVersion: 0,

@@ -1,11 +1,5 @@
 import type pg from "pg";
 
-/**
- * Packs as data (Plan Fase 7): templates are JSON lists of AuthoringCommands
- * stored in the control plane. Seeding a pack is an administrative operation;
- * no pack ships in code.
- */
-
 export type AuthoringPackRow = {
   id: string;
   name: string;

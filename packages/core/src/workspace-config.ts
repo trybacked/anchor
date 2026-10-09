@@ -2,9 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { DEFAULT_WORKSPACE_CONFIG, WorkspaceConfigSchema, workspacePaths } from "./workspace.js";
 import type { WorkspaceConfig } from "./workspace.js";
-/**
- *
- */
+
 export function writeWorkspaceConfig(root: string, config: WorkspaceConfig): string {
   const paths = workspacePaths(root);
   mkdirSync(paths.runsDir, { recursive: true });
@@ -12,9 +10,7 @@ export function writeWorkspaceConfig(root: string, config: WorkspaceConfig): str
   writeFileSync(paths.configPath, stringifyYaml(parsed), "utf-8");
   return paths.configPath;
 }
-/**
- *
- */
+
 export function patchWorkspaceConfig(root: string, patch: Partial<WorkspaceConfig>): string {
   let existing: WorkspaceConfig;
   try {
@@ -24,9 +20,7 @@ export function patchWorkspaceConfig(root: string, patch: Partial<WorkspaceConfi
   }
   return writeWorkspaceConfig(root, { ...existing, ...patch });
 }
-/**
- *
- */
+
 export function readWorkspaceConfig(root: string): WorkspaceConfig {
   const paths = workspacePaths(root);
   let raw: string;

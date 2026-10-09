@@ -6,9 +6,11 @@ import { mockRegistrySource } from "../helpers/registry-source.js";
 function emptyRegistry(tenants: TenantsRegistry["tenants"] = {}): TenantsRegistry {
   return {
     enrollment: {
-      host: "https://example.databricks.com",
-      profile: "DEFAULT",
-      warehouse_id: "wh",
+      storage: {
+        provider: "s3",
+        bucket: "backed-example-bucket",
+        region: "eu-central-1",
+      },
     },
     shared_spaces: {},
     tenants,

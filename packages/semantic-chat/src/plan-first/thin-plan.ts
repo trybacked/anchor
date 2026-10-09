@@ -16,10 +16,7 @@ function stringCellChars(rows: Record<string, unknown>[]): number {
   return total;
 }
 
-/** Rendered plan-first listing with no substantive body (e.g. a single name). */
 export function isSparseListingProse(result: PlanFirstResult): boolean {
-  // A count total is a complete answer by construction — only row listings can
-  // be too sparse to stand alone.
   if (result.result.mode === "count") {
     return false;
   }
@@ -30,7 +27,6 @@ export function isSparseListingProse(result: PlanFirstResult): boolean {
   return trimmed.length < 480;
 }
 
-/** Warehouse listing with almost no field detail — document excerpts may answer better. */
 export function isThinWarehouseListing(result: PlanFirstResult): boolean {
   if (result.result.mode === "count") {
     return false;

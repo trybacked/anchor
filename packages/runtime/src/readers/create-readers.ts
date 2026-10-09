@@ -13,7 +13,7 @@ export type WarehouseReadersOptions = {
   executor: SqlStatementExecutor;
   catalog?: string | undefined;
   documentsSchema?: string | undefined;
-  /** Table names from the tenant's document-archive binding. */
+
   documentTables: DocumentTablesSpec;
   vectorSearchIndex?: string | undefined;
   tableCapabilities: WarehouseTableCapabilities;

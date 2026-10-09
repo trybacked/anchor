@@ -9,7 +9,7 @@ export const platformApiProfileGraphRoutes: RouteFactory[] = [
       summary: "Entity profile with facts and documents",
       tags: ["entity-profile-reader"],
       jsonBody: jsonBody("EntityProfileBody", EntityProfileBodySchema, {
-        name: "Example organization",
+        name: "Acme Corp",
         matchLimit: 3,
       }),
       responses: HTTP_OK_OR_UNAVAILABLE,
@@ -23,8 +23,8 @@ export const platformApiProfileGraphRoutes: RouteFactory[] = [
       summary: "Multi-hop graph traversal",
       tags: ["graph-traverse"],
       jsonBody: jsonBody("GraphTraverseBody", GraphTraverseBodySchema, {
-        relationId: "contract_awarded_to_organization",
-        value: "01234567890",
+        relationId: "order_customer",
+        value: "CUST-001",
         depth: 1,
         limit: 20,
         mode: "rows",

@@ -15,10 +15,12 @@ import {
   type ModelResolver,
 } from "./agent/run-agent.js";
 import type { SemanticAgentResult } from "./agent/types.js";
+import { askOutcome } from "./ask-abstention.js";
 import {
   agentBudgetFromEnv,
   agentSkipRepairAfterMsFromEnv,
   askStrategyFromEnv,
+  documentRerankFromEnv,
 } from "./ask-config.js";
 import { searchTermsForQuestion } from "./document-evidence.js";
 import {
@@ -33,7 +35,7 @@ import { isSparseListingProse, isThinWarehouseListing } from "./plan-first/thin-
 import { tenantAiAskEnabled, type TenantAiAskCapabilities } from "./tenant-ai-ask.js";
 export type { TenantAiAskCapabilities };
 export type SemanticAskHandler = NonNullable<AnchorService["semanticAsk"]>;
-/** What the planner and the agent need from a request; audit-only fields stay out. */
+
 type AskContext = Pick<SemanticAskBody, "question" | "locale" | "history">;
 export type AttachSemanticAskOptions = {
   ontology: Ontology;
@@ -41,7 +43,7 @@ export type AttachSemanticAskOptions = {
   tenantCapabilities?: TenantAiAskCapabilities | undefined;
   onOperation?: AnchorOperationAuditHook | undefined;
   tenant?: string | undefined;
-  /** Test seam: replaces the AI Gateway provider. */
+
   resolveModel?: ModelResolver | undefined;
 };
 export type SemanticAskAvailability =
@@ -82,7 +84,7 @@ function planFirstResponse(
     runId: result.runId,
     route: "single",
     ontologyVersion,
-    attempts: 1,
+    attempts: result.attempts,
     plan: result.plan,
     result: result.result,
     claims: result.claims,
@@ -90,6 +92,7 @@ function planFirstResponse(
     followUps: [],
     agentSteps: result.steps,
     usage: result.usage,
+    outcome: "answered",
   };
 }
 function agentResponse(
@@ -111,6 +114,8 @@ function agentResponse(
     agentSteps: agent.steps,
     usage: agent.usage,
     ...(agent.clarification !== undefined ? { clarification: agent.clarification } : {}),
+    ...(agent.abstention !== undefined ? { abstention: agent.abstention } : {}),
+    outcome: askOutcome(agent),
   };
 }
 export function attachSemanticAsk(
@@ -131,9 +136,9 @@ export function attachSemanticAsk(
   const { modelId, apiKey, fallbackModelId } = agentModel;
   const resolveModel = options.resolveModel ?? createGatewayModelResolver(apiKey);
   const strategy = askStrategyFromEnv(options.env);
+  const documentRerank = documentRerankFromEnv(options.env);
   const ontologyVersion = options.ontology.metadata.version;
-  // Archive intent terms come from the published ontology semantics, not from
-  // keywords in code (Plan Fase 6).
+
   const documentTerms = documentArchiveTermsFromOntology(options.ontology);
   const tenantField = options.tenant !== undefined ? { tenant: options.tenant } : {};
 
@@ -180,6 +185,7 @@ export function attachSemanticAsk(
           totalTokens: 0,
           latencyMs: Date.now() - started,
         },
+        outcome: "answered",
       };
     }
     const mergedRows: Record<string, unknown>[] = [];
@@ -224,6 +230,7 @@ export function attachSemanticAsk(
       claims: rendered.claims,
       assumptions: [],
       followUps: [],
+      outcome: "answered",
       agentSteps: [
         {
           toolCallId: "document-search",
@@ -254,17 +261,23 @@ export function attachSemanticAsk(
       ontologyVersion,
       resolveModel,
       modelId,
+      rerank: documentRerank,
     });
-    if (outcome.kind === "answered") {
-      return outcome.response;
+    switch (outcome.kind) {
+      case "answered":
+        return outcome.response;
+      case "abstained":
+        return outcome.response;
+      case "skip":
+        return undefined;
+      default: {
+        const unreachable: never = outcome;
+        throw new Error(`Unhandled document synthesis outcome: ${JSON.stringify(unreachable)}`);
+      }
     }
-    return undefined;
   }
 
   function prefersDocumentEvidenceFirst(question: string): boolean {
-    // Archive-explicit questions are handled by the archive reader; the rest go
-    // document-first when they carry at least two search terms (semantics-driven
-    // routing, no domain keywords in code).
     if (questionPrefersDocumentArchive(question, documentTerms)) {
       return false;
     }

@@ -25,17 +25,11 @@ export const OntologyDiffSchema = z.object({
   generatedAt: z.string().datetime(),
   changes: z.array(OntologyDiffChangeSchema),
 });
-/**
- *
- */
+
 export type OntologyDiffChangeKind = z.infer<typeof OntologyDiffChangeKindSchema>;
-/**
- *
- */
+
 export type OntologyDiffChange = z.infer<typeof OntologyDiffChangeSchema>;
-/**
- *
- */
+
 export type OntologyDiff = z.infer<typeof OntologyDiffSchema>;
 function indexObjects(objects: OntologyObject[]): Map<string, OntologyObject> {
   return new Map(objects.map((object) => [object.id, object]));
@@ -89,9 +83,7 @@ function diffProperties(
     }
   }
 }
-/**
- *
- */
+
 export function diffOntology(
   previous: Ontology,
   next: Ontology,
@@ -178,9 +170,7 @@ export function diffOntology(
     changes,
   });
 }
-/**
- *
- */
+
 export function formatOntologyDiff(diff: OntologyDiff): string {
   const header = `Ontology diff v${String(diff.fromVersion)} → v${String(diff.toVersion)}`;
   if (diff.changes.length === 0) {
@@ -203,9 +193,7 @@ export function formatOntologyDiff(diff: OntologyDiff): string {
   });
   return [header, summary, ...lines].join("\n");
 }
-/**
- *
- */
+
 export function hasBreakingOntologyChanges(diff: OntologyDiff): boolean {
   return diff.changes.some((change) => change.breaking);
 }

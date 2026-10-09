@@ -127,8 +127,30 @@ describe("runSemanticAgent", () => {
     );
     const agent = await result;
     expect(agent.answer).toBe("No data found.");
-    expect(toolNames(model.doGenerateCalls.at(-1))).toEqual(["submit_answer"]);
+    expect(toolNames(model.doGenerateCalls.at(-1))).toEqual(["submit_answer", "decline_answer"]);
     expect(toolNames(model.doGenerateCalls[0])).toContain("query_objects");
+  });
+  it("maps decline_answer to an official abstention", async () => {
+    const { result } = run([
+      { toolName: "query_objects", input: QUERY },
+      {
+        toolName: "decline_answer",
+        input: {
+          reason: "no_data",
+          explanation: "Nessun contratto nel periodo richiesto.",
+          followUps: ["Allarga il periodo?"],
+        },
+      },
+    ]);
+    const agent = await result;
+    expect(agent.abstention).toEqual({
+      reason: "no_data",
+      explanation: "Nessun contratto nel periodo richiesto.",
+    });
+    expect(agent.answer).toBe("Nessun contratto nel periodo richiesto.");
+    expect(agent.followUps).toEqual(["Allarga il periodo?"]);
+    expect(agent.clarification).toBeUndefined();
+    expect(agent.claims).toEqual([]);
   });
   it("records failing tools as error steps", async () => {
     const { result } = run([

@@ -11,17 +11,13 @@ import type {
   OntologyObject,
   OntologyRelationship,
 } from "./spec.js";
-/**
- *
- */
+
 export type ApplyReviewLifecycleOptions = {
   ontologyId: string;
   reviewConfidenceThreshold?: number;
   baseOntology?: Ontology;
 };
-/**
- *
- */
+
 export type ReviewLifecycleResult = {
   ontology: Ontology;
 };
@@ -58,9 +54,7 @@ function lifecycleAfterReview(
   }
   return modelLifecycle;
 }
-/**
- *
- */
+
 export function applyReviewLifecycle(
   proposal: Proposal,
   review: Review,
@@ -114,9 +108,7 @@ export function applyReviewLifecycle(
   };
   return { ontology };
 }
-/**
- *
- */
+
 export function markOntologyPublished(ontology: Ontology, publishedAt: string): Ontology {
   const toPublished = (): OntologyLifecycleStage => "published";
   return {

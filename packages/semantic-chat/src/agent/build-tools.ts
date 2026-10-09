@@ -21,7 +21,12 @@ import {
 } from "../validate-plan.js";
 import { toAgentObjectView } from "./agent-ontology-view.js";
 import { evaluateClarification } from "./clarification-policy.js";
-import { SemanticAgentError, type AgentBudget, type AgentTerminal } from "./types.js";
+import {
+  SemanticAgentError,
+  ABSTENTION_REASONS,
+  type AgentBudget,
+  type AgentTerminal,
+} from "./types.js";
 export type AgentToolEvent = {
   toolCallId: string;
   toolName: string;
@@ -83,6 +88,20 @@ const ClarificationSchema = z.object({
     .describe(
       "Required when unsure between properties (e.g. which date field): the candidate property ids.",
     ),
+});
+const DeclineAnswerSchema = z.object({
+  reason: z
+    .enum(ABSTENTION_REASONS)
+    .describe(
+      "no_matching_concept: no ontology object fits the question; no_data: the concept exists but the warehouse has no rows; insufficient_evidence: retrieved excerpts do not support an answer; out_of_scope: the question is outside this tenant's domain.",
+    ),
+  explanation: z
+    .string()
+    .min(1)
+    .describe(
+      "User-facing text in the user's language: what is missing and why no answer is possible.",
+    ),
+  followUps: z.array(z.string()).default([]),
 });
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -219,6 +238,20 @@ export function buildAgentTools(options: BuildAgentToolsOptions): AgentToolkit {
         kind: "clarification",
         question: input.question,
         options: input.options,
+      });
+      return { ok: true };
+    },
+  );
+  tools.decline_answer = defineTool(
+    "decline_answer",
+    "Officially decline to answer when no ontology concept matches, the warehouse has no data, the document excerpts lack evidence, or the question is out of scope. Prefer this over guessing.",
+    DeclineAnswerSchema,
+    (input) => {
+      options.onTerminal({
+        kind: "abstained",
+        reason: input.reason,
+        explanation: input.explanation,
+        followUps: input.followUps,
       });
       return { ok: true };
     },

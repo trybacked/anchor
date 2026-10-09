@@ -14,7 +14,6 @@ function readSearchScore(row: Record<string, unknown>): number {
   return typeof score === "number" && Number.isFinite(score) ? score : 0;
 }
 
-/** Multi-token subject after stopword removal (used for chunk search and entity profile). */
 export function primaryDocumentSearchPhrase(question: string): string {
   const significant = significantQuestionTokens(question);
   if (significant.length > 0) {
@@ -29,14 +28,13 @@ export function searchTermsForQuestion(question: string): string[] {
     .filter((part) => part.length >= 3);
 }
 
-/** Register-style tables: high digit density plus columnar layout (content-based). */
 export function isLikelyRegisterTable(text: string): boolean {
   if (text.length < 60) {
     return false;
   }
   const digits = (text.match(/\d/g) ?? []).length;
   const digitRatio = digits / text.length;
-  // Columnar records are digit-dense; prose rarely exceeds ~10% digits.
+
   return digitRatio >= 0.1;
 }
 

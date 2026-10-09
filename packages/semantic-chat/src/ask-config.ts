@@ -29,13 +29,19 @@ export function agentBudgetFromEnv(env: NodeJS.ProcessEnv): AgentBudget {
   };
 }
 
-/** Skip grounding repair when the main pass already consumed this many ms (LLM budget). */
 export function agentSkipRepairAfterMsFromEnv(env: NodeJS.ProcessEnv): number {
   return readPositiveInt(env, "SEMANTIC_AGENT_SKIP_REPAIR_AFTER_MS", 35_000);
 }
 
-/** plan-first (default): one structured LLM call → governed query → deterministic answer; agent loop only as fallback. */
 export function askStrategyFromEnv(env: NodeJS.ProcessEnv): AskStrategy {
   const raw = env["SEMANTIC_ASK_STRATEGY"]?.trim();
   return ASK_STRATEGIES.find((strategy) => strategy === raw) ?? "plan-first";
+}
+
+export const DOCUMENT_RERANK_MODES = ["off", "llm"] as const;
+export type DocumentRerankMode = (typeof DOCUMENT_RERANK_MODES)[number];
+
+export function documentRerankFromEnv(env: NodeJS.ProcessEnv): DocumentRerankMode {
+  const raw = env["SEMANTIC_DOCUMENT_RERANK"]?.trim();
+  return DOCUMENT_RERANK_MODES.find((mode) => mode === raw) ?? "off";
 }

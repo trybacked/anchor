@@ -20,6 +20,7 @@ function planResult(partial: Partial<PlanFirstResult["result"]>): PlanFirstResul
     },
     steps: [],
     usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0, latencyMs: 0 },
+    attempts: 1,
   };
 }
 

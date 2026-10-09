@@ -1,6 +1,8 @@
 import {
+  AuditEventSchema,
   AuthoringCommandSchema,
   SemanticModelSchema,
+  type AuditEvent,
   type AuthoringCommand,
   type SemanticModel,
   type TenantRole,
@@ -232,12 +234,10 @@ export async function listOntologyChanges(
   tenantId: string,
   limit: number,
 ): Promise<
-  {
-    revision: number;
-    command: AuthoringCommand;
-    actor: string;
-    createdAt: string;
-  }[]
+  (
+    | { revision: number; command: AuthoringCommand; actor: string; createdAt: string }
+    | { revision: number; auditEvent: AuditEvent; actor: string; createdAt: string }
+  )[]
 > {
   const result = await pool.query<{
     revision: number;
@@ -249,12 +249,23 @@ export async function listOntologyChanges(
      WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2`,
     [tenantId, limit],
   );
-  return result.rows.map((row) => ({
-    revision: row.revision,
-    command: AuthoringCommandSchema.parse(row.command),
-    actor: row.actor,
-    createdAt: row.created_at.toISOString(),
-  }));
+  return result.rows.map((row) => {
+    const parsedCommand = AuthoringCommandSchema.safeParse(row.command);
+    if (parsedCommand.success) {
+      return {
+        revision: row.revision,
+        command: parsedCommand.data,
+        actor: row.actor,
+        createdAt: row.created_at.toISOString(),
+      };
+    }
+    return {
+      revision: row.revision,
+      auditEvent: AuditEventSchema.parse(row.command),
+      actor: row.actor,
+      createdAt: row.created_at.toISOString(),
+    };
+  });
 }
 export async function listRoleBindings(pool: pg.Pool, tenantId: string): Promise<RoleBindingRow[]> {
   const result = await pool.query<RoleBindingRow>(

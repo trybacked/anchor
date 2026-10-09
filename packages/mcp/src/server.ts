@@ -34,16 +34,21 @@ function jsonContent(data: unknown): {
 } {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
-function errorContent(text: string): {
+function errorContent(error: { code: string; message: string; issues?: unknown }): {
   isError: true;
   content: {
     type: "text";
     text: string;
   }[];
 } {
+  const payload = {
+    code: error.code,
+    message: error.message,
+    ...(error.issues !== undefined ? { issues: error.issues } : {}),
+  };
   return {
     isError: true,
-    content: [{ type: "text", text }],
+    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
   };
 }
 async function withUsage<T>(
@@ -89,7 +94,7 @@ export function createModelMcpServer(
         withUsage(tool.name, usageRecorder, async () => {
           const result = await tool.handler(toolContext, args);
           if (isServiceErrorResult(result)) {
-            return errorContent(result.error.message);
+            return errorContent(result.error);
           }
           return jsonContent(result);
         }),

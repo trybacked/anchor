@@ -45,6 +45,7 @@ function propertyToModelProperty(property: OntologyProperty, table: string): Pro
       table,
       column: property.id,
       evidence: evidenceText(property.provenance?.evidence),
+      method: "profile",
     },
   };
 }
@@ -60,6 +61,7 @@ function objectToEntity(object: Ontology["objects"][number]): Entity {
     provenance: {
       table,
       evidence: evidenceText(object.provenance?.evidence),
+      method: "profile",
     },
     properties: object.properties.map((property) => propertyToModelProperty(property, table)),
   };

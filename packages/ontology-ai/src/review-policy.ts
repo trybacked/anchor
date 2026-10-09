@@ -1,16 +1,7 @@
 import type { AuthoringCommandV2 } from "@trybacked/core";
 import { z } from "zod";
 
-/**
- * Review policy (Plan Phase 5).
- *
- * The AI proposes; the policy decides. Non-breaking changes above the
- * confidence threshold can be auto-approved; breaking changes always go to
- * human review, regardless of confidence.
- */
-
 export const ReviewPolicySchema = z.object({
-  /** Minimum confidence for auto-approval of non-breaking changes. */
   autoApproveThreshold: z.number().min(0).max(1).default(0.85),
   allowNonBreakingAutoApprove: z.boolean().default(true),
 });

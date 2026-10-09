@@ -12,8 +12,7 @@ import { z } from "zod";
 
 export const PlannerOutputSchema = z.object({
   locale: z.string().min(2).max(8),
-  // Strict: a filter placed under an unknown key must fail the plan, not be
-  // silently dropped into a query that returns everything.
+
   query: ObjectQuerySchema.strict().nullable(),
   unanswerable: z.string().nullable(),
   assumptions: z.array(z.string()),
@@ -35,11 +34,6 @@ function keysOf(schema: z.ZodObject<z.ZodRawShape>): string {
   return Object.keys(schema.shape).join(", ");
 }
 
-/**
- * Plain-text output contract. Provider-side JSON-schema decoding through the
- * gateway drops nested arrays (filters) for several models, so the shape is
- * described in prose and validated with zod afterwards.
- */
 export const PLANNER_OUTPUT_CONTRACT = [
   "Output: a single JSON object and nothing else (no prose, no code fence) with keys locale (string), query (ObjectQuery or null), unanswerable (string or null), assumptions (string[]).",
   `ObjectQuery keys: ${keysOf(ObjectQuerySchema)}. mode: ${OBJECT_QUERY_MODES.join(" | ")}.`,

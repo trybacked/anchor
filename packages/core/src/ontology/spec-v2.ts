@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OntologyRelationshipCardinalitySchema } from "../cardinality.js";
 import { ConfidenceSchema, ElementStatusSchema } from "../model.js";
 import {
   EntitySemanticsSchema,
@@ -8,20 +9,8 @@ import {
 import { OntologyLifecycleStageSchema } from "./lifecycle.js";
 import type { Ontology } from "./spec.js";
 
-/**
- * OntologySpec v2 — Foundry-grade kernel model (Plan Phase 1).
- *
- * Design goals, per the de-hardcoding plan:
- * - Object types are backed by MULTIPLE datasources via explicit column bindings.
- * - Rich type system: scalars, arrays, structs, geopoints, attachments, references,
- *   plus tenant-defined open value types (no jurisdiction semantics in the kernel).
- * - Interfaces + shared properties; derived properties; link types; action types.
- * - Semantics (synonyms, labels per locale, glossary, examples) travel with the spec.
- * - Pure data + validation only: no IO, no SDK dependencies.
- */
 export const ONTOLOGY_FORMAT_VERSION_V2 = "2" as const;
 
-/** Scalar type names. `json` is a scalar marker for unstructured payloads. */
 export const OntologyScalarTypeSchema = z.enum([
   "string",
   "integer",
@@ -36,12 +25,9 @@ export const OntologyScalarTypeSchema = z.enum([
   "attachment",
   "json",
 ]);
-/**
- *
- */
+
 export type OntologyScalarType = z.infer<typeof OntologyScalarTypeSchema>;
 
-/** Recursive type expression: scalar | array<T> | struct | tenant value type. */
 export type OntologyTypeExpr =
   | OntologyScalarType
   | { kind: "array"; items: OntologyTypeExpr }
@@ -68,7 +54,6 @@ export const OntologyTypeExprSchema: z.ZodType<OntologyTypeExpr> = z.lazy(() =>
   ]),
 );
 
-/** Tenant-defined value type (e.g. jurisdiction-specific identifiers as DATA, not code). */
 export const OntologyValueTypeSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -77,12 +62,9 @@ export const OntologyValueTypeSchema = z.object({
   format: z.string().min(1).optional(),
   semantics: PropertySemanticsSchema.optional(),
 });
-/**
- *
- */
+
 export type OntologyValueType = z.infer<typeof OntologyValueTypeSchema>;
 
-/** Explicit binding from an ingested source dataset to object type columns. */
 export const DatasourceBindingSchema = z.object({
   sourceId: z.string().min(1),
   datasetId: z.string().min(1),
@@ -90,12 +72,9 @@ export const DatasourceBindingSchema = z.object({
   primaryKey: z.array(z.string().min(1)).optional(),
   filter: z.string().min(1).optional(),
 });
-/**
- *
- */
+
 export type DatasourceBinding = z.infer<typeof DatasourceBindingSchema>;
 
-/** Interface: reusable shared-property contract implemented by object types. */
 export const OntologySharedPropertySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -103,9 +82,7 @@ export const OntologySharedPropertySchema = z.object({
   required: z.boolean().optional(),
   semantics: PropertySemanticsSchema.optional(),
 });
-/**
- *
- */
+
 export type OntologySharedProperty = z.infer<typeof OntologySharedPropertySchema>;
 export const OntologyInterfaceV2Schema = z.object({
   id: z.string().min(1),
@@ -113,12 +90,9 @@ export const OntologyInterfaceV2Schema = z.object({
   description: z.string().optional(),
   sharedProperties: z.array(OntologySharedPropertySchema),
 });
-/**
- *
- */
+
 export type OntologyInterfaceV2 = z.infer<typeof OntologyInterfaceV2Schema>;
 
-/** A single object type property: physical (bound column), derived, or shared. */
 export const OntologyPropertyV2Schema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("physical"),
@@ -159,9 +133,7 @@ export const OntologyPropertyV2Schema = z.discriminatedUnion("kind", [
     semantics: PropertySemanticsSchema.optional(),
   }),
 ]);
-/**
- *
- */
+
 export type OntologyPropertyV2 = z.infer<typeof OntologyPropertyV2Schema>;
 
 export const OntologyObjectTypeV2Schema = z.object({
@@ -183,9 +155,7 @@ export const OntologyObjectTypeV2Schema = z.object({
   source: z.enum(["inferred", "manual"]).optional(),
   semantics: EntitySemanticsSchema.optional(),
 });
-/**
- *
- */
+
 export type OntologyObjectTypeV2 = z.infer<typeof OntologyObjectTypeV2Schema>;
 
 export const OntologyLinkTypeV2Schema = z.object({
@@ -193,7 +163,7 @@ export const OntologyLinkTypeV2Schema = z.object({
   name: z.string().min(1),
   fromObjectTypeId: z.string().min(1),
   toObjectTypeId: z.string().min(1),
-  cardinality: z.enum(["one_to_one", "one_to_many", "many_to_one", "many_to_many"]),
+  cardinality: OntologyRelationshipCardinalitySchema,
   keyMappings: z.array(
     z.object({ fromPropertyId: z.string().min(1), toPropertyId: z.string().min(1) }),
   ),
@@ -208,9 +178,7 @@ export const OntologyLinkTypeV2Schema = z.object({
   source: z.enum(["inferred", "manual"]).optional(),
   semantics: EntitySemanticsSchema.optional(),
 });
-/**
- *
- */
+
 export type OntologyLinkTypeV2 = z.infer<typeof OntologyLinkTypeV2Schema>;
 
 export const OntologyActionParameterSchema = z.object({
@@ -233,9 +201,7 @@ export const OntologyActionTypeV2Schema = z.object({
   lifecycle: OntologyLifecycleStageSchema.optional(),
   semantics: EntitySemanticsSchema.optional(),
 });
-/**
- *
- */
+
 export type OntologyActionTypeV2 = z.infer<typeof OntologyActionTypeV2Schema>;
 
 export const OntologyMetadataV2Schema = z.object({
@@ -253,16 +219,11 @@ export const OntologyV2Schema = z.object({
   actionTypes: z.array(OntologyActionTypeV2Schema).default([]),
   semantics: OntologySemanticsBlockSchema.optional(),
 });
-/**
- *
- */
+
 export type OntologyMetadataV2 = z.infer<typeof OntologyMetadataV2Schema>;
-/**
- *
- */
+
 export type OntologyV2 = z.infer<typeof OntologyV2Schema>;
 
-/** Deterministic scalar migration table v1 → v2 (information preserving where possible). */
 const SCALAR_MIGRATION: Record<string, OntologyScalarType> = {
   string: "string",
   integer: "integer",
@@ -276,9 +237,6 @@ const SCALAR_MIGRATION: Record<string, OntologyScalarType> = {
   reference: "reference",
 };
 
-/**
- *
- */
 export function migratePropertyTypeV1ToV2(type: string): OntologyTypeExpr {
   const scalar = SCALAR_MIGRATION[type];
   if (scalar !== undefined) {
@@ -287,9 +245,6 @@ export function migratePropertyTypeV1ToV2(type: string): OntologyTypeExpr {
   throw new Error(`Unknown v1 property type "${type}" during v1→v2 migration`);
 }
 
-/**
- *
- */
 export function migrateOntologyV1ToV2(ontology: Ontology): OntologyV2 {
   const objectTypes = ontology.objects.map((object) => {
     const backing: DatasourceBinding[] =

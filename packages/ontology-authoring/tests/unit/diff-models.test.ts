@@ -3,7 +3,6 @@ import { applyCommand, applyCommands, emptySemanticModel } from "../../src/apply
 import { diffSemanticModels } from "../../src/diff-models.js";
 describe("diffSemanticModels semantics", () => {
   it("classifies glossary changes as non-breaking", () => {
-    // Packs are data now (Plan Fase 7): build the base model from commands.
     const base = applyCommands(emptySemanticModel("diff"), [
       {
         type: "addEntity",

@@ -41,7 +41,6 @@ const filesAdapter: InfrastructureAdapter = {
 
 let registered = false;
 
-/** Register the files engine adapter once per process. */
 export function registerBuiltInAdapters(): void {
   if (registered) {
     return;

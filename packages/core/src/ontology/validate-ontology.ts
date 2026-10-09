@@ -71,9 +71,7 @@ function validateObjectIdentifiers(object: OntologyObject): ValidationIssue[] {
   }
   return [];
 }
-/**
- *
- */
+
 export function validateOntology(ontology: Ontology): ReturnType<typeof validationResult> {
   const parseResult = OntologySchema.safeParse(ontology);
   if (!parseResult.success) {

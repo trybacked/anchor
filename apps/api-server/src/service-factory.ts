@@ -1,6 +1,10 @@
 import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { parseModelYaml, type Ontology, type SemanticModel } from "@trybacked/core";
-import { createLocalDocumentFileReader, tenantFilesRoot } from "@trybacked/infrastructure";
+import {
+  createDocumentFileReaderFromEnv,
+  createSqlStatementExecutorFromDuckDbPath,
+  duckDbPathFromEnv,
+} from "@trybacked/infrastructure";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import { attachSemanticAsk, type TenantAiAskCapabilities } from "@trybacked/semantic-chat";
 import {
@@ -31,12 +35,16 @@ export async function createAnchorServiceForModel(options: {
   };
 }): Promise<AnchorService> {
   const tenantId = options.tenantId ?? options.ontology.metadata.id;
-  const filesRoot = tenantFilesRoot(options.env, tenantId);
-  const readVolumeFile = createLocalDocumentFileReader(filesRoot);
+  const readVolumeFile = createDocumentFileReaderFromEnv(options.env, tenantId);
+  const duckPath = duckDbPathFromEnv(options.env);
+  const executor =
+    duckPath !== undefined
+      ? createSqlStatementExecutorFromDuckDbPath(duckPath)
+      : filesSqlUnavailable;
   const built = await buildQueryRuntimeFromEnv({
     ontology: options.ontology,
     model: options.model,
-    executor: filesSqlUnavailable,
+    executor,
     env: options.env,
     documentTables: legacyDocumentTables(),
     ...(options.catalog !== undefined ? { catalog: options.catalog } : {}),

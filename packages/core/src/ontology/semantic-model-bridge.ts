@@ -16,9 +16,7 @@ const SEMANTIC_TO_ONTOLOGY_TYPE: Record<string, OntologyPropertyType> = {
 function mapPropertyType(semanticType: string): OntologyPropertyType {
   return SEMANTIC_TO_ONTOLOGY_TYPE[semanticType] ?? "string";
 }
-/**
- *
- */
+
 export function semanticModelToOntology(
   model: SemanticModel,
   options: {

@@ -16,7 +16,6 @@ export type OntologyStore = {
   publish: (catalog: string, record: PublicationRecord, modelYaml: string) => Promise<void>;
 };
 export type VolumeOntologyRoot = {
-  /** Absolute engine-specific root (e.g. a UC volume path or a bucket prefix). */
   root: string;
   schema: string;
   volume: string;
@@ -30,10 +29,7 @@ function currentPath(catalog: string, layout: VolumeOntologyRoot): string {
 function versionPath(catalog: string, version: number, layout: VolumeOntologyRoot): string {
   return `${registryBase(catalog, layout)}/publications/v${String(version)}.json`;
 }
-/**
- * Volume-rooted registry store. The engine-specific root is resolved by the
- * adapter (Plan Fase 3b) — the registry package stays storage-agnostic.
- */
+
 export function createVolumeOntologyStore(
   blobs: BlobStore,
   layout: VolumeOntologyRoot,

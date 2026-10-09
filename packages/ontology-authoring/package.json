@@ -23,6 +23,7 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
+    "@trybacked/compiler": "workspace:*",
     "@trybacked/core": "workspace:*"
   },
   "devDependencies": {

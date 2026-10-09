@@ -4,6 +4,7 @@ import {
   validateSemanticModel,
   type SemanticModel,
 } from "@trybacked/core";
+import { validateCompetencyExamples } from "./validate-competency.js";
 export function validateAuthoringModel(
   model: SemanticModel,
   ontologyId: string,
@@ -14,7 +15,8 @@ export function validateAuthoringModel(
   }
   const ontology = semanticModelToOntology(model, { ontologyId });
   const ontologyResult = validateOntology(ontology);
-  const issues = [...semantic.issues, ...ontologyResult.issues];
+  const competencyIssues = validateCompetencyExamples(model, ontology);
+  const issues = [...semantic.issues, ...ontologyResult.issues, ...competencyIssues];
   const valid = issues.every((issue) => issue.severity !== "error");
   return { valid, issues };
 }

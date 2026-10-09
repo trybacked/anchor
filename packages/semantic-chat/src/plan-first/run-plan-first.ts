@@ -1,4 +1,4 @@
-import type { ObjectQuery } from "@trybacked/compiler";
+import type { ObjectQuery, QueryIssue } from "@trybacked/compiler";
 import { applySemanticCatalogs, type Ontology, type SemanticCatalog } from "@trybacked/core";
 import { SHARED_SEMANTIC_CATALOGS } from "@trybacked/ontology-authoring";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@trybacked/service";
 import type { LanguageModel } from "ai";
 import { randomUUID } from "node:crypto";
+import { PLAN_REPAIR_MAX_ATTEMPTS } from "../agent/limits.js";
 import type { SemanticAgentStep, SemanticAgentUsage, SemanticAnswerClaim } from "../agent/types.js";
 import { validateAgentObjectQuery } from "../query-intent.js";
 import {
@@ -16,6 +17,7 @@ import {
 } from "../validate-plan.js";
 import { planSemanticQuery, PlannerOutputError, type SemanticPlan } from "./planner.js";
 import { renderPlanAnswer, type RenderableResult } from "./render-answer.js";
+import { repairPlan } from "./repair-plan.js";
 
 const PLAN_QUERY_TOOL_CALL_ID = "plan-query";
 
@@ -28,6 +30,8 @@ export type PlanFirstResult = {
   result: RenderableResult & { sql: string };
   steps: SemanticAgentStep[];
   usage: SemanticAgentUsage;
+
+  attempts: number;
 };
 
 export type PlanFirstOutcome =
@@ -46,9 +50,9 @@ export type RunPlanFirstOptions = {
   service: AnchorService;
   question: string;
   model: LanguageModel;
-  /** User interface language; wins over the planner's guess when present. */
+
   locale?: string | undefined;
-  /** Earlier turns of the same chat, oldest first. */
+
   history?: readonly ConversationTurn[] | undefined;
   semanticCatalogs?: readonly SemanticCatalog[] | undefined;
 };
@@ -72,7 +76,6 @@ function fallback(
 
 const RAW_OUTPUT_PREVIEW_CHARS = 240;
 
-/** Keeps a slice of the raw model text in the audit trail when the contract is violated. */
 function describePlannerFailure(error: unknown): string {
   if (error instanceof PlannerOutputError) {
     return `planner failed: ${error.message} | raw: ${error.text.slice(0, RAW_OUTPUT_PREVIEW_CHARS)}`;
@@ -80,48 +83,52 @@ function describePlannerFailure(error: unknown): string {
   return `planner failed: ${error instanceof Error ? error.message : String(error)}`;
 }
 
-export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFirstOutcome> {
-  const started = Date.now();
-  const ontology = applySemanticCatalogs(
-    options.ontology,
-    options.semanticCatalogs ?? SHARED_SEMANTIC_CATALOGS,
-  );
-  let plan: SemanticPlan;
+type RejectedQuery = {
+  reason: string;
+  issues: readonly QueryIssue[];
+};
+
+type QueryPlan = Extract<SemanticPlan, { kind: "query" }>;
+
+async function repairOnce(
+  options: RunPlanFirstOptions,
+  ontology: Ontology,
+  plan: QueryPlan,
+  rejection: RejectedQuery,
+): Promise<SemanticPlan | undefined> {
   try {
-    plan = await planSemanticQuery({
-      ontology,
+    return await repairPlan({
+      previous: plan.query,
+      issues: rejection.issues,
       question: options.question,
+      ontology,
       model: options.model,
       locale: options.locale,
       history: options.history,
     });
-  } catch (error) {
-    return fallback(describePlannerFailure(error), undefined, started);
+  } catch {
+    return undefined;
   }
-  if (plan.kind === "unanswerable") {
-    return fallback(plan.reason ?? "planner declined", plan, started);
-  }
-  let validated: ObjectQuery;
-  try {
-    validated = validateAgentObjectQuery(
-      ontology,
-      options.question,
-      validateObjectQueryAgainstOntology(ontology, plan.query),
-    );
-  } catch (error) {
-    if (error instanceof SemanticPlanValidationError) {
-      return fallback(`plan rejected: ${error.message}`, plan, started);
-    }
-    throw error;
-  }
-  const queryStarted = Date.now();
-  const execution = await options.service.objectQuery(validated);
-  if (isServiceErrorResult(execution)) {
-    if (execution.error.code === "bad_request") {
-      return fallback(`query rejected: ${execution.error.message}`, plan, started);
-    }
-    throw new Error(execution.error.message);
-  }
+}
+
+type QueryExecution = {
+  objectId: string;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  sql?: string | undefined;
+};
+
+function answeredResult(
+  options: RunPlanFirstOptions,
+  ontology: Ontology,
+  plan: QueryPlan,
+  validated: ObjectQuery,
+  execution: QueryExecution,
+  attempts: number,
+  started: number,
+  queryStarted: number,
+): PlanFirstOutcome {
   const result: RenderableResult & { sql: string } = {
     objectId: execution.objectId,
     columns: execution.columns,
@@ -158,6 +165,85 @@ export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFi
         },
       ],
       usage: { ...plan.usage, latencyMs: Date.now() - started },
+      attempts,
     },
   };
+}
+
+export async function runPlanFirst(options: RunPlanFirstOptions): Promise<PlanFirstOutcome> {
+  const started = Date.now();
+  const ontology = applySemanticCatalogs(
+    options.ontology,
+    options.semanticCatalogs ?? SHARED_SEMANTIC_CATALOGS,
+  );
+  let plan: SemanticPlan;
+  try {
+    plan = await planSemanticQuery({
+      ontology,
+      question: options.question,
+      model: options.model,
+      locale: options.locale,
+      history: options.history,
+    });
+  } catch (error) {
+    return fallback(describePlannerFailure(error), undefined, started);
+  }
+  let attempts = 0;
+  for (;;) {
+    attempts += 1;
+    if (plan.kind === "unanswerable") {
+      return fallback(plan.reason ?? "planner declined", plan, started);
+    }
+    let validated: ObjectQuery | undefined;
+    let rejection: RejectedQuery | undefined;
+    try {
+      validated = validateAgentObjectQuery(
+        ontology,
+        options.question,
+        validateObjectQueryAgainstOntology(ontology, plan.query),
+      );
+    } catch (error) {
+      if (error instanceof SemanticPlanValidationError) {
+        rejection = { reason: `plan rejected: ${error.message}`, issues: error.issues };
+      } else {
+        throw error;
+      }
+    }
+    const queryStarted = Date.now();
+    let execution: QueryExecution | undefined;
+    if (validated !== undefined) {
+      const call = await options.service.objectQuery(validated);
+      if (isServiceErrorResult(call)) {
+        if (call.error.code !== "bad_request") {
+          throw new Error(call.error.message);
+        }
+        rejection = {
+          reason: `query rejected: ${call.error.message}`,
+          issues: call.error.issues ?? [],
+        };
+      } else {
+        execution = call;
+      }
+    }
+    if (execution !== undefined && validated !== undefined) {
+      return answeredResult(
+        options,
+        ontology,
+        plan,
+        validated,
+        execution,
+        attempts,
+        started,
+        queryStarted,
+      );
+    }
+    if (attempts > PLAN_REPAIR_MAX_ATTEMPTS || rejection === undefined) {
+      return fallback(rejection?.reason ?? "plan rejected", plan, started);
+    }
+    const repaired = await repairOnce(options, ontology, plan, rejection);
+    if (repaired === undefined) {
+      return fallback(rejection.reason, plan, started);
+    }
+    plan = repaired;
+  }
 }
