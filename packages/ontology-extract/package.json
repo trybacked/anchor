@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/ontology-extract",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "LLM-assisted ontology extraction from docs warehouse profiles and file samples",
   "license": "Apache-2.0",

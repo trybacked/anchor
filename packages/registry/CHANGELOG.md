@@ -1,5 +1,14 @@
 # @trybacked/registry
 
+## 0.3.2
+
+### Patch Changes
+
+- 8622ba3: Add ontology authoring API (draft commands, publish worker, SDK modules) backed by control-plane Postgres; gateway proxies `/v1/authoring/*` to control plane.
+- Updated dependencies
+- Updated dependencies [8622ba3]
+  - @trybacked/core@0.5.0
+
 ## 0.3.1
 
 ### Patch Changes

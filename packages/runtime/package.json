@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/runtime",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "module",
   "description": "Executes compiled ontology queries through an injected SQL executor and returns object rows",
   "license": "Apache-2.0",

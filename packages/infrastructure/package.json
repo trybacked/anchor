@@ -1,9 +1,20 @@
 {
   "name": "@trybacked/infrastructure",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Composition root: maps tenant profiles onto registered adapters (ports -> adapters).",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybacked/anchor.git",
+    "directory": "packages/infrastructure"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -19,7 +30,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",

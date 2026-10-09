@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/capability-tabular",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Tabular capability: structured sources (ERP, CSV, external DBs) as plain datasets.",
   "license": "Apache-2.0",

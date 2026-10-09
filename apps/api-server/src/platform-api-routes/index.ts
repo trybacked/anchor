@@ -2,6 +2,7 @@ import type { RouteFactory } from "../platform-api-route-factory.js";
 import type { PlatformApiRouteSpec } from "../platform-api-route-meta.js";
 import type { PlatformHandlerDeps, PlatformRouteHandler } from "../platform-api-types.js";
 import { platformApiDocumentRoutes } from "./documents.js";
+import { platformApiFileRoutes } from "./files.js";
 import { platformApiHealthRoutes } from "./health.js";
 import { platformApiModelRoutes } from "./model.js";
 import { platformApiProfileGraphRoutes } from "./profile-graph.js";
@@ -23,6 +24,7 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
   ...platformApiQueryRoutes,
   ...platformApiEntitySearchRoutes,
   ...platformApiDocumentRoutes,
+  ...platformApiFileRoutes,
   ...platformApiChunkSearchRoutes,
   ...platformApiProfileGraphRoutes,
   ...platformApiSemanticChatRoutes,

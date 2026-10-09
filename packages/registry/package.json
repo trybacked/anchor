@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/registry",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "module",
   "description": "Versioned ontology publications: publish, archive, registry, rollback",
   "license": "Apache-2.0",

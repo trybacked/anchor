@@ -24,7 +24,13 @@ export {
   createFilesystemOntologyStore,
   createFilesWarehouseConnector,
   createLocalDocumentFileReader,
+  createTenantArchiveFromEnv,
+  documentIdFromVolumePath,
   type LocalDocumentFileReader,
+  type TenantArchive,
+  type TenantArchiveEntry,
+  type TenantArchiveListResult,
+  type TenantArchiveUploadResult,
 } from "./adapters/files/index.js";
 export {
   createSqlStatementExecutorFromDuckDbPath,

@@ -8,7 +8,7 @@ Source repo: **[trybacked/anchor](https://github.com/trybacked/anchor)** (root =
 | ---------------- | ---------------------- | ------------------------------------------------------------------------- |
 | **api**          | Gateway (MCP + WorkOS) | `api.backed.app` (public)                                                 |
 | **cloud**        | Control-plane API      | `cloud.backed.app` (optional; also `control-plane.railway.internal:8791`) |
-| **platform-api** | Platform API           | Private only `platform-api.railway.internal:8787`                         |
+| **platform-api** | Platform API           | Private only `platform-api.railway.internal:${PORT}` (Railway `PORT` is usually **8080**, not 8787) |
 | **provisioner**  | Provisioning worker    | No HTTP — **disable HTTP health check** (see below)                       |
 | **Postgres**     | Control-plane DB       | `${{Postgres.DATABASE_URL}}`                                              |
 
@@ -26,7 +26,10 @@ Build config: set **`RAILWAY_DOCKERFILE_PATH`** per service (e.g. `apps/gateway/
    export CONTROL_PLANE_ADMIN_TOKEN=…
    backed tenant create gerace --remote
    ```
-4. Rename services in the dashboard (api → gateway, cloud → control-plane) when you want — private DNS names use `privateNetworkEndpoint` (`gateway`, `control-plane`, …).
+4. Set **private network endpoints**: `cloud` → `control-plane`, `platform-api` → `platform-api`. Internal URLs use **`http://control-plane.railway.internal:8080`** and **`http://platform-api.railway.internal:8080`** (or `${{service.PORT}}` references).
+5. **Gateway (`api`) env:** `GATEWAY_PLATFORM_UPSTREAM=http://platform-api.railway.internal:${{platform-api.PORT}}`, `BACKED_REGISTRY_URL=https://cloud.backed.app/v1/registry` (or internal control-plane URL), `GATEWAY_PLATFORM_TOKEN=${{platform-api.ANCHOR_API_TOKEN}}`, `BACKED_REGISTRY_TOKEN=${{cloud.CONTROL_PLANE_INTERNAL_TOKEN}}`.
+6. **platform-api:** `BACKED_REGISTRY_URL=https://cloud.backed.app/v1/registry` until private DNS is stable; match `BACKED_REGISTRY_TOKEN` to control-plane. Avoid Railway **HTTP healthcheck on `/health/ready`** before commit `e161816` (health routes no longer require tenant context) — use `/health/live` only or disable healthcheck for first deploy of that fix.
+7. Rename services in the dashboard (api → gateway, cloud → control-plane) when you want — private DNS names use `privateNetworkEndpoint`.
 
 ### Provisioning job stuck in `pending`
 

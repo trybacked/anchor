@@ -18,3 +18,11 @@ export {
   createLocalDocumentFileReader,
   type LocalDocumentFileReader,
 } from "./local-document-reader.js";
+export {
+  createTenantArchiveFromEnv,
+  documentIdFromVolumePath,
+  type TenantArchive,
+  type TenantArchiveEntry,
+  type TenantArchiveListResult,
+  type TenantArchiveUploadResult,
+} from "./tenant-archive.js";
