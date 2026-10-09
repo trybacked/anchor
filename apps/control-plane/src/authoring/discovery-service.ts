@@ -231,7 +231,11 @@ export async function proposeDocsAiFilesSourceDiscovery(
     runId: input.runId,
     model,
     ...(warehouse !== undefined
-      ? { warehouseProfile: warehouse.profile, warehouseSamples: warehouse.samples }
+      ? {
+          warehouseProfile: warehouse.profile,
+          warehouseSamples: warehouse.samples,
+          catalog: input.catalog,
+        }
       : {}),
     ...(input.reviewConfidenceThreshold !== undefined
       ? { reviewConfidenceThreshold: input.reviewConfidenceThreshold }

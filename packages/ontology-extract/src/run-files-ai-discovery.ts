@@ -14,7 +14,9 @@ import type { LanguageModel } from "ai";
 import type { ProfileReport } from "@trybacked/core";
 import { collectProfileDatasetSamples, type DocTableSample } from "./collect-samples.js";
 import { extractOntologyWithLlm } from "./extract-with-llm.js";
+import { buildPalantirStyleDocumentSemanticModel } from "./foundry/palantir-style-model.js";
 import { mergeOntologyExtractIntoProposal } from "./merge-extract.js";
+import { proposalFromSemanticModel } from "./semantic-model-proposal.js";
 import type { DocsAiOntologyDiscoveryResult } from "./run-docs-ai-discovery.js";
 
 export type RunFilesAiOntologyDiscoveryOptions = DiscoverFromProfileOptions &
@@ -24,6 +26,7 @@ export type RunFilesAiOntologyDiscoveryOptions = DiscoverFromProfileOptions &
     reviewConfidenceThreshold?: number;
     warehouseProfile?: ProfileReport | undefined;
     warehouseSamples?: readonly DocTableSample[] | undefined;
+    catalog?: string | undefined;
   };
 
 function mergeProfileReports(
@@ -71,9 +74,21 @@ export async function runFilesAiOntologyDiscovery(
   const fileProfile = await profileFromDatasetProvider(provider);
   const warehouseMerged =
     options.warehouseProfile !== undefined && options.warehouseProfile.length > 0;
-  let profile = mergeProfileReports(fileProfile, options.warehouseProfile);
+  const useSemanticBaseline =
+    warehouseMerged &&
+    options.catalog !== undefined &&
+    options.catalog.length > 0;
+
+  let profile = useSemanticBaseline
+    ? [...(options.warehouseProfile ?? [])]
+    : mergeProfileReports(fileProfile, options.warehouseProfile);
   const emptyTables = profile.filter((table) => table.rowCount === 0).map((table) => table.table);
-  if (warehouseMerged && options.warehouseSamples !== undefined && options.warehouseSamples.length > 0) {
+  if (
+    !useSemanticBaseline &&
+    warehouseMerged &&
+    options.warehouseSamples !== undefined &&
+    options.warehouseSamples.length > 0
+  ) {
     profile = inferProfileForeignKeys(
       profile,
       samplesMapFromDocTableSamples(options.warehouseSamples),
@@ -82,17 +97,34 @@ export async function runFilesAiOntologyDiscovery(
   const discovery = discoverFromProfile(profile, {
     ontologyId: options.ontologyId,
     ...(options.version !== undefined ? { version: options.version } : {}),
-    ...(warehouseMerged ? { includeInfraTables: DOCS_WAREHOUSE_INFRA_INCLUDE } : {}),
+    ...(warehouseMerged && !useSemanticBaseline
+      ? { includeInfraTables: DOCS_WAREHOUSE_INFRA_INCLUDE }
+      : {}),
   });
-  const baselineProposal = proposalFromDiscovery(discovery, {
-    runId: options.runId,
-    ...(options.generatedAt !== undefined ? { generatedAt: options.generatedAt } : {}),
-    reviewConfidenceThreshold: threshold,
-  });
+  const generatedAt = options.generatedAt ?? new Date().toISOString();
+  const baselineProposal = useSemanticBaseline
+    ? proposalFromSemanticModel(
+        buildPalantirStyleDocumentSemanticModel({
+          catalog: options.catalog ?? "",
+          runId: options.runId,
+          generatedAt,
+          tablesWithRows: new Set(
+            profile.filter((table) => table.rowCount > 0).map((table) => table.table),
+          ),
+        }),
+        { runId: options.runId, generatedAt, reviewConfidenceThreshold: threshold },
+      )
+    : proposalFromDiscovery(discovery, {
+        runId: options.runId,
+        ...(options.generatedAt !== undefined ? { generatedAt: options.generatedAt } : {}),
+        reviewConfidenceThreshold: threshold,
+      });
   const sampleTargets = profile
     .filter((table) => table.rowCount > 0)
     .map((table) => ({ table: table.table, datasetId: table.table }));
-  const fileSamples = await collectProfileDatasetSamples(provider, sampleTargets);
+  const fileSamples = useSemanticBaseline
+    ? []
+    : await collectProfileDatasetSamples(provider, sampleTargets);
   const samples = [...(options.warehouseSamples ?? []), ...fileSamples];
   const extracted = await extractOntologyWithLlm({
     model: options.model,
@@ -104,7 +136,9 @@ export async function runFilesAiOntologyDiscovery(
   const merged = mergeOntologyExtractIntoProposal(baselineProposal, extracted.output, {
     reviewConfidenceThreshold: threshold,
   });
-  const enriched = enrichProposalFromDiscovery(merged, discovery);
+  const enriched = useSemanticBaseline
+    ? { proposal: merged }
+    : enrichProposalFromDiscovery(merged, discovery);
   const usageCost = {
     inputTokens: extracted.usage.inputTokens,
     outputTokens: extracted.usage.outputTokens,

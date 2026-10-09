@@ -26,6 +26,7 @@ export {
   type OntologyExtractUsage,
 } from "./extract-with-llm.js";
 export { mergeOntologyExtractIntoProposal } from "./merge-extract.js";
+export { proposalFromSemanticModel } from "./semantic-model-proposal.js";
 export {
   runDocsAiOntologyDiscovery,
   type DocsAiOntologyDiscoveryResult,
@@ -43,6 +44,7 @@ export {
   FoundryExtractOutputError,
   FoundryExtractOutputSchema,
   buildFoundryDocumentSemanticModel,
+  buildPalantirStyleDocumentSemanticModel,
   buildFoundryExtractUserPrompt,
   collectPdfExcerpts,
   defaultFoundryCatalog,

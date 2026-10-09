@@ -11,6 +11,10 @@ export {
   type BuildFoundryDocumentSemanticModelOptions,
 } from "./build-model.js";
 export {
+  buildPalantirStyleDocumentSemanticModel,
+  type BuildPalantirStyleDocumentSemanticModelOptions,
+} from "./palantir-style-model.js";
+export {
   FOUNDRY_EXTRACT_OUTPUT_CONTRACT,
   FoundryExtractOutputError,
   FoundryExtractOutputSchema,
