@@ -110,13 +110,22 @@ export async function applyFoundryExtractToCatalogWarehouse(options: {
     "document_topic_mentions",
     "document_legal_instrument_mentions",
   ] as const;
-  const hasMentions = mentionTables.some((table) => (options.rows[table]?.length ?? 0) > 0);
-  if (hasMentions) {
-    const unionParts = mentionTables.map(
-      (table) => `SELECT ${quoteIdent("document_id")} FROM ${qualifiedTable(catalog, table)}`,
+  const entityDocumentIds: string[] = [];
+  for (const table of mentionTables) {
+    for (const row of options.rows[table] ?? []) {
+      const documentId = row.document_id;
+      if (typeof documentId === "string" && documentId.length > 0) {
+        entityDocumentIds.push(documentId);
+      }
+    }
+  }
+  if (entityDocumentIds.length > 0) {
+    const values = entityDocumentIds.map((id) => `(${escapeLiteral(id)})`).join(",\n");
+    await execCatalogWarehouseSql(
+      env,
+      catalog,
+      `INSERT INTO ${entities} (${quoteIdent("document_id")}) VALUES\n${values};`,
     );
-    const insertEntities = `INSERT INTO ${entities} (${quoteIdent("document_id")})\n${unionParts.join("\nUNION ALL\n")};`;
-    await execCatalogWarehouseSql(env, catalog, insertEntities);
   }
 
   const countRows = await createCatalogWarehouseSqlExecutor({ env, catalog })(

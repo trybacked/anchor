@@ -98,6 +98,11 @@ export async function runDocumentArchiveSyncWithExtraction(options: {
       tenantId: options.tenantId,
       catalog: options.catalog,
       localeHint: options.localeHint ?? "it",
+      excerptOptions: {
+        startPage: 2,
+        maxPages: 5,
+        maxCharsPerDoc: 4_000,
+      },
       stagePdf: async (pdf) => {
         const absolutePath = join(tempDir, `${pdf.documentId}.pdf`);
         const bytes = await archive.read(pdf.relativePath);

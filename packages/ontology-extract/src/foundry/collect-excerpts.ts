@@ -5,13 +5,15 @@ import type { DocumentExcerpt } from "./prompt.js";
 
 export type CollectPdfExcerptsOptions = {
   root: string;
+  startPage?: number;
   maxPages?: number;
   maxCharsPerDoc?: number;
   maxFileBytes?: number;
 };
 
-const DEFAULT_MAX_PAGES = 3;
-const DEFAULT_MAX_CHARS = 2_200;
+const DEFAULT_START_PAGE = 2;
+const DEFAULT_MAX_PAGES = 5;
+const DEFAULT_MAX_CHARS = 4_000;
 const DEFAULT_MAX_FILE_BYTES = 12 * 1024 * 1024;
 
 export function pdftotextAvailable(): boolean {
@@ -31,12 +33,24 @@ function listPdfFiles(root: string, maxFileBytes: number): string[] {
 function excerptFromPdfPath(
   absolutePath: string,
   label: string,
+  startPage: number,
   maxPages: number,
   maxChars: number,
 ): DocumentExcerpt {
+  const endPage = startPage + maxPages - 1;
   const text = execFileSync(
     "pdftotext",
-    ["-enc", "UTF-8", "-q", "-f", "1", "-l", String(maxPages), absolutePath, "-"],
+    [
+      "-enc",
+      "UTF-8",
+      "-q",
+      "-f",
+      String(startPage),
+      "-l",
+      String(endPage),
+      absolutePath,
+      "-",
+    ],
     { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
   )
     .replace(/\s+/g, " ")
@@ -49,12 +63,15 @@ export function collectPdfExcerptsFromPaths(
   files: readonly { label: string; absolutePath: string }[],
   options?: Omit<CollectPdfExcerptsOptions, "root">,
 ): DocumentExcerpt[] {
+  const startPage = options?.startPage ?? DEFAULT_START_PAGE;
   const maxPages = options?.maxPages ?? DEFAULT_MAX_PAGES;
   const maxChars = options?.maxCharsPerDoc ?? DEFAULT_MAX_CHARS;
   if (!pdftotextAvailable()) {
     throw new Error("pdftotext is required for Foundry extract (install poppler).");
   }
-  return files.map((entry) => excerptFromPdfPath(entry.absolutePath, entry.label, maxPages, maxChars));
+  return files.map((entry) =>
+    excerptFromPdfPath(entry.absolutePath, entry.label, startPage, maxPages, maxChars),
+  );
 }
 
 export function pdfPageCount(absolutePath: string): number {
