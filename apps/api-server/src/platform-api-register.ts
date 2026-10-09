@@ -35,11 +35,20 @@ function mountRoute(
     }
   }
 }
+function routeSkipsOntologyResolve(route: PlatformApiRoute): boolean {
+  if (route.meta.public !== true) {
+    return false;
+  }
+  const path = route.meta.path;
+  return path.startsWith("/health") || path === "/openapi.json";
+}
+
 function wrapRouteHandler(
   route: PlatformApiRoute,
   deps: PlatformHandlerDeps,
 ): PlatformRouteHandler {
   return async (c) => {
+    if (!routeSkipsOntologyResolve(route)) {
     try {
       const service: AnchorService = await deps.resolveOntologyService(c.get("tenantId"));
       c.set("anchorService", service);
@@ -51,6 +60,7 @@ function wrapRouteHandler(
         return c.json({ error: error.message }, 503);
       }
       throw error;
+    }
     }
     return route.handle(c);
   };
