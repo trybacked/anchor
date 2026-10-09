@@ -28,4 +28,29 @@ describe("parseFoundryExtractOutput", () => {
     expect(output.instances).toHaveLength(2);
     expect(output.instances[1]?.objectTypeId).toBe("organization");
   });
+
+  it("repairs partial linkTypes and doubts instead of failing validation", () => {
+    const output = parseFoundryExtractOutput(
+      JSON.stringify({
+        locale: "it",
+        instances: [
+          {
+            objectTypeId: "document",
+            name: "Leonardo",
+            sourceFiles: ["leonardo.pdf"],
+            evidence: "PDF in archive",
+          },
+        ],
+        linkTypes: [
+          { fromType: "person", toType: "organization" },
+          { fromType: "document", toType: "topic", name: "mentions" },
+        ],
+        doubts: [{ topic: "Ambiguity", question: "Which Leonardo?" }, { question: "missing topic" }],
+      }),
+    );
+    expect(output.linkTypes).toHaveLength(2);
+    expect(output.linkTypes?.[0]?.id).toBe("person_to_organization");
+    expect(output.doubts).toHaveLength(1);
+    expect(output.doubts?.[0]?.reason.length).toBeGreaterThan(0);
+  });
 });
