@@ -182,7 +182,11 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     if (org === undefined) {
       return c.json({ error: "Not found" }, 404);
     }
-    const job = await enqueueJob(pool, org.id, "publish_ontology", { tenantId });
+    const job = await enqueueJob(pool, org.id, "publish_ontology", {
+      tenantId,
+      catalog: org.catalog,
+      actor: "admin-sync",
+    });
     return c.json({ job }, 202);
   });
   registerAuthoringRoutes(app, config, pool);

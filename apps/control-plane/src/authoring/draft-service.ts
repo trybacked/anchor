@@ -1,5 +1,5 @@
 import { parseModelYaml, SemanticModelSchema, type SemanticModel } from "@trybacked/core";
-import { createFilesystemOntologyStore } from "@trybacked/infrastructure";
+import { createOntologyStoreFromEnv } from "@trybacked/infrastructure";
 import {
   applyCommands,
   emptySemanticModel,
@@ -22,8 +22,9 @@ export async function resolvePublishedModelForDraftReset(
   config: ControlPlaneConfig,
 ): Promise<{ model: SemanticModel; version: number } | undefined> {
   try {
-    const store = createFilesystemOntologyStore({
-      registryBasePath: config.filesRegistryRoot,
+    const store = createOntologyStoreFromEnv({
+      ...process.env,
+      BACKED_FILES_REGISTRY_ROOT: config.filesRegistryRoot,
     });
     const remote = await store.loadCurrent(catalog);
     if (remote !== null) {

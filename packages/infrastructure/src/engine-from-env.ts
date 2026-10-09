@@ -1,11 +1,8 @@
 import type { DatasetProvider } from "@trybacked/core";
-import type { OntologyStore } from "@trybacked/registry";
 import {
   createFileIndexDatasetProvider,
-  createFilesystemOntologyStore,
   createLocalDocumentFileReader,
   ensureFilesRootExists,
-  filesRegistryBaseFromEnv,
   filesRootFromEnv,
   tenantFilesRoot,
   type LocalDocumentFileReader,
@@ -32,14 +29,7 @@ export function createDatasetProviderFromEnv(
   return createFileIndexDatasetProvider({ root });
 }
 
-export function createOntologyStoreFromEnv(
-  env: Record<string, string | undefined> = process.env,
-  options?: { workspaceRoot?: string },
-): OntologyStore {
-  return createFilesystemOntologyStore({
-    registryBasePath: filesRegistryBaseFromEnv(env, options?.workspaceRoot),
-  });
-}
+export { createOntologyStoreFromEnv } from "./ontology-store-from-env.js";
 
 export function createDocumentFileReaderFromEnv(
   env: Record<string, string | undefined> = process.env,

@@ -36,11 +36,10 @@ function mountRoute(
   }
 }
 function routeSkipsOntologyResolve(route: PlatformApiRoute): boolean {
-  if (route.meta.public !== true) {
+  if (route.public !== true) {
     return false;
   }
-  const path = route.meta.path;
-  return path.startsWith("/health") || path === "/openapi.json";
+  return route.path.startsWith("/health") || route.path === "/openapi.json";
 }
 
 function wrapRouteHandler(

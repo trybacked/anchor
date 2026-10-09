@@ -52,7 +52,9 @@ Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control p
 | `BACKED_REGISTRY_URL` / `BACKED_REGISTRY_TOKEN` | R if http | ✓     | ✓       |
 | `BACKED_ENGINE`                                 | O         | ✓     | ✓       | `files` (only engine today)                 |
 | `BACKED_FILES_ROOT`                             | O         | ✓     | ✓       | Document folder per tenant / workspace      |
-| `BACKED_FILES_REGISTRY_ROOT`                    | O         | ✓     | ✓       | On-disk ontology registry for platform mode |
+| `BACKED_FILES_REGISTRY_ROOT`                    | O         | ✓     | ✓       | On-disk ontology registry (when `BACKED_ONTOLOGY_REGISTRY_STORAGE=filesystem`) |
+| `BACKED_ONTOLOGY_REGISTRY_STORAGE`              | O         | ✓     | ✓       | `filesystem` (default) or `s3` — Railway prod: **`s3`** with enrollment bucket |
+| `BACKED_ONTOLOGY_REGISTRY_S3_PREFIX`            | O         | ✓     | ✓       | S3 key prefix (default `_ontology-registry`) → `{prefix}/{catalog}/backed/registry/current.json` |
 | `AI_GATEWAY_API_KEY`                            | O         | ✓     | ✓       | `/v1/chat/ask` (semantic agent)             |
 | `ANCHOR_TENANTS_REGISTRY`                       | R if file | ✓     | —       |
 | `DATABASE_URL`                                  | —         | —     | —       | Not used (token auth)                       |

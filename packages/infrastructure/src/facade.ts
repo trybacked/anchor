@@ -9,6 +9,11 @@ export {
   type BackedEngine,
 } from "./engine-from-env.js";
 export {
+  ontologyRegistryLocationHint,
+  resolveOntologyRegistryStorage,
+  type OntologyRegistryStorage,
+} from "./ontology-store-from-env.js";
+export {
   createS3DocumentFileReader,
   resolveS3StorageConfig,
   s3BucketFromEnv,
