@@ -1,11 +1,12 @@
 import {
+  GetObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   type S3Client,
   S3Client as S3ClientCtor,
 } from "@aws-sdk/client-s3";
 import { createHash } from "node:crypto";
-import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { resolveS3StorageConfig, type S3StorageConfig } from "../s3/s3-config.js";
 import { tenantFilesRoot } from "./config.js";
@@ -29,6 +30,7 @@ export type TenantArchiveUploadResult = {
 
 export type TenantArchive = {
   list: (options?: { folder?: string | undefined }) => Promise<TenantArchiveListResult>;
+  read: (relativePath: string) => Promise<Uint8Array>;
   upload: (options: {
     filename: string;
     data: Uint8Array;
@@ -107,6 +109,13 @@ function createLocalTenantArchive(options: { root: string; catalog: string }): T
     return { entries };
   }
 
+  async function read(relativePath: string): Promise<Uint8Array> {
+    const rel = relativePath.replace(/^\/+/, "").replace(/\\/g, "/");
+    const full = join(root, rel);
+    const data = await readFile(full);
+    return new Uint8Array(data);
+  }
+
   async function upload(options: {
     filename: string;
     data: Uint8Array;
@@ -124,7 +133,7 @@ function createLocalTenantArchive(options: { root: string; catalog: string }): T
     return { path, name: safeName, documentId: documentIdFromVolumePath(path) };
   }
 
-  return { list, upload };
+  return { list, read, upload };
 }
 
 function createS3TenantArchive(options: {
@@ -202,6 +211,23 @@ function createS3TenantArchive(options: {
     return { entries };
   }
 
+  async function read(relativePath: string): Promise<Uint8Array> {
+    const rel = relativePath.replace(/^\/+/, "").replace(/\\/g, "/");
+    const key = `${tenantPrefix}${rel}`.replace(/\/{2,}/g, "/");
+    const response = await client.send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+    );
+    const body = response.Body;
+    if (body === undefined) {
+      throw new Error(`Archive object not found: ${rel}`);
+    }
+    const bytes = await body.transformToByteArray();
+    return new Uint8Array(bytes);
+  }
+
   async function upload(options: {
     filename: string;
     data: Uint8Array;
@@ -226,7 +252,7 @@ function createS3TenantArchive(options: {
     return { path, name: safeName, documentId: documentIdFromVolumePath(path) };
   }
 
-  return { list, upload };
+  return { list, read, upload };
 }
 
 export function createTenantArchiveFromEnv(options: {

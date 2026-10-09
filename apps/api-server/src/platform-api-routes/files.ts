@@ -1,5 +1,6 @@
 import { createRegistrySourceFromEnv } from "@trybacked/core";
-import { createTenantArchiveFromEnv, syncDocumentArchiveToWarehouse } from "@trybacked/infrastructure";
+import { createTenantArchiveFromEnv } from "@trybacked/infrastructure";
+import { runDocumentArchiveSyncWithExtraction } from "../lib/document-archive-sync-with-extraction.js";
 import { z } from "zod";
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
@@ -125,7 +126,7 @@ export const platformApiFileRoutes: RouteFactory[] = [
       operationId: "refreshTenantFiles",
       method: "post",
       path: `${V1_PATH_PREFIX}/files/refresh`,
-      summary: "Sync archive files into the tenant document warehouse (DuckDB)",
+      summary: "Sync archive files into DuckDB and run automatic Foundry entity extraction on PDFs",
       tags: ["files"],
       jsonBody: jsonBody("FilesRefreshBody", FilesRefreshBodySchema, { fullRefresh: false }),
       responses: {
@@ -147,11 +148,12 @@ export const platformApiFileRoutes: RouteFactory[] = [
       refreshRuns.set(runId, { status: "running" });
       let record: RefreshRunRecord;
       try {
-        const outcome = await syncDocumentArchiveToWarehouse({
+        const outcome = await runDocumentArchiveSyncWithExtraction({
           env: process.env,
           tenantId,
           catalog,
           fullRefresh: body.fullRefresh === true,
+          localeHint: "it",
         });
         deps.platformRegistry?.invalidate(tenantId);
         record = {
@@ -159,7 +161,9 @@ export const platformApiFileRoutes: RouteFactory[] = [
           message:
             outcome.indexed === 0
               ? "No files in the archive to index."
-              : `Indexed ${String(outcome.indexed)} document(s) in the warehouse.`,
+              : outcome.pdfsExtracted === 0
+                ? `Cataloged ${String(outcome.indexed)} file(s); no PDFs to extract.`
+                : `Cataloged ${String(outcome.indexed)} file(s); extracted entities from ${String(outcome.pdfsExtracted)} PDF(s) (${String(outcome.entityRows)} mention row(s)).`,
         };
       } catch (error) {
         record = {

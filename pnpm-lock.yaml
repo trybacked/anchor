@@ -65,6 +65,9 @@ importers:
       '@trybacked/infrastructure':
         specifier: workspace:^
         version: link:../../packages/infrastructure
+      '@trybacked/ontology-extract':
+        specifier: workspace:^
+        version: link:../../packages/ontology-extract
       '@trybacked/registry':
         specifier: workspace:*
         version: link:../../packages/registry

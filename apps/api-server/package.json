@@ -23,6 +23,7 @@
     "@trybacked/capability-documents": "workspace:^",
     "@trybacked/core": "workspace:*",
     "@trybacked/infrastructure": "workspace:^",
+    "@trybacked/ontology-extract": "workspace:^",
     "@trybacked/registry": "workspace:*",
     "@trybacked/runtime": "workspace:*",
     "@trybacked/semantic-chat": "workspace:*",

@@ -17,7 +17,7 @@ ENV HOST=0.0.0.0
 ENV ANCHOR_AUDIT_LOG_PATH=/var/log/anchor/audit.jsonl
 USER root
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates unzip wget \
+  && apt-get install -y --no-install-recommends ca-certificates poppler-utils unzip wget \
   && wget -q https://github.com/duckdb/duckdb/releases/download/v1.2.1/duckdb_cli-linux-amd64.zip -O /tmp/duckdb.zip \
   && unzip -q /tmp/duckdb.zip -d /usr/local/bin \
   && chmod +x /usr/local/bin/duckdb \

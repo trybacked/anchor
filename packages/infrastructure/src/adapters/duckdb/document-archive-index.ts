@@ -43,7 +43,7 @@ function docTypeFromFilename(filename: string): string {
   return "other";
 }
 
-async function listAllArchiveFiles(archive: TenantArchive): Promise<
+export async function listAllArchiveFiles(archive: TenantArchive): Promise<
   Array<{
     relativePath: string;
     volumePath: string;

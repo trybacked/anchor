@@ -51,6 +51,7 @@ export {
   foundryExtractToSeed,
   parseFoundryExtractOutput,
   pdftotextAvailable,
+  runArchiveFoundryExtract,
   runFoundryExtractFromPdfRoot,
   buildFoundryTableRows,
   synthesizeFoundryExtractFromSeed,

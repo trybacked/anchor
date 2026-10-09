@@ -39,6 +39,8 @@ export {
   resolveWarehouseDuckDbPath,
   materializeFoundryRowsToDuckDb,
   syncDocumentArchiveToWarehouse,
+  listAllArchiveFiles,
+  applyFoundryExtractToCatalogWarehouse,
   type FoundryTableRows,
   type SqlStatementExecutor,
 } from "./adapters/duckdb/index.js";
