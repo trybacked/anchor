@@ -9,7 +9,7 @@
 ```bash
 cd your-workspace
 backed anchor init
-backed anchor pull        # Databricks env in .env → model.yaml
+backed anchor pull        # files engine env in .env → model.yaml
 backed anchor sync
 backed anchor deploy
 ```

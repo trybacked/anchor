@@ -19,39 +19,27 @@ export const ReviewSchema = z.object({
   reviewer: z.string().min(1).optional(),
   answers: z.array(ReviewAnswerSchema),
 });
-/**
- *
- */
+
 export type ReviewDecision = z.infer<typeof ReviewDecisionSchema>;
-/**
- *
- */
+
 export type ReviewAnswer = z.infer<typeof ReviewAnswerSchema>;
-/**
- *
- */
+
 export type Review = z.infer<typeof ReviewSchema>;
 interface ElementVerdict {
   rejected: boolean;
   confirmed: boolean;
   newName?: string;
 }
-/**
- *
- */
+
 export interface CollectVerdictsResult {
   verdicts: Map<string, ElementVerdict>;
   staleAnswerCount: number;
 }
-/**
- *
- */
+
 export interface ApplyReviewOptions {
   reviewConfidenceThreshold?: number;
 }
-/**
- *
- */
+
 export interface ApplyReviewResult {
   model: SemanticModel;
   staleAnswerCount: number;
@@ -62,9 +50,7 @@ function verdictKey(kind: ReviewQuestionKind, targetId: string): string {
 function buildReviewedTargetKeys(questions: ReviewQuestion[]): Set<string> {
   return new Set(questions.map((question) => verdictKey(question.kind, question.targetId)));
 }
-/**
- *
- */
+
 export function collectVerdicts(
   questions: ReviewQuestion[],
   answers: ReviewAnswer[],
@@ -143,9 +129,7 @@ function applyVerdicts<T extends Entity | Relation | Rule>(
     )
     .filter((element): element is T => element !== null && shouldKeep(element));
 }
-/**
- *
- */
+
 export function applyReview(
   proposal: Proposal,
   review: Review,
@@ -180,6 +164,10 @@ export function applyReview(
     reviewConfidenceThreshold,
     (rule) => keptEntityIds.has(rule.appliesTo),
   );
+  const semantics =
+    proposal.glossary !== undefined && proposal.glossary.length > 0
+      ? { glossary: proposal.glossary, examples: [] }
+      : undefined;
   return {
     model: {
       metadata: {
@@ -190,6 +178,7 @@ export function applyReview(
       entities,
       relations,
       rules,
+      ...(semantics !== undefined ? { semantics } : {}),
     },
     staleAnswerCount,
   };

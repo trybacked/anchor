@@ -14,7 +14,6 @@ import {
   type AuthoringVariables,
 } from "./context.js";
 
-/** Tenant profile routes (Plan Phase 2): configuration as data. */
 export function registerTenantProfileRoutes(
   app: Hono,
   config: ControlPlaneConfig,

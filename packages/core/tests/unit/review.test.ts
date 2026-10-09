@@ -178,4 +178,13 @@ describe("applyReview", () => {
     const { model } = applyReview(proposal, makeReview([]));
     expect(model.entities[0]?.status).toBe("confirmed");
   });
+  it("carries proposal glossary terms into the reviewed model semantics", () => {
+    const proposal = makeProposal({
+      glossary: [{ id: "g-1", term: "CIG", definition: "Codice identificativo gara" }],
+    });
+    const { model } = applyReview(proposal, makeReview([]));
+    expect(model.semantics?.glossary).toEqual([
+      { id: "g-1", term: "CIG", definition: "Codice identificativo gara" },
+    ]);
+  });
 });

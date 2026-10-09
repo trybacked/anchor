@@ -6,7 +6,5 @@ export const ModelSearchMatchSchema = z.object({
   name: z.string(),
   snippet: z.string(),
 });
-/**
- *
- */
+
 export type ModelSearchMatch = z.infer<typeof ModelSearchMatchSchema>;

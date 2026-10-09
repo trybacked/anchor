@@ -1,9 +1,7 @@
-/**
- * Composition-level exports for applications.
- * Engine: local files only (`BACKED_FILES_ROOT`, `BACKED_FILES_REGISTRY_ROOT`).
- */
+
 export {
   createDatasetProviderFromEnv,
+  createDocumentFileReaderFromEnv,
   createOntologyStoreFromEnv,
   resolveEngineFromEnv,
   filesRootFromEnv,
@@ -11,6 +9,12 @@ export {
   tenantFilesRoot,
   type BackedEngine,
 } from "./engine-from-env.js";
+export {
+  createS3DocumentFileReader,
+  resolveS3StorageConfig,
+  s3BucketFromEnv,
+  s3RegionFromEnv,
+} from "./adapters/s3/index.js";
 export {
   createFileIndexDatasetProvider,
   createFilesystemOntologyStore,

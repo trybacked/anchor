@@ -34,7 +34,7 @@ cp env/local.compose.env.example .env
 cp users.yaml.example users.yaml
 
 backed platform bootstrap
-# Paste BACKED_DATABRICKS_* and set ANCHOR_API_TOKEN = GATEWAY_PLATFORM_TOKEN
+# Set ANCHOR_API_TOKEN = GATEWAY_PLATFORM_TOKEN. Documents use S3 backed-v1.
 
 pnpm --filter @trybacked/gateway hash-password 'your-password'
 chmod 600 .env users.yaml

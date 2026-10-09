@@ -10,6 +10,11 @@ export {
 } from "./service-error.js";
 export type { ServiceError, ServiceErrorCode } from "./service-error.js";
 export { listEntities, getEntity, listRelations, searchModel, getDefinition } from "./mapping.js";
+export {
+  documentArchiveTermsFromOntology,
+  matchesDocumentTerms,
+  questionPrefersDocumentArchive,
+} from "./document-archive-intent.js";
 export type { SearchModelOptions } from "./mapping.js";
 export type {
   EntitySummary,
@@ -26,6 +31,7 @@ export {
   DefinitionResultSchema,
 } from "./schemas.js";
 export { capQueryObjectsPayload, MCP_TOOL_RESULT_MAX_BYTES } from "./response-cap.js";
+export { zodIssuesToQueryIssues } from "./query-issues.js";
 export { DEFAULT_SCHEMA_SEARCH_HITS, MAX_SCHEMA_SEARCH_HITS } from "./tools/limits.js";
 export type { QueryObjectsToolPayload } from "./response-cap.js";
 export {
@@ -101,6 +107,7 @@ export {
   type GraphTraverseResponse,
   type HealthResponse,
   type ListEntitiesResponse,
+  type DocumentArchiveIntentTermsResponse,
   type ListRelationsResponse,
   type ObjectQueryResponse,
   type SemanticAskResponse,
@@ -111,6 +118,8 @@ export {
   type SemanticAgentStepRecord,
   type SemanticAgentUsage,
   type SemanticClarificationResponse,
+  type SemanticAskAbstention,
+  type SemanticAskOutcome,
   type ChatAskStatusResponse,
   type ChatAskUnavailableReason,
 } from "./responses.js";

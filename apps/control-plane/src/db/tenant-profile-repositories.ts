@@ -1,13 +1,6 @@
 import type { Pool } from "pg";
 import { z } from "zod";
 
-/**
- * TenantProfile repositories (Plan Phase 2).
- *
- * Configuration is data, not code: locale, AI policy, engine connections and
- * ingested sources (with capabilities and bindings) live in the control plane.
- * Nothing here references a specific warehouse vendor or domain schema.
- */
 export const AiPolicyModeSchema = z.enum(["propose_review", "full_auto", "assist_only"]);
 export const TenantSettingsSchema = z.object({
   locale: z.string().min(2).max(8),

@@ -1,5 +1,5 @@
--- AI ontology proposals (Plan Fase 5): ChangeSets of AuthoringCommands with
--- confidence and evidence, reviewed via the review policy.
+
+
 CREATE TABLE IF NOT EXISTS ai_proposals (
   id TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL,

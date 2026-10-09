@@ -34,6 +34,18 @@ export type SemanticClarification = {
   question: string;
   options: string[];
 };
+
+export const ABSTENTION_REASONS = [
+  "no_matching_concept",
+  "no_data",
+  "insufficient_evidence",
+  "out_of_scope",
+] as const;
+export type AbstentionReason = (typeof ABSTENTION_REASONS)[number];
+export type AgentAbstention = {
+  reason: AbstentionReason;
+  explanation: string;
+};
 export type AgentAnswer = {
   answer: string;
   claims: SemanticAnswerClaim[];
@@ -46,7 +58,10 @@ export type AgentTerminal =
     } & AgentAnswer)
   | ({
       kind: "clarification";
-    } & SemanticClarification);
+    } & SemanticClarification)
+  | ({
+      kind: "abstained";
+    } & AgentAbstention & { followUps: string[] });
 export type SemanticAgentResult = {
   runId: string;
   answer: string;
@@ -56,6 +71,7 @@ export type SemanticAgentResult = {
   steps: SemanticAgentStep[];
   usage: SemanticAgentUsage;
   clarification?: SemanticClarification | undefined;
+  abstention?: AgentAbstention | undefined;
   toolResults: Map<string, unknown>;
 };
 export type AgentBudget = {
@@ -68,4 +84,8 @@ export const DEFAULT_AGENT_BUDGET: AgentBudget = {
   maxSqlCalls: DEFAULT_AGENT_MAX_SQL_CALLS,
   maxQueryRows: DEFAULT_AGENT_MAX_QUERY_ROWS,
 };
-export const TERMINAL_TOOL_NAMES = ["submit_answer", "ask_clarification"] as const;
+export const TERMINAL_TOOL_NAMES = [
+  "submit_answer",
+  "ask_clarification",
+  "decline_answer",
+] as const;

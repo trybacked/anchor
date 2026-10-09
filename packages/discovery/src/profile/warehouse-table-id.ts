@@ -1,4 +1,4 @@
-/** Last segment of a Unity Catalog table identifier (`catalog.schema.table` → `table`). */
+
 export function warehouseTableShortName(tableId: string): string {
   const trimmed = tableId.trim();
   if (trimmed.length === 0) {

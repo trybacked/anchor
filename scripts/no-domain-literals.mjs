@@ -1,23 +1,14 @@
 #!/usr/bin/env node
-/**
- * no-domain-literals — CI guardrail (Plan Phase 0).
- *
- * Engine packages must not encode tenant/domain knowledge: no document-table
- * names, no COV entity ids, no Italian procurement keywords, no Databricks
- * volume/catalog conventions. Adapter and fixture code may reference them.
- */
+
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, relative } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 
-/** Scanned roots: engine source only. Adapters and tests are allowlisted by path. */
 const SCAN_DIRS = ["packages"];
 
-/** Path segments that legitimately own domain/storage literals. */
 const ALLOWED_PATH_PARTS = [
   "adapter-",
-  "/provider-databricks/",
   "/capability-documents/",
   "/capability-tabular/",
   "/ontology-ai/",
@@ -26,9 +17,7 @@ const ALLOWED_PATH_PARTS = [
   "/scripts/",
 ];
 
-/** Literal fragments that must never leak into engine source. */
 const DENYLIST = [
-  // Document warehouse contract (legacy tables.ts names)
   /\bdocument_elements\b/,
   /\bdocument_entities\b/,
   /\bdocument_mentions\b/,
@@ -38,18 +27,15 @@ const DENYLIST = [
   /\bdocument_pages\b/,
   /\bentity_profiles\b/,
   /\bdoc_type_table_prefix\b/i,
-  // COV / Italian PA entity ids
   /\bpublic_organization\b/,
   /\bprivate_organization\b/,
   /\bsupport_unit\b/,
   /\bperson_organization_affiliation\b/,
-  // Italian procurement / document-archive heuristics
   /\bgara\b/i,
   /\bappalt/i,
   /\bstazione appaltante/i,
   /\bcig\b/,
   /\bimpresa\b/i,
-  // Storage/catalog conventions
   /backed_\$\{/,
   /\/Volumes\//,
 ];
@@ -82,8 +68,6 @@ for (const dir of SCAN_DIRS) {
     if (ALLOWED_PATH_PARTS.some((part) => rel.includes(part))) continue;
     const lines = readFileSync(file, "utf8").split("\n");
     lines.forEach((line, i) => {
-      // Strip comments and string-unrelated noise: we still check strings since
-      // domain literals inside SQL/template strings are exactly what we hunt.
       const commentOnly = line.trim().startsWith("//") || line.trim().startsWith("*");
       if (commentOnly) return;
       for (const pattern of DENYLIST) {

@@ -6,13 +6,13 @@ One HTTP service for product apps, workshops, and MCP bridges.
 # Platform mode (multi-tenant — default when ANCHOR_WORKSPACE_ROOT is unset)
 export ANCHOR_API_TOKEN=...
 export ANCHOR_TENANTS_REGISTRY=/path/to/tenants.yaml
-export BACKED_DATABRICKS_HOST=...
-export BACKED_DATABRICKS_TOKEN=...
-export BACKED_DATABRICKS_WAREHOUSE_ID=...
+export BACKED_ENGINE=files
+export BACKED_S3_BUCKET=backed-v1
+export BACKED_S3_REGION=eu-north-1
 pnpm --filter @trybacked/api-server start
 
 # Legacy single workspace (local MCP / dev)
-export ANCHOR_WORKSPACE_ROOT=/path/to/ontology/gerace
+export ANCHOR_WORKSPACE_ROOT=/path/to/ontology/acme
 export ANCHOR_API_PORT=8787
 pnpm --filter @trybacked/api-server start
 ```
@@ -35,8 +35,8 @@ docker build -f anchor/apps/api-server/Dockerfile -t backed-anchor-api .
 Compose (auto-restart, health check, persistent audit log volume):
 
 ```bash
-export ANCHOR_API_ENV_FILE="$HOME/.config/backed/gerace.env"   # ANCHOR_API_TOKEN + Databricks
-export ANCHOR_WORKSPACE_HOST="$(pwd)/ontology/gerace"
+export ANCHOR_API_ENV_FILE="$HOME/.config/backed/acme.env"   # ANCHOR_API_TOKEN + S3
+export ANCHOR_WORKSPACE_HOST="$(pwd)/ontology/acme"
 docker compose -f anchor/apps/api-server/docker-compose.yml up -d --build
 curl -s "http://127.0.0.1:${ANCHOR_API_PORT:-8787}/health/live"
 ```
@@ -65,7 +65,7 @@ Use `mode: "count"` for totals; add filters or lower `limit` instead of raising 
 See [docs/AI-ASK.md](./docs/AI-ASK.md). Summary:
 
 - **`GET /v1/chat/ask/status`** — is ask available for this tenant?
-- **`POST /v1/chat/ask`** — `{ "question": "..." }` (contracts, dates, organizations, …)
+- **`POST /v1/chat/ask`** — `{ "question": "..." }` (natural language over published objects and documents)
 - **`AI_GATEWAY_API_KEY`** on platform-api; optional **`SEMANTIC_CHAT_MODEL`**
 
 Smoke: `pnpm smoke:semantic-nl` after `pnpm build`.

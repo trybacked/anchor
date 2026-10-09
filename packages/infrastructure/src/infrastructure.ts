@@ -9,15 +9,6 @@ import type {
 } from "@trybacked/ports";
 import { z } from "zod";
 
-/**
- * Infrastructure composition root (Plan Phase 3c).
- *
- * The ONLY layer allowed to import adapter implementations. Apps compose
- * tenant infrastructure from the TenantProfile through the adapter registry:
- * the same application code runs on the files engine today and future warehouse adapters
- * registers an `InfrastructureAdapter`.
- */
-
 export const ConnectionConfigSchema = z.object({
   connectionId: z.string().min(1),
   engine: z.string().min(1),
@@ -28,14 +19,13 @@ export type ConnectionConfig = z.infer<typeof ConnectionConfigSchema>;
 
 export const InfrastructureInputSchema = z.object({
   connections: z.array(ConnectionConfigSchema).min(1),
-  /** Preferred warehouse connection; defaults to the first connection. */
+
   warehouseConnectionId: z.string().min(1).optional(),
-  /** Registry container (catalog/database) — resolved from the tenant profile. */
+
   registryContainer: z.string().min(1).optional(),
 });
 export type InfrastructureInput = z.infer<typeof InfrastructureInputSchema>;
 
-/** A full adapter bundle for one engine. Every capability is optional except warehouse. */
 export type InfrastructureAdapter = {
   engine: string;
   createWarehouse: (config: Record<string, unknown>) => Promise<WarehouseConnector>;
@@ -44,7 +34,7 @@ export type InfrastructureAdapter = {
   createJobRunner?: (config: Record<string, unknown>) => Promise<JobRunner>;
   createProvisioner?: (config: Record<string, unknown>) => Promise<ProvisionerPort>;
   createSecretResolver?: (config: Record<string, unknown>) => Promise<SecretResolver>;
-  /** Default registry container for this engine when the profile omits one. */
+
   defaultRegistryContainer?: (config: Record<string, unknown>) => string;
 };
 
@@ -60,7 +50,6 @@ export type TenantInfrastructure = {
 
 const registry = new Map<string, InfrastructureAdapter>();
 
-/** Register (or replace) the adapter bundle for an engine. Idempotent. */
 export function registerAdapter(adapter: InfrastructureAdapter): void {
   registry.set(adapter.engine, adapter);
 }
@@ -79,12 +68,10 @@ export function getAdapter(engine: string): InfrastructureAdapter {
   return adapter;
 }
 
-/** Reset registrations (used by tests). */
 export function resetAdapters(): void {
   registry.clear();
 }
 
-/** Compose tenant infrastructure from profile data + registered adapters. */
 export async function createTenantInfrastructure(
   input: InfrastructureInput,
 ): Promise<TenantInfrastructure> {

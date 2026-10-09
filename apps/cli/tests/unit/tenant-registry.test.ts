@@ -17,9 +17,11 @@ describe("tenant registry helpers", () => {
     const registry = ensureTenantInRegistry(
       {
         enrollment: {
-          host: "https://example.cloud.databricks.com",
-          profile: "DEFAULT",
-          warehouse_id: "wh",
+          storage: {
+            provider: "s3",
+            bucket: "backed-example-bucket",
+            region: "eu-central-1",
+          },
         },
         shared_spaces: {},
         tenants: {},

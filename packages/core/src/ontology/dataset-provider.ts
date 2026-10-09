@@ -1,19 +1,13 @@
-/**
- *
- */
+
 export type DatasetIdentifier = {
   id: string;
   name?: string;
 };
-/**
- *
- */
+
 export type Dataset = DatasetIdentifier & {
   description?: string;
 };
-/**
- *
- */
+
 export type DatasetColumn = {
   name: string;
   type: string;
@@ -21,24 +15,18 @@ export type DatasetColumn = {
   primaryKeyCandidate?: boolean;
   foreignKeyCandidate?: boolean;
 };
-/**
- *
- */
+
 export type DatasetSchema = {
   columns: DatasetColumn[];
   primaryKey?: string[];
 };
-/**
- *
- */
+
 export type DatasetMetadata = {
   rowCount?: number;
   upstreamProvenance?: string;
   tags?: Record<string, string>;
 };
-/**
- *
- */
+
 export type DatasetColumnStatistics = {
   name: string;
   nullCount?: number;
@@ -46,29 +34,21 @@ export type DatasetColumnStatistics = {
   min?: string;
   max?: string;
 };
-/**
- *
- */
+
 export type DatasetStatistics = {
   columns: DatasetColumnStatistics[];
 };
-/**
- *
- */
+
 export type SampleOptions = {
   limit?: number;
   columns?: string[];
 };
-/**
- *
- */
+
 export type DatasetSample = {
   columns: string[];
   rows: unknown[][];
 };
-/**
- *
- */
+
 export interface DatasetProvider {
   listDatasets(): Promise<Dataset[]>;
   getSchema(dataset: DatasetIdentifier): Promise<DatasetSchema>;

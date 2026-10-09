@@ -2,7 +2,6 @@
 "@trybacked/core": minor
 "@trybacked/ontology-authoring": minor
 "@trybacked/registry": patch
-"@trybacked/provider-databricks": patch
 "@trybacked/anchor": minor
 "@trybacked/control-plane": minor
 "@trybacked/gateway": patch

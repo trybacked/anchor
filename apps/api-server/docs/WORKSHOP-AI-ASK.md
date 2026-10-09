@@ -1,6 +1,6 @@
 # Workshop — Domande in linguaggio naturale sui dati (AI ask)
 
-Guida per **facilitatori e partecipanti**. Il backend espone un unico flusso: fai una domanda in italiano (o inglese) e ottieni una risposta **basata su query governate** sull’ontologia e sul warehouse (documenti dell’ente, persone citate, totali, elenchi, ricerca testuale sull’archivio).
+Guida per **facilitatori e partecipanti**. Il backend espone un unico flusso: fai una domanda in italiano (o inglese) e ottieni una risposta **basata su query governate** sull’ontologia e sul warehouse (documenti indicizzati, totali, elenchi, ricerca testuale sull’archivio).
 
 Non serve un prodotto “Chiedi” dedicato: basta **login sul gateway** e le API sotto `/t/{tenant}/v1/chat/ask`.
 
@@ -24,7 +24,7 @@ Esplorare cosa si può chiedere all’AI quando i dati sono **modellati** (entit
 | Pezzo                          | Ruolo                                  |
 | ------------------------------ | -------------------------------------- |
 | **Gateway** (`api.backed.app`) | Login WorkOS, proxy verso platform-api |
-| **Platform-api** (privato)     | Esegue l’agente + query Databricks     |
+| **Platform-api** (privato)     | Esegue l’agente + query sul files engine |
 | **`GET …/v1/chat/ask/status`** | Dice se l’ask è attivo per il tenant   |
 | **`POST …/v1/chat/ask`**       | Body `{ "question": "…" }` → risposta  |
 
@@ -35,7 +35,7 @@ Nessun flag “abilita semantic chat” per tenant: è **on** salvo disabilitazi
 
 ## Prima di iniziare (checklist facilitatore)
 
-1. Tenant con ontologia **pubblicata** (es. `gerace`).
+1. Tenant con ontologia **pubblicata** (es. `acme`).
 2. Dati warehouse raggiungibili (stesso test di una query oggetti normale).
 3. `GET /t/{tenant}/v1/chat/ask/status` → **`available: true`**.
 4. Partecipanti con accesso al gateway (sessione WorkOS o app che proxya le stesse route).
@@ -52,7 +52,7 @@ Se `available: false`:
 ### Opzione A — Documentazione interattiva (consigliata)
 
 1. Vai su `https://api.backed.app` e accedi.
-2. Apri **Docs** → tenant del workshop (es. `/docs/t/gerace`).
+2. Apri **Docs** → tenant del workshop (es. `/docs/t/acme`).
 3. Esegui **`GET /v1/chat/ask/status`**.
 4. Esegui **`POST /v1/chat/ask`** con body JSON:
 
@@ -88,7 +88,7 @@ if (ok.available) {
 
 ---
 
-## Esempi di domande (documenti dell’ente)
+## Esempi di domande (documenti e modello)
 
 Usa formulazioni **chiare su file, persone e contenuto**.
 
@@ -104,7 +104,7 @@ Usa formulazioni **chiare su file, persone e contenuto**.
 
 **Ambiguità (comportamento atteso)**
 
-- Domande su “contratti” o “gare” senza riferimento a un file → l’agente può chiedere chiarimento o usare `search_documents` sull’archivio.
+- Domande su tipi di oggetto ambigui senza contesto → l’agente può chiedere chiarimento o usare `search_documents` sull’archivio.
 
 ---
 

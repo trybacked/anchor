@@ -75,7 +75,6 @@ export function filterProfileForDocsDiscovery(
   };
 }
 
-/** @deprecated Prefer {@link runDocsWarehouseDiscovery}. */
 export function discoverDocsFromProfile(
   profile: ProfileReport,
   options: RunDocsWarehouseDiscoveryOptions,

@@ -59,8 +59,7 @@ describe("createVolumeOntologyStore", () => {
     try {
       const record = sampleRecord(root);
       const blobs = memoryBlobStore();
-      // The registry root is resolved by the caller (Plan Fase 3b): adapters
-      // own engine-specific layouts, the registry only writes to it.
+
       const store = createVolumeOntologyStore(blobs, {
         root: "/tenants",
         schema: "backed",

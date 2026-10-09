@@ -139,6 +139,111 @@ describe("runPlanFirst", () => {
     });
     expect(outcome.kind).toBe("fallback");
   });
+
+  it("repairs a rejected plan once and reports the real attempt count", async () => {
+    let calls = 0;
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        calls += 1;
+        const plan =
+          calls === 1
+            ? {
+                ...COUNT_PLAN,
+                query: {
+                  objectId: "contract",
+                  mode: "count",
+                  filters: [{ propertyId: "importo", op: "eq", value: 1 }],
+                },
+              }
+            : COUNT_PLAN;
+        return textResult(JSON.stringify(plan));
+      },
+    });
+    const outcome = await runPlanFirst({
+      ontology: contractOntology(),
+      service: fakeService(),
+      question: "Quanti contratti a giugno 2025?",
+      model,
+      semanticCatalogs: [],
+    });
+    expect(calls).toBe(2);
+    expect(outcome.kind).toBe("answered");
+    if (outcome.kind === "answered") {
+      expect(outcome.result.attempts).toBe(2);
+      expect(outcome.result.steps.map((step) => step.toolName)).toEqual(["query_objects"]);
+    }
+  });
+
+  it("exhausts the repair budget and falls back to the agent", async () => {
+    let calls = 0;
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        calls += 1;
+        return textResult(
+          JSON.stringify({
+            ...COUNT_PLAN,
+            query: {
+              objectId: "contract",
+              mode: "count",
+              filters: [{ propertyId: "importo", op: "eq", value: 1 }],
+            },
+          }),
+        );
+      },
+    });
+    const outcome = await runPlanFirst({
+      ontology: contractOntology(),
+      service: fakeService(),
+      question: "Quanti contratti a giugno 2025?",
+      model,
+      semanticCatalogs: [],
+    });
+    expect(calls).toBe(2);
+    expect(outcome.kind).toBe("fallback");
+    if (outcome.kind === "fallback") expect(outcome.reason).toContain("importo");
+  });
+
+  it("repairs a bad_request from the service using its structured issues", async () => {
+    let calls = 0;
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        calls += 1;
+        return textResult(JSON.stringify(COUNT_PLAN));
+      },
+    });
+    const failingService = {
+      ...fakeService(),
+      objectQuery: async () =>
+        calls === 1
+          ? {
+              error: {
+                code: "bad_request",
+                message: "Unknown dataset mapping for contract.",
+                issues: [
+                  {
+                    code: "missing_dataset_mapping",
+                    message: "No dataset mapping for object contract.",
+                    path: "objectId",
+                  },
+                ],
+              },
+            }
+          : fakeService().objectQuery({
+              objectId: "contract",
+              mode: "count",
+            }),
+    } as unknown as AnchorService;
+    const outcome = await runPlanFirst({
+      ontology: contractOntology(),
+      service: failingService,
+      question: "Quanti contratti a giugno 2025?",
+      model,
+      semanticCatalogs: [],
+    });
+    expect(calls).toBe(2);
+    expect(outcome.kind).toBe("answered");
+    if (outcome.kind === "answered") expect(outcome.result.attempts).toBe(2);
+  });
 });
 
 describe("attachSemanticAsk strategy", () => {
@@ -189,5 +294,30 @@ describe("attachSemanticAsk strategy", () => {
     });
     const response = await service.semanticAsk!({ question: "Anything?" });
     expect(response.route).toBe("agent");
+  });
+
+  it("reports an agent decline_answer as an abstained outcome", async () => {
+    const model = new MockLanguageModelV4({
+      doGenerate: async () =>
+        toolCallResult("decline_answer", {
+          reason: "out_of_scope",
+          explanation: "La domanda è fuori dal perimetro di questo tenant.",
+          followUps: ["Chiedimi quanti contratti sono caricati."],
+        }),
+    });
+    const service: AnchorService = attachSemanticAsk(fakeService(), {
+      ontology: contractOntology(),
+      env: { ...env, SEMANTIC_ASK_STRATEGY: "agent" },
+      resolveModel: () => model,
+    });
+    const response = await service.semanticAsk!({ question: "Che tempo fa a Roma?" });
+    expect(response.route).toBe("agent");
+    expect(response.outcome).toBe("abstained");
+    expect(response.abstention).toEqual({
+      reason: "out_of_scope",
+      explanation: "La domanda è fuori dal perimetro di questo tenant.",
+    });
+    expect(response.clarification).toBeUndefined();
+    expect(response.followUps).toEqual(["Chiedimi quanti contratti sono caricati."]);
   });
 });

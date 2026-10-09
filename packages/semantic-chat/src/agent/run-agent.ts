@@ -97,11 +97,11 @@ function recordStep(run: AgentRun, event: AgentToolEvent): void {
 const DEADLINE_MESSAGE =
   "The assistant could not answer in time. Please try again, or ask a narrower question.";
 const TIMEOUT_ERROR_NAMES = new Set(["AbortError", "TimeoutError"]);
-/** Time left before the run must give up; zero or less means it already has. */
+
 function remainingMs(run: AgentRun): number {
   return run.deadlineAt - Date.now();
 }
-/** A hit deadline is a client-facing outcome, not an internal failure to retry. */
+
 async function generateTextWithinDeadline(
   options: Parameters<typeof generateText>[0],
 ): ReturnType<typeof generateText> {
@@ -146,13 +146,13 @@ async function generate(
     stopWhen: [stepCountIs(budget.maxSteps), () => run.terminal !== undefined],
     prepareStep: ({ stepNumber }) => {
       if (stepNumber >= finalStep) {
-        return { activeTools: ["submit_answer"] };
+        return { activeTools: ["submit_answer", "decline_answer"] };
       }
       const warehouseOk = run.steps.filter(
         (step) => step.toolName === "query_objects" && step.status === "ok",
       ).length;
       if (warehouseOk >= AGENT_FORCE_ANSWER_AFTER_WAREHOUSE_OK) {
-        return { activeTools: ["submit_answer"] };
+        return { activeTools: ["submit_answer", "decline_answer"] };
       }
       const available = toolkit.availableToolNames();
       return available.length === Object.keys(toolkit.tools).length
@@ -253,6 +253,15 @@ function toResult(runId: string, run: AgentRun, usage: SemanticAgentUsage): Sema
         assumptions: [],
         followUps: terminal.options,
         clarification: { question: terminal.question, options: terminal.options },
+      };
+    case "abstained":
+      return {
+        ...trace,
+        answer: terminal.explanation,
+        claims: [],
+        assumptions: [],
+        followUps: terminal.followUps,
+        abstention: { reason: terminal.reason, explanation: terminal.explanation },
       };
     default: {
       const unreachable: never = terminal;

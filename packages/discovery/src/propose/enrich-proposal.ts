@@ -1,23 +1,16 @@
-import type { DiscoveryReport } from "@trybacked/core";
-import type { Cardinality, Entity, Proposal, Relation } from "@trybacked/core";
+import {
+  parseRelationshipCardinality,
+  type DiscoveryReport,
+  type Entity,
+  type Proposal,
+  type Relation,
+} from "@trybacked/core";
 function resolveEntityId(entities: Entity[], tableOrId: string): string | undefined {
   const byId = entities.find((entity) => entity.id === tableOrId);
   if (byId !== undefined) {
     return byId.id;
   }
   return entities.find((entity) => entity.sourceTable === tableOrId)?.id;
-}
-function mapCardinality(cardinality: string): Cardinality {
-  switch (cardinality) {
-    case "one_to_one":
-    case "one_to_many":
-    case "many_to_many":
-      return cardinality;
-    case "many_to_one":
-      return "one_to_many";
-    default:
-      return "one_to_many";
-  }
 }
 function provenanceEvidence(evidence: string | string[]): string {
   return Array.isArray(evidence) ? evidence.join("; ") : evidence;
@@ -42,13 +35,14 @@ export function relationshipToRelation(
     toEntity,
     fromColumn,
     toColumn,
-    cardinality: mapCardinality(relationship.cardinality),
+    cardinality: parseRelationshipCardinality(relationship.cardinality),
     status: "proposed",
     confidence: relationship.confidence ?? 0.85,
     provenance: {
       table: fromTable,
       column: fromColumn,
       evidence: provenanceEvidence(relationship.provenance?.evidence ?? "schema_analysis"),
+      method: "profile",
     },
   };
 }

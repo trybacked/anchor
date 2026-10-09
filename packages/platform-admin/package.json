@@ -2,7 +2,7 @@
   "name": "@trybacked/platform-admin",
   "version": "0.2.1",
   "type": "module",
-  "description": "Cloud-safe Databricks tenant provisioning (REST only, no local CLI)",
+  "description": "Cloud-safe tenant provisioning for the files engine and S3 archive",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=22"

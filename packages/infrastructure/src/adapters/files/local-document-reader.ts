@@ -15,7 +15,6 @@ export type LocalDocumentFileReader = (
   init?: { range?: string | undefined },
 ) => Promise<LocalFileReadResult>;
 
-/** Read document bytes from paths relative to the tenant file source root. */
 export function createLocalDocumentFileReader(sourceRoot: string): LocalDocumentFileReader {
   return (volumePath, init) => {
     const relative = volumePath.replace(/^\/+/, "").replace(/^Volumes\/[^/]+\//, "");

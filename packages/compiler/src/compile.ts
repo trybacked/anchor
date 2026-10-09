@@ -17,6 +17,14 @@ import type {
   SqlParameter,
 } from "./query.js";
 import { compileExistsSemiJoin, queryUsesPhysicalJoins } from "./semi-join.js";
+import {
+  allowedValuesFrom,
+  MAX_ALLOWED_VALUES,
+  objectSuggestionEntries,
+  propertySuggestionEntries,
+  suggestClosest,
+} from "./suggest.js";
+import { assertKnownProperty } from "./validation.js";
 export function createObjectQueryCompiler(dialect: SqlDialect = sparkDialect) {
   function quoteIdentifier(identifier: string): string {
     return dialect.quoteIdent(identifier);
@@ -27,9 +35,16 @@ export function createObjectQueryCompiler(dialect: SqlDialect = sparkDialect) {
   function resolveObject(ontology: Ontology, objectId: string): OntologyObject {
     const object = ontology.objects.find((candidate) => candidate.id === objectId);
     if (object === undefined) {
+      const entries = objectSuggestionEntries(ontology);
       throw new ObjectQueryCompileError(
         "unknown_object",
         `Object "${objectId}" is not part of the ontology.`,
+        {
+          path: "objectId",
+          invalidValue: objectId,
+          allowed: allowedValuesFrom(entries),
+          suggestions: suggestClosest(objectId, entries),
+        },
       );
     }
     return object;
@@ -39,17 +54,10 @@ export function createObjectQueryCompiler(dialect: SqlDialect = sparkDialect) {
       throw new ObjectQueryCompileError(
         "missing_dataset_mapping",
         `Object "${object.id}" has no backing dataset mapping (sourceDatasetId).`,
+        { path: "objectId", invalidValue: object.id },
       );
     }
     return object.sourceDatasetId;
-  }
-  function assertKnownProperty(object: OntologyObject, propertyId: string): void {
-    if (!object.properties.some((property) => property.id === propertyId)) {
-      throw new ObjectQueryCompileError(
-        "unknown_property",
-        `Property "${propertyId}" is not part of object "${object.id}".`,
-      );
-    }
   }
   function resolveAggregationAlias(aggregation: ObjectQueryAggregation, index: number): string {
     if (aggregation.alias !== undefined && aggregation.alias.length > 0) {
@@ -200,6 +208,11 @@ export function createObjectQueryCompiler(dialect: SqlDialect = sparkDialect) {
         throw new ObjectQueryCompileError(
           "invalid_order_by",
           `orderBy "${orderBy}" must be one of the projected columns ${JSON.stringify(projectedColumns)} when using groupBy/aggregations; set an aggregation alias to order by an aggregate.`,
+          {
+            path: "orderBy",
+            invalidValue: orderBy,
+            allowed: projectedColumns.slice(0, MAX_ALLOWED_VALUES),
+          },
         );
       }
       return ` ORDER BY ${quoteIdentifier(orderBy)} ${direction}`;
@@ -214,20 +227,27 @@ export function createObjectQueryCompiler(dialect: SqlDialect = sparkDialect) {
     }
     const rootObject = resolveObject(ontology, query.objectId);
     if (!rootObject.properties.some((property) => property.id === orderBy)) {
+      const entries = propertySuggestionEntries(rootObject);
       throw new ObjectQueryCompileError(
         "invalid_order_by",
         `orderBy "${orderBy}" is not a property of object "${query.objectId}"; use a property id of that object or "objectId.propertyId" for a joined column.`,
+        {
+          path: "orderBy",
+          invalidValue: orderBy,
+          allowed: allowedValuesFrom(entries),
+          suggestions: suggestClosest(orderBy, entries),
+        },
       );
     }
     return ` ORDER BY ${quoteIdentifier(from.rootAlias)}.${quoteIdentifier(orderBy)} ${direction}`;
   }
   type ProjectedColumn = {
-    /** Qualified column reference, e.g. `"o"."sezione_regionale"`. */
+
     sql: string;
-    /** Column name in the result set: the property id, or `objectId.propertyId` when joined. */
+
     outputName: string;
   };
-  /** Resolves a property id or `objectId.propertyId` (joined) to a column reference. */
+
   function resolveProjectedColumn(
     ontology: Ontology,
     query: ReturnType<typeof ObjectQuerySchema.parse>,
@@ -350,6 +370,5 @@ export function createObjectQueryCompiler(dialect: SqlDialect = sparkDialect) {
 
 const defaultCompiler = createObjectQueryCompiler();
 
-/** Compile with the default (Spark) dialect. */
 export const compileObjectQuery: typeof defaultCompiler.compileObjectQuery =
   defaultCompiler.compileObjectQuery;

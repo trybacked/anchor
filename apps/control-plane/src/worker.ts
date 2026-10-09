@@ -60,6 +60,13 @@ async function processJob(): Promise<boolean> {
       const catalog = typeof job.payload.catalog === "string" ? job.payload.catalog : undefined;
       const actor = typeof job.payload.actor === "string" ? job.payload.actor : "system";
       const notes = typeof job.payload.notes === "string" ? job.payload.notes : undefined;
+      const method =
+        job.payload.method === "rollback" ? ("rollback" as const) : ("publish" as const);
+      const derivedFromVersion =
+        typeof job.payload.derivedFromVersion === "number" &&
+        Number.isFinite(job.payload.derivedFromVersion)
+          ? job.payload.derivedFromVersion
+          : undefined;
       if (catalog === undefined) {
         throw new Error("publish_ontology payload missing catalog");
       }
@@ -68,6 +75,8 @@ async function processJob(): Promise<boolean> {
         catalog,
         actor,
         notes,
+        method,
+        ...(derivedFromVersion !== undefined ? { derivedFromVersion } : {}),
       });
       await completeJob(pool, job.id, result);
       return true;

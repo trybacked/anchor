@@ -88,7 +88,9 @@ export function assertQuestionDoesNotMentionUnknownProperties(
 ): void {
   const unknown = unknownPropertyMentionInQuestion(ontology, question);
   if (unknown !== undefined) {
-    throw new SemanticPlanValidationError(`Unknown property "${unknown}" on object "contract".`);
+    throw new SemanticPlanValidationError(
+      `Unknown property "${unknown}" mentioned in the question (not defined in the ontology).`,
+    );
   }
 }
 

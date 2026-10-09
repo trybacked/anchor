@@ -1,6 +1,6 @@
 import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { parseModelYaml, type Ontology, type SemanticModel } from "@trybacked/core";
-import { createLocalDocumentFileReader, tenantFilesRoot } from "@trybacked/infrastructure";
+import { createDocumentFileReaderFromEnv } from "@trybacked/infrastructure";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import { attachSemanticAsk, type TenantAiAskCapabilities } from "@trybacked/semantic-chat";
 import {
@@ -31,8 +31,7 @@ export async function createAnchorServiceForModel(options: {
   };
 }): Promise<AnchorService> {
   const tenantId = options.tenantId ?? options.ontology.metadata.id;
-  const filesRoot = tenantFilesRoot(options.env, tenantId);
-  const readVolumeFile = createLocalDocumentFileReader(filesRoot);
+  const readVolumeFile = createDocumentFileReaderFromEnv(options.env, tenantId);
   const built = await buildQueryRuntimeFromEnv({
     ontology: options.ontology,
     model: options.model,

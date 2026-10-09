@@ -3,6 +3,7 @@ import type { SqlDialect } from "@trybacked/ports";
 import { sparkDialect } from "./dialects.js";
 import { ObjectQueryCompileError } from "./errors.js";
 import type { ObjectQueryFilter, ObjectQueryFilterOp, SqlParameter } from "./query.js";
+import { assertKnownProperty } from "./validation.js";
 
 const defaultDialect: SqlDialect = sparkDialect;
 const COMPARISON_OPS = ["eq", "neq", "gt", "gte", "lt", "lte"] as const;
@@ -21,19 +22,13 @@ function isComparisonOp(op: ObjectQueryFilterOp): op is ComparisonOp {
 export function escapeLikePattern(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
-/**
- * Terms this short are acronyms or codes ("AI", "PNRR"): a substring match
- * would hit unrelated words ("vivAIstici"), so they match as whole words.
- */
+
 export const WHOLE_WORD_MAX_TERM_LENGTH = 3;
 function wholeWordRegex(term: string): string {
   const quoted = `\\Q${term.replaceAll("\\E", "\\E\\\\E\\Q")}\\E`;
   return `(?i)(?<![\\p{L}\\p{N}])${quoted}(?![\\p{L}\\p{N}])`;
 }
-/**
- * Case-insensitive text match; binds one parameter and returns a predicate
- * builder so the same bound term can be applied to several columns (OR).
- */
+
 function textMatchPredicate(
   dialect: SqlDialect,
   term: string,
@@ -49,14 +44,6 @@ function textMatchPredicate(
 }
 function quoteIdentifier(identifier: string): string {
   return `\`${identifier.replaceAll("`", "``")}\``;
-}
-function assertKnownProperty(object: OntologyObject, propertyId: string): void {
-  if (!object.properties.some((property) => property.id === propertyId)) {
-    throw new ObjectQueryCompileError(
-      "unknown_property",
-      `Property "${propertyId}" is not part of object "${object.id}".`,
-    );
-  }
 }
 export function compileObjectFilter(
   object: OntologyObject,
@@ -78,6 +65,7 @@ export function compileObjectFilter(
       throw new ObjectQueryCompileError(
         "invalid_filter",
         `Operator "${filter.op}" requires a string value (property "${filter.propertyId}").`,
+        { path: "filters.propertyId" },
       );
     }
     if (filter.op === "starts_with") {
@@ -93,6 +81,7 @@ export function compileObjectFilter(
       throw new ObjectQueryCompileError(
         "invalid_filter",
         `Operator "${filter.op}" requires an array value (property "${filter.propertyId}").`,
+        { path: "filters.propertyId" },
       );
     }
     if (filter.value.length === 0) {
@@ -104,6 +93,7 @@ export function compileObjectFilter(
         throw new ObjectQueryCompileError(
           "invalid_filter",
           `Invalid value in "${filter.op}" list.`,
+          { path: "filters.propertyId" },
         );
       }
       parameters.push({ name, value: entry });
@@ -122,10 +112,13 @@ export function compileObjectFilter(
     throw new ObjectQueryCompileError(
       "invalid_filter",
       `Operator "${filter.op}" does not accept null (property "${filter.propertyId}").`,
+      { path: "filters.propertyId" },
     );
   }
   if (!isComparisonOp(filter.op)) {
-    throw new ObjectQueryCompileError("invalid_filter", "Unsupported filter operator.");
+    throw new ObjectQueryCompileError("invalid_filter", "Unsupported filter operator.", {
+      path: "filters.propertyId",
+    });
   }
   const name = `p${String(parameters.length)}`;
   if (
@@ -136,6 +129,7 @@ export function compileObjectFilter(
     throw new ObjectQueryCompileError(
       "invalid_filter",
       `Invalid value for operator "${filter.op}".`,
+      { path: "filters.propertyId" },
     );
   }
   parameters.push({ name, value: filter.value });
@@ -151,7 +145,9 @@ export function compileTextSearch(
 ): string {
   const trimmed = query.trim();
   if (trimmed.length === 0) {
-    throw new ObjectQueryCompileError("invalid_filter", "textSearch.query must not be empty.");
+    throw new ObjectQueryCompileError("invalid_filter", "textSearch.query must not be empty.", {
+      path: "textSearch.query",
+    });
   }
   const targets =
     propertyIds !== undefined && propertyIds.length > 0
@@ -163,6 +159,7 @@ export function compileTextSearch(
     throw new ObjectQueryCompileError(
       "invalid_filter",
       `textSearch on object "${object.id}" has no string columns to search.`,
+      { path: "textSearch.propertyIds", invalidValue: object.id },
     );
   }
   const match = textMatchPredicate(dialect, trimmed, parameters);

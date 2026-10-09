@@ -53,7 +53,7 @@ Writeback **actions** are reserved for a future format version and are **not** p
 
 ### Relation cardinality
 
-`one_to_one` · `one_to_many` · `many_to_many`
+`one_to_one` · `one_to_many` · `many_to_one` · `many_to_many`
 
 ---
 
@@ -62,10 +62,27 @@ Writeback **actions** are reserved for a future format version and are **not** p
 Every entity, property, relation, and rule carries:
 
 - **`confidence`** — number in `[0, 1]`
-- **`provenance`** — `{ table, column?, evidence }` where `evidence` is a human-readable sentence
+- **`provenance`** — `{ table, column?, evidence, method? }` where `evidence` is a human-readable sentence and `method` is `profile`, `llm`, or `human`
 - **`status`** — review state (see below)
 
-Elements below confidence 0.7 become doubts or review questions during inference — never silent facts.
+Elements below the review confidence threshold (`DEFAULT_REVIEW_CONFIDENCE_THRESHOLD = 0.95`, see `packages/core/src/constants.ts`) become review questions during inference — never silent facts. Profile overlap below the foreign-key threshold (`PROFILE_FK_OVERLAP_THRESHOLD = 0.7`) downgrades relationship claims to review doubts.
+
+---
+
+## Publication provenance
+
+Every publication record (`packages/registry`, `PublicationRecordSchema`) optionally carries a `provenance` block (PROV-O style):
+
+| Field                | Meaning                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `publishedBy`        | Actor that triggered the publish or rollback                                        |
+| `method`             | `publish` or `rollback`                                                             |
+| `derivedFromVersion` | Version this publication derives from (previous version, restored version)          |
+| `draftRevision`      | Authoring draft revision that was published                                         |
+| `modelSha256`        | SHA-256 of the published `model.yaml` artifact                                      |
+| `changeSummary`      | Counts per diff kind (`added`, `changed`, `removed`, `breaking`) from `diff-models` |
+
+The publish/rollback audit event is written to the `ontology_changes` ledger alongside the record.
 
 ---
 

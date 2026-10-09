@@ -8,7 +8,13 @@ import {
 } from "@trybacked/core";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { PublicationRecordSchema, type PublicationRecord } from "./publication.js";
+import {
+  PublicationRecordSchema,
+  type PublicationProvenance,
+  type PublicationProvenanceInput,
+  type PublicationRecord,
+  buildPublicationProvenance,
+} from "./publication.js";
 import {
   archivePublicationRecord,
   restorePublicationVersion,
@@ -29,6 +35,7 @@ export function buildPublicationRecord(
     ontologyId: string;
     version: number;
     now?: Date;
+    provenance?: PublicationProvenance | undefined;
   },
 ): PublicationRecord {
   const now = options.now ?? new Date();
@@ -41,6 +48,7 @@ export function buildPublicationRecord(
     publishedAt: now.toISOString(),
     runId: model.metadata.runId,
     ontology,
+    ...(options.provenance !== undefined ? { provenance: options.provenance } : {}),
   });
 }
 export function publishSemanticModel(
@@ -79,13 +87,20 @@ export function buildRemotePublication(
     ontologyId: string;
     version: number;
     now?: Date;
+    provenance?: PublicationProvenanceInput | undefined;
   },
 ): {
   record: PublicationRecord;
   modelYaml: string;
 } {
-  const record = buildPublicationRecord(model, options);
   const modelYaml = serializeModelYaml(model);
+  const { provenance, ...publicationOptions } = options;
+  const record = buildPublicationRecord(model, {
+    ...publicationOptions,
+    ...(provenance !== undefined
+      ? { provenance: buildPublicationProvenance(provenance, modelYaml) }
+      : {}),
+  });
   return { record, modelYaml };
 }
 export function parsePublicationModelYaml(modelYaml: string): SemanticModel {

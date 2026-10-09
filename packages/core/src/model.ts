@@ -1,15 +1,21 @@
 import { z } from "zod";
+import { CardinalitySchema } from "./cardinality.js";
 import { MODEL_FORMAT_VERSION } from "./constants.js";
 import {
   EntitySemanticsSchema,
   OntologySemanticsBlockSchema,
   PropertySemanticsSchema,
 } from "./semantics.js";
+
+export { CardinalitySchema, type Cardinality } from "./cardinality.js";
 export const ConfidenceSchema = z.number().min(0).max(1);
+
+export const ProvenanceMethodSchema = z.enum(["profile", "llm", "human"]);
 export const ProvenanceSchema = z.object({
   table: z.string().min(1),
   column: z.string().min(1).optional(),
   evidence: z.string().min(1),
+  method: ProvenanceMethodSchema.optional(),
 });
 export const SemanticTypeSchema = z.enum([
   "text",
@@ -46,7 +52,6 @@ export const EntitySchema = z.object({
   properties: z.array(PropertySchema),
   semantics: EntitySemanticsSchema.optional(),
 });
-export const CardinalitySchema = z.enum(["one_to_one", "one_to_many", "many_to_many"]);
 export const RelationSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -82,51 +87,27 @@ export const SemanticModelSchema = z.object({
   rules: z.array(RuleSchema),
   semantics: OntologySemanticsBlockSchema.optional(),
 });
-/**
- *
- */
+
 export type Confidence = z.infer<typeof ConfidenceSchema>;
-/**
- *
- */
+
 export type Provenance = z.infer<typeof ProvenanceSchema>;
-/**
- *
- */
+
+export type ProvenanceMethod = z.infer<typeof ProvenanceMethodSchema>;
+
 export type SemanticType = z.infer<typeof SemanticTypeSchema>;
-/**
- *
- */
+
 export type PropertyRole = z.infer<typeof PropertyRoleSchema>;
-/**
- *
- */
+
 export type ElementStatus = z.infer<typeof ElementStatusSchema>;
-/**
- *
- */
+
 export type Property = z.infer<typeof PropertySchema>;
-/**
- *
- */
+
 export type Entity = z.infer<typeof EntitySchema>;
-/**
- *
- */
-export type Cardinality = z.infer<typeof CardinalitySchema>;
-/**
- *
- */
+
 export type Relation = z.infer<typeof RelationSchema>;
-/**
- *
- */
+
 export type Rule = z.infer<typeof RuleSchema>;
-/**
- *
- */
+
 export type ModelMetadata = z.infer<typeof ModelMetadataSchema>;
-/**
- *
- */
+
 export type SemanticModel = z.infer<typeof SemanticModelSchema>;

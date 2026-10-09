@@ -37,8 +37,7 @@ function procurementJoinOntology(): Ontology {
         cardinality: "one_to_many" as const,
       },
     ],
-    // The glossary ties the shared property to the related entity: the question
-    // "entities with regional section" must filter organization, not contract.
+
     semantics: {
       glossary: [
         {

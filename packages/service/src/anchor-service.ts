@@ -1,4 +1,4 @@
-import { ObjectQueryCompileError, ObjectQuerySchema } from "@trybacked/compiler";
+import { ObjectQueryCompileError, ObjectQuerySchema, type QueryIssue } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
 import type { SemanticModel } from "@trybacked/core";
 import type { OntologyQueryRuntime } from "@trybacked/runtime";
@@ -16,6 +16,7 @@ import {
   QueryExecutionBudgetError,
   type ExecutionBudgetProfile,
 } from "./execution-budget.js";
+import { documentArchiveTermsFromOntology } from "./document-archive-intent.js";
 import {
   getDefinition,
   getEntity,
@@ -30,6 +31,7 @@ import {
   buildGraphTraverseProvenance,
   buildQueryExecutionProvenance,
 } from "./provenance.js";
+import { zodIssuesToQueryIssues } from "./query-issues.js";
 import { capQueryObjectsPayload } from "./response-cap.js";
 import type {
   DocumentPreviewFile,
@@ -109,6 +111,9 @@ export function createAnchorService(options: AnchorServiceOptions) {
   };
   return {
     listEntities: () => listEntities(model),
+    listDocumentArchiveIntentTerms: () => ({
+      terms: ontology === undefined ? [] : documentArchiveTermsFromOntology(ontology),
+    }),
     getEntity: (id: string) => {
       const detail = getEntity(model, id);
       if (detail === null) {
@@ -136,9 +141,11 @@ export function createAnchorService(options: AnchorServiceOptions) {
       }
       const parsed = ObjectQuerySchema.safeParse(input);
       if (!parsed.success) {
+        const firstIssue = parsed.error.issues[0];
         return serviceError(
           "bad_request",
-          `Invalid query: ${parsed.error.issues[0]?.message ?? "bad input"}`,
+          `Invalid query: ${firstIssue?.message ?? "bad input"}`,
+          zodIssuesToQueryIssues(parsed.error),
         );
       }
       const started = Date.now();
@@ -172,11 +179,16 @@ export function createAnchorService(options: AnchorServiceOptions) {
           provenance: executionMeta.provenance,
         });
       } catch (error) {
-        if (
-          error instanceof ObjectQueryCompileError ||
-          error instanceof QueryExecutionBudgetError
-        ) {
-          return serviceError("bad_request", error.message);
+        if (error instanceof ObjectQueryCompileError) {
+          return serviceError("bad_request", error.message, [error.issue]);
+        }
+        if (error instanceof QueryExecutionBudgetError) {
+          const issue: QueryIssue = {
+            code: "query_budget_exceeded",
+            message: error.message,
+            path: "query",
+          };
+          return serviceError("bad_request", error.message, [issue]);
         }
         throw error;
       }

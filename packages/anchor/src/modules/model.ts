@@ -1,4 +1,5 @@
 import type {
+  DocumentArchiveIntentTermsResponse,
   GetDefinitionResponse,
   GetEntityResponse,
   ListEntitiesResponse,
@@ -14,6 +15,12 @@ export function createModelModule(transport: Transport, ctx: TenantApiContext) {
       transport.requestJson<ListEntitiesResponse>("GET", ctx.url("/v1/model/entities"), {
         headers: headers(),
       }),
+    listDocumentArchiveIntentTerms: () =>
+      transport.requestJson<DocumentArchiveIntentTermsResponse>(
+        "GET",
+        ctx.url("/v1/model/document-archive-intent-terms"),
+        { headers: headers() },
+      ),
     getEntity: (id: string) =>
       transport.requestJson<GetEntityResponse>(
         "GET",

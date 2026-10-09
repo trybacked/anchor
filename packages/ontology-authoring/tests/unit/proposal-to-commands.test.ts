@@ -138,4 +138,30 @@ describe("commandsFromReviewedDiscovery", () => {
       property: { columnName: "filename" },
     });
   });
+
+  it("emits glossary commands for reviewed terms not yet in the draft", () => {
+    const reviewed: SemanticModel = {
+      metadata: {
+        formatVersion: MODEL_FORMAT_VERSION,
+        runId: "run-3",
+        generatedAt: new Date().toISOString(),
+      },
+      entities: [],
+      relations: [],
+      rules: [],
+      semantics: {
+        glossary: [{ id: "g-1", term: "CIG", definition: "Codice identificativo gara" }],
+        examples: [],
+      },
+    };
+    const commands = commandsFromReviewedDiscovery(emptyDraft, reviewed, {
+      includeRelations: false,
+    });
+    expect(commands).toEqual([
+      {
+        type: "upsertGlossaryTerm",
+        term: { id: "g-1", term: "CIG", definition: "Codice identificativo gara" },
+      },
+    ]);
+  });
 });

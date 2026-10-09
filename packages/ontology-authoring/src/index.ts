@@ -5,6 +5,7 @@ export {
   AuthoringCommandError,
 } from "./apply-command.js";
 export { validateAuthoringModel } from "./validate-authoring.js";
+export { validateCompetencyExamples } from "./validate-competency.js";
 export { diffSemanticModels } from "./diff-models.js";
 export type { AuthoringDiffChange } from "./types.js";
 export { listPacks, ONTOLOGY_PACKS, SHARED_SEMANTIC_CATALOGS } from "./packs/index.js";

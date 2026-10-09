@@ -22,7 +22,6 @@ function formatTurn(turn: ConversationTurn): string {
   return `[already answered] ${clip(turn.text)}${query}`;
 }
 
-/** Interface language declared by the client; absent when the client did not say. */
 export function buildLocaleSection(locale: string | undefined): string[] {
   return locale === undefined
     ? []
@@ -31,12 +30,10 @@ export function buildLocaleSection(locale: string | undefined): string[] {
       ];
 }
 
-/** Keeps the latest turns only; the planner needs the recent thread, not the whole chat. */
 export function recentTurns(history: readonly ConversationTurn[]): ConversationTurn[] {
   return history.slice(-AGENT_PROMPT_MAX_HISTORY_TURNS);
 }
 
-/** Prompt section describing the thread, or nothing when the chat has just started. */
 export function buildConversationSection(
   history: readonly ConversationTurn[] | undefined,
 ): string[] {

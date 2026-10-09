@@ -5,15 +5,6 @@ import {
   type DocumentTablesSpec,
 } from "@trybacked/core";
 
-/**
- * Legacy document-archive binding (Plan Phase 4).
- *
- * The historical `docs` layout — table names and column names that used to be
- * hardcoded in `packages/core/src/tables.ts` — is now just the *default*
- * binding shipped with the documents capability. Tenants override it via their
- * `tenant_sources.binding`; nothing in the kernel or apps knows these names.
- */
-
 export const LEGACY_DOCUMENT_ARCHIVE_BINDING: DocumentArchiveBinding =
   DocumentArchiveBindingSchema.parse({
     datasets: {
@@ -36,13 +27,11 @@ export const LEGACY_DOCUMENT_ARCHIVE_BINDING: DocumentArchiveBinding =
     },
   });
 
-/** Legacy ontology object ids that behave as documents. */
 export const LEGACY_DOCUMENT_OBJECT_IDS: DocumentObjectIds = {
   document: "document",
   documentElement: "document_element",
 };
 
-/** Dataset subset consumed by the runtime readers/probe. */
 export function documentTablesFromBinding(binding: DocumentArchiveBinding): DocumentTablesSpec {
   return {
     documents: binding.datasets.documents,
@@ -52,12 +41,10 @@ export function documentTablesFromBinding(binding: DocumentArchiveBinding): Docu
   };
 }
 
-/** Convenience accessor for the legacy layout, used until tenants register sources. */
 export function legacyDocumentTables(): DocumentTablesSpec {
   return documentTablesFromBinding(LEGACY_DOCUMENT_ARCHIVE_BINDING);
 }
 
-/** Discovery tables proposed for ontology discovery after document ingest. */
 export function discoveryTablesFromBinding(binding: DocumentArchiveBinding): string[] {
   return [
     binding.datasets.documents,
@@ -68,7 +55,6 @@ export function discoveryTablesFromBinding(binding: DocumentArchiveBinding): str
   ];
 }
 
-/** Infrastructure datasets materialized by the documents pipeline (legacy layout). */
 export const LEGACY_PIPELINE_INFRA_DATASET_TABLES: readonly string[] = [
   "document_lines",
   "document_chunks",
@@ -78,7 +64,6 @@ export const LEGACY_PIPELINE_INFRA_DATASET_TABLES: readonly string[] = [
   "entity_profiles",
 ];
 
-/** Materialized datasets exposed in the ontology (legacy layout). */
 export const LEGACY_PIPELINE_MATERIALIZED_DATASET_TABLES: readonly string[] = [
   "document_entities",
   "document_mentions",
@@ -88,7 +73,6 @@ export const LEGACY_PIPELINE_MATERIALIZED_DATASET_TABLES: readonly string[] = [
 
 const PIPELINE_INFRA_SET = new Set<string>(LEGACY_PIPELINE_INFRA_DATASET_TABLES);
 
-/** Per-tenant document-type materializations use the legacy `doc_` prefix. */
 export const LEGACY_DOC_TYPE_TABLE_PREFIX = "doc_";
 
 export function isLegacyDocumentTypeMaterializedTable(tableName: string): boolean {

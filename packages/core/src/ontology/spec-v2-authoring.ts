@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OntologyRelationshipCardinalitySchema } from "../cardinality.js";
 import {
   EntitySemanticsSchema,
   GlossaryTermSchema,
@@ -19,13 +20,6 @@ import {
 import type { ValidationResult } from "./validation-result.js";
 import { validationResult } from "./validation-result.js";
 
-/**
- * Authoring commands for OntologySpec v2 (Plan Phase 1).
- *
- * Every mutation is a typed command so it can be diffed, audited, and produced
- * by the AI proposal engine. Exhaustive switches guarantee compile-time
- * failures when new command kinds are added.
- */
 export const AuthoringCommandV2Schema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("addObjectType"), objectType: OntologyObjectTypeV2Schema }),
   z.object({
@@ -83,9 +77,7 @@ export const AuthoringCommandV2Schema = z.discriminatedUnion("type", [
     patch: z
       .object({
         name: z.string().min(1).optional(),
-        cardinality: z
-          .enum(["one_to_one", "one_to_many", "many_to_one", "many_to_many"])
-          .optional(),
+        cardinality: OntologyRelationshipCardinalitySchema.optional(),
         status: z.enum(["proposed", "confirmed", "renamed"]).optional(),
       })
       .strict(),
@@ -109,18 +101,11 @@ export const AuthoringCommandV2Schema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("upsertExample"), example: VerifiedExampleSchema }),
   z.object({ type: z.literal("removeExample"), exampleId: z.string().min(1) }),
 ]);
-/**
- *
- */
+
 export type AuthoringCommandV2 = z.infer<typeof AuthoringCommandV2Schema>;
 
-/**
- *
- */
 export class AuthoringCommandV2Error extends Error {
-  /**
-   *
-   */
+
   constructor(message: string) {
     super(message);
     this.name = "AuthoringCommandV2Error";
@@ -141,7 +126,6 @@ function upsert<T>(list: T[], find: (item: T) => boolean, next: T): T[] {
   return [...list, next];
 }
 
-/** Apply a single v2 command. Throws AuthoringCommandV2Error on invalid targets. */
 export function applyCommandV2(model: OntologyV2, command: AuthoringCommandV2): OntologyV2 {
   switch (command.type) {
     case "addObjectType": {
@@ -394,12 +378,10 @@ export function applyCommandV2(model: OntologyV2, command: AuthoringCommandV2): 
   }
 }
 
-/** Apply a command list sequentially (reduced with validation errors deferred to validateOntologyV2). */
 export function applyCommandsV2(model: OntologyV2, commands: AuthoringCommandV2[]): OntologyV2 {
   return commands.reduce((current, command) => applyCommandV2(current, command), model);
 }
 
-/** Structural validation: references, interfaces, link keys, value types. */
 export function validateOntologyV2(model: OntologyV2): ValidationResult {
   const issues: ValidationResult["issues"] = [];
   const objectTypeIds = new Set(model.objectTypes.map((o) => o.id));

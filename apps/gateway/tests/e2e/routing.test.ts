@@ -100,9 +100,10 @@ function writeRegistry(dir: string): string {
   writeFileSync(
     path,
     `enrollment:
-  host: https://example.databricks.com
-  profile: DEFAULT
-  warehouse_id: wh
+  storage:
+    provider: s3
+    bucket: backed-example-bucket
+    region: eu-central-1
 shared_spaces: {}
 tenants:
   gerace:

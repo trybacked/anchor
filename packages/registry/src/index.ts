@@ -1,5 +1,14 @@
-export { PublicationRecordSchema } from "./publication.js";
-export type { PublicationRecord } from "./publication.js";
+export {
+  PublicationProvenanceSchema,
+  PublicationRecordSchema,
+  buildPublicationProvenance,
+  modelSha256,
+} from "./publication.js";
+export type {
+  PublicationProvenance,
+  PublicationProvenanceInput,
+  PublicationRecord,
+} from "./publication.js";
 export {
   buildPublicationRecord,
   buildRemotePublication,

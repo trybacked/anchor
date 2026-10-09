@@ -24,4 +24,15 @@ export function createOntologyExtractModelFromEnv(
   };
 }
 
-export const ONTOLOGY_EXTRACT_TIMEOUT_MS = 45_000;
+export const DEFAULT_ONTOLOGY_EXTRACT_TIMEOUT_MS = 45_000;
+
+export const ONTOLOGY_EXTRACT_TIMEOUT_MS = readTimeoutFromEnv(process.env);
+
+function readTimeoutFromEnv(env: NodeJS.ProcessEnv): number {
+  const raw = env["ONTOLOGY_EXTRACT_TIMEOUT_MS"]?.trim();
+  if (raw === undefined || raw.length === 0) {
+    return DEFAULT_ONTOLOGY_EXTRACT_TIMEOUT_MS;
+  }
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_ONTOLOGY_EXTRACT_TIMEOUT_MS;
+}

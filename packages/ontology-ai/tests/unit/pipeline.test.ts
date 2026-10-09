@@ -66,7 +66,7 @@ function fakeLlm() {
           },
         ],
       };
-      // Validate through the caller-provided schema to mimic generateObject.
+
       const result = (schema as { parse: (value: unknown) => T }).parse(object);
       expect(typeof parsedPrompt).toBe("string");
       return result;

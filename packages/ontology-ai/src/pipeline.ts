@@ -7,14 +7,6 @@ import type { ProposalScope, ValidatedProposal } from "./proposal.js";
 import { partitionProposalChanges } from "./review-policy.js";
 import type { ReviewPolicy } from "./review-policy.js";
 
-/**
- * Source-agnostic proposal pipeline (Plan Phase 5).
- *
- * profile (DatasetProvider) -> sample -> propose -> ChangeSet -> validate.
- * No domain knowledge: dataset classification and semantics come from the
- * model; the prompt is a generic template with locale as a parameter.
- */
-
 type SampledColumn = {
   datasetId: string;
   columnName: string;
@@ -29,9 +21,9 @@ export type RunOntologyProposalOptions = {
   runId: string;
   proposalId: string;
   scope: ProposalScope;
-  /** Optional dataset scoping; defaults to every dataset the provider exposes. */
+
   datasetIds?: readonly string[];
-  /** Existing v2 ontology: the proposal becomes incremental (delta only). */
+
   existingOntology?: OntologyV2 | undefined;
   locale?: string | undefined;
   sampleSize?: number | undefined;
@@ -124,7 +116,6 @@ async function sampleColumns(options: RunOntologyProposalOptions): Promise<Sampl
   return columns;
 }
 
-/** Profile -> sample -> propose -> validate; returns a reviewable ChangeSet. */
 export async function runOntologyProposal(
   options: RunOntologyProposalOptions,
 ): Promise<{ proposal: ValidatedProposal; invalidChanges: Array<{ id: string; reason: string }> }> {
@@ -163,7 +154,7 @@ export async function runOntologyProposal(
       command: AuthoringCommandV2Schema.parse(change.command),
     })),
   };
-  // Commands must apply cleanly to the (possibly empty) ontology.
+
   let ontology: OntologyV2 = options.existingOntology ?? {
     metadata: { id: options.tenantId, formatVersion: "2", version: 0 },
     objectTypes: [],

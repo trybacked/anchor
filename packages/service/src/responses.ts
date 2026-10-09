@@ -38,6 +38,9 @@ export type EntitySearchResponse = {
   matches: SearchMatch[];
 };
 export type ListEntitiesResponse = EntitySummary[];
+export type DocumentArchiveIntentTermsResponse = {
+  terms: string[];
+};
 export type ListRelationsResponse = RelationSummary[];
 export type GetEntityResponse = EntityDetail;
 export type SemanticAskStep = {
@@ -72,6 +75,12 @@ export type SemanticClarificationResponse = {
   question: string;
   options: string[];
 };
+
+export type SemanticAskAbstention = {
+  reason: "no_matching_concept" | "no_data" | "insufficient_evidence" | "out_of_scope";
+  explanation: string;
+};
+export type SemanticAskOutcome = "answered" | "clarification" | "abstained";
 export type SemanticAskResult = {
   objectId: string;
   columns: string[];
@@ -80,7 +89,7 @@ export type SemanticAskResult = {
   mode: "rows" | "count";
   sql: string;
 };
-/** Document or web source surfaced to clients (Chiedi renders citations and a source list). */
+
 export type SemanticAskSource = {
   title: string;
   url?: string | undefined;
@@ -109,6 +118,9 @@ export type SemanticAskResponse = {
   agentSteps?: SemanticAgentStepRecord[] | undefined;
   usage?: SemanticAgentUsage | undefined;
   clarification?: SemanticClarificationResponse | undefined;
+  abstention?: SemanticAskAbstention | undefined;
+
+  outcome?: SemanticAskOutcome | undefined;
   sources?: SemanticAskSource[] | undefined;
 };
 export type GetDefinitionResponse = DefinitionResult;

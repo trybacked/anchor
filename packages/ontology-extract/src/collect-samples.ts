@@ -38,8 +38,7 @@ export async function collectDocsTableSamples(
   for (const table of options.tables) {
     const id = warehouseTableFqn(options.catalog, options.schema, table);
     try {
-      // Sample all columns: column selection is binding-driven (Plan Fase 4),
-      // not hardcoded per table name.
+
       const sample = await provider.sample({ id }, { limit: SAMPLE_LIMIT });
       samples.push({
         table,
@@ -47,7 +46,6 @@ export async function collectDocsTableSamples(
         rows: sample.rows.map((row) => row.map(truncateCell)),
       });
     } catch {
-      // Table may exist in profile but be unreadable for sampling — skip quietly.
     }
   }
   return samples;

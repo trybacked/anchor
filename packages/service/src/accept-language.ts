@@ -1,7 +1,4 @@
-/**
- * Primary language subtag of the most preferred entry in an Accept-Language
- * header (RFC 9110 §12.5.4), e.g. "it-IT,it;q=0.9,en;q=0.8" → "it".
- */
+
 export function preferredLanguage(header: string | undefined): string | undefined {
   if (header === undefined) return undefined;
   const ranked = header

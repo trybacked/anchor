@@ -83,7 +83,7 @@ export const OPENAPI_TAG_DESCRIPTIONS: Record<string, string> = {
   "entity-profile-reader": "Enriched entity profiles",
   "graph-traverse": "Multi-hop graph traversal",
   "semantic-chat":
-    "Workshop AI ask — natural-language questions over contracts, dates, organizations (governed agent + warehouse)",
+    "Workshop AI ask — natural-language questions over the published ontology and warehouse (governed agent)",
 };
 export function openApiTagsFromRoutes(routes: PlatformApiRouteSpec[]): Array<{
   name: string;

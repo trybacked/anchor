@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 import { serializeModelYaml } from "@trybacked/core";
 import { buildCovSemanticModel } from "../dist/packs/cov-model.js";
 
-const catalog = process.argv[2] ?? "backed_gerace";
+const catalog = process.argv[2]?.trim();
 const outPath = process.argv[3];
-if (outPath === undefined) {
+if (catalog === undefined || catalog.length === 0 || outPath === undefined) {
   console.error("Usage: emit-cov-model.mjs <catalog> <output-model.yaml>");
   process.exit(1);
 }

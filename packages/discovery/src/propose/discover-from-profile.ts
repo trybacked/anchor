@@ -13,6 +13,7 @@ import type {
 import { ONTOLOGY_FORMAT_VERSION } from "@trybacked/core";
 import { inspectProfileReport } from "../inspect/inspect-profile.js";
 import { inferPropertyType } from "../inspect/sql-type.js";
+import { inferCardinality } from "./infer-cardinality.js";
 const INFRA_TABLES = new Set<string>(LEGACY_PIPELINE_INFRA_DATASET_TABLES);
 const PROPOSED = "proposed" as const;
 const INFERRED = "inferred" as const;
@@ -101,7 +102,7 @@ function discoverRelationship(
     toObjectId: candidate.targetTable,
     fromPropertyId: fromColumn.name,
     toPropertyId: candidate.targetColumn,
-    cardinality: "many_to_one",
+    cardinality: inferCardinality(fromColumn, fromTable.rowCount),
     confidence: candidate.confidence,
     provenance: {
       type: DISCOVERY_TYPE,
@@ -121,7 +122,7 @@ function discoverRelationship(
 export type DiscoverFromProfileOptions = {
   ontologyId: string;
   version?: number;
-  /** Pipeline infrastructure datasets to include when explicitly discovered. */
+
   includeInfraTables?: ReadonlySet<string>;
 };
 export function discoverFromProfile(

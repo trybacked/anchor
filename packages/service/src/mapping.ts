@@ -52,11 +52,13 @@ export function getEntity(model: SemanticModel, id: string): EntityDetail | null
         (property) => property.columnName === column && property.role !== "primary_key",
       ),
     ) ?? displayProperties[0];
+  const synonyms = entity.semantics?.synonyms;
   const detail: EntityDetail = {
     ...entitySummaryFields(entity),
     sourceTable: entity.sourceTable,
     ...(primaryKeyProperty !== undefined ? { primaryKeyProperty } : {}),
     ...(titleKeyProperty !== undefined && titleKeyProperty.length > 0 ? { titleKeyProperty } : {}),
+    ...(synonyms !== undefined && synonyms.length > 0 ? { synonyms } : {}),
     provenance: entity.provenance,
     properties: entity.properties.map((property) => ({
       name: property.name,

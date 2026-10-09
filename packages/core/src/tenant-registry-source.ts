@@ -1,21 +1,15 @@
 import { statSync } from "node:fs";
 import { loadTenantsRegistry, type TenantsRegistry } from "./tenants-registry.js";
-/**
- *
- */
+
 export type TenantRegistrySnapshot = {
   registry: TenantsRegistry;
   version: string;
 };
-/**
- *
- */
+
 export type TenantRegistrySource = {
   load: () => Promise<TenantRegistrySnapshot>;
 };
-/**
- *
- */
+
 export function createFileRegistrySource(registryPath: string): TenantRegistrySource {
   return {
     load: () => {
@@ -38,9 +32,7 @@ type HttpRegistrySourceOptions = {
   ttlSeconds?: number | undefined;
   fetchImpl?: typeof fetch | undefined;
 };
-/**
- *
- */
+
 export function createHttpRegistrySource(options: HttpRegistrySourceOptions): TenantRegistrySource {
   const ttlMs = (options.ttlSeconds ?? 60) * 1000;
   let cached: TenantRegistrySnapshot | undefined;
@@ -82,13 +74,9 @@ export function createHttpRegistrySource(options: HttpRegistrySourceOptions): Te
     },
   };
 }
-/**
- *
- */
+
 export type RegistrySourceMode = "file" | "http";
-/**
- *
- */
+
 export function resolveRegistrySourceFromEnv(env: NodeJS.ProcessEnv): {
   mode: RegistrySourceMode;
   filePath?: string | undefined;
@@ -114,9 +102,7 @@ export function resolveRegistrySourceFromEnv(env: NodeJS.ProcessEnv): {
     "/etc/backed/tenants.yaml";
   return { mode, filePath };
 }
-/**
- *
- */
+
 export function createRegistrySourceFromEnv(env: NodeJS.ProcessEnv): TenantRegistrySource {
   const resolved = resolveRegistrySourceFromEnv(env);
   if (resolved.mode === "http") {

@@ -1,7 +1,7 @@
 # Run from repo root:
 #   docker compose -f anchor/apps/api-server/docker-compose.yml up -d --build
 #
-# Requires ANCHOR_API_TOKEN and BACKED_DATABRICKS_* (and optional AI_GATEWAY_API_KEY)
+# Requires ANCHOR_API_TOKEN (and optional AI_GATEWAY_API_KEY). Documents live in S3 backed-v1.
 # in the env file referenced below.
 name: backed-anchor-api
 
@@ -20,9 +20,9 @@ services:
       ANCHOR_AUDIT_LOG_PATH: /var/log/anchor/audit.jsonl
       ANCHOR_AUDIT_LOG_STDERR: "1"
     env_file:
-      - ${ANCHOR_API_ENV_FILE:-../../../ontology/gerace/.env}
+      - ${ANCHOR_API_ENV_FILE:-../../../ontology/acme/.env}
     volumes:
-      - ${ANCHOR_WORKSPACE_HOST:-../../../ontology/gerace}:/workspace:ro
+      - ${ANCHOR_WORKSPACE_HOST:-../../../ontology/acme}:/workspace:ro
       - anchor-api-logs:/var/log/anchor
     healthcheck:
       test: ["CMD", "node", "scripts/docker-healthcheck.mjs"]

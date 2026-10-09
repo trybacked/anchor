@@ -1,5 +1,11 @@
 import type { Ontology, OntologyObject, OntologyRelationship } from "@trybacked/core";
 import { ObjectQueryCompileError } from "./errors.js";
+import {
+  allowedValuesFrom,
+  objectSuggestionEntries,
+  relationshipSuggestionEntries,
+  suggestClosest,
+} from "./suggest.js";
 export type JoinPlanStep = {
   relationship: OntologyRelationship;
   fromObjectId: string;
@@ -11,12 +17,20 @@ export type JoinPlan = {
   objectAliases: Map<string, string>;
 };
 export const MAX_OBJECT_QUERY_JOINS = 5;
+const JOIN_RELATIONSHIP_PATH = "joins.relationshipId";
 function resolveRelationship(ontology: Ontology, relationshipId: string): OntologyRelationship {
   const relationship = ontology.relationships.find((candidate) => candidate.id === relationshipId);
   if (relationship === undefined) {
+    const entries = relationshipSuggestionEntries(ontology);
     throw new ObjectQueryCompileError(
       "unknown_relationship",
       `Relationship "${relationshipId}" is not part of the ontology.`,
+      {
+        path: JOIN_RELATIONSHIP_PATH,
+        invalidValue: relationshipId,
+        allowed: allowedValuesFrom(entries),
+        suggestions: suggestClosest(relationshipId, entries),
+      },
     );
   }
   return relationship;
@@ -29,6 +43,7 @@ function assertJoinKeys(relationship: OntologyRelationship): {
     throw new ObjectQueryCompileError(
       "invalid_join",
       `Relationship "${relationship.id}" has no from/to property mapping for SQL joins.`,
+      { path: JOIN_RELATIONSHIP_PATH, invalidValue: relationship.id },
     );
   }
   return { fromKey: relationship.fromPropertyId, toKey: relationship.toPropertyId };
@@ -42,6 +57,7 @@ export function planObjectQueryJoins(
     throw new ObjectQueryCompileError(
       "invalid_join",
       `At most ${String(MAX_OBJECT_QUERY_JOINS)} relationship joins are allowed per query.`,
+      { path: "joins" },
     );
   }
   const objectAliases = new Map<string, string>();
@@ -60,6 +76,7 @@ export function planObjectQueryJoins(
       throw new ObjectQueryCompileError(
         "invalid_join",
         `Relationship "${relationship.id}" does not touch object "${currentObjectId}" in the join chain.`,
+        { path: "joins", invalidValue: relationshipId },
       );
     }
     if (!objectAliases.has(nextObjectId)) {
@@ -87,6 +104,7 @@ export function compileJoinOnClause(
   throw new ObjectQueryCompileError(
     "invalid_join",
     `Relationship "${relationship.id}" does not match join step ${fromObjectId} → ${toObjectId}.`,
+    { path: "joins", invalidValue: relationship.id },
   );
 }
 export function resolveObjectInPlan(
@@ -99,16 +117,31 @@ export function resolveObjectInPlan(
 } {
   const alias = plan.objectAliases.get(objectId);
   if (alias === undefined) {
+    const joinedIds = [...plan.objectAliases.keys()];
+    const entries = objectSuggestionEntries(ontology);
     throw new ObjectQueryCompileError(
       "unknown_join_object",
       `Object "${objectId}" is not in the query join graph. Add relationships via "joins" or filter the root object.`,
+      {
+        path: "objectId",
+        invalidValue: objectId,
+        allowed: joinedIds.slice(0, 20),
+        suggestions: suggestClosest(objectId, entries),
+      },
     );
   }
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
+    const entries = objectSuggestionEntries(ontology);
     throw new ObjectQueryCompileError(
       "unknown_object",
       `Object "${objectId}" is not part of the ontology.`,
+      {
+        path: "objectId",
+        invalidValue: objectId,
+        allowed: allowedValuesFrom(entries),
+        suggestions: suggestClosest(objectId, entries),
+      },
     );
   }
   return { object, alias };

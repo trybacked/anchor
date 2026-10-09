@@ -20,9 +20,6 @@ importers:
       '@trybacked/platform-admin':
         specifier: workspace:*
         version: link:../../packages/platform-admin
-      '@trybacked/provider-databricks':
-        specifier: workspace:*
-        version: link:../../packages/provider-databricks
       '@trybacked/registry':
         specifier: workspace:*
         version: link:../../packages/registry

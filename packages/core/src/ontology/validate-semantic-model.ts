@@ -48,9 +48,7 @@ function validateEntityProperties(entity: Entity): ValidationIssue[] {
   }
   return issues;
 }
-/**
- *
- */
+
 export function validateSemanticModel(model: SemanticModel): ReturnType<typeof validationResult> {
   const parseResult = SemanticModelSchema.safeParse(model);
   if (!parseResult.success) {

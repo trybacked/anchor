@@ -1,4 +1,4 @@
-import type { ObjectQuery } from "@trybacked/compiler";
+import type { ObjectQuery, QueryIssue } from "@trybacked/compiler";
 import type { Ontology } from "@trybacked/core";
 import type { ConversationTurn } from "@trybacked/service";
 import { generateText, type LanguageModel } from "ai";
@@ -16,11 +16,9 @@ const PLANNER_POLICY = [
   "locale: the BCP-47 language of the question (e.g. it, en). assumptions: interpretation choices written for a non-technical reader in that language, without field or object ids.",
 ].join("\n");
 
-/** Last word of the system prompt: context sections must never redefine the output. */
 const PLANNER_OUTPUT_REMINDER =
   "Your reply is the single JSON object defined by the output contract above and nothing else: no prose, no Markdown, no criteria line, no explanation.";
 
-/** A stalled gateway must surface as a fallback, not an open-ended wait. */
 const PLANNER_TIMEOUT_MS = 20_000;
 
 export type PlanUsage = {
@@ -49,7 +47,44 @@ export type PlannerContext = {
   question: string;
   locale?: string | undefined;
   history?: readonly ConversationTurn[] | undefined;
+
+  repair?: PlanRepairContext | undefined;
 };
+
+export type PlanRepairContext = {
+  previous: ObjectQuery;
+  issues: readonly QueryIssue[];
+};
+
+const MAX_REPAIR_ISSUES = 8;
+
+function serializeQueryIssue(issue: QueryIssue): string {
+  const parts = [`- path: ${issue.path}`, `problem: ${issue.message}`];
+  if (issue.invalidValue !== undefined) {
+    parts.push(`invalid: ${JSON.stringify(issue.invalidValue)}`);
+  }
+  if (issue.allowed !== undefined && issue.allowed.length > 0) {
+    parts.push(`allowed: ${issue.allowed.join(", ")}`);
+  }
+  if (issue.suggestions !== undefined && issue.suggestions.length > 0) {
+    parts.push(`did you mean: ${issue.suggestions.join(", ")}`);
+  }
+  return parts.join("; ");
+}
+
+const REPAIR_POLICY = [
+  "Your previous query was rejected by the ontology validator. The issues below name the exact path and the accepted values.",
+  "Rewrite the query fixing every listed issue; keep everything else identical. Do not drop constraints unless an issue says the value does not exist in the ontology.",
+].join("\n");
+
+function buildRepairSection(repair: PlanRepairContext): string {
+  return [
+    "## Repair",
+    `Previous query (rejected): ${JSON.stringify(repair.previous)}`,
+    `Issues:\n${repair.issues.slice(0, MAX_REPAIR_ISSUES).map(serializeQueryIssue).join("\n")}`,
+    REPAIR_POLICY,
+  ].join("\n\n");
+}
 
 export function buildPlannerSystemPrompt(context: PlannerContext): string {
   return [
@@ -58,6 +93,7 @@ export function buildPlannerSystemPrompt(context: PlannerContext): string {
     ...buildLocaleSection(context.locale),
     ...buildConversationSection(context.history),
     ...buildSemanticContextSections(context.ontology, context.question),
+    ...(context.repair !== undefined ? [buildRepairSection(context.repair)] : []),
     PLANNER_OUTPUT_REMINDER,
   ].join("\n\n");
 }

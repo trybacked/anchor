@@ -13,14 +13,14 @@ const minimalModel: SemanticModel = {
   rules: [],
 };
 describe("buildQueryRuntimeFromEnv catalog override", () => {
-  it("prefers options.catalog over BACKED_DATABRICKS_CATALOG", async () => {
+  it("prefers options.catalog over BACKED_CATALOG", async () => {
     const ontology = semanticModelToOntology(minimalModel, { ontologyId: "demo" });
     const executor = async () => [] as Record<string, unknown>[];
     const built = await buildQueryRuntimeFromEnv({
       ontology,
       model: minimalModel,
       executor,
-      env: { BACKED_DATABRICKS_CATALOG: "from_env" },
+      env: { BACKED_CATALOG: "from_env" },
       catalog: "backed_gerace",
       documentTables: legacyDocumentTables(),
     });

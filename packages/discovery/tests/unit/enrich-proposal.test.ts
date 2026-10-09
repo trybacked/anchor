@@ -75,5 +75,6 @@ describe("enrichProposalFromDiscovery", () => {
     expect(result.addedRelationIds).toHaveLength(1);
     expect(result.proposal.relations[0]?.fromEntity).toBe("orders");
     expect(result.proposal.relations[0]?.toEntity).toBe("customers");
+    expect(result.proposal.relations[0]?.cardinality).toBe("many_to_one");
   });
 });

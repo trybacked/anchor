@@ -1,4 +1,5 @@
 import {
+  CardinalitySchema,
   ElementStatusSchema,
   ModelSearchMatchSchema,
   ProvenanceSchema,
@@ -50,7 +51,7 @@ export const RelationSummarySchema = z.object({
   toEntity: z.string(),
   fromColumn: z.string(),
   toColumn: z.string(),
-  cardinality: z.enum(["one_to_one", "one_to_many", "many_to_many"]),
+  cardinality: CardinalitySchema,
   status: ElementStatusSchema,
 });
 export const SearchMatchSchema = ModelSearchMatchSchema;

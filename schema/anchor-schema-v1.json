@@ -82,6 +82,14 @@
                   "evidence": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "profile",
+                      "llm",
+                      "human"
+                    ]
                   }
                 },
                 "required": [
@@ -148,6 +156,14 @@
                         "evidence": {
                           "type": "string",
                           "minLength": 1
+                        },
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "profile",
+                            "llm",
+                            "human"
+                          ]
                         }
                       },
                       "required": [
@@ -313,6 +329,7 @@
                 "enum": [
                   "one_to_one",
                   "one_to_many",
+                  "many_to_one",
                   "many_to_many"
                 ]
               },
@@ -343,6 +360,14 @@
                   "evidence": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "profile",
+                      "llm",
+                      "human"
+                    ]
                   }
                 },
                 "required": [
@@ -419,6 +444,14 @@
                   "evidence": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "profile",
+                      "llm",
+                      "human"
+                    ]
                   }
                 },
                 "required": [

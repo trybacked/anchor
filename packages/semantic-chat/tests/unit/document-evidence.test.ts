@@ -15,6 +15,13 @@ describe("document evidence", () => {
     expect(searchTermsForQuestion("quanti documenti per Luca")).toEqual(["documenti", "luca"]);
   });
 
+  it("splits Italian clitics on apostrophes into head-noun terms", () => {
+    expect(
+      searchTermsForQuestion("Liquidazione della fornitura all'operatore economico DROMO STUDIO"),
+    ).toEqual(["liquidazione", "fornitura", "operatore", "economico", "dromo", "studio"]);
+    expect(searchTermsForQuestion("personale dell'ente")).toEqual(["personale", "ente"]);
+  });
+
   it("requires every term in multi-token searches", () => {
     expect(chunkMatchesSearchTerms("Comune di San Luca (RC)", ["luca", "tropea"])).toBe(false);
     expect(chunkMatchesSearchTerms("Luca Tropea — software engineer", ["luca", "tropea"])).toBe(

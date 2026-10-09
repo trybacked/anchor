@@ -15,13 +15,13 @@ import {
   AGENT_PROMPT_MAX_GLOSSARY_TERMS,
   AGENT_PROMPT_MAX_OBJECTS,
 } from "./limits.js";
-/** Query-construction rules shared by the single-shot planner and the agent loop. */
+
 export const QUERY_CONSTRUCTION_RULES = [
   "Choosing properties: prefer the property whose description or synonyms match the question wording.",
   "Periods: when the question gives a month or period without naming a date field, filter the object's default time dimension and record that choice in assumptions. Respect valueFormat (e.g. YYYY-MM). For several periods use one filter with op in and all values — not separate queries.",
   "Modes: mode count for totals; mode rows with select and limit for listings; groupBy plus aggregations for breakdowns; orderBy plus orderDirection for rankings.",
   'Cross-object questions: objectId stays the object being counted or listed; constrain a related object with joins [{"relationshipId": "..."}] plus filters entries carrying that related objectId. Never switch the root object to the one you only filter on.',
-  'Breakdowns: with groupBy plus aggregations, orderBy must name a projected column — a groupBy property or an aggregation alias — so set alias on the aggregation you want to rank by. To break down by an attribute of a related object, add the join and write the groupBy entry as "objectId.propertyId" (e.g. "organization.region").',
+  'Breakdowns: with groupBy plus aggregations, orderBy must name a projected column — a groupBy property or an aggregation alias — so set alias on the aggregation you want to rank by. To break down by an attribute of a related object, add the join and write the groupBy entry as "objectId.propertyId" (e.g. "relatedEntity.attributeId").',
   "When a filter names an attribute of a related entity, keep objectId on the entity you count and put the filter on that related objectId — do not count the related entity alone.",
   'Names and free text: when the question gives a name or topic rather than a code, use a contains filter (or textSearch {"query": "...", "propertyIds": [...]} for rows) instead of guessing an exact value; textSearch cannot be combined with mode count.',
 ].join("\n");
@@ -31,13 +31,14 @@ const PLATFORM_POLICY = [
   QUERY_CONSTRUCTION_RULES,
   "Prefer answering with explicit assumptions over asking. Call ask_clarification only when interpretations would materially change the answer and the semantics below cannot settle it; when unsure between properties, fill ambiguity with the candidate property ids.",
   "If a tool returns an error, read it, correct the input, and retry once — then answer with what you have.",
+  "Abstention policy: when no schema concept matches the question, the query returns zero rows, or the excerpts do not contain the asked facts, call decline_answer with the matching reason and a short explanation in the user's language instead of inventing an answer. decline_answer is a complete, user-respecting outcome.",
   "Efficiency: structured warehouse counts use query_objects when the ontology exposes matching entities. Questions about file contents or the tenant document archive must use search_documents first.",
   "When search_documents returns hits, cite filenames and short excerpts in submit_answer; when it returns no rows, say so and only then mention warehouse limits.",
   "Finish with submit_answer: claims cite toolCallId for each number (internal only); assumptions and followUps are separate fields.",
 ].join("\n");
 const ANSWER_STYLE = [
   "## User-facing answer (submit_answer.answer only)",
-  "Audience: public-sector or business users — not engineers. This text is shown verbatim in the product.",
+  "Audience: domain and business users — not engineers. This text is shown verbatim in the product.",
   "Style: professional, concise, in the user's language. Open with the direct result in one or two short sentences.",
   "Formatting: use Markdown bullets for examples or options; keep paragraphs short; at most five examples unless the user asked for more.",
   "Never put in answer: tool/API names, object or property ids, ontology/schema/SQL, filter operators, JSON, toolCallId, or how the query was built.",
@@ -66,7 +67,6 @@ function tokenizeForExampleMatch(text: string): string[] {
 }
 type VerifiedExample = NonNullable<NonNullable<Ontology["semantics"]>["examples"]>[number];
 
-/** Full query, not a summary: a lossy pattern teaches the model to omit filters. */
 function formatVerifiedExample(example: VerifiedExample): string {
   const query = example.expectedObjectQuery;
   if (query === undefined) {
@@ -75,11 +75,6 @@ function formatVerifiedExample(example: VerifiedExample): string {
   return `- Q: ${example.question}\n  Query: ${JSON.stringify(query)}`;
 }
 
-/**
- * A pack ships examples for a whole dataset family, but a tenant publishes only part of it.
- * An example that cannot run here would teach the model to use properties this ontology
- * lacks, so the plan would be rejected and the ask would fall back to the slow path.
- */
 function exampleFitsOntology(ontology: Ontology, example: VerifiedExample): boolean {
   if (example.expectedObjectQuery === undefined) return true;
   try {
@@ -101,7 +96,7 @@ function exampleMatchScore(question: string, exampleQuestion: string): number {
   }
   return score;
 }
-/** Schema, glossary and matching verified examples for this question (shared by planner and agent). */
+
 export function buildSemanticContextSections(ontology: Ontology, question: string): string[] {
   const glossary = (ontology.semantics?.glossary ?? [])
     .slice(0, AGENT_PROMPT_MAX_GLOSSARY_TERMS)
