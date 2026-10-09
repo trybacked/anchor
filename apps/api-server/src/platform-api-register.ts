@@ -36,6 +36,9 @@ function mountRoute(
   }
 }
 function routeSkipsOntologyResolve(route: PlatformApiRoute): boolean {
+  if (route.path === "/v1/discovery/warehouse-profile") {
+    return true;
+  }
   if (route.public !== true) {
     return false;
   }

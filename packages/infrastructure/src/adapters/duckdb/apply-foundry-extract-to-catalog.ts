@@ -102,6 +102,11 @@ export async function applyFoundryExtractToCatalogWarehouse(options: {
   }
 
   const entities = qualifiedTable(catalog, "document_entities");
+  await execCatalogWarehouseSql(
+    env,
+    catalog,
+    `CREATE TABLE IF NOT EXISTS ${entities} (document_id VARCHAR);`,
+  );
   await execCatalogWarehouseSql(env, catalog, `DELETE FROM ${entities};`);
 
   const mentionTables = [

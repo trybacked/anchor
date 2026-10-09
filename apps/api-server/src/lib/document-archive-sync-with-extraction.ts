@@ -2,6 +2,7 @@ import {
   applyFoundryExtractToCatalogWarehouse,
   createTenantArchiveFromEnv,
   listAllArchiveFiles,
+  persistFoundryWarehouseDiscoveryProfileSnapshot,
   syncDocumentArchiveToWarehouse,
 } from "@trybacked/infrastructure";
 import {
@@ -115,6 +116,16 @@ export async function runDocumentArchiveSyncWithExtraction(options: {
       catalog: options.catalog,
       rows: extracted.rows,
       pageCountByDocumentId: extracted.pageCountByDocumentId,
+    });
+    await persistFoundryWarehouseDiscoveryProfileSnapshot({
+      env: options.env,
+      tenantId: options.tenantId,
+      catalog: options.catalog,
+    }).catch((error: unknown) => {
+      const reason = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `[discovery] warehouse profile S3 snapshot skipped: tenant=${options.tenantId} reason=${reason}`,
+      );
     });
     return {
       indexed: syncOutcome.indexed,

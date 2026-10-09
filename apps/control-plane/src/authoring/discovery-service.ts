@@ -21,7 +21,7 @@ import {
   validateDiscoveryReview,
 } from "@trybacked/ontology-authoring";
 import {
-  loadFoundryWarehouseDiscoveryProfile,
+  resolveFoundryWarehouseDiscoveryProfile,
   type FoundryWarehouseDiscoveryProfile,
 } from "@trybacked/infrastructure";
 import { fetchWarehouseDiscoveryProfileFromPlatform } from "./warehouse-discovery-profile-fetch.js";
@@ -195,12 +195,12 @@ export async function proposeDocsAiFilesSourceDiscovery(
     input.filesRegistryRoot !== undefined && input.filesRegistryRoot.length > 0
       ? { ...env, BACKED_FILES_REGISTRY_ROOT: input.filesRegistryRoot }
       : env;
-  let warehouse: FoundryWarehouseDiscoveryProfile | undefined = await loadFoundryWarehouseDiscoveryProfile(
-    {
+  let warehouse: FoundryWarehouseDiscoveryProfile | undefined =
+    await resolveFoundryWarehouseDiscoveryProfile({
       env: warehouseEnv,
+      tenantId: input.tenantId,
       catalog: input.catalog,
-    },
-  );
+    });
   if (warehouse === undefined) {
     const platformBase = env["PLATFORM_API_INTERNAL_URL"]?.trim();
     const platformToken = env["ANCHOR_API_TOKEN"]?.trim();
@@ -210,11 +210,19 @@ export async function proposeDocsAiFilesSourceDiscovery(
       platformToken !== undefined &&
       platformToken.length > 0
     ) {
-      warehouse = await fetchWarehouseDiscoveryProfileFromPlatform({
-        baseUrl: platformBase,
-        tenantId: input.tenantId,
-        bearerToken: platformToken,
-      });
+      try {
+        warehouse = await fetchWarehouseDiscoveryProfileFromPlatform({
+          baseUrl: platformBase,
+          tenantId: input.tenantId,
+          bearerToken: platformToken,
+        });
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        console.warn(
+          `[discovery] warehouse profile fetch skipped (unexpected): tenant=${input.tenantId} reason=${reason}`,
+        );
+        warehouse = undefined;
+      }
     }
   }
   const model = createGatewayLanguageModel(modelConfig.apiKey, modelConfig.modelId);

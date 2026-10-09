@@ -1,4 +1,8 @@
-import { loadFoundryWarehouseDiscoveryProfile } from "@trybacked/infrastructure";
+import {
+  loadFoundryWarehouseDiscoveryProfile,
+  persistFoundryWarehouseDiscoveryProfileSnapshot,
+  resolveFoundryWarehouseDiscoveryProfile,
+} from "@trybacked/infrastructure";
 import { createRegistrySourceFromEnv } from "@trybacked/core";
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { V1_PATH_PREFIX } from "../platform-api-route-meta.js";
@@ -33,13 +37,26 @@ export const platformApiDiscoveryProfileRoutes: RouteFactory[] = [
       if (catalog === null) {
         return c.json({ error: "Tenant not in registry" }, 404);
       }
-      const loaded = await loadFoundryWarehouseDiscoveryProfile({
+      const tenantId = c.get("tenantId");
+      let loaded = await resolveFoundryWarehouseDiscoveryProfile({
         env: process.env,
+        tenantId,
         catalog,
       });
       if (loaded === undefined) {
+        loaded = await loadFoundryWarehouseDiscoveryProfile({
+          env: process.env,
+          catalog,
+        });
+      }
+      if (loaded === undefined) {
         return c.json({ error: "warehouse_empty" }, 404);
       }
+      void persistFoundryWarehouseDiscoveryProfileSnapshot({
+        env: process.env,
+        tenantId,
+        catalog,
+      }).catch(() => undefined);
       return c.json(loaded);
     },
   ),
