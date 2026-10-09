@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { createChunkSearchReader } from "../../src/readers/chunk-search.js";
 import type { DocumentsDatasetResolver } from "../../src/readers/dataset.js";
 const documents: DocumentsDatasetResolver = {
-  qualifyTable: (name) => `\`backed\`.\`docs\`.\`${name}\``,
-  documentsTable: "`backed`.`docs`.`documents`",
-  documentElementsTable: "`backed`.`docs`.`document_elements`",
-  documentEntitiesTable: "`backed`.`docs`.`document_entities`",
-  entityProfilesTable: "`backed`.`docs`.`entity_profiles`",
+  qualifyTable: (name) => `"backed"."docs"."${name}"`,
+  documentsTable: '"backed"."docs"."documents"',
+  documentElementsTable: '"backed"."docs"."document_elements"',
+  documentEntitiesTable: '"backed"."docs"."document_entities"',
+  entityProfilesTable: '"backed"."docs"."entity_profiles"',
 };
 describe("chunk search reader", () => {
   it("runs keyword SQL against document_elements with term-score ordering", async () => {
@@ -34,7 +34,7 @@ describe("chunk search reader", () => {
     expect(calls[0]).toContain("REPLACE(LOWER(");
     expect(calls[0]).toContain(":term0");
     expect(calls[0]).toContain(":term1");
-    expect(calls[0]).toMatch(/ORDER BY `keyword_score` DESC, LENGTH\(`content`\) ASC/);
+    expect(calls[0]).toMatch(/ORDER BY "keyword_score" DESC, LENGTH\("content"\) ASC/);
     expect(rows[0]?.["elementId"]).toBe("e1");
   });
 
@@ -54,8 +54,8 @@ describe("chunk search reader", () => {
       elementTypes: ["text", "table"],
     });
     const sql = calls[0]?.sql ?? "";
-    expect(sql).toContain("`folder` IN (:folder0)");
-    expect(sql).toContain("`element_type` IN (:etype0, :etype1)");
+    expect(sql).toContain('"folder" IN (:folder0)');
+    expect(sql).toContain('"element_type" IN (:etype0, :etype1)');
     const names = (calls[0]?.parameters ?? []).map((parameter) => parameter.name);
     expect(names).toContain("folder0");
     expect(names).toContain("etype0");

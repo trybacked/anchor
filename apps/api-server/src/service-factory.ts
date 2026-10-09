@@ -2,8 +2,7 @@ import { legacyDocumentTables } from "@trybacked/capability-documents";
 import { parseModelYaml, type Ontology, type SemanticModel } from "@trybacked/core";
 import {
   createDocumentFileReaderFromEnv,
-  createSqlStatementExecutorFromDuckDbPath,
-  duckDbPathFromEnv,
+  createSqlStatementExecutorForCatalog,
 } from "@trybacked/infrastructure";
 import { buildQueryRuntimeFromEnv } from "@trybacked/runtime";
 import { attachSemanticAsk, type TenantAiAskCapabilities } from "@trybacked/semantic-chat";
@@ -14,12 +13,6 @@ import {
 } from "@trybacked/service";
 
 export type TenantRuntimeCapabilities = TenantAiAskCapabilities;
-
-const filesSqlUnavailable = (): never => {
-  throw new Error(
-    "Object SQL queries are not available on the files engine. Publish mappings for future warehouse adapters or use workspace tools.",
-  );
-};
 
 export async function createAnchorServiceForModel(options: {
   model: SemanticModel;
@@ -36,11 +29,11 @@ export async function createAnchorServiceForModel(options: {
 }): Promise<AnchorService> {
   const tenantId = options.tenantId ?? options.ontology.metadata.id;
   const readVolumeFile = createDocumentFileReaderFromEnv(options.env, tenantId);
-  const duckPath = duckDbPathFromEnv(options.env);
-  const executor =
-    duckPath !== undefined
-      ? createSqlStatementExecutorFromDuckDbPath(duckPath)
-      : filesSqlUnavailable;
+  const catalog = options.catalog ?? options.env["BACKED_CATALOG"]?.trim();
+  if (catalog === undefined || catalog.length === 0) {
+    throw new Error("Tenant catalog is required for warehouse SQL (registry entry or BACKED_CATALOG).");
+  }
+  const executor = createSqlStatementExecutorForCatalog({ env: options.env, catalog });
   const built = await buildQueryRuntimeFromEnv({
     ontology: options.ontology,
     model: options.model,

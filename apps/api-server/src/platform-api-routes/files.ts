@@ -1,7 +1,7 @@
 import { createRegistrySourceFromEnv } from "@trybacked/core";
-import { createTenantArchiveFromEnv } from "@trybacked/infrastructure";
+import { createTenantArchiveFromEnv, syncDocumentArchiveToWarehouse } from "@trybacked/infrastructure";
 import { z } from "zod";
-import { platformRoute, postJsonRoute, type RouteFactory } from "../platform-api-route-factory.js";
+import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import type { PlatformHandlerContext } from "../platform-api-types.js";
 
@@ -120,11 +120,12 @@ export const platformApiFileRoutes: RouteFactory[] = [
       return c.json(uploaded);
     },
   ),
-  postJsonRoute(
+  platformRoute(
     {
       operationId: "refreshTenantFiles",
+      method: "post",
       path: `${V1_PATH_PREFIX}/files/refresh`,
-      summary: "Refresh document archive index (no-op when archive is object-backed)",
+      summary: "Sync archive files into the tenant document warehouse (DuckDB)",
       tags: ["files"],
       jsonBody: jsonBody("FilesRefreshBody", FilesRefreshBodySchema, { fullRefresh: false }),
       responses: {
@@ -132,17 +133,40 @@ export const platformApiFileRoutes: RouteFactory[] = [
         "404": { description: "Tenant not in registry" },
       },
     },
-    async (c) => {
+    (deps) => async (c) => {
+      const body = FilesRefreshBodySchema.parse(
+        await c.req.json().catch(() => ({})),
+      );
+      const tenantId = c.get("tenantId");
       const catalog = await tenantCatalog(c);
       if (catalog === null) {
         return c.json({ error: "Tenant not in registry" }, 404);
       }
       const runId = nextRefreshRunId;
       nextRefreshRunId += 1;
-      const record: RefreshRunRecord = {
-        status: "succeeded",
-        message: "Archive listing reads live from storage; no background refresh is required.",
-      };
+      refreshRuns.set(runId, { status: "running" });
+      let record: RefreshRunRecord;
+      try {
+        const outcome = await syncDocumentArchiveToWarehouse({
+          env: process.env,
+          tenantId,
+          catalog,
+          fullRefresh: body.fullRefresh === true,
+        });
+        deps.platformRegistry?.invalidate(tenantId);
+        record = {
+          status: "succeeded",
+          message:
+            outcome.indexed === 0
+              ? "No files in the archive to index."
+              : `Indexed ${String(outcome.indexed)} document(s) in the warehouse.`,
+        };
+      } catch (error) {
+        record = {
+          status: "failed",
+          message: error instanceof Error ? error.message : "Document index sync failed.",
+        };
+      }
       refreshRuns.set(runId, record);
       return c.json({ runId, ...record });
     },

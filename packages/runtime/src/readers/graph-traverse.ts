@@ -9,6 +9,7 @@ import {
   type TraverseDirection,
 } from "@trybacked/core/graph-traverse";
 import type { SqlStatementExecutor } from "../execute.js";
+import { quoteSqlIdentifier as quoteIdentifier } from "../sql-ident.js";
 import { MAX_TRAVERSE_ROW_LIMIT } from "./constants.js";
 import type { DocumentsDatasetResolver } from "./dataset.js";
 import { resolveEntityTable } from "./dataset.js";
@@ -22,9 +23,6 @@ export type GraphTraverseInput = {
   mode?: "rows" | "count" | undefined;
   filters?: ObjectQueryFilter[] | undefined;
 };
-function quoteIdentifier(identifier: string): string {
-  return `\`${identifier.replaceAll("`", "``")}\``;
-}
 function aliasFor(entityId: string): string {
   return `t_${entityId.replaceAll("-", "_")}`;
 }

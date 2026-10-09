@@ -33,9 +33,12 @@ export {
   type TenantArchiveUploadResult,
 } from "./adapters/files/index.js";
 export {
+  createSqlStatementExecutorForCatalog,
   createSqlStatementExecutorFromDuckDbPath,
   duckDbPathFromEnv,
+  resolveWarehouseDuckDbPath,
   materializeFoundryRowsToDuckDb,
+  syncDocumentArchiveToWarehouse,
   type FoundryTableRows,
   type SqlStatementExecutor,
 } from "./adapters/duckdb/index.js";

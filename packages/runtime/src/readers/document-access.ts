@@ -1,4 +1,5 @@
 import type { SqlStatementExecutor } from "../execute.js";
+import { quoteSqlIdentifier } from "../sql-ident.js";
 import type { DocumentsDatasetResolver } from "./dataset.js";
 export type DocumentMetadata = {
   documentId: string;
@@ -34,9 +35,6 @@ export type VolumeFileReader = (
     range?: string | undefined;
   },
 ) => Promise<VolumeFileReadResult>;
-function quoteIdentifier(identifier: string): string {
-  return `\`${identifier.replaceAll("`", "``")}\``;
-}
 function contentTypeFromFilename(filename: string): string {
   const lower = filename.toLowerCase();
   if (lower.endsWith(".pdf")) {
@@ -75,22 +73,22 @@ export function createDocumentAccessReader(options: {
   const entitiesTable = documents.documentEntitiesTable;
   async function loadRow(documentId: string): Promise<Record<string, unknown> | null> {
     const sql = `SELECT
-  d.${quoteIdentifier("document_id")},
-  d.${quoteIdentifier("filename")},
-  d.${quoteIdentifier("path")},
-  d.${quoteIdentifier("doc_type")},
-  d.${quoteIdentifier("page_count")},
-  d.${quoteIdentifier("folder")},
-  d.${quoteIdentifier("source_modified_at")},
-  d.${quoteIdentifier("file_size")},
+  d.${quoteSqlIdentifier("document_id")},
+  d.${quoteSqlIdentifier("filename")},
+  d.${quoteSqlIdentifier("path")},
+  d.${quoteSqlIdentifier("doc_type")},
+  d.${quoteSqlIdentifier("page_count")},
+  d.${quoteSqlIdentifier("folder")},
+  d.${quoteSqlIdentifier("source_modified_at")},
+  d.${quoteSqlIdentifier("file_size")},
   COALESCE(e.entity_count, 0) AS entity_count
 FROM ${table} d
 LEFT JOIN (
-  SELECT ${quoteIdentifier("document_id")}, COUNT(*) AS entity_count
+  SELECT ${quoteSqlIdentifier("document_id")}, COUNT(*) AS entity_count
   FROM ${entitiesTable}
-  GROUP BY ${quoteIdentifier("document_id")}
-) e ON d.${quoteIdentifier("document_id")} = e.${quoteIdentifier("document_id")}
-WHERE d.${quoteIdentifier("document_id")} = :documentId
+  GROUP BY ${quoteSqlIdentifier("document_id")}
+) e ON d.${quoteSqlIdentifier("document_id")} = e.${quoteSqlIdentifier("document_id")}
+WHERE d.${quoteSqlIdentifier("document_id")} = :documentId
 LIMIT 1`;
     const rows = await executor(sql, [{ name: "documentId", value: documentId }]);
     return rows[0] ?? null;

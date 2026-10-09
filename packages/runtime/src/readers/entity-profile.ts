@@ -1,6 +1,7 @@
 import type { ObjectQuery } from "@trybacked/compiler";
 import type { Ontology, SemanticModel } from "@trybacked/core";
 import type { ObjectQueryResult, SqlStatementExecutor } from "../execute.js";
+import { quoteSqlIdentifier as quoteIdentifier } from "../sql-ident.js";
 import type { ChunkSearchInput } from "./chunk-search.js";
 import {
   DEFAULT_PROFILE_DOCUMENT_LIMIT,
@@ -55,9 +56,6 @@ type EntityProfileDeps = {
   graphTraverse: (input: GraphTraverseInput) => Promise<Record<string, unknown>[]>;
   chunkSearch: (input: ChunkSearchInput) => Promise<Record<string, unknown>[]>;
 };
-function quoteIdentifier(identifier: string): string {
-  return `\`${identifier.replaceAll("`", "``")}\``;
-}
 function stringNameProperties(objectId: string, ontology: Ontology): string[] {
   const object = ontology.objects.find((candidate) => candidate.id === objectId);
   if (object === undefined) {
