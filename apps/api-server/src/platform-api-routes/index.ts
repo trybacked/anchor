@@ -7,6 +7,7 @@ import { platformApiFileRoutes } from "./files.js";
 import { platformApiHealthRoutes } from "./health.js";
 import { platformApiModelRoutes } from "./model.js";
 import { platformApiProfileGraphRoutes } from "./profile-graph.js";
+import { platformApiProfileAvatarRoutes } from "./profile-avatar.js";
 import { platformApiQueryRoutes } from "./query.js";
 import { platformApiChunkSearchRoutes, platformApiEntitySearchRoutes } from "./search.js";
 import { platformApiSemanticChatRoutes } from "./semantic-chat.js";
@@ -27,6 +28,7 @@ const PLATFORM_API_ROUTE_FACTORIES: RouteFactory[] = [
   ...platformApiDocumentRoutes,
   ...platformApiDiscoveryProfileRoutes,
   ...platformApiFileRoutes,
+  ...platformApiProfileAvatarRoutes,
   ...platformApiChunkSearchRoutes,
   ...platformApiProfileGraphRoutes,
   ...platformApiSemanticChatRoutes,

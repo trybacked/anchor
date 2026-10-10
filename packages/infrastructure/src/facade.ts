@@ -33,6 +33,11 @@ export {
   type TenantArchiveUploadResult,
 } from "./adapters/files/index.js";
 export {
+  createProfileAvatarStorageFromEnv,
+  type ProfileAvatar,
+  type ProfileAvatarStorage,
+} from "./adapters/profiles/index.js";
+export {
   createSqlStatementExecutorForCatalog,
   createSqlStatementExecutorFromDuckDbPath,
   duckDbPathFromEnv,
