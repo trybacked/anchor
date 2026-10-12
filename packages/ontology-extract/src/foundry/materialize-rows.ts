@@ -4,24 +4,39 @@ import { FOUNDRY_EXTRACT_OBJECT_TYPE_IDS, type FoundryExtractObjectTypeId } from
 
 export type FoundryMaterializeTableRows = Record<string, Record<string, unknown>[]>;
 
-function documentIdBySourceFile(
-  output: FoundryExtractOutput,
-  seed: FoundrySeedPayload,
-): Map<string, string> {
+function documentIdBySourceFile(seed: FoundrySeedPayload): Map<string, string> {
   const map = new Map<string, string>();
   for (const doc of seed.documents) {
     map.set(doc.source_file, doc.document_id);
-  }
-  for (const instance of output.instances) {
-    if (instance.objectTypeId !== "document") {
-      continue;
-    }
-    const normalized = instance.normalizedName ?? slugFromName(instance.name);
-    for (const file of instance.sourceFiles) {
-      map.set(file, normalized);
+    const base = doc.source_file.split("/").pop();
+    if (base !== undefined && base.length > 0) {
+      map.set(base, doc.document_id);
     }
   }
   return map;
+}
+
+function resolveDocumentId(sourceFile: string, fileToDoc: Map<string, string>): string | undefined {
+  const direct = fileToDoc.get(sourceFile);
+  if (direct !== undefined) {
+    return direct;
+  }
+  const normalized = sourceFile.replace(/^\/+/, "");
+  const directNormalized = fileToDoc.get(normalized);
+  if (directNormalized !== undefined) {
+    return directNormalized;
+  }
+  const fileBase = normalized.split("/").pop()?.toLowerCase();
+  if (fileBase === undefined || fileBase.length === 0) {
+    return undefined;
+  }
+  for (const [key, id] of fileToDoc) {
+    const keyBase = key.split("/").pop()?.toLowerCase();
+    if (keyBase === fileBase) {
+      return id;
+    }
+  }
+  return undefined;
 }
 
 function slugFromName(name: string): string {
@@ -60,7 +75,7 @@ export function buildFoundryTableRows(
   output: FoundryExtractOutput,
   seed: FoundrySeedPayload,
 ): FoundryMaterializeTableRows {
-  const fileToDoc = documentIdBySourceFile(output, seed);
+  const fileToDoc = documentIdBySourceFile(seed);
 
   const documents = seed.documents.map((doc) => ({
     document_id: doc.document_id,
@@ -89,8 +104,11 @@ export function buildFoundryTableRows(
     }
     const normalized = instance.normalizedName ?? slugFromName(instance.name);
     const docIds = instance.sourceFiles
-      .map((file) => fileToDoc.get(file))
-      .filter((id): id is string => id !== undefined);
+      .flatMap((file) => {
+        const id = resolveDocumentId(file, fileToDoc);
+        return id !== undefined ? [id] : [];
+      })
+      .filter((id, index, all) => all.indexOf(id) === index);
 
     switch (instance.objectTypeId) {
       case "organization":

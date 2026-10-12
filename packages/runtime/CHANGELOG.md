@@ -1,5 +1,16 @@
 # @trybacked/runtime
 
+## 0.3.2
+
+### Patch Changes
+
+- Foundry document ontology: init/extract/materialize-foundry CLI, DuckDB warehouse adapter for local `query_objects`, and ontology-extract materialize pipeline.
+- Updated dependencies
+- Updated dependencies [8622ba3]
+  - @trybacked/core@0.5.0
+  - @trybacked/capability-documents@0.1.1
+  - @trybacked/compiler@0.2.4
+
 ## 0.3.1
 
 ### Patch Changes

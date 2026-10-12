@@ -63,6 +63,14 @@ export async function getOrganizationByTenantId(
   );
   return result.rows[0];
 }
+
+export async function deleteOrganizationByTenantId(
+  pool: pg.Pool,
+  tenantId: string,
+): Promise<boolean> {
+  const result = await pool.query("DELETE FROM organizations WHERE tenant_id = $1", [tenantId]);
+  return (result.rowCount ?? 0) > 0;
+}
 export async function listActiveOrganizations(pool: pg.Pool): Promise<OrganizationRow[]> {
   const result = await pool.query<OrganizationRow>(
     "SELECT * FROM organizations WHERE status = 'active' ORDER BY tenant_id",

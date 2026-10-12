@@ -2,10 +2,16 @@ import { z } from "zod";
 
 export const SourceKindSchema = z.enum(["table", "document_archive", "api", "stream"]);
 
+/**
+ *
+ */
 export type SourceKind = z.infer<typeof SourceKindSchema>;
 
 export const SourceCapabilitySchema = z.enum(["documents", "tabular", "search"]);
 
+/**
+ *
+ */
 export type SourceCapability = z.infer<typeof SourceCapabilitySchema>;
 
 export const DocumentArchiveBindingSchema = z.object({
@@ -29,6 +35,9 @@ export const DocumentArchiveBindingSchema = z.object({
   }),
 });
 
+/**
+ *
+ */
 export type DocumentArchiveBinding = z.infer<typeof DocumentArchiveBindingSchema>;
 
 export const SourceDescriptorSchema = z.object({
@@ -42,8 +51,14 @@ export const SourceDescriptorSchema = z.object({
   binding: DocumentArchiveBindingSchema.optional(),
 });
 
+/**
+ *
+ */
 export type SourceDescriptor = z.infer<typeof SourceDescriptorSchema>;
 
+/**
+ *
+ */
 export type DocumentTablesSpec = {
   documents: string;
   documentElements: string;
@@ -51,11 +66,17 @@ export type DocumentTablesSpec = {
   entityProfiles: string;
 };
 
+/**
+ *
+ */
 export type DocumentObjectIds = {
   document: string;
   documentElement: string;
 };
 
+/**
+ *
+ */
 export function sourceHasCapability(
   descriptor: SourceDescriptor,
   capability: SourceCapability,

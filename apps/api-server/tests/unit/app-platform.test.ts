@@ -19,6 +19,7 @@ function mockRegistry(overrides: Partial<TenantRuntimeRegistry> = {}): TenantRun
     listTenantIds: async () => ["demo"],
     cachedTenantIds: () => [],
     resolve: async () => service,
+    invalidate: () => undefined,
     ...overrides,
   };
 }

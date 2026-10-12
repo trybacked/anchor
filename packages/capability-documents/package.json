@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/capability-documents",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Documents capability: archive binding and document-object conventions as data.",
   "license": "Apache-2.0",

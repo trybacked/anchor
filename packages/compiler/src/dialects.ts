@@ -28,9 +28,24 @@ export const postgresDialect: SqlDialect = {
       : ` LIMIT ${String(limit)}`,
 };
 
+export const duckdbDialect: SqlDialect = {
+  paramStyle: "named",
+  param: (index) => `:p${String(index)}`,
+  quoteIdent: (identifier) => `"${identifier.replaceAll('"', '""')}"`,
+  qualify: (datasetId) => datasetId.split(".").map(duckdbDialect.quoteIdent).join("."),
+  ciContains: (columnSql, parameterName) => `LOWER(${columnSql}) LIKE LOWER(:${parameterName})`,
+  regexMatch: (columnSql, parameterName) => `regexp_matches(${columnSql}, :${parameterName})`,
+  arrayContains: (columnSql, parameterName) => `${columnSql} IN (:${parameterName})`,
+  limitOffset: (limit, offset) =>
+    offset !== undefined && offset > 0
+      ? ` LIMIT ${String(limit)} OFFSET ${String(offset)}`
+      : ` LIMIT ${String(limit)}`,
+};
+
 const DIALECTS: Record<string, SqlDialect> = {
   spark: sparkDialect,
   postgres: postgresDialect,
+  duckdb: duckdbDialect,
 };
 
 export function resolveSqlDialect(name: string | undefined): SqlDialect {

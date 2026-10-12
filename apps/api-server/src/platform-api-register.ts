@@ -35,22 +35,34 @@ function mountRoute(
     }
   }
 }
+function routeSkipsOntologyResolve(route: PlatformApiRoute): boolean {
+  if (route.path === "/v1/discovery/warehouse-profile") {
+    return true;
+  }
+  if (route.public !== true) {
+    return false;
+  }
+  return route.path.startsWith("/health") || route.path === "/openapi.json";
+}
+
 function wrapRouteHandler(
   route: PlatformApiRoute,
   deps: PlatformHandlerDeps,
 ): PlatformRouteHandler {
   return async (c) => {
-    try {
-      const service: AnchorService = await deps.resolveOntologyService(c.get("tenantId"));
-      c.set("anchorService", service);
-    } catch (error) {
-      if (error instanceof TenantNotFoundError) {
-        return c.json({ error: error.message }, 404);
+    if (!routeSkipsOntologyResolve(route)) {
+      try {
+        const service: AnchorService = await deps.resolveOntologyService(c.get("tenantId"));
+        c.set("anchorService", service);
+      } catch (error) {
+        if (error instanceof TenantNotFoundError) {
+          return c.json({ error: error.message }, 404);
+        }
+        if (error instanceof OntologyNotPublishedError) {
+          return c.json({ error: error.message }, 503);
+        }
+        throw error;
       }
-      if (error instanceof OntologyNotPublishedError) {
-        return c.json({ error: error.message }, 503);
-      }
-      throw error;
     }
     return route.handle(c);
   };

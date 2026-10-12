@@ -11,6 +11,7 @@ import { registerTenantProfileRoutes } from "./authoring/tenant-profile-routes.j
 import type { ControlPlaneConfig } from "./config.js";
 import {
   deleteOAuthClient,
+  deleteOrganizationByTenantId,
   enqueueJob,
   getJob,
   getOAuthClientById,
@@ -127,6 +128,17 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     }
     return c.json(org);
   });
+  app.delete("/v1/organizations/:tenantId", requireAdmin(config), async (c) => {
+    const tenantId = c.req.param("tenantId");
+    if (tenantId === undefined || tenantId.trim().length === 0) {
+      return c.json({ error: "Missing tenantId" }, 400);
+    }
+    const deleted = await deleteOrganizationByTenantId(pool, tenantId);
+    if (!deleted) {
+      return c.json({ error: "Not found" }, 404);
+    }
+    return c.json({ deleted: tenantId });
+  });
   app.post(
     "/v1/organizations",
     requireAdmin(config),
@@ -182,7 +194,11 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
     if (org === undefined) {
       return c.json({ error: "Not found" }, 404);
     }
-    const job = await enqueueJob(pool, org.id, "publish_ontology", { tenantId });
+    const job = await enqueueJob(pool, org.id, "publish_ontology", {
+      tenantId,
+      catalog: org.catalog,
+      actor: "admin-sync",
+    });
     return c.json({ job }, 202);
   });
   registerAuthoringRoutes(app, config, pool);

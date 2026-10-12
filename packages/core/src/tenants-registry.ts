@@ -35,25 +35,43 @@ export const TenantsRegistrySchema = z.object({
   tenants: z.record(TenantEntrySchema),
 });
 
+/**
+ *
+ */
 export type TenantsRegistry = z.infer<typeof TenantsRegistrySchema>;
 
+/**
+ *
+ */
 export function loadTenantsRegistry(registryPath: string): TenantsRegistry {
   const raw = readFileSync(registryPath, "utf8");
   return TenantsRegistrySchema.parse(parseYaml(raw));
 }
 
+/**
+ *
+ */
 export function saveTenantsRegistry(registryPath: string, registry: TenantsRegistry): void {
   writeFileSync(registryPath, stringifyYaml(registry), "utf8");
 }
 
+/**
+ *
+ */
 export function resolveEnrollmentBucket(registry: TenantsRegistry): string {
   return registry.enrollment.storage.bucket;
 }
 
+/**
+ *
+ */
 export function resolveEnrollmentRegion(registry: TenantsRegistry): string {
   return registry.enrollment.storage.region ?? DEFAULT_BACKED_S3_REGION;
 }
 
+/**
+ *
+ */
 export function ensureTenantInRegistry(
   registry: TenantsRegistry,
   tenantId: string,
@@ -76,6 +94,9 @@ export function ensureTenantInRegistry(
   };
 }
 
+/**
+ *
+ */
 export function validateTenantId(tenantId: string): void {
   if (!/^[a-z][a-z0-9_]*$/.test(tenantId)) {
     throw new Error(

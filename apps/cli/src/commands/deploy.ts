@@ -4,6 +4,7 @@ import {
   createLocalDocumentFileReader,
   createSqlStatementExecutorFromDuckDbPath,
   duckDbPathFromEnv,
+  resolveWarehouseDuckDbPath,
   tenantFilesRoot,
 } from "@trybacked/infrastructure";
 import { runStdioMcpServerUntilClose, SERVER_NAME } from "@trybacked/mcp";
@@ -24,24 +25,21 @@ function writeDeployStderr(text: string, style: "dim" | "brand" = "dim"): void {
   console.error(wrap(style === "brand" ? ANSI.brand : ANSI.dim, text));
 }
 
-const filesSqlUnavailable = (): never => {
-  throw new Error("Object SQL queries are not available on the files engine.");
-};
-
-export const deployCommand: CommandHandler = async () => {
+export const deployCommand: CommandHandler = async (args) => {
+  const httpPortArg = args.find((arg) => arg.startsWith("--http="));
+  const httpPort =
+    httpPortArg !== undefined ? Number.parseInt(httpPortArg.split("=")[1] ?? "", 10) : undefined;
   initUi();
   const root = findWorkspaceRoot(process.cwd());
+  process.env["BACKED_PARSED_DIR"] = `${root}/.backed/parsed`;
   const model = readModelYaml(root);
   const ontology = loadPublishedOntology(root);
   let semanticAsk: SemanticAskHandler | undefined;
   let queryRuntime;
   if (ontology !== null) {
     const tenantId = ontology.metadata.id;
-    const duckPath = duckDbPathFromEnv(process.env);
-    const executor =
-      duckPath !== undefined
-        ? createSqlStatementExecutorFromDuckDbPath(duckPath)
-        : filesSqlUnavailable;
+    const duckPath = duckDbPathFromEnv(process.env) ?? resolveWarehouseDuckDbPath(process.env);
+    const executor = createSqlStatementExecutorFromDuckDbPath(duckPath);
     const built = await buildQueryRuntimeFromEnv({
       ontology,
       model,
@@ -78,6 +76,11 @@ export const deployCommand: CommandHandler = async () => {
   }
   if (semanticAsk !== undefined) {
     mcpOptions.semanticAsk = semanticAsk;
+  }
+  if (httpPort !== undefined && !Number.isNaN(httpPort)) {
+    const { runStreamableHttpMcpServer } = await import("@trybacked/mcp");
+    await runStreamableHttpMcpServer({ port: httpPort, model, options: mcpOptions });
+    return;
   }
   await runStdioMcpServerUntilClose(model, mcpOptions);
 };

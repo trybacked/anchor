@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/service",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "Anchor runtime service — single implementation for HTTP API and MCP",
   "license": "Apache-2.0",

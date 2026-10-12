@@ -23,7 +23,7 @@ Base: `/v1/tenants/:tenantId/authoring/discovery`
 ## Errors
 
 - `401` — missing or invalid internal authoring token.
-- `422` `files_empty` — no collections under the tenant file root.
+- `422` `files_empty` — no collections (or no files) under the tenant file root (`/docs/propose` and `/docs/propose-ai`).
 - `502` `source_unavailable` — misconfigured files root or IO error.
 - `503` `ai_not_configured` — AI propose without `AI_GATEWAY_API_KEY`.
 

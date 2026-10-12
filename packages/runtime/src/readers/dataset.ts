@@ -1,4 +1,5 @@
 import type { DocumentTablesSpec, Entity, Ontology, SemanticModel } from "@trybacked/core";
+import { quoteSqlIdentifier } from "../sql-ident.js";
 export type DocumentsDatasetResolver = {
   qualifyTable: (tableName: string) => string;
   documentsTable: string;
@@ -32,7 +33,7 @@ export function createDocumentsDatasetResolver(options: {
     return undefined;
   }
   const qualifyTable = (tableName: string): string =>
-    [catalog, schema, tableName].map(quoteIdentifier).join(".");
+    [catalog, schema, tableName].map(quoteSqlIdentifier).join(".");
   return {
     qualifyTable,
     documentsTable: qualifyTable(options.tables.documents),
@@ -62,7 +63,4 @@ export function resolveEntityTable(
 }
 export function findEntity(model: SemanticModel, entityId: string): Entity | undefined {
   return model.entities.find((candidate) => candidate.id === entityId);
-}
-function quoteIdentifier(identifier: string): string {
-  return `\`${identifier.replaceAll("`", "``")}\``;
 }

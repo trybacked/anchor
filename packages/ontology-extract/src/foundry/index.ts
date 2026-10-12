@@ -11,6 +11,10 @@ export {
   type BuildFoundryDocumentSemanticModelOptions,
 } from "./build-model.js";
 export {
+  buildPalantirStyleDocumentSemanticModel,
+  type BuildPalantirStyleDocumentSemanticModelOptions,
+} from "./palantir-style-model.js";
+export {
   FOUNDRY_EXTRACT_OUTPUT_CONTRACT,
   FoundryExtractOutputError,
   FoundryExtractOutputSchema,
@@ -25,9 +29,17 @@ export {
 } from "./prompt.js";
 export {
   collectPdfExcerpts,
+  collectPdfExcerptsFromPaths,
+  pdfPageCount,
   pdftotextAvailable,
   type CollectPdfExcerptsOptions,
 } from "./collect-excerpts.js";
+export { buildFoundrySeedFromArchive, type ArchivePdfRecord } from "./archive-seed.js";
+export {
+  runArchiveFoundryExtract,
+  type RunArchiveFoundryExtractOptions,
+  type RunArchiveFoundryExtractResult,
+} from "./run-archive-extract.js";
 export { foundryExtractToSeed, type FoundrySeedPayload } from "./seed.js";
 export {
   buildFoundryTableRows,

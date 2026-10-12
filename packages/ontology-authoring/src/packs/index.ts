@@ -6,7 +6,13 @@ export type OntologyPackSummary = {
   description: string;
 };
 
-export const ONTOLOGY_PACKS: OntologyPackSummary[] = [];
+export const ONTOLOGY_PACKS: OntologyPackSummary[] = [
+  {
+    id: "foundry_document_archive",
+    name: "Foundry document archive",
+    description: "Document-centric archive vocabulary (see packs/foundry-document-archive.yaml).",
+  },
+];
 
 export const SHARED_SEMANTIC_CATALOGS: readonly SemanticCatalog[] = [];
 

@@ -29,6 +29,7 @@ export type TenantRuntimeRegistry = {
   listTenantIds: () => Promise<string[]>;
   cachedTenantIds: () => string[];
   resolve: (tenantId: string) => Promise<AnchorService>;
+  invalidate: (tenantId: string) => void;
 };
 
 export function createTenantRuntimeRegistry(options: {
@@ -105,6 +106,9 @@ export function createTenantRuntimeRegistry(options: {
   return {
     listTenantIds,
     cachedTenantIds: () => [...cache.keys()],
+    invalidate: (tenantId) => {
+      cache.delete(tenantId);
+    },
     resolve: async (tenantId) => {
       const snapshot = await source.load();
       if (snapshot.version !== lastRegistryVersion) {

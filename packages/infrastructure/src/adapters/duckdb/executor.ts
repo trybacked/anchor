@@ -14,7 +14,7 @@ function escapeLiteral(value: SqlParameterValue): string {
   return "NULL";
 }
 
-function bindNamedParameters(
+export function bindNamedParameters(
   sql: string,
   parameters?: Record<string, SqlParameterValue> | SqlParameterValue[],
 ): string {

@@ -29,6 +29,9 @@ export const TopValueSchema = z.object({
   count: z.number().int().nonnegative(),
 });
 
+/**
+ *
+ */
 export type ForeignKeyCandidate = z.infer<typeof ForeignKeyCandidateSchema>;
 export const EMPTY_FOREIGN_KEY_CANDIDATES: ForeignKeyCandidate[] = [];
 export const ColumnProfileSchema = z
@@ -56,14 +59,32 @@ export const TableProfileSchema = z.object({
 });
 export const ProfileReportSchema = z.array(TableProfileSchema);
 
+/**
+ *
+ */
 export type DetectedPatternKind = z.infer<typeof DetectedPatternKindSchema>;
 
+/**
+ *
+ */
 export type DetectedPattern = z.infer<typeof DetectedPatternSchema>;
 
+/**
+ *
+ */
 export type TopValue = z.infer<typeof TopValueSchema>;
 
+/**
+ *
+ */
 export type ColumnProfile = z.infer<typeof ColumnProfileSchema>;
 
+/**
+ *
+ */
 export type TableProfile = z.infer<typeof TableProfileSchema>;
 
+/**
+ *
+ */
 export type ProfileReport = z.infer<typeof ProfileReportSchema>;

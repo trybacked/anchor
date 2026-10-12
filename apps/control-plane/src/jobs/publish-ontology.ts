@@ -5,7 +5,7 @@ import {
   type AuditEvent,
   type SemanticModel,
 } from "@trybacked/core";
-import { createFilesystemOntologyStore } from "@trybacked/infrastructure";
+import { createOntologyStoreFromEnv } from "@trybacked/infrastructure";
 import { diffSemanticModels, validateAuthoringModel } from "@trybacked/ontology-authoring";
 import { buildRemotePublication, type OntologyStore } from "@trybacked/registry";
 import type pg from "pg";
@@ -57,8 +57,9 @@ export async function runPublishOntologyJob(
       .join("; ");
     throw new Error(message.length > 0 ? message : "Draft validation failed");
   }
-  const store = createFilesystemOntologyStore({
-    registryBasePath: config.filesRegistryRoot,
+  const store = createOntologyStoreFromEnv({
+    ...process.env,
+    BACKED_FILES_REGISTRY_ROOT: config.filesRegistryRoot,
   });
   const nextVersion = await nextPublicationVersion(pool, store, input);
   const method = input.method ?? "publish";

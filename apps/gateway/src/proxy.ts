@@ -73,10 +73,10 @@ export async function forwardToControlPlane(
     headers.set("X-Backed-Roles", roles);
   }
   const init: RequestInit = { method: request.method, headers };
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.arrayBuffer();
-  }
   try {
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      init.body = await request.arrayBuffer();
+    }
     const upstreamResponse = await fetchFn(url, init);
     const responseHeaders = new Headers();
     const contentType = upstreamResponse.headers.get("content-type");
@@ -119,10 +119,10 @@ export async function forwardToPlatform(
     method: request.method,
     headers,
   };
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.arrayBuffer();
-  }
   try {
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      init.body = await request.arrayBuffer();
+    }
     const upstreamResponse = await fetchFn(url, init);
     const responseHeaders = new Headers();
     for (const name of [
@@ -142,7 +142,8 @@ export async function forwardToPlatform(
       status: upstreamResponse.status,
       headers: responseHeaders,
     });
-  } catch {
+  } catch (error) {
+    console.error(`[gateway] platform upstream failed: ${upstreamPath}`, error);
     return new Response(JSON.stringify({ error: "Upstream unavailable" }), {
       status: 502,
       headers: { "content-type": "application/json" },

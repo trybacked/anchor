@@ -102,9 +102,18 @@ export const AuthoringCommandV2Schema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("removeExample"), exampleId: z.string().min(1) }),
 ]);
 
+/**
+ *
+ */
 export type AuthoringCommandV2 = z.infer<typeof AuthoringCommandV2Schema>;
 
+/**
+ *
+ */
 export class AuthoringCommandV2Error extends Error {
+  /**
+   *
+   */
   constructor(message: string) {
     super(message);
     this.name = "AuthoringCommandV2Error";
@@ -125,6 +134,9 @@ function upsert<T>(list: T[], find: (item: T) => boolean, next: T): T[] {
   return [...list, next];
 }
 
+/**
+ *
+ */
 export function applyCommandV2(model: OntologyV2, command: AuthoringCommandV2): OntologyV2 {
   switch (command.type) {
     case "addObjectType": {
@@ -377,10 +389,16 @@ export function applyCommandV2(model: OntologyV2, command: AuthoringCommandV2): 
   }
 }
 
+/**
+ *
+ */
 export function applyCommandsV2(model: OntologyV2, commands: AuthoringCommandV2[]): OntologyV2 {
   return commands.reduce((current, command) => applyCommandV2(current, command), model);
 }
 
+/**
+ *
+ */
 export function validateOntologyV2(model: OntologyV2): ValidationResult {
   const issues: ValidationResult["issues"] = [];
   const objectTypeIds = new Set(model.objectTypes.map((o) => o.id));

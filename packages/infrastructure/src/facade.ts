@@ -9,6 +9,11 @@ export {
   type BackedEngine,
 } from "./engine-from-env.js";
 export {
+  ontologyRegistryLocationHint,
+  resolveOntologyRegistryStorage,
+  type OntologyRegistryStorage,
+} from "./ontology-store-from-env.js";
+export {
   createS3DocumentFileReader,
   resolveS3StorageConfig,
   s3BucketFromEnv,
@@ -19,12 +24,42 @@ export {
   createFilesystemOntologyStore,
   createFilesWarehouseConnector,
   createLocalDocumentFileReader,
+  createTenantArchiveFromEnv,
+  documentIdFromVolumePath,
   type LocalDocumentFileReader,
+  type TenantArchive,
+  type TenantArchiveEntry,
+  type TenantArchiveListResult,
+  type TenantArchiveUploadResult,
 } from "./adapters/files/index.js";
 export {
+  createGatewayLanguageModel,
+  type GatewayLanguageModelOptions,
+} from "./adapters/llm/gateway-language-model.js";
+export { requireAiGatewayApiKey } from "./adapters/llm/require-ai-gateway.js";
+export {
+  createProfileAvatarStorageFromEnv,
+  type ProfileAvatar,
+  type ProfileAvatarStorage,
+} from "./adapters/profiles/index.js";
+export {
+  bindNamedParameters,
+  createDuckDbSqlExecutor,
+  createSqlStatementExecutorForCatalog,
   createSqlStatementExecutorFromDuckDbPath,
+  duckDbExec,
   duckDbPathFromEnv,
+  ensureWarehouseDuckDbParentDir,
+  resolveWarehouseDuckDbPath,
   materializeFoundryRowsToDuckDb,
+  syncDocumentArchiveToWarehouse,
+  listAllArchiveFiles,
+  applyFoundryExtractToCatalogWarehouse,
+  loadFoundryWarehouseDiscoveryProfile,
+  loadFoundryWarehouseDiscoveryProfileFromS3,
+  persistFoundryWarehouseDiscoveryProfileSnapshot,
+  resolveFoundryWarehouseDiscoveryProfile,
+  type FoundryWarehouseDiscoveryProfile,
   type FoundryTableRows,
   type SqlStatementExecutor,
 } from "./adapters/duckdb/index.js";

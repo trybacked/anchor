@@ -2,7 +2,7 @@ import { duckDbExec } from "./executor.js";
 
 export type FoundryTableRows = Record<string, Record<string, unknown>[]>;
 
-const TABLE_DDL: Record<string, string> = {
+export const FOUNDRY_WAREHOUSE_TABLE_DDL: Record<string, string> = {
   documents: `(document_id VARCHAR PRIMARY KEY, source_file VARCHAR, title VARCHAR)`,
   organization_profiles: `(normalized_name VARCHAR PRIMARY KEY, name VARCHAR, entity_type VARCHAR, mention_count BIGINT, first_seen_document_id VARCHAR, last_seen_document_id VARCHAR)`,
   person_profiles: `(normalized_name VARCHAR PRIMARY KEY, name VARCHAR, entity_type VARCHAR, mention_count BIGINT, first_seen_document_id VARCHAR, last_seen_document_id VARCHAR)`,
@@ -62,9 +62,9 @@ export async function materializeFoundryRowsToDuckDb(options: {
   const schema = options.schema ?? "docs";
   const statements: string[] = [`CREATE SCHEMA IF NOT EXISTS ${quoteIdent(schema)};`];
 
-  for (const table of Object.keys(TABLE_DDL)) {
+  for (const table of Object.keys(FOUNDRY_WAREHOUSE_TABLE_DDL)) {
     const qualified = qualifiedTable(options.catalog, schema, table);
-    const ddl = TABLE_DDL[table];
+    const ddl = FOUNDRY_WAREHOUSE_TABLE_DDL[table];
     if (ddl === undefined) {
       continue;
     }
@@ -88,8 +88,8 @@ export async function materializeFoundryRowsToDuckDb(options: {
   }
 
   const rowCounts: Record<string, number> = {};
-  for (const table of Object.keys(TABLE_DDL)) {
+  for (const table of Object.keys(FOUNDRY_WAREHOUSE_TABLE_DDL)) {
     rowCounts[table] = options.rows[table]?.length ?? 0;
   }
-  return { tables: Object.keys(TABLE_DDL), rowCounts };
+  return { tables: Object.keys(FOUNDRY_WAREHOUSE_TABLE_DDL), rowCounts };
 }

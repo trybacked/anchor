@@ -27,4 +27,34 @@ describe("buildFoundryTableRows", () => {
     expect(rows.organization_profiles).toHaveLength(1);
     expect(rows.document_organization_mentions?.length ?? 0).toBeGreaterThan(0);
   });
+
+  it("maps mentions to archive document_id (hash), not LLM document slug", () => {
+    const archiveId = "a".repeat(64);
+    const archiveSeed: FoundrySeedPayload = {
+      ...seed,
+      documents: [{ document_id: archiveId, source_file: "leonardo.pdf", title: "Leonardo" }],
+    };
+    const output = {
+      locale: "it",
+      instances: [
+        {
+          objectTypeId: "document" as const,
+          name: "Leonardo",
+          normalizedName: "leonardo",
+          sourceFiles: ["leonardo.pdf"],
+          evidence: "PDF",
+        },
+        {
+          objectTypeId: "organization" as const,
+          name: "Leonardo S.p.A.",
+          normalizedName: "leonardo_spa",
+          sourceFiles: ["leonardo.pdf"],
+          evidence: "Società",
+        },
+      ],
+    };
+    const rows = buildFoundryTableRows(output, archiveSeed);
+    const mention = rows.document_organization_mentions?.[0];
+    expect(mention?.document_id).toBe(archiveId);
+  });
 });

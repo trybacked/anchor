@@ -1,5 +1,16 @@
 # @trybacked/platform-admin
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [8622ba3]
+  - @trybacked/core@0.5.0
+  - @trybacked/infrastructure@0.2.0
+  - @trybacked/ontology-authoring@0.2.0
+  - @trybacked/registry@0.3.2
+
 ## 0.2.1
 
 ### Patch Changes

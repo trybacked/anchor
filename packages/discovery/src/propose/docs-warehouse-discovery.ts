@@ -17,7 +17,9 @@ import {
   type ProposalFromDiscoveryOptions,
 } from "./proposal-from-discovery.js";
 
-const DOCS_INFRA_INCLUDE = new Set<string>(LEGACY_PIPELINE_MATERIALIZED_DATASET_TABLES);
+export const DOCS_WAREHOUSE_INFRA_INCLUDE = new Set<string>(
+  LEGACY_PIPELINE_MATERIALIZED_DATASET_TABLES,
+);
 
 export type RunDocsWarehouseDiscoveryOptions = DiscoverFromProfileOptions &
   ProposalFromDiscoveryOptions & {
@@ -46,7 +48,7 @@ export async function runDocsWarehouseDiscovery(
   const discovery = discoverFromProfile(profile, {
     ontologyId: options.ontologyId,
     ...(options.version !== undefined ? { version: options.version } : {}),
-    includeInfraTables: DOCS_INFRA_INCLUDE,
+    includeInfraTables: DOCS_WAREHOUSE_INFRA_INCLUDE,
   });
   const proposal = proposalFromDiscovery(discovery, {
     runId: options.runId,
@@ -84,7 +86,7 @@ export function discoverDocsFromProfile(
   const discovery = discoverFromProfile(filtered.profile, {
     ontologyId: options.ontologyId,
     ...(options.version !== undefined ? { version: options.version } : {}),
-    includeInfraTables: DOCS_INFRA_INCLUDE,
+    includeInfraTables: DOCS_WAREHOUSE_INFRA_INCLUDE,
   });
   const proposal = proposalFromDiscovery(discovery, {
     runId: options.runId,

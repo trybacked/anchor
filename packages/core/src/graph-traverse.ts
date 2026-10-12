@@ -2,13 +2,22 @@ import type { SemanticModel } from "./model.js";
 export const MIN_TRAVERSE_DEPTH = 1;
 export const MAX_TRAVERSE_DEPTH = 3;
 
+/**
+ *
+ */
 export type TraverseDirection = "forward" | "reverse";
 
+/**
+ *
+ */
 export interface RelationHop {
   relationId: string;
   direction: TraverseDirection;
 }
 
+/**
+ *
+ */
 export function clampTraverseDepth(depth: number | undefined): number {
   const requested = depth ?? MIN_TRAVERSE_DEPTH;
   return Math.min(Math.max(MIN_TRAVERSE_DEPTH, requested), MAX_TRAVERSE_DEPTH);
@@ -42,6 +51,9 @@ function findNextRelation(
   return null;
 }
 
+/**
+ *
+ */
 export function buildRelationPath(
   model: SemanticModel,
   startRelationId: string,
@@ -67,6 +79,9 @@ export function buildRelationPath(
   return hops;
 }
 
+/**
+ *
+ */
 export interface RelationPathSegment {
   relationId: string;
   direction: TraverseDirection;
@@ -76,6 +91,9 @@ export interface RelationPathSegment {
   toColumn: string;
 }
 
+/**
+ *
+ */
 export function resolveRelationPath(
   model: SemanticModel,
   hops: RelationHop[],

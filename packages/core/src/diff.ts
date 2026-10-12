@@ -27,8 +27,17 @@ export const ModelDiffSchema = z.object({
   changes: z.array(DiffChangeSchema),
 });
 
+/**
+ *
+ */
 export type DiffChangeKind = z.infer<typeof DiffChangeKindSchema>;
 
+/**
+ *
+ */
 export type DiffChange = z.infer<typeof DiffChangeSchema>;
 
+/**
+ *
+ */
 export type ModelDiff = z.infer<typeof ModelDiffSchema>;

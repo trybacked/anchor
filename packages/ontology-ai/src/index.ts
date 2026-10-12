@@ -1,3 +1,4 @@
+export { parseChangeSet as parseOntologyChangeSet, type ValidatedChangeSet } from "@trybacked/core";
 export { createAiSdkLlm, type OntologyLlm } from "./llm.js";
 export {
   AiProposalSchema,

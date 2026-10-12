@@ -1,5 +1,15 @@
 # @trybacked/core
 
+## 0.5.0
+
+### Minor Changes
+
+- 8622ba3: Add ontology authoring API (draft commands, publish worker, SDK modules) backed by control-plane Postgres; gateway proxies `/v1/authoring/*` to control plane.
+
+### Patch Changes
+
+- Foundry document ontology: init/extract/materialize-foundry CLI, DuckDB warehouse adapter for local `query_objects`, and ontology-extract materialize pipeline.
+
 ## 0.4.0
 
 ### Minor Changes

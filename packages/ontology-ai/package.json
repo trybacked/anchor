@@ -1,6 +1,6 @@
 {
   "name": "@trybacked/ontology-ai",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Source-agnostic AI authoring pipeline: profile -> sample -> propose -> ChangeSet -> review policy.",
   "license": "Apache-2.0",

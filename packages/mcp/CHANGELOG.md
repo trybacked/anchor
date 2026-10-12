@@ -1,5 +1,15 @@
 # @trybacked/mcp
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [8622ba3]
+  - @trybacked/core@0.5.0
+  - @trybacked/runtime@0.3.2
+  - @trybacked/service@0.2.2
+
 ## 0.2.3
 
 ### Patch Changes

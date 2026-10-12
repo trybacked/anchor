@@ -1,5 +1,28 @@
 # @trybacked/cli
 
+## 0.4.0
+
+### Minor Changes
+
+- Foundry document ontology: init/extract/materialize-foundry CLI, DuckDB warehouse adapter for local `query_objects`, and ontology-extract materialize pipeline.
+
+### Patch Changes
+
+- 8622ba3: Add ontology authoring API (draft commands, publish worker, SDK modules) backed by control-plane Postgres; gateway proxies `/v1/authoring/*` to control plane.
+- Updated dependencies
+- Updated dependencies [8622ba3]
+  - @trybacked/core@0.5.0
+  - @trybacked/infrastructure@0.2.0
+  - @trybacked/ontology-extract@0.2.0
+  - @trybacked/runtime@0.3.2
+  - @trybacked/service@0.2.2
+  - @trybacked/registry@0.3.2
+  - @trybacked/capability-documents@0.1.1
+  - @trybacked/discovery@0.2.4
+  - @trybacked/mcp@0.2.4
+  - @trybacked/platform-admin@0.2.2
+  - @trybacked/semantic-chat@0.1.3
+
 ## 0.3.1
 
 ### Patch Changes

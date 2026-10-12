@@ -1,4 +1,5 @@
 import type { SqlStatementExecutor } from "../execute.js";
+import { quoteSqlIdentifier as quoteIdentifier } from "../sql-ident.js";
 import {
   DEFAULT_CHUNK_SEARCH_LIMIT,
   DEFAULT_CHUNK_SEARCH_MIN_SCORE,
@@ -23,9 +24,6 @@ export type ChunkSearchInput = {
 function elementRowId(row: Record<string, unknown>): string {
   const elementId = row["element_id"];
   return String(elementId);
-}
-function quoteIdentifier(identifier: string): string {
-  return `\`${identifier.replaceAll("`", "``")}\``;
 }
 function normalizeChunkRow(row: Record<string, unknown>, score: number): Record<string, unknown> {
   return {

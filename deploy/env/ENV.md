@@ -22,7 +22,7 @@ Interactive docs (Scalar): **`GET /docs`**, **`GET /docs/platform`** (platform b
 | Variable                       | R/O                | Local | Railway | Notes                                                                                                                                                                                    |
 | ------------------------------ | ------------------ | ----- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GATEWAY_SESSION_SECRET`       | R                  | ✓     | ✓       | `openssl rand -hex 32` — gateway session cookie (not WorkOS)                                                                                                                             |
-| `GATEWAY_PLATFORM_UPSTREAM`    | R                  | ✓     | ✓       | Local: `http://platform-api:8787`. Railway: `http://platform-api.railway.internal:8787`                                                                                                  |
+| `GATEWAY_PLATFORM_UPSTREAM`    | R                  | ✓     | ✓       | Local: `http://platform-api:8787`. Railway: `http://platform-api.railway.internal:8080` (use `${{platform-api.PORT}}`, not 8787)                                                         |
 | `GATEWAY_PLATFORM_TOKEN`       | R                  | ✓     | ✓       | **Must match** `ANCHOR_API_TOKEN`                                                                                                                                                        |
 | `GATEWAY_COOKIE_SECURE`        | O                  | ✓     | ✓       | `1` in production                                                                                                                                                                        |
 | `GATEWAY_PUBLIC_ORIGIN`        | O                  | —     | ✓       | e.g. `https://api.backed.app` — HTTPS URL in Scalar (avoids mixed content). If missing with secure cookies, derived from `WORKOS_REDIRECT_URI`; required when secure and neither is set. |
@@ -50,12 +50,14 @@ Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control p
 | `ANCHOR_API_TOKEN`                              | R         | ✓     | ✓       |
 | `BACKED_REGISTRY_SOURCE`                        | R         | ✓     | ✓       |
 | `BACKED_REGISTRY_URL` / `BACKED_REGISTRY_TOKEN` | R if http | ✓     | ✓       |
-| `BACKED_ENGINE`                                 | O         | ✓     | ✓       | `files` (only engine today)                 |
-| `BACKED_FILES_ROOT`                             | O         | ✓     | ✓       | Document folder per tenant / workspace      |
-| `BACKED_FILES_REGISTRY_ROOT`                    | O         | ✓     | ✓       | On-disk ontology registry for platform mode |
-| `AI_GATEWAY_API_KEY`                            | O         | ✓     | ✓       | `/v1/chat/ask` (semantic agent)             |
+| `BACKED_ENGINE`                                 | O         | ✓     | ✓       | `files` (only engine today)                                                                      |
+| `BACKED_FILES_ROOT`                             | O         | ✓     | ✓       | Document folder per tenant / workspace                                                           |
+| `BACKED_FILES_REGISTRY_ROOT`                    | O         | ✓     | ✓       | On-disk ontology registry (when `BACKED_ONTOLOGY_REGISTRY_STORAGE=filesystem`)                   |
+| `BACKED_ONTOLOGY_REGISTRY_STORAGE`              | O         | ✓     | ✓       | `filesystem` (default) or `s3` — Railway prod: **`s3`** with enrollment bucket                   |
+| `BACKED_ONTOLOGY_REGISTRY_S3_PREFIX`            | O         | ✓     | ✓       | S3 key prefix (default `_ontology-registry`) → `{prefix}/{catalog}/backed/registry/current.json` |
+| `AI_GATEWAY_API_KEY`                            | R         | ✓     | ✓       | `/v1/chat/ask`, **`POST /v1/files/refresh`** (automatic PDF entity extraction)                   |
 | `ANCHOR_TENANTS_REGISTRY`                       | R if file | ✓     | —       |
-| `DATABASE_URL`                                  | —         | —     | —       | Not used (token auth)                       |
+| `DATABASE_URL`                                  | —         | —     | —       | Not used (token auth)                                                                            |
 
 ### Control-plane + provisioner (worker)
 
@@ -65,7 +67,9 @@ Third-party apps (Chiedi, partner SPAs): register OAuth clients on the control p
 | `CONTROL_PLANE_ADMIN_TOKEN`        | R   | ✓     | ✓       | CLI / `backed tenant create --remote`                                                                                                                   |
 | `CONTROL_PLANE_INTERNAL_TOKEN`     | R   | ✓     | ✓       | HTTP registry + gateway WorkOS                                                                                                                          |
 | `BACKED_FILES_ROOT`                | R   | ✓     | ✓       | Tenant document trees                                                                                                                                   |
-| `BACKED_FILES_REGISTRY_ROOT`       | R   | ✓     | ✓       | Published ontology artifacts on disk                                                                                                                    |
+| `BACKED_FILES_REGISTRY_ROOT`       | R   | ✓     | ✓       | Same path as **platform-api** tenant DuckDB (`tenants/{catalog}.duckdb`) — required for AI discovery to see Foundry entities                            |
+| `PLATFORM_API_INTERNAL_URL`        | O   | —     | ✓       | Control-plane → platform-api base (e.g. `http://platform-api:8080`) when registry volume is not mounted on cloud                                        |
+| `ANCHOR_API_TOKEN`                 | O   | ✓     | ✓       | Used with `PLATFORM_API_INTERNAL_URL` for `GET …/discovery/warehouse-profile`                                                                           |
 | `CONTROL_PLANE_SHARED_SPACES_JSON` | O   | ✓     | ✓       | JSON map of shared UC spaces (default `{}`)                                                                                                             |
 | `AI_GATEWAY_API_KEY`               | O   | ✓     | ✓       | Vercel AI Gateway — required for `POST …/discovery/docs/propose-ai` (ontology extract). Same key as platform-api `/v1/chat/ask` if you use one gateway. |
 | `ONTOLOGY_EXTRACT_MODEL`           | O   | ✓     | ✓       | Optional model id for ontology extract (defaults in `@trybacked/ontology-extract`).                                                                     |

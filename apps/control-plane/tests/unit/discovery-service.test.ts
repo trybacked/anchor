@@ -1,12 +1,18 @@
 import type { DatasetProvider, DatasetSchema, DatasetStatistics } from "@trybacked/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  proposeDocsAiFilesSourceDiscovery,
   proposeDocsAiWarehouseDiscovery,
   proposeDocsWarehouseDiscovery,
 } from "../../src/authoring/discovery-service.js";
 
-const { runDocsAiOntologyDiscovery, createOntologyExtractModelFromEnv } = vi.hoisted(() => ({
+const {
+  runDocsAiOntologyDiscovery,
+  runFilesAiOntologyDiscovery,
+  createOntologyExtractModelFromEnv,
+} = vi.hoisted(() => ({
   runDocsAiOntologyDiscovery: vi.fn(),
+  runFilesAiOntologyDiscovery: vi.fn(),
   createOntologyExtractModelFromEnv: vi.fn(),
 }));
 
@@ -15,6 +21,7 @@ vi.mock("@trybacked/ontology-extract", async (importOriginal) => {
   return {
     ...actual,
     runDocsAiOntologyDiscovery,
+    runFilesAiOntologyDiscovery,
     createOntologyExtractModelFromEnv,
     createGatewayLanguageModel: vi.fn(),
   };
@@ -88,6 +95,89 @@ describe("proposeDocsWarehouseDiscovery", () => {
       profileTableCount: 1,
       proposal: { entities: [{ id: "documents" }] },
     });
+  });
+});
+
+describe("proposeDocsAiFilesSourceDiscovery", () => {
+  beforeEach(() => {
+    runFilesAiOntologyDiscovery.mockReset();
+    createOntologyExtractModelFromEnv.mockReset();
+  });
+
+  it("returns files_empty when profile has no rows", async () => {
+    createOntologyExtractModelFromEnv.mockReturnValue({
+      apiKey: "test-key",
+      modelId: "mock/model",
+    });
+    runFilesAiOntologyDiscovery.mockResolvedValue({
+      profile: [{ table: "inbox", sourceFile: "f", rowCount: 0, columns: [] }],
+      missingTables: [],
+      emptyTables: ["inbox"],
+      discovery: { ontology: { objects: [], relationships: [] } },
+      proposal: {
+        runId: "run-ai-files",
+        generatedAt: "2025-06-01T00:00:00.000Z",
+        entities: [],
+        relations: [],
+        rules: [],
+        doubts: [],
+        questions: [],
+        usage: { inputTokens: 0, outputTokens: 0, costUsd: null },
+      },
+      aiUsage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+      sampleTableCount: 0,
+    });
+    const outcome = await proposeDocsAiFilesSourceDiscovery(
+      mockProvider({}),
+      { AI_GATEWAY_API_KEY: "k" },
+      {
+        tenantId: "leonardo",
+        catalog: "backed_leonardo",
+        runId: "run-ai-files",
+      },
+    );
+    expect(outcome).toMatchObject({ code: "files_empty" });
+  });
+
+  it("returns enriched proposal when file collections have rows", async () => {
+    createOntologyExtractModelFromEnv.mockReturnValue({
+      apiKey: "test-key",
+      modelId: "mock/model",
+    });
+    runFilesAiOntologyDiscovery.mockResolvedValue({
+      profile: [{ table: "inbox", sourceFile: "f", rowCount: 2, columns: [] }],
+      missingTables: [],
+      emptyTables: [],
+      discovery: { ontology: { objects: [], relationships: [] } },
+      proposal: {
+        runId: "run-ai-files-2",
+        generatedAt: "2025-06-01T00:00:00.000Z",
+        entities: [{ id: "inbox", name: "Inbox" }],
+        relations: [],
+        rules: [],
+        doubts: [],
+        questions: [],
+        usage: { inputTokens: 10, outputTokens: 5, costUsd: null },
+      },
+      aiUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      sampleTableCount: 1,
+    });
+    const outcome = await proposeDocsAiFilesSourceDiscovery(
+      mockProvider({}),
+      { AI_GATEWAY_API_KEY: "k" },
+      {
+        tenantId: "leonardo",
+        catalog: "backed_leonardo",
+        runId: "run-ai-files-2",
+        locale: "it",
+      },
+    );
+    expect(outcome).toMatchObject({
+      profileTableCount: 1,
+      sampleTableCount: 1,
+      proposal: { entities: [{ name: "Inbox" }] },
+    });
+    expect(runFilesAiOntologyDiscovery).toHaveBeenCalledOnce();
   });
 });
 

@@ -4,6 +4,9 @@ import { workspacePaths } from "./workspace.js";
 import type { RunArtifactName } from "./workspace.js";
 const ARTIFACT_JSON_INDENT = 2;
 
+/**
+ *
+ */
 export function writeRunArtifact(
   root: string,
   runId: string,
@@ -17,6 +20,9 @@ export function writeRunArtifact(
   return filePath;
 }
 
+/**
+ *
+ */
 export function readRunArtifact<TSchema extends z.ZodTypeAny>(
   root: string,
   runId: string,
@@ -33,6 +39,9 @@ export function readRunArtifact<TSchema extends z.ZodTypeAny>(
   return schema.parse(JSON.parse(raw)) as z.infer<TSchema>;
 }
 
+/**
+ *
+ */
 export function hasRunArtifact(root: string, runId: string, artifact: RunArtifactName): boolean {
   try {
     readFileSync(workspacePaths(root).artifactPath(runId, artifact), "utf-8");
@@ -42,6 +51,9 @@ export function hasRunArtifact(root: string, runId: string, artifact: RunArtifac
   }
 }
 
+/**
+ *
+ */
 export function listRunIds(root: string): string[] {
   const paths = workspacePaths(root);
   try {

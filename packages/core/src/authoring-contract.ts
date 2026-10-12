@@ -18,6 +18,9 @@ import {
 } from "./semantics.js";
 export const TenantRoleSchema = z.enum(["viewer", "editor", "publisher", "admin"]);
 
+/**
+ *
+ */
 export type TenantRole = z.infer<typeof TenantRoleSchema>;
 export const AuthoringCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("addEntity"), entity: EntitySchema }),
@@ -119,6 +122,9 @@ export const AuthoringCommandSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
+/**
+ *
+ */
 export type AuthoringCommand = z.infer<typeof AuthoringCommandSchema>;
 export const ApplyCommandsBodySchema = z.object({
   commands: z.array(AuthoringCommandSchema).min(1).max(100),
@@ -172,6 +178,9 @@ export const OntologyPackSummarySchema = z.object({
   description: z.string(),
 });
 
+/**
+ *
+ */
 export type OntologyPackSummary = z.infer<typeof OntologyPackSummarySchema>;
 export const ImportOntologyBodySchema = z.object({
   format: z.enum(["yaml", "json"]),
