@@ -8,9 +8,9 @@
 
 ```bash
 cd your-workspace
+# .env: BACKED_ENGINE=files, AI_GATEWAY_API_KEY=…, BACKED_FILES_ROOT=./sources
 backed anchor init
-backed anchor pull        # files engine env in .env → model.yaml
-backed anchor sync
+backed anchor run          # ingest → AI induce → AI extract → eval → sync
 backed anchor deploy
 ```
 
@@ -23,10 +23,10 @@ Global install: `pnpm build && cd apps/cli && pnpm link --global`.
 | Command  | Purpose                                          |
 | -------- | ------------------------------------------------ |
 | `init`   | Workspace `.backed/config.yaml`                  |
-| `pull`   | Warehouse schema → `model.yaml`                  |
+| `run`    | Full AI document pipeline → `model.yaml`         |
 | `sync`   | Versioned registry snapshot (`--status` to list) |
 | `deploy` | MCP for agents                                   |
 
 Top level: `backed version` · `backed anchor …`
 
-Legacy aliases: `discover` → `pull`, `register` / `publish` → `sync`, `serve` → `deploy`.
+Legacy aliases: `discover` → `run`, `register` / `publish` → `sync`, `serve` → `deploy`.

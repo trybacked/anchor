@@ -5,7 +5,8 @@ import {
   semanticModelToOntology,
   validateOntology,
 } from "@trybacked/core";
-import { listPublicationVersions, publishSemanticModel } from "@trybacked/registry";
+import { isOntologyV2Workspace } from "@trybacked/core";
+import { listPublicationVersions, publishSemanticModel, publishWorkspaceOntology } from "@trybacked/registry";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { join } from "node:path";
@@ -50,21 +51,26 @@ export const syncCommand: CommandHandler = async (args) => {
   }
   const modelPath = path.join(root, "model.yaml");
   if (!existsSync(modelPath)) {
-    ui.writeError(`No model.yaml at ${modelPath}. Run "${formatCliCommand(COMMANDS.PULL)}" first.`);
+    ui.writeError(`No model.yaml at ${modelPath}. Run "${formatCliCommand(COMMANDS.RUN)}" or "${formatCliCommand(COMMANDS.INGEST)}" then induce first.`);
     process.exitCode = 1;
     return;
   }
-  const model = readModelYaml(root);
   const ontologyId = path.basename(root);
-  const preflight = validateOntology(semanticModelToOntology(model, { ontologyId }));
-  if (!preflight.valid) {
-    ui.writeError("model.yaml is not a valid ontology:");
-    formatValidationErrors(ui, preflight);
-    process.exitCode = 1;
-    return;
-  }
   const localOnly = args.some((arg) => arg === "--local-only");
-  const record = publishSemanticModel(root, model, { ontologyId });
+  let record;
+  if (isOntologyV2Workspace(root)) {
+    record = publishWorkspaceOntology(root, { ontologyId });
+  } else {
+    const model = readModelYaml(root);
+    const preflight = validateOntology(semanticModelToOntology(model, { ontologyId }));
+    if (!preflight.valid) {
+      ui.writeError("model.yaml is not a valid ontology:");
+      formatValidationErrors(ui, preflight);
+      process.exitCode = 1;
+      return;
+    }
+    record = publishSemanticModel(root, model, { ontologyId });
+  }
   if (!localOnly && canPublishRemoteOntology()) {
     const registry = loadTenantsRegistry(join(findBackedRepoRoot(), "tenants.yaml"));
     const tenantEntry = registry.tenants[ontologyId];
@@ -77,7 +83,7 @@ export const syncCommand: CommandHandler = async (args) => {
   const actorId = defaultReviewer();
   appendAuditEvents(root, [
     buildPublishAuditEvent({
-      runId: model.metadata.runId,
+      runId: record.runId,
       recordedAt: record.publishedAt,
       publicationVersion: record.version,
       ...(actorId !== undefined ? { actor: { id: actorId } } : {}),

@@ -9,6 +9,10 @@ export const PublicationProvenanceSchema = z.object({
   draftRevision: z.number().int().nonnegative().optional(),
   modelSha256: z.string().regex(/^[0-9a-f]{64}$/),
   changeSummary: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  provActivityId: z.string().min(1).optional(),
+  provAgentId: z.string().min(1).optional(),
+  inputContentHashes: z.array(z.string().regex(/^[0-9a-f]{64}$/)).optional(),
+  promptVersions: z.record(z.string(), z.string().min(1)).optional(),
 });
 export type PublicationProvenance = z.infer<typeof PublicationProvenanceSchema>;
 export const PublicationRecordSchema = z.object({

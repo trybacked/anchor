@@ -6,6 +6,7 @@ import { isServiceErrorResult } from "@trybacked/service";
 import type { McpSurfaceTool } from "./constants.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
 import type { SearchModelOptions } from "./mapping.js";
+import { evidenceToolsForContext } from "./evidence-tools.js";
 import {
   askSemanticToolForContext,
   MCP_TOOL_DEFINITIONS,
@@ -81,6 +82,7 @@ export function createModelMcpServer(
     ...(options.queryRuntime !== undefined ? [QUERY_OBJECTS_TOOL_DEFINITION] : []),
     ...warehouseReaderToolsForRuntime(options.queryRuntime),
     ...askSemanticToolForContext(options.semanticAsk),
+    ...evidenceToolsForContext(toolContext),
   ];
   for (const tool of tools) {
     server.registerTool(

@@ -32,15 +32,21 @@ export {
   type TenantArchiveListResult,
   type TenantArchiveUploadResult,
 } from "./adapters/files/index.js";
+export { createGatewayLanguageModel, type GatewayLanguageModelOptions } from "./adapters/llm/gateway-language-model.js";
+export { requireAiGatewayApiKey } from "./adapters/llm/require-ai-gateway.js";
 export {
   createProfileAvatarStorageFromEnv,
   type ProfileAvatar,
   type ProfileAvatarStorage,
 } from "./adapters/profiles/index.js";
 export {
+  bindNamedParameters,
+  createDuckDbSqlExecutor,
   createSqlStatementExecutorForCatalog,
   createSqlStatementExecutorFromDuckDbPath,
+  duckDbExec,
   duckDbPathFromEnv,
+  ensureWarehouseDuckDbParentDir,
   resolveWarehouseDuckDbPath,
   materializeFoundryRowsToDuckDb,
   syncDocumentArchiveToWarehouse,

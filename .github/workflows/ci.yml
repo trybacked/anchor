@@ -51,5 +51,8 @@ jobs:
       - name: Verify OpenAPI artifact is committed
         run: git diff --exit-code apps/api-server/openapi.json
 
+      - name: Guardrails
+        run: pnpm guardrails
+
       - name: Test with coverage
         run: pnpm test:coverage

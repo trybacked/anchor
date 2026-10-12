@@ -1,0 +1,24 @@
+{
+  "name": "@trybacked/extraction",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Schema-driven instance extraction and DuckDB materialization",
+  "license": "Apache-2.0",
+  "publishConfig": { "access": "public" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@trybacked/core": "workspace:*",
+    "@trybacked/ingest": "workspace:*",
+    "@trybacked/infrastructure": "workspace:*",
+    "@trybacked/ports": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": { "vitest": "^3.0.5" },
+  "engines": { "node": ">=22" }
+}

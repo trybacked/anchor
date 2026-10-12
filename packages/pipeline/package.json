@@ -1,0 +1,27 @@
+{
+  "name": "@trybacked/pipeline",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Shared files-to-ontology pipeline orchestrator for CLI and control-plane",
+  "license": "Apache-2.0",
+  "publishConfig": { "access": "public" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@trybacked/core": "workspace:*",
+    "@trybacked/evaluation": "workspace:*",
+    "@trybacked/extraction": "workspace:*",
+    "@trybacked/infrastructure": "workspace:*",
+    "@trybacked/ingest": "workspace:*",
+    "@trybacked/ontology-induction": "workspace:*",
+    "@trybacked/registry": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": { "vitest": "^3.0.5" },
+  "engines": { "node": ">=22" }
+}

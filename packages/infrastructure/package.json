@@ -34,7 +34,9 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "^4",
     "@aws-sdk/client-s3": "^3.750.0",
+    "ai": "^7",
     "@trybacked/compiler": "workspace:*",
     "@trybacked/core": "workspace:*",
     "@trybacked/ports": "workspace:*",

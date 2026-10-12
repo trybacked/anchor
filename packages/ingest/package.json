@@ -1,0 +1,35 @@
+{
+  "name": "@trybacked/ingest",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Incremental file ingestion, parsing, chunking, and hybrid index for Anchor",
+  "license": "Apache-2.0",
+  "publishConfig": { "access": "public" },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage"
+  },
+  "dependencies": {
+    "@trybacked/core": "workspace:*",
+    "@trybacked/infrastructure": "workspace:*",
+    "@trybacked/ports": "workspace:*",
+    "cheerio": "^1.0.0",
+    "mammoth": "^1.9.0",
+    "papaparse": "^5.5.2",
+    "unpdf": "^0.12.1",
+    "yaml": "^2.7.0",
+    "xlsx": "^0.18.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.15",
+    "vitest": "^3.0.5"
+  },
+  "engines": { "node": ">=22" }
+}

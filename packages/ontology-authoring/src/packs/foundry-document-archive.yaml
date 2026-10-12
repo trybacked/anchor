@@ -1,0 +1,14 @@
+id: foundry_document_archive
+name: Foundry document archive
+description: Reusable document-centric object types for archive ingestion (domain-neutral labels).
+objectTypes:
+  - id: document
+    name: Document
+  - id: organization
+    name: Organization
+  - id: person
+    name: Person
+  - id: legal_instrument
+    name: Legal instrument
+  - id: topic
+    name: Topic

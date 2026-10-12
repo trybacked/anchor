@@ -18,6 +18,7 @@ export {
   readPublicationRecord,
   rollbackPublication,
 } from "./publish.js";
+export { publishWorkspaceOntology } from "./publish-v2.js";
 export {
   OntologyRegistryEntrySchema,
   OntologyRegistrySchema,

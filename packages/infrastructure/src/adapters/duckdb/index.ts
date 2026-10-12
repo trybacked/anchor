@@ -1,4 +1,4 @@
-export { createDuckDbSqlExecutor, duckDbExec } from "./executor.js";
+export { bindNamedParameters, createDuckDbSqlExecutor, duckDbExec } from "./executor.js";
 export { materializeFoundryRowsToDuckDb, type FoundryTableRows } from "./materialize-foundry.js";
 export { listAllArchiveFiles, syncDocumentArchiveToWarehouse } from "./document-archive-index.js";
 export { applyFoundryExtractToCatalogWarehouse } from "./apply-foundry-extract-to-catalog.js";

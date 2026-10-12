@@ -1,5 +1,15 @@
 export { deployCommand } from "./deploy.js";
+export { diffCommand } from "./diff.js";
+export { doctorCommand } from "./doctor.js";
+export { evalCommand } from "./eval.js";
+export { exportCommand } from "./export.js";
+export { extractCommand } from "./extract.js";
+export { ingestCommand } from "./ingest.js";
 export { initCommand } from "./init.js";
-export { pullCommand } from "./pull.js";
+export { migrateCommand } from "./migrate.js";
+export { reviewCommand } from "./review.js";
+export { rollbackCommand } from "./rollback.js";
+export { runCommand } from "./run.js";
+export { statusCommand } from "./status.js";
 export { syncCommand } from "./sync.js";
 export { versionCommand } from "./version.js";

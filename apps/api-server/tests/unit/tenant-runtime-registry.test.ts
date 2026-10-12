@@ -53,9 +53,10 @@ function writeRegistry(
   const path = join(dir, "tenants.yaml");
   const lines = [
     "enrollment:",
-    "  host: files://anchor",
-    "  profile: local",
-    "  warehouse_id: files",
+    "  storage:",
+    "    provider: s3",
+    "    bucket: backed-v1",
+    "    region: eu-north-1",
     "shared_spaces: {}",
     "tenants:",
   ];

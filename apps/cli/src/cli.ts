@@ -133,7 +133,7 @@ async function main(): Promise<void> {
     return;
   }
   const legacyAliases: Record<string, string> = {
-    discover: "pull",
+    discover: "run",
     serve: "deploy",
     publish: "sync",
     register: "sync",

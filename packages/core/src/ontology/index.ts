@@ -97,6 +97,24 @@ export type {
   GovernancePatchAction,
   OntologyGovernancePatch,
 } from "./governance-patch.js";
+export {
+  ChangeSetEntrySchema,
+  ChangeSetEvidenceSchema,
+  OntologyChangeSetSchema,
+  parseChangeSet,
+} from "./change-set.js";
+export type { ChangeSetEntry, ChangeSetEvidence, OntologyChangeSet, ValidatedChangeSet } from "./change-set.js";
+export {
+  MODEL_YAML_FILENAME,
+  parseOntologyV2Yaml,
+  readOntologyV2Yaml,
+  serializeOntologyV2Yaml,
+  validateOntologyV2File,
+  writeOntologyV2Yaml,
+} from "./ontology-v2-yaml.js";
+export { isOntologyV2Workspace, readWorkspaceModel } from "./workspace-ontology.js";
+export type { WorkspaceModel, WorkspaceModelFormat } from "./workspace-ontology.js";
+export { ontologyV2ToOntology } from "./ontology-v2-bridge.js";
 export { semanticModelToOntology } from "./semantic-model-bridge.js";
 export { validateOntology } from "./validate-ontology.js";
 export { validateSemanticModel } from "./validate-semantic-model.js";

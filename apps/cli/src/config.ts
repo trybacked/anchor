@@ -23,9 +23,19 @@ export const SERVICES = {
 } as const;
 export const COMMANDS = {
   INIT: "init",
-  PULL: "pull",
   SYNC: "sync",
   DEPLOY: "deploy",
+  MIGRATE: "migrate",
+  INGEST: "ingest",
+  REVIEW: "review",
+  EXTRACT: "extract",
+  EVAL: "eval",
+  RUN: "run",
+  DOCTOR: "doctor",
+  STATUS: "status",
+  ROLLBACK: "rollback",
+  DIFF: "diff",
+  EXPORT: "export",
 } as const;
 export function formatCliCommand(command: string): string {
   return `${CLI_NAME} ${SERVICES.ANCHOR} ${command}`;

@@ -20,6 +20,8 @@ export const TOOL_NAMES = {
   getEntityProfile: "get_entity_profile",
   traverseGraph: "traverse_graph",
   askSemantic: "ask_semantic",
+  getEvidence: "get_evidence",
+  summarizeCorpus: "summarize_corpus",
 } as const;
 export const MCP_SURFACE_TOOLS = [
   TOOL_NAMES.listEntities,

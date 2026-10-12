@@ -20,6 +20,7 @@ export {
   runStdioMcpServerUntilClose,
   startStdioMcpServer,
 } from "./server.js";
+export { runStreamableHttpMcpServer, type StreamableHttpMcpOptions } from "./http-server.js";
 export type { ModelMcpServerOptions, McpSurfaceOperation, ServeUsageRecorder } from "./server.js";
 export {
   MCP_QUERY_TOOL,
