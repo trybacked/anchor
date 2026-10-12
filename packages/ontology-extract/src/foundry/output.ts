@@ -177,7 +177,9 @@ function normalizeInstanceEntry(
   };
 }
 
-function normalizeLinkTypeEntry(entry: unknown): z.infer<typeof FoundryExtractLinkTypeSchema> | null {
+function normalizeLinkTypeEntry(
+  entry: unknown,
+): z.infer<typeof FoundryExtractLinkTypeSchema> | null {
   if (!isRecord(entry)) {
     return null;
   }

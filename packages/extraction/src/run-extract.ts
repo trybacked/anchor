@@ -1,5 +1,4 @@
 import { readWorkspaceModel } from "@trybacked/core";
-import { PARSED_ARTIFACTS_DIR } from "@trybacked/ingest";
 import {
   bindNamedParameters,
   createDuckDbSqlExecutor,
@@ -7,6 +6,7 @@ import {
   duckDbPathFromEnv,
   resolveWarehouseDuckDbPath,
 } from "@trybacked/infrastructure";
+import { PARSED_ARTIFACTS_DIR } from "@trybacked/ingest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { materializeOntologyTables } from "./materialize.js";
@@ -40,7 +40,9 @@ export async function runExtractStage(
 ): Promise<RunExtractStageResult> {
   const workspace = readWorkspaceModel(options.workspaceRoot);
   if (workspace.format !== "ontology_v2") {
-    throw new Error("extract requires OntologySpec v2 model.yaml — run `backed anchor migrate` first.");
+    throw new Error(
+      "extract requires OntologySpec v2 model.yaml — run `backed anchor migrate` first.",
+    );
   }
   const duckDbPath =
     options.duckDbPath ?? duckDbPathFromEnv(options.env) ?? resolveWarehouseDuckDbPath(options.env);
@@ -58,7 +60,9 @@ export async function runExtractStage(
         readFileSync(path.join(parsedDir, name), "utf8"),
       ) as ParsedArtifact;
 
-      const docType = workspace.ontology.objectTypes.find((objectType) => objectType.id === "document");
+      const docType = workspace.ontology.objectTypes.find(
+        (objectType) => objectType.id === "document",
+      );
       if (docType !== undefined) {
         const docSql = bindNamedParameters(
           `INSERT INTO docs.${quoteIdent(docType.id)} (uri, title, _evidence_uri) VALUES (:uri, :title, :evidence)`,

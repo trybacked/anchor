@@ -2,7 +2,10 @@ import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createTenantArchiveFromEnv, documentIdFromVolumePath } from "../../../src/adapters/files/tenant-archive.js";
+import {
+  createTenantArchiveFromEnv,
+  documentIdFromVolumePath,
+} from "../../../src/adapters/files/tenant-archive.js";
 
 describe("tenant archive (local)", () => {
   it("lists folders and files with volume paths", async () => {

@@ -1,8 +1,8 @@
 import { requireAiGatewayApiKey, resolveEngineFromEnv } from "@trybacked/infrastructure";
 import { spawnSync } from "node:child_process";
-import { dotEnvLoadOrder } from "../env.js";
 import { commandErrorMessage, parseHelpOnlyArgs } from "../args.js";
 import { COMMANDS, formatCliCommand } from "../config.js";
+import { dotEnvLoadOrder } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
@@ -11,7 +11,7 @@ function checkBinary(name: string): boolean {
   return which.status === 0 && which.stdout.trim().length > 0;
 }
 
-export const doctorCommand: CommandHandler = async (args) => {
+export const doctorCommand: CommandHandler = (args) => {
   const ui = initUi();
   try {
     const parsed = parseHelpOnlyArgs(args);
@@ -36,7 +36,9 @@ export const doctorCommand: CommandHandler = async (args) => {
     if (loadedEnvFiles.length > 0) {
       ui.detail(`Loaded .env (defaults → tenant): ${loadedEnvFiles.join(" → ")}`);
     } else {
-      ui.detail("No .env found walking up from cwd — set AI_GATEWAY_API_KEY in the shell or add anchor/.env");
+      ui.detail(
+        "No .env found walking up from cwd — set AI_GATEWAY_API_KEY in the shell or add anchor/.env",
+      );
     }
     try {
       requireAiGatewayApiKey(process.env);

@@ -17,11 +17,7 @@ function escapeLiteral(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
-function insertSql(
-  qualified: string,
-  columns: string[],
-  rows: Record<string, unknown>[],
-): string {
+function insertSql(qualified: string, columns: string[], rows: Record<string, unknown>[]): string {
   if (rows.length === 0) {
     return "";
   }

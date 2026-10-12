@@ -32,9 +32,7 @@ function propertyFromExtractPatch(
   };
 }
 
-export function entityFromExtractPatch(
-  patch: OntologyExtractOutput["entities"][number],
-): Entity {
+export function entityFromExtractPatch(patch: OntologyExtractOutput["entities"][number]): Entity {
   const table = patch.id;
   const properties =
     patch.properties !== undefined && patch.properties.length > 0

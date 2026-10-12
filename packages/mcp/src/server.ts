@@ -5,8 +5,8 @@ import type { OntologyQueryRuntime } from "@trybacked/runtime";
 import { isServiceErrorResult } from "@trybacked/service";
 import type { McpSurfaceTool } from "./constants.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
-import type { SearchModelOptions } from "./mapping.js";
 import { evidenceToolsForContext } from "./evidence-tools.js";
+import type { SearchModelOptions } from "./mapping.js";
 import {
   askSemanticToolForContext,
   MCP_TOOL_DEFINITIONS,

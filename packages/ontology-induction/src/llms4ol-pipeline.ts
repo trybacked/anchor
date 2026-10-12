@@ -2,8 +2,8 @@ import type { AuthoringCommandV2 } from "@trybacked/core";
 import { createGatewayLanguageModel, requireAiGatewayApiKey } from "@trybacked/infrastructure";
 import { listPacks } from "@trybacked/ontology-authoring";
 import { z } from "zod";
-import type { CorpusExcerpt } from "./corpus-sample.js";
 import { formatCompetencyBlock } from "./competency.js";
+import type { CorpusExcerpt } from "./corpus-sample.js";
 
 /** LLMs4OL (2307.16648) + Ontology engineering with LLM (2307.16699): staged schema induction. */
 const TermsStepSchema = z.object({
@@ -32,9 +32,7 @@ const RelationsStepSchema = z.object({
 
 function resolveModelId(env: NodeJS.ProcessEnv): string {
   return (
-    env["ONTOLOGY_EXTRACT_MODEL"]?.trim() ||
-    env["SEMANTIC_MODEL"]?.trim() ||
-    "openai/gpt-4o-mini"
+    env["ONTOLOGY_EXTRACT_MODEL"]?.trim() || env["SEMANTIC_MODEL"]?.trim() || "openai/gpt-4o-mini"
   );
 }
 
@@ -98,7 +96,9 @@ function relationsToCommands(
   }));
 }
 
-function skosCommandsFromTerms(terms: z.infer<typeof TermsStepSchema>["terms"]): AuthoringCommandV2[] {
+function skosCommandsFromTerms(
+  terms: z.infer<typeof TermsStepSchema>["terms"],
+): AuthoringCommandV2[] {
   return terms.map((term) => ({
     type: "setObjectTypeSemantics" as const,
     objectTypeId: term.id,

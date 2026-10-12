@@ -1,4 +1,8 @@
-import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, type Proposal, type SemanticModel } from "@trybacked/core";
+import {
+  DEFAULT_REVIEW_CONFIDENCE_THRESHOLD,
+  type Proposal,
+  type SemanticModel,
+} from "@trybacked/core";
 import { buildReviewQuestions } from "@trybacked/discovery";
 
 export function proposalFromSemanticModel(
@@ -24,7 +28,7 @@ export function proposalFromSemanticModel(
     generatedAt: options.generatedAt ?? model.metadata.generatedAt,
     entities,
     relations,
-    rules: model.rules ?? [],
+    rules: model.rules,
     doubts: [],
     questions,
   };

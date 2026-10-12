@@ -1,7 +1,7 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { s3BucketFromEnv, s3RegionFromEnv } from "../s3/s3-config.js";
 import type { FoundryWarehouseDiscoveryProfile } from "./foundry-warehouse-discovery-profile.js";
 import { loadFoundryWarehouseDiscoveryProfile } from "./foundry-warehouse-discovery-profile.js";
-import { s3BucketFromEnv, s3RegionFromEnv } from "../s3/s3-config.js";
 
 const SNAPSHOT_SUFFIX = "_discovery/warehouse-profile.json";
 
@@ -10,7 +10,9 @@ function snapshotObjectKey(tenantId: string): string {
   return `${normalized}/${SNAPSHOT_SUFFIX}`;
 }
 
-function isFoundryWarehouseDiscoveryProfile(value: unknown): value is FoundryWarehouseDiscoveryProfile {
+function isFoundryWarehouseDiscoveryProfile(
+  value: unknown,
+): value is FoundryWarehouseDiscoveryProfile {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -53,10 +55,10 @@ export async function loadFoundryWarehouseDiscoveryProfileFromS3(options: {
     ) {
       return undefined;
     }
-    console.warn(
+    process.stderr.write(
       `[discovery] warehouse profile S3 read skipped: tenant=${options.tenantId} reason=${
         error instanceof Error ? error.message : String(error)
-      }`,
+      }\n`,
     );
     return undefined;
   }

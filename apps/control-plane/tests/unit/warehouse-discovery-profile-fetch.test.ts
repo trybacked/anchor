@@ -3,7 +3,9 @@ import { fetchWarehouseDiscoveryProfileFromPlatform } from "../../src/authoring/
 
 describe("fetchWarehouseDiscoveryProfileFromPlatform", () => {
   it("calls platform-api /v1 path with X-Backed-Tenant on internal base URL", async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ profile: [], samples: [] }), { status: 200 }));
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ profile: [], samples: [] }), { status: 200 }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     await fetchWarehouseDiscoveryProfileFromPlatform({
       baseUrl: "http://platform-api.railway.internal:8080",
@@ -34,7 +36,9 @@ describe("fetchWarehouseDiscoveryProfileFromPlatform", () => {
   });
 
   it("uses gateway /t/{tenant} path on public api host", async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ profile: [], samples: [] }), { status: 200 }));
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ profile: [], samples: [] }), { status: 200 }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     await fetchWarehouseDiscoveryProfileFromPlatform({
       baseUrl: "https://api.backed.app",

@@ -45,7 +45,10 @@ describe("parseFoundryExtractOutput", () => {
           { fromType: "person", toType: "organization" },
           { fromType: "document", toType: "topic", name: "mentions" },
         ],
-        doubts: [{ topic: "Ambiguity", question: "Which Leonardo?" }, { question: "missing topic" }],
+        doubts: [
+          { topic: "Ambiguity", question: "Which Leonardo?" },
+          { question: "missing topic" },
+        ],
       }),
     );
     expect(output.linkTypes).toHaveLength(2);

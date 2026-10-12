@@ -103,7 +103,12 @@ export {
   OntologyChangeSetSchema,
   parseChangeSet,
 } from "./change-set.js";
-export type { ChangeSetEntry, ChangeSetEvidence, OntologyChangeSet, ValidatedChangeSet } from "./change-set.js";
+export type {
+  ChangeSetEntry,
+  ChangeSetEvidence,
+  OntologyChangeSet,
+  ValidatedChangeSet,
+} from "./change-set.js";
 export {
   MODEL_YAML_FILENAME,
   parseOntologyV2Yaml,

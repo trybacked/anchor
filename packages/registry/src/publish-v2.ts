@@ -2,15 +2,15 @@ import {
   markOntologyPublished,
   ontologyV2ToOntology,
   publicationPath,
+  readWorkspaceModel,
   semanticModelToOntology,
   type SemanticModel,
 } from "@trybacked/core";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { PublicationRecordSchema, type PublicationRecord } from "./publication.js";
-import { archivePublicationRecord, updateOntologyRegistry } from "./registry.js";
 import { readPublicationRecord } from "./publish.js";
-import { readWorkspaceModel } from "@trybacked/core";
+import { archivePublicationRecord, updateOntologyRegistry } from "./registry.js";
 
 export function publishWorkspaceOntology(
   root: string,
@@ -23,10 +23,7 @@ export function publishWorkspaceOntology(
   let ontology;
   let runId = options.runId ?? `run_${String(version)}`;
   if (workspace.format === "ontology_v2") {
-    ontology = markOntologyPublished(
-      ontologyV2ToOntology(workspace.ontology),
-      now.toISOString(),
-    );
+    ontology = markOntologyPublished(ontologyV2ToOntology(workspace.ontology), now.toISOString());
   } else {
     const model: SemanticModel = workspace.model;
     runId = model.metadata.runId;

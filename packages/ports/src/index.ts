@@ -12,9 +12,7 @@ export type {
   ParsedDocument,
   ParsedTable,
 } from "./document-parser.js";
-export type {
-  EmbeddingModel,
-} from "./embedding-model.js";
+export type { EmbeddingModel } from "./embedding-model.js";
 export type { ArtifactRef, ArtifactStore } from "./artifact-store.js";
 export type { AnalyticalStore } from "./analytical-store.js";
 export type {

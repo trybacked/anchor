@@ -1,10 +1,6 @@
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  dotEnvLoadOrder,
-  dotEnvPathsFromCwd,
-  resolveAnchorMonorepoRoot,
-} from "../../src/env.js";
+import { dotEnvLoadOrder, dotEnvPathsFromCwd, resolveAnchorMonorepoRoot } from "../../src/env.js";
 
 describe("dotEnvPathsFromCwd", () => {
   it("includes anchor/.env when cwd is under anchor/apps/cli", () => {

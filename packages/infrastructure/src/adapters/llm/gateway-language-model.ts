@@ -1,9 +1,14 @@
-import type { LanguageModel, LlmStructuredRequest, LlmStructuredResult, LlmTextRequest } from "@trybacked/ports";
+import type {
+  LanguageModel,
+  LlmStructuredRequest,
+  LlmStructuredResult,
+  LlmTextRequest,
+} from "@trybacked/ports";
 import { createHash } from "node:crypto";
-import { gatewayPromptFromLlmMessages } from "./gateway-messages.js";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { z } from "zod";
+import { gatewayPromptFromLlmMessages } from "./gateway-messages.js";
 
 export type GatewayLanguageModelOptions = {
   modelId: string;
@@ -51,9 +56,12 @@ export function createGatewayLanguageModel(options: GatewayLanguageModelOptions)
       const schema = request.schema as z.ZodType<T>;
       let lastError: unknown;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        const modelId = attempt > 0 && options.fallbackModelId ? options.fallbackModelId : options.modelId;
+        const modelId =
+          attempt > 0 && options.fallbackModelId ? options.fallbackModelId : options.modelId;
         try {
           const prompt = gatewayPromptFromLlmMessages(request.messages);
+          // generateObject remains the structured-output API until migrate to generateText + output.
+          // eslint-disable-next-line @typescript-eslint/no-deprecated -- AI SDK migration tracked separately
           const result = await generateObject({
             model: gateway(modelId),
             schema,
@@ -65,8 +73,8 @@ export function createGatewayLanguageModel(options: GatewayLanguageModelOptions)
             value: result.object,
             modelId,
             usage: {
-              inputTokens: result.usage?.inputTokens ?? 0,
-              outputTokens: result.usage?.outputTokens ?? 0,
+              inputTokens: result.usage.inputTokens ?? 0,
+              outputTokens: result.usage.outputTokens ?? 0,
               costUsd: null,
             },
             cacheHit: false,
@@ -97,8 +105,8 @@ export function createGatewayLanguageModel(options: GatewayLanguageModelOptions)
       return {
         text: result.text,
         usage: {
-          inputTokens: result.usage?.inputTokens ?? 0,
-          outputTokens: result.usage?.outputTokens ?? 0,
+          inputTokens: result.usage.inputTokens ?? 0,
+          outputTokens: result.usage.outputTokens ?? 0,
           costUsd: null,
         },
         cacheHit: false,

@@ -12,8 +12,8 @@ import {
   runArchiveFoundryExtract,
 } from "@trybacked/ontology-extract";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 function splitArchivePath(relativePath: string): { folder: string | null; filename: string } {
   const normalized = relativePath.replace(/^\/+/, "");
@@ -85,9 +85,7 @@ export async function runDocumentArchiveSyncWithExtraction(options: {
 
   const modelConfig = createOntologyExtractModelFromEnv(options.env);
   if (modelConfig === undefined) {
-    throw new Error(
-      "Automatic document extraction requires AI_GATEWAY_API_KEY on platform-api.",
-    );
+    throw new Error("Automatic document extraction requires AI_GATEWAY_API_KEY on platform-api.");
   }
 
   const tempDir = await mkdtemp(join(tmpdir(), "backed-doc-extract-"));

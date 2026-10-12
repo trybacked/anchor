@@ -55,7 +55,10 @@ export async function runIngest(options: RunIngestOptions): Promise<RunIngestRes
   let chunkCount = 0;
 
   for (let i = 0; i < toParse.length; i++) {
-    const record = toParse[i]!;
+    const record = toParse[i];
+    if (record === undefined) {
+      continue;
+    }
     if (filterSet !== undefined && !filterSet.has(record.relativePath)) {
       skippedCount += 1;
       continue;
@@ -80,7 +83,10 @@ export async function runIngest(options: RunIngestOptions): Promise<RunIngestRes
       writeFileSync(outPath, JSON.stringify(artifact), "utf8");
       await upsertDocumentChunks(duckDbPath, record, parsed.uri, chunks);
       if (options.artifactStore !== undefined) {
-        await options.artifactStore.write(`parsed/${record.sha256}.json`, Buffer.from(JSON.stringify(artifact)));
+        await options.artifactStore.write(
+          `parsed/${record.sha256}.json`,
+          Buffer.from(JSON.stringify(artifact)),
+        );
       }
       parsedCount += 1;
       options.onProgress?.({ stage: "parse", path: record.relativePath, status: "ok" });

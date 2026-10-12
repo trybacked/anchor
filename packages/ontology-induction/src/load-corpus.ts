@@ -1,11 +1,15 @@
 import { PARSED_ARTIFACTS_DIR, type DocumentChunk } from "@trybacked/ingest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { type CorpusExcerpt, excerptsFromParsedChunks, sampleCorpusExcerpts } from "./corpus-sample.js";
+import {
+  type CorpusExcerpt,
+  excerptsFromParsedChunks,
+  sampleCorpusExcerpts,
+} from "./corpus-sample.js";
 
 type ParsedArtifact = {
   record: { relativePath: string; collection: string; mimeType: string };
-  chunks: DocumentChunk[];
+  chunks?: DocumentChunk[];
   parsed: { uri: string; plainText: string };
 };
 
@@ -34,9 +38,4 @@ export function loadSampledCorpus(workspaceRoot: string): CorpusExcerpt[] {
     }
   }
   return sampleCorpusExcerpts(raw);
-}
-
-/** @deprecated Prefer {@link loadSampledCorpus} — kept for callers expecting uri/excerpt pairs only. */
-export function loadInductionSamples(workspaceRoot: string): { uri: string; excerpt: string }[] {
-  return loadSampledCorpus(workspaceRoot).map(({ uri, excerpt }) => ({ uri, excerpt }));
 }

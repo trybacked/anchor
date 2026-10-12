@@ -31,7 +31,9 @@ export async function createAnchorServiceForModel(options: {
   const readVolumeFile = createDocumentFileReaderFromEnv(options.env, tenantId);
   const catalog = options.catalog ?? options.env["BACKED_CATALOG"]?.trim();
   if (catalog === undefined || catalog.length === 0) {
-    throw new Error("Tenant catalog is required for warehouse SQL (registry entry or BACKED_CATALOG).");
+    throw new Error(
+      "Tenant catalog is required for warehouse SQL (registry entry or BACKED_CATALOG).",
+    );
   }
   const executor = createSqlStatementExecutorForCatalog({ env: options.env, catalog });
   const built = await buildQueryRuntimeFromEnv({

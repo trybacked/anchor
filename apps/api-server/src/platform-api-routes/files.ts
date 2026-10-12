@@ -1,7 +1,7 @@
 import { createRegistrySourceFromEnv } from "@trybacked/core";
 import { createTenantArchiveFromEnv } from "@trybacked/infrastructure";
-import { runDocumentArchiveSyncWithExtraction } from "../lib/document-archive-sync-with-extraction.js";
 import { z } from "zod";
+import { runDocumentArchiveSyncWithExtraction } from "../lib/document-archive-sync-with-extraction.js";
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { jsonBody, V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import type { PlatformHandlerContext } from "../platform-api-types.js";
@@ -67,7 +67,9 @@ export const platformApiFileRoutes: RouteFactory[] = [
       }
       const query = FilesListQuerySchema.parse(c.req.query());
       const listing = await archive.list(
-        query.folder !== undefined && query.folder.length > 0 ? { folder: query.folder } : undefined,
+        query.folder !== undefined && query.folder.length > 0
+          ? { folder: query.folder }
+          : undefined,
       );
       return c.json(listing);
     },
@@ -109,8 +111,7 @@ export const platformApiFileRoutes: RouteFactory[] = [
             ? file.name
             : "upload.bin";
       const folderRaw = form.get("folder");
-      const folder =
-        typeof folderRaw === "string" && folderRaw.length > 0 ? folderRaw : undefined;
+      const folder = typeof folderRaw === "string" && folderRaw.length > 0 ? folderRaw : undefined;
       const data = new Uint8Array(await file.arrayBuffer());
       const uploaded = await archive.upload({
         filename,
@@ -135,9 +136,7 @@ export const platformApiFileRoutes: RouteFactory[] = [
       },
     },
     (deps) => async (c) => {
-      const body = FilesRefreshBodySchema.parse(
-        await c.req.json().catch(() => ({})),
-      );
+      const body = FilesRefreshBodySchema.parse(await c.req.json().catch(() => ({})));
       const tenantId = c.get("tenantId");
       const catalog = await tenantCatalog(c);
       if (catalog === null) {

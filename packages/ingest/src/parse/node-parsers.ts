@@ -1,10 +1,10 @@
 import type { DocumentParser, ParsedDocument } from "@trybacked/ports";
 import * as cheerio from "cheerio";
 import mammoth from "mammoth";
+import { execFileSync } from "node:child_process";
 import Papa from "papaparse";
 import { extractText, getDocumentProxy } from "unpdf";
 import * as XLSX from "xlsx";
-import { execFileSync } from "node:child_process";
 import { mimeFromPath } from "../mime.js";
 
 function blocksFromPlainText(uri: string, mimeType: string, plainText: string): ParsedDocument {
@@ -26,18 +26,27 @@ function blocksFromPlainText(uri: string, mimeType: string, plainText: string): 
 
 async function parsePdf(uri: string, bytes: Buffer): Promise<ParsedDocument> {
   try {
+    // unpdf's proxy type is loose; extractText accepts the runtime value.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- third-party PDF proxy
     const pdf = await getDocumentProxy(new Uint8Array(bytes));
     const { text } = await extractText(pdf, { mergePages: true });
     return blocksFromPlainText(uri, "application/pdf", text);
   } catch {
-    const tmp = execFileSync("pdftotext", ["-layout", "-", "-"], { input: bytes, encoding: "utf8" });
+    const tmp = execFileSync("pdftotext", ["-layout", "-", "-"], {
+      input: bytes,
+      encoding: "utf8",
+    });
     return blocksFromPlainText(uri, "application/pdf", tmp);
   }
 }
 
 async function parseDocx(uri: string, bytes: Buffer): Promise<ParsedDocument> {
   const result = await mammoth.extractRawText({ buffer: bytes });
-  return blocksFromPlainText(uri, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", result.value);
+  return blocksFromPlainText(
+    uri,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    result.value,
+  );
 }
 
 function parseCsv(uri: string, bytes: Buffer): ParsedDocument {
@@ -59,7 +68,7 @@ function parseCsv(uri: string, bytes: Buffer): ParsedDocument {
 function parseXlsx(uri: string, bytes: Buffer): ParsedDocument {
   const workbook = XLSX.read(bytes, { type: "buffer" });
   const sheet = workbook.Sheets[workbook.SheetNames[0] ?? ""];
-  const rows = sheet ? (XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 }) as string[][]) : [];
+  const rows = sheet ? XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 }) : [];
   const headers = rows[0]?.map(String) ?? [];
   const body = rows.slice(1).map((row) => row.map(String));
   const plainText = rows.map((row) => row.join("\t")).join("\n");

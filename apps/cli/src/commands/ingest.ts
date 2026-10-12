@@ -1,5 +1,5 @@
-import { runIngest } from "@trybacked/ingest";
 import { filesRootFromEnv, resolveEngineFromEnv } from "@trybacked/infrastructure";
+import { runIngest } from "@trybacked/ingest";
 import path from "node:path";
 import { commandErrorMessage, parseHelpOnlyArgs } from "../args.js";
 import { COMMANDS, formatCliCommand } from "../config.js";
@@ -27,7 +27,9 @@ export const ingestCommand: CommandHandler = async (args) => {
       env: process.env,
       onProgress: (event) => {
         if (event.stage === "parse") {
-          ui.detail(`${event.path} · ${event.status}${event.message !== undefined ? ` · ${event.message}` : ""}`);
+          ui.detail(
+            `${event.path} · ${event.status}${event.message !== undefined ? ` · ${event.message}` : ""}`,
+          );
         }
       },
     });

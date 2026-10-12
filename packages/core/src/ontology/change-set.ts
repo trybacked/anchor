@@ -9,6 +9,9 @@ export const ChangeSetEvidenceSchema = z.object({
   sampleValues: z.array(z.string()).max(8).default([]),
 });
 
+/**
+ *
+ */
 export type ChangeSetEvidence = z.infer<typeof ChangeSetEvidenceSchema>;
 
 export const ChangeSetEntrySchema = z.object({
@@ -19,6 +22,9 @@ export const ChangeSetEntrySchema = z.object({
   evidence: z.array(ChangeSetEvidenceSchema).default([]),
 });
 
+/**
+ *
+ */
 export type ChangeSetEntry = z.infer<typeof ChangeSetEntrySchema>;
 
 export const OntologyChangeSetSchema = z.object({
@@ -31,12 +37,21 @@ export const OntologyChangeSetSchema = z.object({
   status: z.enum(["proposed", "approved", "rejected", "applied"]).default("proposed"),
 });
 
+/**
+ *
+ */
 export type OntologyChangeSet = z.infer<typeof OntologyChangeSetSchema>;
 
+/**
+ *
+ */
 export type ValidatedChangeSet = OntologyChangeSet & {
   changes: Array<ChangeSetEntry & { command: AuthoringCommandV2 }>;
 };
 
+/**
+ *
+ */
 export function parseChangeSet(input: unknown): ValidatedChangeSet {
   const changeSet = OntologyChangeSetSchema.parse(input);
   const changes = changeSet.changes.map((entry) => ({

@@ -20,8 +20,10 @@ const RowSchema = z.object({
   ),
 });
 
-function schemaForObjectType(_objectType: OntologyObjectTypeV2): z.ZodType<z.infer<typeof RowSchema>> {
-  return RowSchema;
+function schemaForObjectType(
+  objectType: OntologyObjectTypeV2,
+): z.ZodType<z.infer<typeof RowSchema>> {
+  return RowSchema.describe(objectType.id);
 }
 
 /** SPIRES (2304.02711): schema-guided extraction via LLM only; values must verify against source text. */

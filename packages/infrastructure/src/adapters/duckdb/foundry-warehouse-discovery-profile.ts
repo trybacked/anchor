@@ -1,6 +1,9 @@
 import type { ProfileReport, TableProfile } from "@trybacked/core";
 import { existsSync } from "node:fs";
-import { createCatalogWarehouseSqlExecutor, resolveTenantWarehouseDuckDbPath } from "./catalog-warehouse.js";
+import {
+  createCatalogWarehouseSqlExecutor,
+  resolveTenantWarehouseDuckDbPath,
+} from "./catalog-warehouse.js";
 import { applyFoundryForeignKeyHints } from "./foundry-profile-foreign-keys.js";
 import { FOUNDRY_WAREHOUSE_TABLE_DDL } from "./materialize-foundry.js";
 
@@ -25,6 +28,21 @@ function sqlTypeFromValue(value: unknown): string {
     return "BOOLEAN";
   }
   return "VARCHAR";
+}
+
+function sampleCellString(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value);
+  }
+  return JSON.stringify(value);
 }
 
 function buildTableProfile(
@@ -123,15 +141,7 @@ export async function loadFoundryWarehouseDiscoveryProfile(options: {
     samples.push({
       table,
       columns,
-      rows: sampleRows.map((row) =>
-        columns.map((column) => {
-          const value = row[column];
-          if (value === null || value === undefined) {
-            return "";
-          }
-          return String(value);
-        }),
-      ),
+      rows: sampleRows.map((row) => columns.map((column) => sampleCellString(row[column]))),
     });
   }
 

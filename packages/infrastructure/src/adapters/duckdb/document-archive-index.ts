@@ -79,7 +79,10 @@ export async function listAllArchiveFiles(archive: TenantArchive): Promise<
   return [...byPath.values()];
 }
 
-async function ensureDocumentWarehouseTables(env: NodeJS.ProcessEnv, catalog: string): Promise<void> {
+async function ensureDocumentWarehouseTables(
+  env: NodeJS.ProcessEnv,
+  catalog: string,
+): Promise<void> {
   const documents = qualifiedTable(catalog, "documents");
   const elements = qualifiedTable(catalog, "document_elements");
   const entities = qualifiedTable(catalog, "document_entities");

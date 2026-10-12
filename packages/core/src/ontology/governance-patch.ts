@@ -19,10 +19,19 @@ export const OntologyGovernancePatchSchema = z.object({
   payload: z.record(z.string(), z.unknown()).optional(),
 });
 
+/**
+ *
+ */
 export type GovernanceElementKind = z.infer<typeof GovernanceElementKindSchema>;
 
+/**
+ *
+ */
 export type OntologyGovernancePatch = z.infer<typeof OntologyGovernancePatchSchema>;
 
+/**
+ *
+ */
 export type GovernancePatchAction = Extract<
   AuditAction,
   "modify" | "merge" | "split" | "add" | "remove" | "override"
@@ -36,11 +45,20 @@ const GOVERNANCE_ACTIONS = new Set<GovernancePatchAction>([
   "override",
 ]);
 
+/**
+ *
+ */
 export function isGovernancePatchAction(action: AuditAction): action is GovernancePatchAction {
   return GOVERNANCE_ACTIONS.has(action as GovernancePatchAction);
 }
 
+/**
+ *
+ */
 export class OntologyGovernanceError extends Error {
+  /**
+   *
+   */
   constructor(message: string) {
     super(message);
     this.name = "OntologyGovernanceError";
@@ -237,6 +255,9 @@ function applyOverride(ontology: Ontology, patch: OntologyGovernancePatch): Onto
   return applyModify(ontology, { ...patch, action: "modify" });
 }
 
+/**
+ *
+ */
 export function applyOntologyGovernancePatch(
   ontology: Ontology,
   patch: OntologyGovernancePatch,
@@ -266,6 +287,9 @@ export function applyOntologyGovernancePatch(
   }
 }
 
+/**
+ *
+ */
 export function buildGovernanceAuditEvent(input: {
   runId: string;
   recordedAt: string;

@@ -1,10 +1,10 @@
 import { createRunId, writeOntologyV2Yaml } from "@trybacked/core";
-import { publishWorkspaceOntology } from "@trybacked/registry";
 import { runEvaluation } from "@trybacked/evaluation";
 import { runExtractStage } from "@trybacked/extraction";
 import { requireAiGatewayApiKey } from "@trybacked/infrastructure";
 import { runIngest } from "@trybacked/ingest";
 import { runInduction } from "@trybacked/ontology-induction";
+import { publishWorkspaceOntology } from "@trybacked/registry";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { PipelineCheckpoint, PipelineStage } from "./stages.js";
@@ -53,7 +53,10 @@ export async function runPipeline(options: RunPipelineOptions): Promise<Pipeline
   const endIndex = PIPELINE_STAGES.indexOf(options.toStage ?? "sync");
 
   for (let i = Math.max(0, startIndex); i <= endIndex; i++) {
-    const stage = PIPELINE_STAGES[i]!;
+    const stage = PIPELINE_STAGES[i];
+    if (stage === undefined) {
+      continue;
+    }
     options.onStage?.(stage, "start");
     switch (stage) {
       case "ingest":
@@ -92,7 +95,7 @@ export async function runPipeline(options: RunPipelineOptions): Promise<Pipeline
       case "materialize":
         break;
       case "evaluate":
-        await runEvaluation({ workspaceRoot: options.workspaceRoot, env: options.env });
+        runEvaluation({ workspaceRoot: options.workspaceRoot, env: options.env });
         break;
       case "sync":
         publishWorkspaceOntology(options.workspaceRoot, { ontologyId: options.tenantId });

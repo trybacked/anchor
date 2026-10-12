@@ -17,7 +17,7 @@ function resolveOntologyId(root: string): string {
   return path.basename(root);
 }
 
-export const migrateCommand: CommandHandler = async (args) => {
+export const migrateCommand: CommandHandler = (args) => {
   const ui = initUi();
   let parsed;
   try {

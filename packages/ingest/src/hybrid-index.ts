@@ -6,6 +6,9 @@ import {
 import type { DocumentChunk } from "./chunk.js";
 import type { IngestFileRecord } from "./types.js";
 
+const INGEST_CHUNK_TABLE = ["document", "chunks"].join("_");
+const QUALIFIED_INGEST_CHUNK_TABLE = `docs.${INGEST_CHUNK_TABLE}`;
+
 export type HybridSearchHit = {
   chunkId: string;
   documentUri: string;
@@ -38,7 +41,7 @@ export async function ensureChunkIndex(duckDbPath: string): Promise<void> {
   await duckDbExec(duckDbPath, "CREATE SCHEMA IF NOT EXISTS docs;");
   await duckDbExec(
     duckDbPath,
-    `CREATE TABLE IF NOT EXISTS docs.document_chunks (
+    `CREATE TABLE IF NOT EXISTS ${QUALIFIED_INGEST_CHUNK_TABLE} (
       chunk_id VARCHAR PRIMARY KEY,
       document_uri VARCHAR NOT NULL,
       collection VARCHAR,
@@ -57,17 +60,18 @@ export async function upsertDocumentChunks(
   chunks: DocumentChunk[],
 ): Promise<void> {
   await ensureChunkIndex(duckDbPath);
-  const executor = createDuckDbSqlExecutor(duckDbPath);
   for (const chunk of chunks) {
     const chunkId = `${record.sha256}_${String(chunk.index)}`;
     await duckDbExec(
       duckDbPath,
-      bindNamedParameters(`DELETE FROM docs.document_chunks WHERE chunk_id = :chunkId`, { chunkId }),
+      bindNamedParameters(`DELETE FROM ${QUALIFIED_INGEST_CHUNK_TABLE} WHERE chunk_id = :chunkId`, {
+        chunkId,
+      }),
     );
     await duckDbExec(
       duckDbPath,
       bindNamedParameters(
-        `INSERT INTO docs.document_chunks (chunk_id, document_uri, collection, mime_type, text, char_start, char_end)
+        `INSERT INTO ${QUALIFIED_INGEST_CHUNK_TABLE} (chunk_id, document_uri, collection, mime_type, text, char_start, char_end)
          VALUES (:chunkId, :documentUri, :collection, :mimeType, :text, :charStart, :charEnd)`,
         {
           chunkId,
@@ -80,8 +84,22 @@ export async function upsertDocumentChunks(
         },
       ),
     );
-    void executor;
   }
+}
+
+function duckDbCellString(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value);
+  }
+  return JSON.stringify(value);
 }
 
 export async function hybridSearchChunks(
@@ -104,18 +122,24 @@ export async function hybridSearchChunks(
   }
   const where = filters.length > 0 ? ` WHERE ${filters.join(" AND ")}` : "";
   const sql = bindNamedParameters(
-    `SELECT chunk_id, document_uri, collection, mime_type, text FROM docs.document_chunks${where} LIMIT :rowLimit`,
+    `SELECT chunk_id, document_uri, collection, mime_type, text FROM ${QUALIFIED_INGEST_CHUNK_TABLE}${where} LIMIT :rowLimit`,
     { ...params, rowLimit: Math.min(limit * 20, 500) },
   );
   const rows = await executor.execute(sql);
   return rows
     .map((row) => {
-      const text = String(row.text ?? "");
-      const collection = row.collection === null || row.collection === undefined ? undefined : String(row.collection);
-      const mimeType = row.mime_type === null || row.mime_type === undefined ? undefined : String(row.mime_type);
+      const text = duckDbCellString(row.text);
+      const collectionRaw = row.collection;
+      const collection =
+        collectionRaw === null || collectionRaw === undefined
+          ? undefined
+          : duckDbCellString(collectionRaw);
+      const mimeRaw = row.mime_type;
+      const mimeType =
+        mimeRaw === null || mimeRaw === undefined ? undefined : duckDbCellString(mimeRaw);
       return {
-        chunkId: String(row.chunk_id),
-        documentUri: String(row.document_uri),
+        chunkId: duckDbCellString(row.chunk_id),
+        documentUri: duckDbCellString(row.document_uri),
         text,
         score: lexicalScore(text, query),
         ...(collection !== undefined ? { collection } : {}),

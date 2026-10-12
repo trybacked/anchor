@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
-import type { IngestFileRecord } from "./types.js";
 import { mimeFromPath } from "./mime.js";
+import type { IngestFileRecord } from "./types.js";
 
 function sha256File(filePath: string): string {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");

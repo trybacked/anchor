@@ -40,17 +40,7 @@ function excerptFromPdfPath(
   const endPage = startPage + maxPages - 1;
   const text = execFileSync(
     "pdftotext",
-    [
-      "-enc",
-      "UTF-8",
-      "-q",
-      "-f",
-      String(startPage),
-      "-l",
-      String(endPage),
-      absolutePath,
-      "-",
-    ],
+    ["-enc", "UTF-8", "-q", "-f", String(startPage), "-l", String(endPage), absolutePath, "-"],
     { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
   )
     .replace(/\s+/g, " ")
@@ -79,7 +69,10 @@ export function pdfPageCount(absolutePath: string): number {
     return 0;
   }
   try {
-    const info = execFileSync("pdfinfo", [absolutePath], { encoding: "utf8", maxBuffer: 1024 * 1024 });
+    const info = execFileSync("pdfinfo", [absolutePath], {
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+    });
     const match = info.match(/^Pages:\s+(\d+)/m);
     if (match === null) {
       return 0;

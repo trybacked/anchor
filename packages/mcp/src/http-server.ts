@@ -17,8 +17,8 @@ export async function runStreamableHttpMcpServer(config: StreamableHttpMcpOption
     sessionIdGenerator: () => crypto.randomUUID(),
   });
   await server.connect(transport as Transport);
-  app.all("/mcp", async (req, res) => {
-    await transport.handleRequest(req, res);
+  app.all("/mcp", (req, res) => {
+    void transport.handleRequest(req, res);
   });
   await new Promise<void>((resolve) => {
     const httpServer = app.listen(config.port, () => {

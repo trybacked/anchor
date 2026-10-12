@@ -33,5 +33,7 @@ export type LlmStructuredResult<T> = {
 export type LanguageModel = {
   modelId: string;
   generateStructured<T>(request: LlmStructuredRequest): Promise<LlmStructuredResult<T>>;
-  generateText(request: LlmTextRequest): Promise<{ text: string; usage: LlmUsage; cacheHit: boolean }>;
+  generateText(
+    request: LlmTextRequest,
+  ): Promise<{ text: string; usage: LlmUsage; cacheHit: boolean }>;
 };

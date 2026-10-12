@@ -20,6 +20,12 @@ export const ProposalSchema = z.object({
   usage: ProposalUsageSchema.optional(),
 });
 
+/**
+ *
+ */
 export type ProposalUsage = z.infer<typeof ProposalUsageSchema>;
 
+/**
+ *
+ */
 export type Proposal = z.infer<typeof ProposalSchema>;

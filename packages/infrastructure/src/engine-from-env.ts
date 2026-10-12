@@ -7,8 +7,8 @@ import {
   tenantFilesRoot,
   type LocalDocumentFileReader,
 } from "./adapters/files/index.js";
-import { createS3FileIndexDatasetProvider } from "./adapters/s3/s3-file-index-provider.js";
 import { createS3DocumentFileReader, resolveS3StorageConfig } from "./adapters/s3/index.js";
+import { createS3FileIndexDatasetProvider } from "./adapters/s3/s3-file-index-provider.js";
 
 export {
   resolveEngineFromEnv,

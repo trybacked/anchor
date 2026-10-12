@@ -5,7 +5,7 @@ import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
-export const evalCommand: CommandHandler = async (args) => {
+export const evalCommand: CommandHandler = (args) => {
   const ui = initUi();
   try {
     const json = args.includes("--json");
@@ -15,7 +15,7 @@ export const evalCommand: CommandHandler = async (args) => {
       return;
     }
     const root = findWorkspaceRoot(process.cwd());
-    const report = await runEvaluation({ workspaceRoot: root, env: process.env });
+    const report = runEvaluation({ workspaceRoot: root, env: process.env });
     if (json) {
       ui.log(JSON.stringify(report, null, 2));
     } else {

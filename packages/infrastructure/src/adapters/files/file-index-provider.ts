@@ -198,7 +198,10 @@ export function createFileIndexDatasetProviderFromLoader(options: {
         }),
       };
     },
-    sample: async (dataset: DatasetIdentifier, sampleOptions?: SampleOptions): Promise<DatasetSample> => {
+    sample: async (
+      dataset: DatasetIdentifier,
+      sampleOptions?: SampleOptions,
+    ): Promise<DatasetSample> => {
       const map = await collections();
       const collection = map.get(dataset.id);
       const limit = sampleOptions?.limit ?? 20;

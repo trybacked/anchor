@@ -1,9 +1,9 @@
 import type { Entity, Relation, SemanticModel } from "@trybacked/core";
-import { docsQualifiedTable } from "./spec.js";
 import {
   buildFoundryDocumentSemanticModel,
   type BuildFoundryDocumentSemanticModelOptions,
 } from "./build-model.js";
+import { docsQualifiedTable } from "./spec.js";
 
 const CORE_OBJECT_TYPE_IDS = [
   "document",
@@ -71,16 +71,20 @@ export function buildPalantirStyleDocumentSemanticModel(
     .map((entity) => ({
       ...entity,
       status: "proposed" as const,
-      confidence: entity.confidence ?? 0.9,
+      confidence: entity.confidence,
     }));
 
-  if (options.tablesWithRows !== undefined && options.tablesWithRows.size > 0) {
+  const tablesWithRows = options.tablesWithRows;
+  if (tablesWithRows !== undefined && tablesWithRows.size > 0) {
     entities = entities.filter((entity) => {
       if (entity.id === "document") {
         return true;
       }
-      const table = PROFILE_TABLE_BY_ENTITY[entity.id as (typeof CORE_OBJECT_TYPE_IDS)[number]];
-      return table !== undefined && options.tablesWithRows?.has(table);
+      if (!(entity.id in PROFILE_TABLE_BY_ENTITY)) {
+        return false;
+      }
+      const table = PROFILE_TABLE_BY_ENTITY[entity.id as keyof typeof PROFILE_TABLE_BY_ENTITY];
+      return tablesWithRows.has(table);
     });
   }
 

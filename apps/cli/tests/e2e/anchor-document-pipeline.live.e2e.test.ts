@@ -53,43 +53,35 @@ describe.skipIf(!liveEnabled)("anchor document pipeline LIVE e2e (real AI Gatewa
     tempWorkspace = undefined;
   });
 
-  it(
-    "init → ingest → run uses LLMs4OL (not heuristic fallback)",
-    async () => {
-      tempWorkspace = await createTempWorkspace("backed-anchor-live-");
-      seedDocumentWorkspace(tempWorkspace);
-      const env = liveEnv(tempWorkspace);
+  it("init → ingest → run uses LLMs4OL (not heuristic fallback)", async () => {
+    tempWorkspace = await createTempWorkspace("backed-anchor-live-");
+    seedDocumentWorkspace(tempWorkspace);
+    const env = liveEnv(tempWorkspace);
 
-      expect((await runCli(["anchor", "init", "-y"], tempWorkspace, env)).exitCode).toBe(0);
+    expect((await runCli(["anchor", "init", "-y"], tempWorkspace, env)).exitCode).toBe(0);
 
-      const ingest = await runCli(["anchor", "ingest"], tempWorkspace, env, 120_000);
-      expect(ingest.exitCode).toBe(0);
+    const ingest = await runCli(["anchor", "ingest"], tempWorkspace, env, 120_000);
+    expect(ingest.exitCode).toBe(0);
 
-      const run = await runCli(["anchor", "run"], tempWorkspace, env, 600_000);
-      if (run.exitCode !== 0) {
-        throw new Error(
-          `anchor run failed (exit ${String(run.exitCode)})\nstdout:\n${run.stdout}\nstderr:\n${run.stderr}`,
-        );
-      }
+    const run = await runCli(["anchor", "run"], tempWorkspace, env, 600_000);
+    if (run.exitCode !== 0) {
+      throw new Error(
+        `anchor run failed (exit ${String(run.exitCode)})\nstdout:\n${run.stdout}\nstderr:\n${run.stderr}`,
+      );
+    }
 
-      const changeSet = JSON.parse(
-        readFileSync(join(tempWorkspace, ".backed", "change-set.json"), "utf8"),
-      ) as { changes: Array<{ rationale: string }> };
-      expect(changeSet.changes.length).toBeGreaterThan(0);
-      expect(
-        changeSet.changes.every((change) => change.rationale.includes("LLMs4OL")),
-      ).toBe(true);
-      expect(
-        changeSet.changes.some((change) =>
-          change.rationale.toLowerCase().includes("deterministic"),
-        ),
-      ).toBe(false);
+    const changeSet = JSON.parse(
+      readFileSync(join(tempWorkspace, ".backed", "change-set.json"), "utf8"),
+    ) as { changes: Array<{ rationale: string }> };
+    expect(changeSet.changes.length).toBeGreaterThan(0);
+    expect(changeSet.changes.every((change) => change.rationale.includes("LLMs4OL"))).toBe(true);
+    expect(
+      changeSet.changes.some((change) => change.rationale.toLowerCase().includes("deterministic")),
+    ).toBe(false);
 
-      expect(existsSync(join(tempWorkspace, ".backed", "llm-cache"))).toBe(true);
+    expect(existsSync(join(tempWorkspace, ".backed", "llm-cache"))).toBe(true);
 
-      const evalResult = await runCli(["anchor", "eval", "--json"], tempWorkspace, env, 60_000);
-      expect(evalResult.exitCode).toBe(0);
-    },
-    720_000,
-  );
+    const evalResult = await runCli(["anchor", "eval", "--json"], tempWorkspace, env, 60_000);
+    expect(evalResult.exitCode).toBe(0);
+  }, 720_000);
 });

@@ -179,10 +179,7 @@ export function mergeOntologyExtractIntoProposal(
     }
     return mergeEntity(entity, patch);
   });
-  const entities = appendNewExtractEntities(
-    { ...baseline, entities: patchedBaseline },
-    extract,
-  );
+  const entities = appendNewExtractEntities({ ...baseline, entities: patchedBaseline }, extract);
   const entityById = new Map(entities.map((entity) => [entity.id, entity]));
   const sourceTableByEntity = new Map(entities.map((entity) => [entity.id, entity.sourceTable]));
   const existingRelationKeys = new Set(

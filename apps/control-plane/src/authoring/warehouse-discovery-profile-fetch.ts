@@ -2,10 +2,10 @@ import type { FoundryWarehouseDiscoveryProfile } from "@trybacked/infrastructure
 
 const WAREHOUSE_PROFILE_PATH = "/v1/discovery/warehouse-profile";
 
-function resolveWarehouseProfileRequest(options: {
-  baseUrl: string;
-  tenantId: string;
-}): { url: string; tenantHeader: string | undefined } {
+function resolveWarehouseProfileRequest(options: { baseUrl: string; tenantId: string }): {
+  url: string;
+  tenantHeader: string | undefined;
+} {
   const root = options.baseUrl.replace(/\/+$/, "");
   const gatewayTenantPrefix = `/t/${encodeURIComponent(options.tenantId)}`;
   if (root.endsWith(gatewayTenantPrefix)) {
@@ -16,8 +16,7 @@ function resolveWarehouseProfileRequest(options: {
   }
   const publicGatewayPath = `${root}${gatewayTenantPrefix}${WAREHOUSE_PROFILE_PATH}`;
   const looksLikePublicGateway =
-    root.includes("api.backed.app") ||
-    root.includes("localhost") && root.includes("8080") === false;
+    root.includes("api.backed.app") || (root.includes("localhost") && !root.includes("8080"));
   if (looksLikePublicGateway && !root.includes("railway.internal")) {
     return { url: publicGatewayPath, tenantHeader: undefined };
   }

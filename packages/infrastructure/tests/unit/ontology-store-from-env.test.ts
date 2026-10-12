@@ -10,16 +10,14 @@ describe("resolveOntologyRegistryStorage", () => {
   });
 
   it("honors explicit s3", () => {
-    expect(
-      resolveOntologyRegistryStorage({ BACKED_ONTOLOGY_REGISTRY_STORAGE: "s3" }),
-    ).toBe("s3");
+    expect(resolveOntologyRegistryStorage({ BACKED_ONTOLOGY_REGISTRY_STORAGE: "s3" })).toBe("s3");
   });
 });
 
 describe("createOntologyStoreFromEnv", () => {
   it("requires bucket when storage is s3", () => {
-    expect(() =>
-      createOntologyStoreFromEnv({ BACKED_ONTOLOGY_REGISTRY_STORAGE: "s3" }),
-    ).toThrow(/BACKED_S3_BUCKET/);
+    expect(() => createOntologyStoreFromEnv({ BACKED_ONTOLOGY_REGISTRY_STORAGE: "s3" })).toThrow(
+      /BACKED_S3_BUCKET/,
+    );
   });
 });

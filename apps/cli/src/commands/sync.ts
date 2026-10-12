@@ -6,7 +6,11 @@ import {
   validateOntology,
 } from "@trybacked/core";
 import { isOntologyV2Workspace } from "@trybacked/core";
-import { listPublicationVersions, publishSemanticModel, publishWorkspaceOntology } from "@trybacked/registry";
+import {
+  listPublicationVersions,
+  publishSemanticModel,
+  publishWorkspaceOntology,
+} from "@trybacked/registry";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { join } from "node:path";
@@ -51,7 +55,9 @@ export const syncCommand: CommandHandler = async (args) => {
   }
   const modelPath = path.join(root, "model.yaml");
   if (!existsSync(modelPath)) {
-    ui.writeError(`No model.yaml at ${modelPath}. Run "${formatCliCommand(COMMANDS.RUN)}" or "${formatCliCommand(COMMANDS.INGEST)}" then induce first.`);
+    ui.writeError(
+      `No model.yaml at ${modelPath}. Run "${formatCliCommand(COMMANDS.RUN)}" or "${formatCliCommand(COMMANDS.INGEST)}" then induce first.`,
+    );
     process.exitCode = 1;
     return;
   }

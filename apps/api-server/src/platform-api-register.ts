@@ -51,18 +51,18 @@ function wrapRouteHandler(
 ): PlatformRouteHandler {
   return async (c) => {
     if (!routeSkipsOntologyResolve(route)) {
-    try {
-      const service: AnchorService = await deps.resolveOntologyService(c.get("tenantId"));
-      c.set("anchorService", service);
-    } catch (error) {
-      if (error instanceof TenantNotFoundError) {
-        return c.json({ error: error.message }, 404);
+      try {
+        const service: AnchorService = await deps.resolveOntologyService(c.get("tenantId"));
+        c.set("anchorService", service);
+      } catch (error) {
+        if (error instanceof TenantNotFoundError) {
+          return c.json({ error: error.message }, 404);
+        }
+        if (error instanceof OntologyNotPublishedError) {
+          return c.json({ error: error.message }, 503);
+        }
+        throw error;
       }
-      if (error instanceof OntologyNotPublishedError) {
-        return c.json({ error: error.message }, 503);
-      }
-      throw error;
-    }
     }
     return route.handle(c);
   };

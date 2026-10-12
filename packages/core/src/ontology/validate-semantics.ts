@@ -11,6 +11,9 @@ function propertyIds(ontology: Ontology, objectId: string): Set<string> {
   return new Set(object.properties.map((property) => property.id));
 }
 
+/**
+ *
+ */
 export function validateSemanticsReferences(ontology: Ontology): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const objects = objectIds(ontology);

@@ -1,6 +1,6 @@
+import type { OntologyPropertyV2, OntologyTypeExpr, OntologyV2 } from "./spec-v2.js";
 import type { Ontology, OntologyPropertyType } from "./spec.js";
 import { ONTOLOGY_FORMAT_VERSION } from "./spec.js";
-import type { OntologyPropertyV2, OntologyTypeExpr, OntologyV2 } from "./spec-v2.js";
 
 const V2_SCALAR_TO_V1: Record<string, OntologyPropertyType> = {
   string: "string",
@@ -30,6 +30,9 @@ function isPhysicalProperty(
   return property.kind === "physical";
 }
 
+/**
+ *
+ */
 export function ontologyV2ToOntology(v2: OntologyV2): Ontology {
   return {
     metadata: {

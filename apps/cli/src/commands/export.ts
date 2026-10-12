@@ -8,7 +8,7 @@ import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
-export const exportCommand: CommandHandler = async (args) => {
+export const exportCommand: CommandHandler = (args) => {
   const ui = initUi();
   try {
     const parsed = parseHelpOnlyArgs(args);

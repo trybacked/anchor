@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { createProfileAvatarStorageFromEnv } from "@trybacked/infrastructure";
+import { z } from "zod";
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 

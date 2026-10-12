@@ -4,8 +4,15 @@
   "type": "module",
   "description": "Shared files-to-ontology pipeline orchestrator for CLI and control-plane",
   "license": "Apache-2.0",
-  "publishConfig": { "access": "public" },
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -22,6 +29,10 @@
     "@trybacked/registry": "workspace:*",
     "zod": "^3.24.1"
   },
-  "devDependencies": { "vitest": "^3.0.5" },
-  "engines": { "node": ">=22" }
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
 }

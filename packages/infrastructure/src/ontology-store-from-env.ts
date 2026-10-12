@@ -1,9 +1,12 @@
 import type { OntologyStore } from "@trybacked/registry";
 import { createVolumeOntologyStore } from "@trybacked/registry";
-import { createFilesystemBlobStore } from "./adapters/files/filesystem-blob-store.js";
-import { createFilesystemOntologyStore } from "./adapters/files/files-registry.js";
 import { filesRegistryBaseFromEnv } from "./adapters/files/config.js";
-import { createS3BlobStoreFromEnv, defaultOntologyRegistryS3Prefix } from "./adapters/s3/s3-blob-store.js";
+import { createFilesystemOntologyStore } from "./adapters/files/files-registry.js";
+import { createFilesystemBlobStore } from "./adapters/files/filesystem-blob-store.js";
+import {
+  createS3BlobStoreFromEnv,
+  defaultOntologyRegistryS3Prefix,
+} from "./adapters/s3/s3-blob-store.js";
 import { s3BucketFromEnv } from "./adapters/s3/s3-config.js";
 
 export type OntologyRegistryStorage = "filesystem" | "s3";
@@ -36,7 +39,7 @@ export function createOntologyStoreFromEnv(
     const bucket = s3BucketFromEnv(env);
     if (bucket === undefined) {
       throw new Error(
-        'BACKED_ONTOLOGY_REGISTRY_STORAGE=s3 requires BACKED_S3_BUCKET (or BACKED_S3_USE_DEFAULT_BUCKET=1).',
+        "BACKED_ONTOLOGY_REGISTRY_STORAGE=s3 requires BACKED_S3_BUCKET (or BACKED_S3_USE_DEFAULT_BUCKET=1).",
       );
     }
     const blobs = createS3BlobStoreFromEnv(env);

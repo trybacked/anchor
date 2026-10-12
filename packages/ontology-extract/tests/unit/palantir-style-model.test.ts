@@ -19,7 +19,9 @@ describe("buildPalantirStyleDocumentSemanticModel", () => {
       ["document", "organization", "person"].sort(),
     );
     expect(model.entities.some((entity) => entity.id.includes("mention"))).toBe(false);
-    expect(model.relations.some((relation) => relation.name === "Mentions organization")).toBe(true);
+    expect(model.relations.some((relation) => relation.name === "Mentions organization")).toBe(
+      true,
+    );
     const validation = validateSemanticModel(model);
     expect(validation.valid).toBe(true);
   });

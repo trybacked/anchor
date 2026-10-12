@@ -1,6 +1,9 @@
 import type { Ontology, OntologyObject, OntologyProperty } from "./ontology/spec.js";
 import type { EntityDisplayLabel } from "./semantics.js";
 
+/**
+ *
+ */
 export type EntityLabelForm = "singular" | "plural";
 
 function language(locale: string): string {
@@ -14,10 +17,16 @@ function entityDisplayLabel(
   return object?.semantics?.labels?.[language(locale)];
 }
 
+/**
+ *
+ */
 export function findObject(ontology: Ontology, objectId: string): OntologyObject | undefined {
   return ontology.objects.find((object) => object.id === objectId);
 }
 
+/**
+ *
+ */
 export function findProperty(
   ontology: Ontology,
   objectId: string,
@@ -26,6 +35,9 @@ export function findProperty(
   return findObject(ontology, objectId)?.properties.find((property) => property.id === propertyId);
 }
 
+/**
+ *
+ */
 export function objectLabel(
   ontology: Ontology,
   objectId: string,
@@ -37,6 +49,9 @@ export function objectLabel(
   return label?.[form] ?? object?.name ?? objectId;
 }
 
+/**
+ *
+ */
 export function propertyLabel(
   ontology: Ontology,
   objectId: string,

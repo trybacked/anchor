@@ -134,9 +134,9 @@ export async function runInduction(options: RunInductionOptions): Promise<RunInd
 
   const ontology = applyCommandsV2(base, llmCommands);
   const changeSet: OntologyChangeSet = {
-    changeSetId: `cs_${Date.now()}`,
+    changeSetId: `cs_${String(Date.now())}`,
     tenantId: options.tenantId,
-    runId: `run_${Date.now()}`,
+    runId: `run_${String(Date.now())}`,
     createdAt: new Date().toISOString(),
     formatVersion: "2",
     status: "proposed",

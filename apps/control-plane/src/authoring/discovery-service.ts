@@ -15,22 +15,22 @@ import {
   runDocsWarehouseDiscovery,
 } from "@trybacked/discovery";
 import {
+  resolveFoundryWarehouseDiscoveryProfile,
+  type FoundryWarehouseDiscoveryProfile,
+} from "@trybacked/infrastructure";
+import {
   applyCommands,
   chunkAuthoringCommands,
   commandsFromReviewedDiscovery,
   validateDiscoveryReview,
 } from "@trybacked/ontology-authoring";
 import {
-  resolveFoundryWarehouseDiscoveryProfile,
-  type FoundryWarehouseDiscoveryProfile,
-} from "@trybacked/infrastructure";
-import { fetchWarehouseDiscoveryProfileFromPlatform } from "./warehouse-discovery-profile-fetch.js";
-import {
   createGatewayLanguageModel,
   createOntologyExtractModelFromEnv,
   runDocsAiOntologyDiscovery,
   runFilesAiOntologyDiscovery,
 } from "@trybacked/ontology-extract";
+import { fetchWarehouseDiscoveryProfileFromPlatform } from "./warehouse-discovery-profile-fetch.js";
 
 export type DocsDiscoveryPreflightError =
   | { code: "docs_schema_empty"; message: string; missingTables: string[]; emptyTables: string[] }

@@ -1,15 +1,15 @@
 import type { LanguageModel } from "ai";
+import { buildFoundrySeedFromArchive, type ArchivePdfRecord } from "./archive-seed.js";
 import {
   collectPdfExcerptsFromPaths,
   pdfPageCount,
   type CollectPdfExcerptsOptions,
 } from "./collect-excerpts.js";
 import { extractFoundryInstancesFromExcerpts } from "./extract-instances.js";
-import type { FoundryExtractOutput } from "./output.js";
-import { buildFoundrySeedFromArchive, type ArchivePdfRecord } from "./archive-seed.js";
-import type { FoundrySeedPayload } from "./seed.js";
 import { buildFoundryTableRows } from "./materialize-rows.js";
 import type { FoundryMaterializeTableRows } from "./materialize-rows.js";
+import type { FoundryExtractOutput } from "./output.js";
+import type { FoundrySeedPayload } from "./seed.js";
 
 export type RunArchiveFoundryExtractOptions = {
   model: LanguageModel;

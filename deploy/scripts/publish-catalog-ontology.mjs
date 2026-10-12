@@ -11,7 +11,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseModelYaml } from "@trybacked/core";
 import { buildRemotePublication } from "@trybacked/registry";
-import { createOntologyStoreFromEnv, ontologyRegistryLocationHint } from "@trybacked/infrastructure";
+import {
+  createOntologyStoreFromEnv,
+  ontologyRegistryLocationHint,
+} from "@trybacked/infrastructure";
 
 function parseArgs(argv) {
   const args = { catalog: "", tenant: "", model: "" };

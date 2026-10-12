@@ -1,9 +1,9 @@
+import { createRegistrySourceFromEnv } from "@trybacked/core";
 import {
   loadFoundryWarehouseDiscoveryProfile,
   persistFoundryWarehouseDiscoveryProfileSnapshot,
   resolveFoundryWarehouseDiscoveryProfile,
 } from "@trybacked/infrastructure";
-import { createRegistrySourceFromEnv } from "@trybacked/core";
 import { platformRoute, type RouteFactory } from "../platform-api-route-factory.js";
 import { V1_PATH_PREFIX } from "../platform-api-route-meta.js";
 import type { PlatformHandlerContext } from "../platform-api-types.js";

@@ -1,5 +1,5 @@
-import { hybridSearchChunks } from "@trybacked/ingest";
 import { duckDbPathFromEnv, resolveWarehouseDuckDbPath } from "@trybacked/infrastructure";
+import { hybridSearchChunks } from "@trybacked/ingest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
@@ -29,9 +29,13 @@ function loadParsedArtifacts(workspaceHint: string | undefined): ParsedArtifact[
   return readdirSync(workspaceHint)
     .filter((name) => name.endsWith(".json"))
     .slice(0, 50)
-    .map((name) => JSON.parse(readFileSync(path.join(workspaceHint, name), "utf8")) as ParsedArtifact);
+    .map(
+      (name) => JSON.parse(readFileSync(path.join(workspaceHint, name), "utf8")) as ParsedArtifact,
+    );
 }
 
+// Signature matches other *ForContext factories; evidence tools use env paths today.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for workspace-scoped parsed dir
 export function evidenceToolsForContext(_context: ToolContext): ToolDefinition[] {
   const parsedDir = process.env["BACKED_PARSED_DIR"];
   return [
@@ -92,7 +96,9 @@ export function evidenceToolsForContext(_context: ToolContext): ToolDefinition[]
         const artifacts = loadParsedArtifacts(parsedDir);
         const samples = artifacts
           .flatMap((artifact) => artifact.chunks.map((chunk) => chunk.text))
-          .filter((text) => text.toLowerCase().includes(input.question.toLowerCase().split(/\s+/)[0] ?? ""))
+          .filter((text) =>
+            text.toLowerCase().includes(input.question.toLowerCase().split(/\s+/)[0] ?? ""),
+          )
           .slice(0, limit);
         if (samples.length === 0) {
           return {
@@ -104,7 +110,10 @@ export function evidenceToolsForContext(_context: ToolContext): ToolDefinition[]
         return {
           question: input.question,
           unanswerable: false,
-          themes: samples.map((text, index) => ({ id: `theme_${String(index)}`, excerpt: text.slice(0, 400) })),
+          themes: samples.map((text, index) => ({
+            id: `theme_${String(index)}`,
+            excerpt: text.slice(0, 400),
+          })),
         };
       },
     },

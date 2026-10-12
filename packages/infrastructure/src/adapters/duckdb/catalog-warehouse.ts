@@ -9,10 +9,7 @@ export function resolveWarehouseMainDuckDbPath(env: NodeJS.ProcessEnv): string {
   return join(filesRegistryBaseFromEnv(env), "warehouse-main.duckdb");
 }
 
-export function resolveTenantWarehouseDuckDbPath(
-  env: NodeJS.ProcessEnv,
-  catalog: string,
-): string {
+export function resolveTenantWarehouseDuckDbPath(env: NodeJS.ProcessEnv, catalog: string): string {
   return join(filesRegistryBaseFromEnv(env), "tenants", `${catalog}.duckdb`);
 }
 
@@ -37,13 +34,14 @@ export function prepareCatalogWarehousePaths(
   };
 }
 
-export async function execCatalogWarehouseSql(
+export function execCatalogWarehouseSql(
   env: NodeJS.ProcessEnv,
   catalog: string,
   sql: string,
 ): Promise<void> {
   const { mainDbPath, attachSql } = prepareCatalogWarehousePaths(env, catalog);
   duckDbRunCli(mainDbPath, `${attachSql}\n${sql}`);
+  return Promise.resolve();
 }
 
 export function createCatalogWarehouseSqlExecutor(options: {
@@ -51,12 +49,12 @@ export function createCatalogWarehouseSqlExecutor(options: {
   catalog: string;
 }): (sql: string, parameters: SqlParameter[]) => Promise<Record<string, unknown>[]> {
   const { mainDbPath, attachSql } = prepareCatalogWarehousePaths(options.env, options.catalog);
-  return async (sql, parameters) => {
+  return (sql, parameters) => {
     const named: Record<string, string | number | boolean | null> = {};
     for (const parameter of parameters) {
       named[parameter.name] = parameter.value;
     }
     const bound = bindNamedParameters(sql, named);
-    return duckDbQueryCliJson(mainDbPath, `${attachSql}\n${bound}`);
+    return Promise.resolve(duckDbQueryCliJson(mainDbPath, `${attachSql}\n${bound}`));
   };
 }

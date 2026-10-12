@@ -1,4 +1,9 @@
-import { applyCommandsV2, parseChangeSet, readOntologyV2Yaml, writeOntologyV2Yaml } from "@trybacked/core";
+import {
+  applyCommandsV2,
+  parseChangeSet,
+  readOntologyV2Yaml,
+  writeOntologyV2Yaml,
+} from "@trybacked/core";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { commandErrorMessage, parseHelpOnlyArgs } from "../args.js";
@@ -9,7 +14,7 @@ import { initUi } from "../ui/index.js";
 
 const CHANGE_SET_PATH = ".backed/change-set.json";
 
-export const reviewCommand: CommandHandler = async (args) => {
+export const reviewCommand: CommandHandler = (args) => {
   const ui = initUi();
   try {
     const parsed = parseHelpOnlyArgs(args);
@@ -42,7 +47,9 @@ export const reviewCommand: CommandHandler = async (args) => {
     if (json) {
       ui.log(JSON.stringify(summary, null, 2));
     } else {
-      ui.writeSuccess(`Applied ${String(summary.accepted)} change(s) at threshold ${String(threshold)}`);
+      ui.writeSuccess(
+        `Applied ${String(summary.accepted)} change(s) at threshold ${String(threshold)}`,
+      );
     }
   } catch (error) {
     ui.writeError(commandErrorMessage(error));

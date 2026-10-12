@@ -1,4 +1,6 @@
 import { DEFAULT_REVIEW_CONFIDENCE_THRESHOLD, type DatasetProvider } from "@trybacked/core";
+import type { DatasetSample } from "@trybacked/core";
+import type { ProfileReport } from "@trybacked/core";
 import {
   discoverFromProfile,
   DOCS_WAREHOUSE_INFRA_INCLUDE,
@@ -9,15 +11,13 @@ import {
   type DiscoverFromProfileOptions,
   type ProposalFromDiscoveryOptions,
 } from "@trybacked/discovery";
-import type { DatasetSample } from "@trybacked/core";
 import type { LanguageModel } from "ai";
-import type { ProfileReport } from "@trybacked/core";
 import { collectProfileDatasetSamples, type DocTableSample } from "./collect-samples.js";
 import { extractOntologyWithLlm } from "./extract-with-llm.js";
 import { buildPalantirStyleDocumentSemanticModel } from "./foundry/palantir-style-model.js";
 import { mergeOntologyExtractIntoProposal } from "./merge-extract.js";
-import { proposalFromSemanticModel } from "./semantic-model-proposal.js";
 import type { DocsAiOntologyDiscoveryResult } from "./run-docs-ai-discovery.js";
+import { proposalFromSemanticModel } from "./semantic-model-proposal.js";
 
 export type RunFilesAiOntologyDiscoveryOptions = DiscoverFromProfileOptions &
   ProposalFromDiscoveryOptions & {
@@ -75,9 +75,7 @@ export async function runFilesAiOntologyDiscovery(
   const warehouseMerged =
     options.warehouseProfile !== undefined && options.warehouseProfile.length > 0;
   const useSemanticBaseline =
-    warehouseMerged &&
-    options.catalog !== undefined &&
-    options.catalog.length > 0;
+    warehouseMerged && options.catalog !== undefined && options.catalog.length > 0;
 
   let profile = useSemanticBaseline
     ? [...(options.warehouseProfile ?? [])]

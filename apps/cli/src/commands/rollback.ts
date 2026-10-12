@@ -5,7 +5,7 @@ import { findWorkspaceRoot } from "../env.js";
 import type { CommandHandler } from "../types.js";
 import { initUi } from "../ui/index.js";
 
-export const rollbackCommand: CommandHandler = async (args) => {
+export const rollbackCommand: CommandHandler = (args) => {
   const ui = initUi();
   try {
     const parsed = parseHelpOnlyArgs(args);

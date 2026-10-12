@@ -1,27 +1,32 @@
-import { parse as parseYaml } from "yaml";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { parse as parseYaml } from "yaml";
 import { MODEL_FORMAT_VERSION } from "../constants.js";
-import type { SemanticModel } from "../model.js";
 import { parseModelYaml } from "../model-yaml.js";
-import { ONTOLOGY_FORMAT_VERSION_V2, OntologyV2Schema, type OntologyV2 } from "./spec-v2.js";
+import type { SemanticModel } from "../model.js";
 import { MODEL_YAML_FILENAME } from "./ontology-v2-yaml.js";
+import { ONTOLOGY_FORMAT_VERSION_V2, OntologyV2Schema, type OntologyV2 } from "./spec-v2.js";
 
+/**
+ *
+ */
 export type WorkspaceModelFormat = "semantic_v1" | "ontology_v2";
 
+/**
+ *
+ */
 export type WorkspaceModel =
-  | { format: "semantic_v1"; model: SemanticModel }
-  | { format: "ontology_v2"; ontology: OntologyV2 };
+  { format: "semantic_v1"; model: SemanticModel } | { format: "ontology_v2"; ontology: OntologyV2 };
 
 function detectFormatVersion(raw: unknown): WorkspaceModelFormat {
   if (typeof raw !== "object" || raw === null || !("metadata" in raw)) {
     throw new Error("model.yaml must contain a metadata block");
   }
-  const metadata = (raw as { metadata: unknown }).metadata;
+  const metadata = raw.metadata;
   if (typeof metadata !== "object" || metadata === null || !("formatVersion" in metadata)) {
     throw new Error("model.yaml metadata.formatVersion is required");
   }
-  const version = (metadata as { formatVersion: unknown }).formatVersion;
+  const version = metadata.formatVersion;
   if (version === ONTOLOGY_FORMAT_VERSION_V2) {
     return "ontology_v2";
   }
@@ -31,6 +36,9 @@ function detectFormatVersion(raw: unknown): WorkspaceModelFormat {
   throw new Error(`Unsupported model.yaml formatVersion: ${String(version)}`);
 }
 
+/**
+ *
+ */
 export function readWorkspaceModel(root: string): WorkspaceModel {
   const filePath = path.join(root, MODEL_YAML_FILENAME);
   if (!existsSync(filePath)) {
@@ -45,6 +53,9 @@ export function readWorkspaceModel(root: string): WorkspaceModel {
   return { format, model: parseModelYaml(text) };
 }
 
+/**
+ *
+ */
 export function isOntologyV2Workspace(root: string): boolean {
   try {
     return readWorkspaceModel(root).format === "ontology_v2";

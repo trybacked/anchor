@@ -11,6 +11,10 @@
       "description": "Semantic search over document chunks"
     },
     {
+      "name": "discovery",
+      "description": "discovery"
+    },
+    {
       "name": "documents",
       "description": "Document metadata and PDF preview"
     },
@@ -23,6 +27,10 @@
       "description": "Entity text search across the model"
     },
     {
+      "name": "files",
+      "description": "files"
+    },
+    {
       "name": "graph-traverse",
       "description": "Multi-hop graph traversal"
     },
@@ -33,6 +41,10 @@
     {
       "name": "object-query-reader",
       "description": "Curated warehouse object queries"
+    },
+    {
+      "name": "profile",
+      "description": "profile"
     },
     {
       "name": "semantic-chat",
@@ -259,6 +271,15 @@
           }
         },
         "required": ["query"],
+        "additionalProperties": false
+      },
+      "FilesRefreshBody": {
+        "type": "object",
+        "properties": {
+          "fullRefresh": {
+            "type": "boolean"
+          }
+        },
         "additionalProperties": false
       },
       "ChunkSearchBody": {
@@ -1027,6 +1048,264 @@
           },
           "503": {
             "description": "Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/discovery/warehouse-profile": {
+      "get": {
+        "operationId": "getWarehouseDiscoveryProfile",
+        "summary": "Profile Foundry warehouse tables for ontology discovery (post-extraction)",
+        "tags": ["discovery"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Warehouse profile and row samples"
+          },
+          "404": {
+            "description": "Tenant not in registry or warehouse empty"
+          }
+        }
+      }
+    },
+    "/v1/files": {
+      "get": {
+        "operationId": "listTenantFiles",
+        "summary": "List tenant document archive entries",
+        "tags": ["files"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "folder",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Directory listing"
+          },
+          "404": {
+            "description": "Tenant not in registry"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadTenantFile",
+        "summary": "Upload a file into the tenant document archive",
+        "tags": ["files"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "folder": {
+                    "type": "string"
+                  }
+                }
+              },
+              "description": "Multipart upload with file and optional folder"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Uploaded file descriptor"
+          },
+          "400": {
+            "description": "Invalid multipart body"
+          },
+          "404": {
+            "description": "Tenant not in registry"
+          }
+        }
+      }
+    },
+    "/v1/files/refresh": {
+      "post": {
+        "operationId": "refreshTenantFiles",
+        "summary": "Sync archive files into DuckDB and run automatic Foundry entity extraction on PDFs",
+        "tags": ["files"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FilesRefreshBody"
+              },
+              "example": {
+                "fullRefresh": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refresh run accepted"
+          },
+          "404": {
+            "description": "Tenant not in registry"
+          }
+        }
+      }
+    },
+    "/v1/files/refresh/{runId}": {
+      "get": {
+        "operationId": "getTenantFilesRefresh",
+        "summary": "Refresh run status",
+        "tags": ["files"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Refresh run status"
+          },
+          "404": {
+            "description": "Run or tenant not found"
+          }
+        }
+      }
+    },
+    "/v1/profile/avatar": {
+      "get": {
+        "operationId": "getProfileAvatar",
+        "summary": "Read the uploaded profile avatar image for a user",
+        "tags": ["profile"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avatar image bytes"
+          },
+          "404": {
+            "description": "No avatar uploaded"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadProfileAvatar",
+        "summary": "Upload the profile avatar image for a user (PNG, JPEG, WebP, or GIF up to 4 MB)",
+        "tags": ["profile"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,64}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "folder": {
+                    "type": "string"
+                  }
+                }
+              },
+              "description": "Multipart upload with the image in the file field"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored avatar descriptor"
+          },
+          "400": {
+            "description": "Invalid image"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProfileAvatar",
+        "summary": "Remove the profile avatar image for a user",
+        "tags": ["profile"],
+        "security": [
+          {
+            "backedAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avatar removed"
           }
         }
       }

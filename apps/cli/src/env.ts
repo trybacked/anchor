@@ -73,7 +73,10 @@ export function dotEnvLoadOrder(startDir: string = process.cwd()): string[] {
 
   const cwdChain = dotEnvPathsFromCwd(startDir);
   for (let index = cwdChain.length - 1; index >= 0; index -= 1) {
-    push(cwdChain[index]!);
+    const envPath = cwdChain[index];
+    if (envPath !== undefined) {
+      push(envPath);
+    }
   }
 
   return ordered;
@@ -82,7 +85,7 @@ export function dotEnvLoadOrder(startDir: string = process.cwd()): string[] {
 function clearEmptyDotenvBackfillKeys(): void {
   for (const key of DOTENV_BACKFILL_KEYS) {
     if (process.env[key]?.trim() === "") {
-      delete process.env[key];
+      Reflect.deleteProperty(process.env, key);
     }
   }
 }

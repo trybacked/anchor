@@ -6,12 +6,15 @@ import {
   proposeDocsWarehouseDiscovery,
 } from "../../src/authoring/discovery-service.js";
 
-const { runDocsAiOntologyDiscovery, runFilesAiOntologyDiscovery, createOntologyExtractModelFromEnv } =
-  vi.hoisted(() => ({
-    runDocsAiOntologyDiscovery: vi.fn(),
-    runFilesAiOntologyDiscovery: vi.fn(),
-    createOntologyExtractModelFromEnv: vi.fn(),
-  }));
+const {
+  runDocsAiOntologyDiscovery,
+  runFilesAiOntologyDiscovery,
+  createOntologyExtractModelFromEnv,
+} = vi.hoisted(() => ({
+  runDocsAiOntologyDiscovery: vi.fn(),
+  runFilesAiOntologyDiscovery: vi.fn(),
+  createOntologyExtractModelFromEnv: vi.fn(),
+}));
 
 vi.mock("@trybacked/ontology-extract", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@trybacked/ontology-extract")>();
@@ -124,11 +127,15 @@ describe("proposeDocsAiFilesSourceDiscovery", () => {
       aiUsage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
       sampleTableCount: 0,
     });
-    const outcome = await proposeDocsAiFilesSourceDiscovery(mockProvider({}), { AI_GATEWAY_API_KEY: "k" }, {
-      tenantId: "leonardo",
-      catalog: "backed_leonardo",
-      runId: "run-ai-files",
-    });
+    const outcome = await proposeDocsAiFilesSourceDiscovery(
+      mockProvider({}),
+      { AI_GATEWAY_API_KEY: "k" },
+      {
+        tenantId: "leonardo",
+        catalog: "backed_leonardo",
+        runId: "run-ai-files",
+      },
+    );
     expect(outcome).toMatchObject({ code: "files_empty" });
   });
 
@@ -155,12 +162,16 @@ describe("proposeDocsAiFilesSourceDiscovery", () => {
       aiUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
       sampleTableCount: 1,
     });
-    const outcome = await proposeDocsAiFilesSourceDiscovery(mockProvider({}), { AI_GATEWAY_API_KEY: "k" }, {
-      tenantId: "leonardo",
-      catalog: "backed_leonardo",
-      runId: "run-ai-files-2",
-      locale: "it",
-    });
+    const outcome = await proposeDocsAiFilesSourceDiscovery(
+      mockProvider({}),
+      { AI_GATEWAY_API_KEY: "k" },
+      {
+        tenantId: "leonardo",
+        catalog: "backed_leonardo",
+        runId: "run-ai-files-2",
+        locale: "it",
+      },
+    );
     expect(outcome).toMatchObject({
       profileTableCount: 1,
       sampleTableCount: 1,

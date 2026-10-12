@@ -32,7 +32,10 @@ export {
   type TenantArchiveListResult,
   type TenantArchiveUploadResult,
 } from "./adapters/files/index.js";
-export { createGatewayLanguageModel, type GatewayLanguageModelOptions } from "./adapters/llm/gateway-language-model.js";
+export {
+  createGatewayLanguageModel,
+  type GatewayLanguageModelOptions,
+} from "./adapters/llm/gateway-language-model.js";
 export { requireAiGatewayApiKey } from "./adapters/llm/require-ai-gateway.js";
 export {
   createProfileAvatarStorageFromEnv,

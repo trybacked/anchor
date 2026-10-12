@@ -4,7 +4,12 @@ type DoclingResponse = {
   document?: { md_content?: string; text_content?: string; filename?: string };
 };
 
-function documentFromPlainText(uri: string, mimeType: string, plainText: string, title?: string): ParsedDocument {
+function documentFromPlainText(
+  uri: string,
+  mimeType: string,
+  plainText: string,
+  title?: string,
+): ParsedDocument {
   const lines = plainText.split(/\r?\n/);
   let offset = 0;
   const blocks = lines.map((line) => {
@@ -50,9 +55,7 @@ export function createDoclingDocumentParser(baseUrl: string): DocumentParser {
       }
       const payload = (await response.json()) as DoclingResponse;
       const plainText =
-        payload.document?.text_content?.trim() ||
-        payload.document?.md_content?.trim() ||
-        "";
+        payload.document?.text_content?.trim() || payload.document?.md_content?.trim() || "";
       return documentFromPlainText(
         input.uri,
         input.mimeType,

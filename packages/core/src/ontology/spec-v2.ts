@@ -26,8 +26,14 @@ export const OntologyScalarTypeSchema = z.enum([
   "json",
 ]);
 
+/**
+ *
+ */
 export type OntologyScalarType = z.infer<typeof OntologyScalarTypeSchema>;
 
+/**
+ *
+ */
 export type OntologyTypeExpr =
   | OntologyScalarType
   | { kind: "array"; items: OntologyTypeExpr }
@@ -63,6 +69,9 @@ export const OntologyValueTypeSchema = z.object({
   semantics: PropertySemanticsSchema.optional(),
 });
 
+/**
+ *
+ */
 export type OntologyValueType = z.infer<typeof OntologyValueTypeSchema>;
 
 export const DatasourceBindingSchema = z.object({
@@ -73,6 +82,9 @@ export const DatasourceBindingSchema = z.object({
   filter: z.string().min(1).optional(),
 });
 
+/**
+ *
+ */
 export type DatasourceBinding = z.infer<typeof DatasourceBindingSchema>;
 
 export const OntologySharedPropertySchema = z.object({
@@ -83,6 +95,9 @@ export const OntologySharedPropertySchema = z.object({
   semantics: PropertySemanticsSchema.optional(),
 });
 
+/**
+ *
+ */
 export type OntologySharedProperty = z.infer<typeof OntologySharedPropertySchema>;
 export const OntologyInterfaceV2Schema = z.object({
   id: z.string().min(1),
@@ -91,6 +106,9 @@ export const OntologyInterfaceV2Schema = z.object({
   sharedProperties: z.array(OntologySharedPropertySchema),
 });
 
+/**
+ *
+ */
 export type OntologyInterfaceV2 = z.infer<typeof OntologyInterfaceV2Schema>;
 
 export const OntologyPropertyV2Schema = z.discriminatedUnion("kind", [
@@ -134,6 +152,9 @@ export const OntologyPropertyV2Schema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+/**
+ *
+ */
 export type OntologyPropertyV2 = z.infer<typeof OntologyPropertyV2Schema>;
 
 export const OntologyObjectTypeV2Schema = z.object({
@@ -156,6 +177,9 @@ export const OntologyObjectTypeV2Schema = z.object({
   semantics: EntitySemanticsSchema.optional(),
 });
 
+/**
+ *
+ */
 export type OntologyObjectTypeV2 = z.infer<typeof OntologyObjectTypeV2Schema>;
 
 export const OntologyLinkTypeV2Schema = z.object({
@@ -179,6 +203,9 @@ export const OntologyLinkTypeV2Schema = z.object({
   semantics: EntitySemanticsSchema.optional(),
 });
 
+/**
+ *
+ */
 export type OntologyLinkTypeV2 = z.infer<typeof OntologyLinkTypeV2Schema>;
 
 export const OntologyActionParameterSchema = z.object({
@@ -202,6 +229,9 @@ export const OntologyActionTypeV2Schema = z.object({
   semantics: EntitySemanticsSchema.optional(),
 });
 
+/**
+ *
+ */
 export type OntologyActionTypeV2 = z.infer<typeof OntologyActionTypeV2Schema>;
 
 export const OntologyMetadataV2Schema = z.object({
@@ -220,8 +250,14 @@ export const OntologyV2Schema = z.object({
   semantics: OntologySemanticsBlockSchema.optional(),
 });
 
+/**
+ *
+ */
 export type OntologyMetadataV2 = z.infer<typeof OntologyMetadataV2Schema>;
 
+/**
+ *
+ */
 export type OntologyV2 = z.infer<typeof OntologyV2Schema>;
 
 const SCALAR_MIGRATION: Record<string, OntologyScalarType> = {
@@ -237,6 +273,9 @@ const SCALAR_MIGRATION: Record<string, OntologyScalarType> = {
   reference: "reference",
 };
 
+/**
+ *
+ */
 export function migratePropertyTypeV1ToV2(type: string): OntologyTypeExpr {
   const scalar = SCALAR_MIGRATION[type];
   if (scalar !== undefined) {
@@ -245,6 +284,9 @@ export function migratePropertyTypeV1ToV2(type: string): OntologyTypeExpr {
   throw new Error(`Unknown v1 property type "${type}" during v1→v2 migration`);
 }
 
+/**
+ *
+ */
 export function migrateOntologyV1ToV2(ontology: Ontology): OntologyV2 {
   const objectTypes = ontology.objects.map((object) => {
     const backing: DatasourceBinding[] =

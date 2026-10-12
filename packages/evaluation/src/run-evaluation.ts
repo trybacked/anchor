@@ -22,12 +22,13 @@ function loadCompetencyQuestions(root: string): string[] {
   return (raw.questions ?? []).map((q) => q.text ?? "").filter((text) => text.length > 0);
 }
 
-export async function runEvaluation(options: {
+export function runEvaluation({
+  workspaceRoot,
+}: {
   workspaceRoot: string;
   env: NodeJS.ProcessEnv;
-}): Promise<EvaluationReport> {
-  void options.env;
-  const workspace = readWorkspaceModel(options.workspaceRoot);
+}): EvaluationReport {
+  const workspace = readWorkspaceModel(workspaceRoot);
   const issues: string[] = [];
   if (workspace.format !== "ontology_v2") {
     return {
@@ -51,7 +52,7 @@ export async function runEvaluation(options: {
       issues.push(`${issue.code}: ${issue.message}`);
     }
   }
-  const questions = loadCompetencyQuestions(options.workspaceRoot);
+  const questions = loadCompetencyQuestions(workspaceRoot);
   const objectIds = new Set(workspace.ontology.objectTypes.map((object) => object.id));
   let covered = 0;
   for (const question of questions) {

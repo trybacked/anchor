@@ -4,13 +4,13 @@ Source repo: **[trybacked/anchor](https://github.com/trybacked/anchor)** (root =
 
 ## Service mapping (legacy names → role)
 
-| Railway service  | Anchor role            | Domain / network                                                          |
-| ---------------- | ---------------------- | ------------------------------------------------------------------------- |
-| **api**          | Gateway (MCP + WorkOS) | `api.backed.app` (public)                                                 |
-| **cloud**        | Control-plane API      | `cloud.backed.app` (optional; also `control-plane.railway.internal:8791`) |
+| Railway service  | Anchor role            | Domain / network                                                                                    |
+| ---------------- | ---------------------- | --------------------------------------------------------------------------------------------------- |
+| **api**          | Gateway (MCP + WorkOS) | `api.backed.app` (public)                                                                           |
+| **cloud**        | Control-plane API      | `cloud.backed.app` (optional; also `control-plane.railway.internal:8791`)                           |
 | **platform-api** | Platform API           | Private only `platform-api.railway.internal:${PORT}` (Railway `PORT` is usually **8080**, not 8787) |
-| **provisioner**  | Provisioning worker    | No HTTP — **disable HTTP health check** (see below)                       |
-| **Postgres**     | Control-plane DB       | `${{Postgres.DATABASE_URL}}`                                              |
+| **provisioner**  | Provisioning worker    | No HTTP — **disable HTTP health check** (see below)                                                 |
+| **Postgres**     | Control-plane DB       | `${{Postgres.DATABASE_URL}}`                                                                        |
 
 **Other project services (not anchor stack):** **web** → `www.backed.app` (Next.js / Stripe / WorkOS, repo not linked in dashboard). **console** (`trybacked/console`, `console.backed.app`) was removed: it was the legacy api/cloud UI.
 

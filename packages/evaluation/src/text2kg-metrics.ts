@@ -30,7 +30,10 @@ export function computeText2KgMetrics(ontology: OntologyV2): Text2KgMetrics {
 }
 
 /** RGB negative rejection proxy: ontology should not over-commit when CQ coverage is low. */
-export function negativeRejectionScore(competencyCoverage: number, objectTypeCount: number): number {
+export function negativeRejectionScore(
+  competencyCoverage: number,
+  objectTypeCount: number,
+): number {
   if (competencyCoverage >= 0.5) {
     return 1;
   }
