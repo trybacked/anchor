@@ -1,6 +1,7 @@
 import type { AuthoringCommandV2 } from "@trybacked/core";
 import { AuthoringCommandV2Schema } from "@trybacked/core";
 import { z } from "zod";
+import { ChangeDecisionSchema, ProposalReviewOutcomeSchema } from "./decision/change-decision.js";
 
 export const ProposalEvidenceSchema = z.object({
   datasetId: z.string().min(1).optional(),
@@ -34,7 +35,10 @@ export const AiProposalSchema = z.object({
 
   formatVersion: z.literal("2"),
   changes: z.array(ProposedChangeSchema),
+  decisions: z.array(ChangeDecisionSchema).default([]),
   status: z.enum(["proposed", "approved", "rejected", "applied"]).default("proposed"),
+  autoApprovedBy: z.string().min(1).optional(),
+  reviewOutcome: ProposalReviewOutcomeSchema.optional(),
 });
 export type AiProposal = z.infer<typeof AiProposalSchema>;
 

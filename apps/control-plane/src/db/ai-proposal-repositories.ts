@@ -123,3 +123,38 @@ export async function setAiProposalStatus(
   const row = result.rows[0] as Parameters<typeof rowToProposal>[0] | undefined;
   return row === undefined ? undefined : rowToProposal(row);
 }
+
+export async function updateAiProposalPayload(
+  pool: pg.Pool,
+  tenantId: string,
+  proposalId: string,
+  payload: unknown,
+): Promise<AiProposalRow | undefined> {
+  const result = await pool.query(
+    `UPDATE ai_proposals SET payload = $3, updated_at = now()
+     WHERE tenant_id = $1 AND id = $2
+     RETURNING *`,
+    [tenantId, proposalId, JSON.stringify(payload)],
+  );
+  const row = result.rows[0] as Parameters<typeof rowToProposal>[0] | undefined;
+  return row === undefined ? undefined : rowToProposal(row);
+}
+
+export async function setAiProposalStatusAndPayload(
+  pool: pg.Pool,
+  input: {
+    tenantId: string;
+    proposalId: string;
+    status: z.infer<typeof AiProposalStatusSchema>;
+    payload: unknown;
+  },
+): Promise<AiProposalRow | undefined> {
+  const result = await pool.query(
+    `UPDATE ai_proposals SET status = $3, payload = $4, updated_at = now()
+     WHERE tenant_id = $1 AND id = $2
+     RETURNING *`,
+    [input.tenantId, input.proposalId, input.status, JSON.stringify(input.payload)],
+  );
+  const row = result.rows[0] as Parameters<typeof rowToProposal>[0] | undefined;
+  return row === undefined ? undefined : rowToProposal(row);
+}

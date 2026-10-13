@@ -1,5 +1,6 @@
 import { emptySemanticModel } from "@trybacked/ontology-authoring";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_DECISION_POLICY } from "@trybacked/ontology-ai";
 import type { ControlPlaneConfig } from "../../src/config.js";
 
 vi.mock("../../src/db/repositories.js", () => ({
@@ -31,6 +32,8 @@ const config: ControlPlaneConfig = {
   filesRegistryRoot: "./.backed/remote-registry",
   sharedSpacesJson: "{}",
   defaultSharedSpaces: [],
+  decisionPolicy: DEFAULT_DECISION_POLICY,
+  serverAutoApproveThresholdMin: 0.85,
 };
 
 const authHeaders = {

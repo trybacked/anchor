@@ -1,5 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { validateTenantId } from "@trybacked/core";
+import { createDecisionModelFromEnv } from "@trybacked/infrastructure";
+import type { DecisionModel } from "@trybacked/ports";
 import { Hono } from "hono";
 import { createHash } from "node:crypto";
 import type pg from "pg";
@@ -89,7 +91,20 @@ function oauthClientIdFromPath(raw: string | undefined): string | undefined {
   const trimmed = raw?.trim() ?? "";
   return trimmed.length > 0 ? trimmed : undefined;
 }
-export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool): Hono {
+export type ControlPlaneAppOptions = {
+  /** Override Sage client (tests). Omit to use `SAGE_API_KEY` from the environment. */
+  decisionModel?: DecisionModel | undefined;
+};
+
+export function createControlPlaneApp(
+  config: ControlPlaneConfig,
+  pool: pg.Pool,
+  options: ControlPlaneAppOptions = {},
+): Hono {
+  const decisionModel = options.decisionModel ?? createDecisionModelFromEnv(process.env);
+  if (decisionModel === undefined) {
+    console.error("Sage decision advisor disabled (SAGE_API_KEY not set).");
+  }
   const app = new Hono();
   app.get("/health/live", (c) => c.json({ ok: true as const }));
   app.get("/v1/registry", requireInternal(config), async (c) => {
@@ -203,7 +218,7 @@ export function createControlPlaneApp(config: ControlPlaneConfig, pool: pg.Pool)
   });
   registerAuthoringRoutes(app, config, pool);
   registerTenantProfileRoutes(app, config, pool);
-  registerAiProposalRoutes(app, config, pool);
+  registerAiProposalRoutes(app, config, pool, { decisionModel });
   registerSemanticRoutes(app, config, pool);
   app.get("/v1/jobs/:jobId", requireAdmin(config), async (c) => {
     const jobId = c.req.param("jobId");

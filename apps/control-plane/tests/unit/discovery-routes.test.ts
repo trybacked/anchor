@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createControlPlaneApp } from "../../src/app.js";
+import { DEFAULT_DECISION_POLICY } from "@trybacked/ontology-ai";
 import type { ControlPlaneConfig } from "../../src/config.js";
 
 const config: ControlPlaneConfig = {
@@ -12,6 +13,8 @@ const config: ControlPlaneConfig = {
   filesRegistryRoot: "./.backed/remote-registry",
   sharedSpacesJson: "{}",
   defaultSharedSpaces: [],
+  decisionPolicy: DEFAULT_DECISION_POLICY,
+  serverAutoApproveThresholdMin: 0.85,
 };
 
 describe("discovery routes", () => {

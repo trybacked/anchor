@@ -4,6 +4,7 @@ import {
   TenantsRegistrySchema,
   type TenantsRegistry,
 } from "@trybacked/core";
+import { DecisionPolicySchema, readDecisionPolicyFromEnv } from "@trybacked/ontology-ai";
 import { z } from "zod";
 
 const ControlPlaneConfigSchema = z.object({
@@ -16,6 +17,8 @@ const ControlPlaneConfigSchema = z.object({
   filesRegistryRoot: z.string().min(1),
   sharedSpacesJson: z.string().min(2),
   defaultSharedSpaces: z.array(z.string().min(1)),
+  decisionPolicy: DecisionPolicySchema,
+  serverAutoApproveThresholdMin: z.number().min(0).max(1),
 });
 
 export type ControlPlaneConfig = z.infer<typeof ControlPlaneConfigSchema>;
@@ -71,6 +74,12 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
   const sharedSpacesJson =
     env["CONTROL_PLANE_SHARED_SPACES_JSON"]?.trim() ?? DEFAULT_SHARED_SPACES_JSON;
   const configuredSharedSpaces = sharedSpaceKeys(sharedSpacesJson);
+  const decisionPolicy = readDecisionPolicyFromEnv(env);
+  const serverAutoApproveRaw = env["ANCHOR_SERVER_AUTO_APPROVE_THRESHOLD_MIN"]?.trim();
+  const serverAutoApproveThresholdMin =
+    serverAutoApproveRaw !== undefined && serverAutoApproveRaw.length > 0
+      ? Number(serverAutoApproveRaw)
+      : 0.85;
   return ControlPlaneConfigSchema.parse({
     host: env["CONTROL_PLANE_HOST"] ?? env["HOST"] ?? "0.0.0.0",
     port: Number(env["PORT"] ?? env["CONTROL_PLANE_PORT"] ?? 8791),
@@ -81,6 +90,8 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
     filesRegistryRoot,
     sharedSpacesJson,
     defaultSharedSpaces: resolveDefaultSharedSpaces(env, configuredSharedSpaces),
+    decisionPolicy,
+    serverAutoApproveThresholdMin,
   });
 }
 

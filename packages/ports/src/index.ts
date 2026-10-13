@@ -34,3 +34,13 @@ export type {
   SecretResolver,
 } from "./storage.js";
 export { RegistryLocationSchema } from "./storage.js";
+export type {
+  DecisionAnswer,
+  DecisionBatchResult,
+  DecisionGroup,
+  DecisionGroupResult,
+  DecisionModel,
+  DecisionModelUnavailableReason,
+  DecisionQuestion,
+} from "./decision-model.js";
+export { DecisionModelUnavailableError } from "./decision-model.js";

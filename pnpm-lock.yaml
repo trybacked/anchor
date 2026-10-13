@@ -123,6 +123,9 @@ importers:
       '@trybacked/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
+      '@trybacked/ontology-ai':
+        specifier: workspace:*
+        version: link:../../packages/ontology-ai
       '@trybacked/ontology-extract':
         specifier: workspace:*
         version: link:../../packages/ontology-extract
@@ -193,6 +196,9 @@ importers:
       '@trybacked/platform-admin':
         specifier: workspace:*
         version: link:../../packages/platform-admin
+      '@trybacked/ports':
+        specifier: workspace:*
+        version: link:../../packages/ports
       '@trybacked/registry':
         specifier: workspace:*
         version: link:../../packages/registry
@@ -468,6 +474,9 @@ importers:
       '@trybacked/core':
         specifier: workspace:*
         version: link:../core
+      '@trybacked/ports':
+        specifier: workspace:*
+        version: link:../ports
       ai:
         specifier: ^7
         version: 7.0.122(zod@3.25.76)
@@ -475,6 +484,9 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@trybacked/infrastructure':
+        specifier: workspace:*
+        version: link:../infrastructure
       vitest:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)

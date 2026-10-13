@@ -15,7 +15,8 @@
     "start": "node dist/index.js",
     "worker": "node dist/worker.js",
     "migrate": "node dist/db/migrate-cli.js",
-    "test": "vitest run --config vitest.config.ts --passWithNoTests"
+    "test": "vitest run --config vitest.config.ts --passWithNoTests",
+    "test:e2e": "vitest run --config vitest.config.ts tests/e2e/ai-proposal-sage.e2e.test.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.4",
@@ -25,6 +26,7 @@
     "@trybacked/discovery": "workspace:*",
     "@trybacked/infrastructure": "workspace:^",
     "@trybacked/ontology-ai": "workspace:^",
+    "@trybacked/ports": "workspace:*",
     "@trybacked/ontology-authoring": "workspace:*",
     "@trybacked/ontology-extract": "workspace:*",
     "@trybacked/platform-admin": "workspace:*",
