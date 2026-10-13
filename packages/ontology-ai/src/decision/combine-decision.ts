@@ -99,7 +99,7 @@ export function combineChangeDecision(input: CombineChangeDecisionInput): Change
     };
   }
 
-  if (!accept.answer && accept.probability >= input.decisionPolicy.rejectThreshold) {
+  if (!accept.answer && 1 - accept.probability >= input.decisionPolicy.rejectThreshold) {
     return {
       changeId: input.changeId,
       verdict: "recommend_reject",

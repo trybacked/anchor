@@ -45,7 +45,7 @@ export type OntologyChangeSet = z.infer<typeof OntologyChangeSetSchema>;
 /**
  *
  */
-export type ValidatedChangeSet = OntologyChangeSet & {
+export type ValidatedChangeSet = Omit<OntologyChangeSet, "changes"> & {
   changes: Array<ChangeSetEntry & { command: AuthoringCommandV2 }>;
 };
 

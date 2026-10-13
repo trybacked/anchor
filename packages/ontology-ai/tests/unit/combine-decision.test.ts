@@ -62,11 +62,24 @@ describe("combineChangeDecision", () => {
       decisionPolicy: { ...DEFAULT_DECISION_POLICY, rejectThreshold: 0.8 },
       advisor: {
         modelId: "m",
-        accept: { answer: false, probability: 0.9 },
+        accept: { answer: false, probability: 0.1 },
         risks: {},
       },
     });
     expect(decision.verdict).toBe("recommend_reject");
+  });
+
+  it("keeps human_review on a hesitant no", () => {
+    const decision = combineChangeDecision({
+      ...baseInput,
+      decisionPolicy: { ...DEFAULT_DECISION_POLICY, rejectThreshold: 0.8 },
+      advisor: {
+        modelId: "m",
+        accept: { answer: false, probability: 0.35 },
+        risks: {},
+      },
+    });
+    expect(decision.verdict).toBe("human_review");
   });
 
   it("blocks on risk tags", () => {

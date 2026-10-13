@@ -123,6 +123,9 @@ importers:
       '@trybacked/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
+      '@trybacked/ontology-ai':
+        specifier: workspace:*
+        version: link:../../packages/ontology-ai
       '@trybacked/ontology-extract':
         specifier: workspace:*
         version: link:../../packages/ontology-extract

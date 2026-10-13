@@ -54,6 +54,7 @@
     "@trybacked/ontology-induction": "workspace:*",
     "@trybacked/pipeline": "workspace:*",
     "@trybacked/infrastructure": "workspace:^",
+    "@trybacked/ontology-ai": "workspace:*",
     "@trybacked/ontology-extract": "workspace:*",
     "@trybacked/mcp": "workspace:*",
     "@trybacked/platform-admin": "workspace:*",
