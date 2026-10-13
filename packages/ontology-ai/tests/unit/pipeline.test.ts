@@ -88,6 +88,8 @@ describe("runOntologyProposal", () => {
     expect(proposal.changes).toHaveLength(1);
     expect(proposal.changes[0]?.command.type).toBe("addObjectType");
     expect(proposal.status).toBe("proposed");
+    expect(proposal.decisions).toHaveLength(1);
+    expect(proposal.decisions[0]?.verdict).toBe("auto_approve");
   });
 
   it("classifies breaking changes as human review regardless of confidence", () => {

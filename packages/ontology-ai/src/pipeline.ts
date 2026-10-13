@@ -1,11 +1,15 @@
 import type { DatasetProvider, OntologyV2 } from "@trybacked/core";
 import { applyCommandsV2, AuthoringCommandV2Schema, validateOntologyV2 } from "@trybacked/core";
+import type { DecisionModel } from "@trybacked/ports";
 import { z } from "zod";
+import { decideProposalChanges } from "./decision/decide-changes.js";
+import type { DecisionPolicy } from "./decision/decision-policy.js";
+import { DEFAULT_DECISION_POLICY } from "./decision/decision-policy.js";
 import type { OntologyLlm } from "./llm.js";
 import { AiProposalSchema, ProposalEvidenceSchema, ProposedChangeSchema } from "./proposal.js";
 import type { ProposalScope, ValidatedProposal } from "./proposal.js";
-import { partitionProposalChanges } from "./review-policy.js";
 import type { ReviewPolicy } from "./review-policy.js";
+import { DEFAULT_REVIEW_POLICY } from "./review-policy.js";
 
 type SampledColumn = {
   datasetId: string;
@@ -28,6 +32,8 @@ export type RunOntologyProposalOptions = {
   locale?: string | undefined;
   sampleSize?: number | undefined;
   policy?: ReviewPolicy | undefined;
+  decisionPolicy?: DecisionPolicy | undefined;
+  decisionModel?: DecisionModel | undefined;
 };
 
 const LlmOutputSchema = z.object({
@@ -155,7 +161,7 @@ export async function runOntologyProposal(
     })),
   };
 
-  let ontology: OntologyV2 = options.existingOntology ?? {
+  const baselineOntology: OntologyV2 = options.existingOntology ?? {
     metadata: { id: options.tenantId, formatVersion: "2", version: 0 },
     objectTypes: [],
     valueTypes: [],
@@ -163,6 +169,7 @@ export async function runOntologyProposal(
     linkTypes: [],
     actionTypes: [],
   };
+  let ontology: OntologyV2 = baselineOntology;
   const applied: typeof validated.changes = [];
   for (const change of validated.changes) {
     try {
@@ -178,9 +185,17 @@ export async function runOntologyProposal(
       invalidChanges.push({ id: change.id, reason: "apply_failed" });
     }
   }
-  partitionProposalChanges(applied, options.policy);
+  const reviewPolicy = options.policy ?? DEFAULT_REVIEW_POLICY;
+  const decisionPolicy = options.decisionPolicy ?? DEFAULT_DECISION_POLICY;
+  const decisions = await decideProposalChanges({
+    changes: applied,
+    baselineOntology,
+    reviewPolicy,
+    decisionPolicy,
+    decisionModel: options.decisionModel,
+  });
   return {
-    proposal: { ...validated, changes: applied },
+    proposal: { ...validated, changes: applied, decisions },
     invalidChanges,
   };
 }

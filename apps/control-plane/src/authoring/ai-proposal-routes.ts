@@ -1,15 +1,19 @@
 import { createRunId } from "@trybacked/core";
 import { createDatasetProviderFromEnv } from "@trybacked/infrastructure";
 import {
+  AiProposalSchema,
   createAiSdkLlm,
+  DEFAULT_REVIEW_POLICY,
   ProposalScopeSchema,
   ReviewPolicySchema,
   runOntologyProposal,
+  summarizeDecisions,
 } from "@trybacked/ontology-ai";
 import {
   createGatewayLanguageModel,
   createOntologyExtractModelFromEnv,
 } from "@trybacked/ontology-extract";
+import type { DecisionModel } from "@trybacked/ports";
 import { Hono } from "hono";
 import type pg from "pg";
 import { z } from "zod";
@@ -20,6 +24,7 @@ import {
   insertAiProposal,
   listAiProposals,
   setAiProposalStatus,
+  setAiProposalStatusAndPayload,
 } from "../db/ai-proposal-repositories.js";
 import {
   getAuthoring,
@@ -27,6 +32,10 @@ import {
   requireAuthoringRole,
   type AuthoringVariables,
 } from "./context.js";
+import {
+  buildSageAutoApproveAuditEvents,
+  recordOntologyAuditEvents,
+} from "./sage-proposal-audit.js";
 
 const CreateProposalBodySchema = z.object({
   scope: ProposalScopeSchema,
@@ -46,6 +55,10 @@ type AuthoringEnv = {
   };
 };
 
+type AiProposalRouteDeps = {
+  decisionModel: DecisionModel | undefined;
+};
+
 function filesProvider(config: ControlPlaneConfig, tenantId: string) {
   return createDatasetProviderFromEnv(
     {
@@ -54,6 +67,22 @@ function filesProvider(config: ControlPlaneConfig, tenantId: string) {
     },
     { tenantId },
   );
+}
+
+function resolveReviewPolicy(
+  config: ControlPlaneConfig,
+  bodyPolicy: z.infer<typeof ReviewPolicySchema> | undefined,
+): z.infer<typeof ReviewPolicySchema> {
+  const clientThreshold = bodyPolicy?.autoApproveThreshold;
+  const autoApproveThreshold = Math.max(
+    clientThreshold ?? DEFAULT_REVIEW_POLICY.autoApproveThreshold,
+    config.serverAutoApproveThresholdMin,
+  );
+  return ReviewPolicySchema.parse({
+    ...DEFAULT_REVIEW_POLICY,
+    ...bodyPolicy,
+    autoApproveThreshold,
+  });
 }
 
 function summary(row: Awaited<ReturnType<typeof getAiProposal>>) {
@@ -73,10 +102,27 @@ function summary(row: Awaited<ReturnType<typeof getAiProposal>>) {
   };
 }
 
+function allAutoApproved(decisions: readonly { verdict: string }[], changeCount: number): boolean {
+  return (
+    changeCount > 0 &&
+    decisions.length === changeCount &&
+    decisions.every((decision) => decision.verdict === "auto_approve")
+  );
+}
+
+function advisorSuggestedReject(decisions: readonly { verdict: string }[]): boolean {
+  return decisions.some((decision) => decision.verdict === "recommend_reject");
+}
+
+function advisorSuggestedAutoApprove(decisions: readonly { verdict: string }[]): boolean {
+  return decisions.length > 0 && decisions.every((decision) => decision.verdict === "auto_approve");
+}
+
 export function registerAiProposalRoutes(
   app: Hono,
   config: ControlPlaneConfig,
   pool: pg.Pool,
+  deps: AiProposalRouteDeps,
 ): void {
   const base = "/v1/tenants/:tenantId/authoring/ai";
   const ai = new Hono<AuthoringEnv>();
@@ -108,6 +154,7 @@ export function registerAiProposalRoutes(
     }
     const proposalId = createRunId();
     const runId = createRunId();
+    const reviewPolicy = resolveReviewPolicy(config, body.policy);
     try {
       const { proposal, invalidChanges } = await runOntologyProposal({
         provider,
@@ -118,8 +165,24 @@ export function registerAiProposalRoutes(
         scope: body.scope,
         ...(body.datasetIds !== undefined ? { datasetIds: body.datasetIds } : {}),
         ...(body.locale !== undefined ? { locale: body.locale } : {}),
-        ...(body.policy !== undefined ? { policy: body.policy } : {}),
+        policy: reviewPolicy,
+        decisionPolicy: config.decisionPolicy,
+        decisionModel: deps.decisionModel,
       });
+      const decisionSummary = summarizeDecisions(proposal.decisions);
+      const sageModelId =
+        proposal.decisions.find((decision) => decision.advisor?.modelId)?.advisor?.modelId ??
+        "unknown";
+      const sageAutoApprove =
+        deps.decisionModel !== undefined &&
+        allAutoApproved(proposal.decisions, proposal.changes.length);
+      const proposalPayload = {
+        ...proposal,
+        ...(invalidChanges.length > 0 ? { invalidChanges } : {}),
+        ...(sageAutoApprove
+          ? { status: "approved" as const, autoApprovedBy: `policy:sage@${sageModelId}` }
+          : {}),
+      };
       const row = await insertAiProposal(pool, {
         id: proposalId,
         tenantId: ctx.tenantId,
@@ -131,9 +194,31 @@ export function registerAiProposalRoutes(
             : body.scope.kind === "dataset"
               ? body.scope.datasetId
               : undefined,
-        payload: { ...proposal, ...(invalidChanges.length > 0 ? { invalidChanges } : {}) },
+        payload: proposalPayload,
       });
-      return c.json({ ...summary(row), proposal }, 201);
+      if (sageAutoApprove) {
+        await setAiProposalStatus(pool, ctx.tenantId, proposalId, "approved");
+        const recordedAt = new Date().toISOString();
+        await recordOntologyAuditEvents(pool, {
+          tenantId: ctx.tenantId,
+          revision: 0,
+          actor: `policy:sage@${sageModelId}`,
+          events: buildSageAutoApproveAuditEvents({
+            runId,
+            recordedAt,
+            decisions: proposal.decisions,
+            modelId: sageModelId,
+          }),
+        });
+      }
+      return c.json(
+        {
+          ...summary(row),
+          proposal,
+          decisionSummary,
+        },
+        201,
+      );
     } catch (error) {
       return c.json({ error: "proposal_failed", message: String(error) }, 502);
     }
@@ -172,12 +257,30 @@ export function registerAiProposalRoutes(
     if (existing.status !== "proposed") {
       return c.json({ error: "already_reviewed", status: existing.status }, 409);
     }
-    const row = await setAiProposalStatus(
-      pool,
-      ctx.tenantId,
+    const payloadParsed = AiProposalSchema.safeParse(existing.payload);
+    const decisions = payloadParsed.success ? payloadParsed.data.decisions : [];
+    const reviewer = parsed.data.reviewer ?? ctx.username;
+    const overridesAdvisor =
+      (parsed.data.decision === "reject" && advisorSuggestedAutoApprove(decisions)) ||
+      (parsed.data.decision === "approve" && advisorSuggestedReject(decisions));
+    const nextStatus = parsed.data.decision === "approve" ? "approved" : "rejected";
+    const nextPayload = payloadParsed.success
+      ? {
+          ...payloadParsed.data,
+          reviewOutcome: {
+            reviewer,
+            decision: parsed.data.decision,
+            reviewedAt: new Date().toISOString(),
+            overridesAdvisor,
+          },
+        }
+      : existing.payload;
+    const row = await setAiProposalStatusAndPayload(pool, {
+      tenantId: ctx.tenantId,
       proposalId,
-      parsed.data.decision === "approve" ? "approved" : "rejected",
-    );
+      status: nextStatus,
+      payload: nextPayload,
+    });
     return c.json({ ...summary(row) });
   });
 

@@ -36,6 +36,8 @@ export {
   createGatewayLanguageModel,
   type GatewayLanguageModelOptions,
 } from "./adapters/llm/gateway-language-model.js";
+export { createDecisionModelFromEnv } from "./decision-model-from-env.js";
+export { createSageDecisionModel, readSageConfigFromEnv } from "./adapters/sage/index.js";
 export { requireAiGatewayApiKey } from "./adapters/llm/require-ai-gateway.js";
 export {
   createProfileAvatarStorageFromEnv,
