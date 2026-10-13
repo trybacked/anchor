@@ -95,7 +95,6 @@ export function readControlPlaneConfig(env: NodeJS.ProcessEnv): ControlPlaneConf
   });
 }
 
-
 export function buildEnrollmentRegistry(
   config: ControlPlaneConfig,
   env: NodeJS.ProcessEnv = process.env,

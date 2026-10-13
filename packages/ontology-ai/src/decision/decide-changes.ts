@@ -62,10 +62,7 @@ export async function decideProposalChanges(
 
   for (const change of input.changes) {
     const { content, withinBudget } = buildChangeContent(change, input.baselineOntology);
-    const skipSage =
-      !decisionModelConfigured ||
-      isBreakingCommand(change.command) ||
-      !withinBudget;
+    const skipSage = !decisionModelConfigured || isBreakingCommand(change.command) || !withinBudget;
 
     const resultIndex = results.length;
     if (skipSage) {

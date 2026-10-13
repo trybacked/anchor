@@ -39,7 +39,8 @@ describe.skipIf(!liveEnabled)("Sage live API (e2e)", () => {
 
       const batch = await decisionModel!.decideBatch([
         {
-          content: "Proposed ontology change: add Contract object type backed by contract_id column.",
+          content:
+            "Proposed ontology change: add Contract object type backed by contract_id column.",
           questions: [
             {
               kind: "yesno",
@@ -53,7 +54,9 @@ describe.skipIf(!liveEnabled)("Sage live API (e2e)", () => {
 
       expect(batch.groups[0]?.ok).toBe(true);
       if (batch.groups[0]?.ok) {
-        const accept = batch.groups[0].answers.find((answer) => answer.kind === "yesno" && answer.id === "accept");
+        const accept = batch.groups[0].answers.find(
+          (answer) => answer.kind === "yesno" && answer.id === "accept",
+        );
         expect(accept?.kind).toBe("yesno");
         if (accept?.kind === "yesno") {
           expect(accept.probability).toBeGreaterThanOrEqual(0);
