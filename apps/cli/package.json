@@ -1,12 +1,13 @@
 {
   "name": "@trybacked/cli",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
-  "description": "Anchor CLI (`backed`): pull, sync, and deploy a governed ontology over the files engine and S3",
+  "description": "Backed platform CLI (`backed`): Anchor ontology engine and Falcon delegate (record → distill)",
   "license": "Apache-2.0",
   "keywords": [
     "anchor",
     "backed",
+    "falcon",
     "ontology",
     "mcp",
     "cli"

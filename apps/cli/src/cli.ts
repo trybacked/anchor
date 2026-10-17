@@ -17,7 +17,8 @@ import { tenantCreateCommand } from "./commands/tenant-create.js";
 import { printCliVersion } from "./commands/version.js";
 import { formatCliCommand, isHelpFlag, isVersionFlag, SERVICES } from "./config.js";
 import { loadWorkspaceDotEnv } from "./env.js";
-import { getUi, initUi, printAnchorHelp, printRootHelp } from "./ui/index.js";
+import { runFalconDelegate } from "./falcon/run.js";
+import { getUi, initUi, printAnchorHelp, printFalconHelp, printRootHelp } from "./ui/index.js";
 export const COMMANDS = ANCHOR_COMMANDS;
 export function printCliHelp(): void {
   printRootHelp(getUi());
@@ -121,6 +122,34 @@ async function main(): Promise<void> {
     }
     getUi().writeError(`Unknown tenant subcommand: ${second}`);
     process.exitCode = 1;
+    return;
+  }
+  if (first === SERVICES.FALCON) {
+    if (second === undefined || isHelpFlag(second)) {
+      printFalconHelp(getUi());
+      return;
+    }
+    if (isVersionFlag(second)) {
+      try {
+        const exitCode = await runFalconDelegate(["--version"]);
+        if (exitCode !== 0) {
+          process.exitCode = exitCode;
+        }
+      } catch (error) {
+        getUi().writeError(error instanceof Error ? error.message : String(error));
+        process.exitCode = 1;
+      }
+      return;
+    }
+    try {
+      const exitCode = await runFalconDelegate(argv.slice(1));
+      if (exitCode !== 0) {
+        process.exitCode = exitCode;
+      }
+    } catch (error) {
+      getUi().writeError(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    }
     return;
   }
   if (first === SERVICES.ANCHOR) {

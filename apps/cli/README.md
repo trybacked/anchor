@@ -1,6 +1,6 @@
 # @trybacked/cli
 
-**`backed`** command-line interface for the Anchor ontology engine.
+**`backed`** command-line interface for the Backed platform: **Anchor** (ontology) and **Falcon** (UI capture).
 
 ---
 
@@ -14,7 +14,9 @@ backed anchor run          # ingest → AI induce → AI extract → eval → sy
 backed anchor deploy
 ```
 
-Global install: `pnpm build && cd apps/cli && pnpm link --global`.
+Global install (unified npm package): `npm install -g @trybacked/backed`.
+
+Monorepo dev: `pnpm --filter @trybacked/cli build && pnpm link --global --filter @trybacked/cli`.
 
 ---
 
@@ -27,6 +29,6 @@ Global install: `pnpm build && cd apps/cli && pnpm link --global`.
 | `sync`   | Versioned registry snapshot (`--status` to list) |
 | `deploy` | MCP for agents                                   |
 
-Top level: `backed version` · `backed anchor …`
+Top level: `backed version` · `backed anchor …` · `backed falcon …` (Python; see `@trybacked/backed` README)
 
 Legacy aliases: `discover` → `run`, `register` / `publish` → `sync`, `serve` → `deploy`.

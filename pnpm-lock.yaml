@@ -94,6 +94,12 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.1)(yaml@2.9.0)
 
+  apps/backed:
+    dependencies:
+      '@trybacked/cli':
+        specifier: workspace:*
+        version: link:../cli
+
   apps/cli:
     dependencies:
       '@trybacked/capability-documents':

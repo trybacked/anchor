@@ -20,6 +20,7 @@ export const CLI_NAME = "backed";
 export const CLI_VERSION = readCliVersion();
 export const SERVICES = {
   ANCHOR: "anchor",
+  FALCON: "falcon",
 } as const;
 export const COMMANDS = {
   INIT: "init",

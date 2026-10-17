@@ -1,0 +1,38 @@
+{
+  "name": "@trybacked/backed",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Backed platform CLI — Anchor ontology engine and Falcon UI capture under one `backed` command",
+  "license": "Apache-2.0",
+  "keywords": [
+    "backed",
+    "anchor",
+    "falcon",
+    "ontology",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybacked/anchor.git",
+    "directory": "apps/backed"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "backed": "./bin/backed.mjs"
+  },
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "node --check bin/backed.mjs"
+  },
+  "dependencies": {
+    "@trybacked/cli": "workspace:*"
+  }
+}
